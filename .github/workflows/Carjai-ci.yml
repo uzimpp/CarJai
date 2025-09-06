@@ -49,10 +49,12 @@ jobs:
           go-version: '1.24.3'
           
       - name: Install Go dependencies
-        run: go mod download --prefix backend
+        working-directory: ./backend
+        run: go mod download
         
       - name: Build Go binary
-        run: go build -o main --prefix backend
+        working-directory: ./backend
+        run: go build -o main .
 
   # Docker Build
   docker:
