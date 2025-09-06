@@ -29,7 +29,7 @@ git clone https://github.com/<org-or-user>/carjai.git
 cd carjai
 ```
 
-3. Install frontend (Next.js)
+### 3. Install frontend (Next.js)
 ```bash
 cd frontend
 npm install
@@ -37,7 +37,7 @@ npm run dev
 ```
 App available at: http://localhost:3000
 
-4. Run backend (Go API)
+### 4. Run backend (Go API)
 ```bash
 cd backend
 go mod tidy
@@ -45,7 +45,7 @@ go run main.go
 ```
 API available at: http://localhost:8080
 
-5. Setup database
+### 5. Setup database
 ```bash
 createdb carjai_dev
 psql -d carjai_dev -f schema.sql
@@ -70,8 +70,6 @@ docker build -t carjai-backend ./backend
 docker run -it --rm --name backend -p 8080:8080 carjai-backend
 ```
 → Visit http://localhost:8080
-
-Docker Compose
 
 run everything with:
 ```bash
