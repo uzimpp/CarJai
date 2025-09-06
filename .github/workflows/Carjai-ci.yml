@@ -7,7 +7,9 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
+  # Frontend CI
+  frontend:
+    name: Frontend CI
     runs-on: ubuntu-latest
 
     strategy:
@@ -32,3 +34,97 @@ jobs:
         
       - name: Run lint
         run: npm run lint --prefix frontend
+        
+      - name: Build frontend
+        run: npm run build --prefix frontend
+
+  # Backend CI
+  backend:
+    name: Backend CI
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24.3'
+          
+      - name: Install Go dependencies
+        run: go mod download --prefix backend
+        
+      - name: Run Go tests
+        run: go test -v --prefix backend ./...
+        
+      - name: Build Go binary
+        run: go build -o main --prefix backend
+
+  # Docker Build
+  docker:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: [frontend, backend]
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
+      - name: Build frontend Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/dockerfile
+          push: false
+          tags: carjai-frontend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          
+      - name: Build backend Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/dockerfile
+          push: false
+          tags: carjai-backend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Integration Test with Docker Compose
+  integration:
+    name: Integration Test
+    runs-on: ubuntu-latest
+    needs: [docker]
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Build images for testing
+        run: |
+          docker build -t carjai-frontend:test ./frontend
+          docker build -t carjai-backend:test ./backend
+          
+      - name: Start services with docker-compose
+        run: |
+          # Update docker-compose.yml to use test images
+          sed -i 's/carjai-frontend:latest/carjai-frontend:test/g' docker-compose.yml
+          sed -i 's/carjai-backend:latest/carjai-backend:test/g' docker-compose.yml
+          docker compose up -d
+          
+      - name: Wait for services to be ready
+        run: |
+          sleep 30
+          docker compose ps
+          
+      - name: Test frontend health
+        run: |
+          curl -f http://localhost:3000 || exit 1
+          
+      - name: Test backend health
+        run: |
+          curl -f http://localhost:8080 || exit 1
+          
+      - name: Stop services
+        run: docker compose down
