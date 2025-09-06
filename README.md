@@ -73,7 +73,7 @@ docker run -it --rm --name backend -p 8080:8080 carjai-backend
 
 run everything with:
 ```bash
-docker compose up
+docker compose up -d
 ```
 
 ---
