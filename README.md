@@ -25,7 +25,7 @@ It connects **sellers** (car owners, dealers, resellers) with **buyers** through
 
 ### 2. Clone the repo
 ```bash
-git clone https://github.com/<org-or-user>/carjai.git
+git clone https://github.com/uzimpp/carjai.git
 cd carjai
 ```
 
