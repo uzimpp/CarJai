@@ -45,12 +45,6 @@ go run main.go
 ```
 API available at: http://localhost:8080
 
-### 5. Setup database
-```bash
-createdb carjai_dev
-psql -d carjai_dev -f schema.sql
-```
-
 ---
 
 ## 🐳 Run with Docker
@@ -75,8 +69,3 @@ run everything with:
 ```bash
 docker compose up -d
 ```
-
----
-
-## 📄 License
-This project is for Kasetsart University coursework and educational purposes only.
