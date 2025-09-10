@@ -9,6 +9,7 @@ require (
 	golang.org/x/crypto v0.23.0
 	github.com/go-playground/validator/v10 v10.22.1
 	github.com/joho/godotenv v1.5.1
+	golang.org/x/crypto/bcrypt latest
 )
 
 require (

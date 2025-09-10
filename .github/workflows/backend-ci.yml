@@ -58,7 +58,11 @@ jobs:
         go clean -modcache
         # Ensure correct module path
         go mod edit -module github.com/uzimpp/CarJai/backend
-        # Download and verify dependencies
+        # Install specific required packages first
+        go get github.com/lib/pq
+        go get github.com/golang-jwt/jwt/v5
+        go get golang.org/x/crypto/bcrypt
+        # Download and verify all dependencies
         GOPROXY=direct go mod tidy
         GOPROXY=direct go mod download
         go mod verify
