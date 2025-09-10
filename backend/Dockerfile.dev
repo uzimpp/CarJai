@@ -1,0 +1,26 @@
+# Development Dockerfile for CarJai Backend
+FROM golang:1.24.3-alpine
+
+# Install git, ca-certificates, and other development tools
+RUN apk add --no-cache git ca-certificates tzdata
+
+# Set working directory
+WORKDIR /app
+
+# Copy go mod files first for better caching
+COPY go.mod go.sum ./
+
+# Download dependencies
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Expose port
+EXPOSE 8080
+
+# Install air for hot reloading (optional)
+RUN go install github.com/cosmtrek/air@latest
+
+# Default command (can be overridden)
+CMD ["go", "run", "main.go"]
