@@ -100,7 +100,6 @@ jobs:
             --head "$SOURCE_BRANCH" \
             --title "🚀 Release: Merge develop to main" \
             --body "$PR_BODY" \
-            --label "release,production" \
             --assignee "${{ github.actor }}"
             
           echo "✅ Pull Request created successfully"
