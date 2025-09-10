@@ -57,7 +57,7 @@ jobs:
         rm -f go.sum
         go clean -modcache
         # Ensure correct module path
-        go mod edit -module github.com/uzimpp/Carjai/backend
+        go mod edit -module github.com/uzimpp/CarJai/backend
         # Download and verify dependencies
         GOPROXY=direct go mod tidy
         GOPROXY=direct go mod download

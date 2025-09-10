@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/uzimpp/Carjai/backend/utils"
+	"github.com/uzimpp/CarJai/backend/utils"
 )
 
 // HealthHandler handles health check endpoints

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/uzimpp/Carjai/backend/models"
-	"github.com/uzimpp/Carjai/backend/utils"
+	"github.com/uzimpp/CarJai/backend/models"
+	"github.com/uzimpp/CarJai/backend/utils"
 )
 
 // MaintenanceService handles maintenance tasks

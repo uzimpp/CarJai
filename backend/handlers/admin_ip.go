@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/uzimpp/Carjai/backend/models"
-	"github.com/uzimpp/Carjai/backend/services"
-	"github.com/uzimpp/Carjai/backend/utils"
+	"github.com/uzimpp/CarJai/backend/models"
+	"github.com/uzimpp/CarJai/backend/services"
+	"github.com/uzimpp/CarJai/backend/utils"
 )
 
 // AdminIPHandler handles admin IP whitelist management
