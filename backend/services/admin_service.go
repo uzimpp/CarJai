@@ -13,6 +13,7 @@ type AdminService struct {
 	adminRepo      *models.AdminRepository
 	sessionRepo    *models.SessionRepository
 	ipWhitelistRepo *models.IPWhitelistRepository
+	jwtManager     *utils.JWTManager
 }
 
 // NewAdminService creates a new admin service
@@ -20,11 +21,13 @@ func NewAdminService(
 	adminRepo *models.AdminRepository,
 	sessionRepo *models.SessionRepository,
 	ipWhitelistRepo *models.IPWhitelistRepository,
+	jwtManager *utils.JWTManager,
 ) *AdminService {
 	return &AdminService{
 		adminRepo:      adminRepo,
 		sessionRepo:    sessionRepo,
 		ipWhitelistRepo: ipWhitelistRepo,
+		jwtManager:     jwtManager,
 	}
 }
 
@@ -87,8 +90,9 @@ func (s *AdminService) Login(req LoginRequest) (*LoginResponse, error) {
 		return nil, fmt.Errorf("IP address not authorized")
 	}
 	
-	// Generate JWT token (this will be implemented in JWT service)
-	token, expiresAt, err := s.generateToken(admin.ID, admin.Username)
+	// Generate JWT token
+	sessionID := fmt.Sprintf("session_%d_%d", admin.ID, time.Now().Unix())
+	token, expiresAt, err := s.jwtManager.GenerateToken(admin.ID, admin.Username, sessionID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate token: %w", err)
 	}
@@ -237,12 +241,3 @@ func (s *AdminService) GetWhitelistedIPs(adminID int) ([]models.AdminIPWhitelist
 	return s.ipWhitelistRepo.GetWhitelistedIPs(adminID)
 }
 
-// generateToken generates a JWT token for admin authentication
-// This is a placeholder - will be implemented in JWT service
-func (s *AdminService) generateToken(adminID int, username string) (string, time.Time, error) {
-	// TODO: Implement JWT token generation
-	// For now, return a placeholder
-	expiresAt := time.Now().Add(8 * time.Hour) // 8 hours expiration
-	token := fmt.Sprintf("jwt_placeholder_%d_%s", adminID, username)
-	return token, expiresAt, nil
-}
