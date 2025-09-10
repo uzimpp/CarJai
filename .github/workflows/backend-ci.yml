@@ -54,20 +54,23 @@ jobs:
     - name: Install dependencies
       working-directory: ./backend
       run: |
+        # Clean any existing dependency state
         rm -f go.sum
         go clean -modcache
-        # Ensure correct module path
-        go mod edit -module github.com/uzimpp/CarJai/backend
-        # Install specific required packages first
-        go get github.com/lib/pq
-        go get github.com/golang-jwt/jwt/v5
-        go get golang.org/x/crypto/bcrypt
-        # Download and verify all dependencies
-        GOPROXY=direct go mod tidy
-        GOPROXY=direct go mod download
+        
+        # Initialize modules
+        go mod init github.com/uzimpp/CarJai/backend
+        
+        # Get specific dependencies
+        go get github.com/lib/pq@v1.10.9
+        go get github.com/golang-jwt/jwt/v5@v5.2.1
+        go get golang.org/x/crypto@v0.23.0
+        
+        # Ensure all dependencies are properly recorded
+        go mod tidy
+        
+        # Verify the setup
         go mod verify
-        # Verify module path correctness
-        go list -m all
 
     - name: Run database migrations
       working-directory: ./backend
