@@ -1,0 +1,252 @@
+name: Backend CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+
+env:
+  GO_VERSION: '1.24.3'
+  POSTGRES_VERSION: '15'
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:${{ env.POSTGRES_VERSION }}
+        env:
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: carjai_test
+          POSTGRES_USER: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Install dependencies
+      working-directory: ./backend
+      run: go mod download
+
+    - name: Run database migrations
+      working-directory: ./backend
+      env:
+        DB_HOST: localhost
+        DB_PORT: 5432
+        DB_USER: postgres
+        DB_PASSWORD: password
+        DB_NAME: carjai_test
+        DB_SSLMODE: disable
+      run: |
+        # Wait for database to be ready
+        sleep 10
+        psql -h localhost -U postgres -d carjai_test -f migrations/001_admin_auth.sql
+
+    - name: Run unit tests
+      working-directory: ./backend
+      env:
+        DB_HOST: localhost
+        DB_PORT: 5432
+        DB_USER: postgres
+        DB_PASSWORD: password
+        DB_NAME: carjai_test
+        DB_SSLMODE: disable
+        JWT_SECRET: test-secret-key-for-ci
+        JWT_EXPIRATION_HOURS: 8
+        ENVIRONMENT: test
+      run: |
+        go test -v -race -coverprofile=coverage.out ./utils/...
+        go test -v -race -coverprofile=coverage.out ./models/...
+        go test -v -race -coverprofile=coverage.out ./services/...
+
+    - name: Run integration tests
+      working-directory: ./backend
+      env:
+        DB_HOST: localhost
+        DB_PORT: 5432
+        DB_USER: postgres
+        DB_PASSWORD: password
+        DB_NAME: carjai_test
+        DB_SSLMODE: disable
+        JWT_SECRET: test-secret-key-for-ci
+        JWT_EXPIRATION_HOURS: 8
+        ENVIRONMENT: test
+      run: |
+        go test -v -race ./tests/...
+
+    - name: Generate coverage report
+      working-directory: ./backend
+      run: |
+        go test -coverprofile=coverage.out ./...
+        go tool cover -html=coverage.out -o coverage.html
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./backend/coverage.out
+        flags: backend
+        name: backend-coverage
+
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-report
+        path: ./backend/coverage.html
+
+  security:
+    name: Security Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Run security tests
+      working-directory: ./backend
+      run: |
+        go test -v ./tests/ -run TestSecurity
+
+    - name: Run Gosec Security Scanner
+      uses: securecodewarrior/github-action-gosec@master
+      with:
+        args: '-fmt sarif -out gosec.sarif ./...'
+        working-directory: ./backend
+
+    - name: Upload SARIF file
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: ./backend/gosec.sarif
+
+  lint:
+    name: Lint Code
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Run golangci-lint
+      uses: golangci/golangci-lint-action@v3
+      with:
+        version: latest
+        working-directory: ./backend
+        args: --timeout=5m
+
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    needs: [test, security, lint]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Build application
+      working-directory: ./backend
+      run: |
+        CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
+
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: backend-binary
+        path: ./backend/main
+
+  docker:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: [test, security, lint]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./backend
+        push: false
+        tags: carjai-backend:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Test Docker image
+      run: |
+        docker run --rm carjai-backend:latest --help
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [build, docker]
+    if: github.ref == 'refs/heads/develop'
+    environment: staging
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Deploy to staging
+      run: |
+        echo "Deploying to staging environment..."
+        # Add your staging deployment commands here
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build, docker]
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Deploy to production
+      run: |
+        echo "Deploying to production environment..."
+        # Add your production deployment commands here

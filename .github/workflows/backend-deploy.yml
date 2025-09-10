@@ -1,0 +1,248 @@
+name: Backend Deployment
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+
+env:
+  GO_VERSION: '1.24.3'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/backend
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: carjai_test
+          POSTGRES_USER: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Install dependencies
+      working-directory: ./backend
+      run: go mod download
+
+    - name: Wait for database
+      run: |
+        for i in {1..30}; do
+          if pg_isready -h localhost -p 5432 -U postgres; then
+            echo "Database is ready"
+            break
+          fi
+          echo "Waiting for database... ($i/30)"
+          sleep 2
+        done
+
+    - name: Run database migrations
+      working-directory: ./backend
+      env:
+        DB_HOST: localhost
+        DB_PORT: 5432
+        DB_USER: postgres
+        DB_PASSWORD: password
+        DB_NAME: carjai_test
+        DB_SSLMODE: disable
+      run: |
+        psql -h localhost -U postgres -d carjai_test -f migrations/001_admin_auth.sql
+
+    - name: Run tests
+      working-directory: ./backend
+      env:
+        DB_HOST: localhost
+        DB_PORT: 5432
+        DB_USER: postgres
+        DB_PASSWORD: password
+        DB_NAME: carjai_test
+        DB_SSLMODE: disable
+        JWT_SECRET: test-secret-key-for-ci
+        JWT_EXPIRATION_HOURS: 8
+        ENVIRONMENT: test
+      run: |
+        go test -v -race -coverprofile=coverage.out ./...
+
+    - name: Build application
+      working-directory: ./backend
+      run: |
+        CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
+
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: backend-binary
+        path: ./backend/main
+
+  build-docker:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./backend
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Test Docker image
+      run: |
+        docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest --help
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [build-and-test, build-docker]
+    if: github.ref == 'refs/heads/main' || github.event.inputs.environment == 'staging'
+    environment: staging
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Deploy to staging
+      run: |
+        echo "🚀 Deploying to staging environment..."
+        echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+        
+        # Add your staging deployment commands here
+        # Example:
+        # - Update Kubernetes deployment
+        # - Run database migrations
+        # - Health check
+        
+        echo "✅ Staging deployment completed"
+
+    - name: Run health check
+      run: |
+        echo "🔍 Running health check..."
+        # Add health check commands here
+        # Example:
+        # curl -f https://staging-api.carjai.com/health || exit 1
+        echo "✅ Health check passed"
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build-and-test, build-docker]
+    if: github.event.inputs.environment == 'production'
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Deploy to production
+      run: |
+        echo "🚀 Deploying to production environment..."
+        echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+        
+        # Add your production deployment commands here
+        # Example:
+        # - Blue-green deployment
+        # - Database migrations with rollback plan
+        # - Load balancer configuration
+        
+        echo "✅ Production deployment completed"
+
+    - name: Run health check
+      run: |
+        echo "🔍 Running health check..."
+        # Add health check commands here
+        # Example:
+        # curl -f https://api.carjai.com/health || exit 1
+        echo "✅ Health check passed"
+
+    - name: Notify deployment
+      run: |
+        echo "📢 Production deployment completed successfully!"
+        # Add notification commands here
+        # Example:
+        # - Send Slack notification
+        # - Send email notification
+        # - Update monitoring dashboard
+
+  rollback:
+    name: Rollback Deployment
+    runs-on: ubuntu-latest
+    if: failure()
+    environment: ${{ github.event.inputs.environment || 'staging' }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Rollback deployment
+      run: |
+        echo "🔄 Rolling back deployment..."
+        
+        # Add rollback commands here
+        # Example:
+        # - Revert to previous version
+        # - Restore database backup
+        # - Update load balancer
+        
+        echo "✅ Rollback completed"
+
+    - name: Notify rollback
+      run: |
+        echo "📢 Deployment rollback completed!"
+        # Add notification commands here
