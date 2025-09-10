@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/uzimpp/CarJai/backend/middleware"
-	"github.com/uzimpp/CarJai/backend/models"
-	"github.com/uzimpp/CarJai/backend/services"
-	"github.com/uzimpp/CarJai/backend/utils"
+	"github.com/uzimpp/Carjai/backend/middleware"
+	"github.com/uzimpp/Carjai/backend/models"
+	"github.com/uzimpp/Carjai/backend/services"
+	"github.com/uzimpp/Carjai/backend/utils"
 )
 
 // AdminAuthHandler handles admin authentication endpoints

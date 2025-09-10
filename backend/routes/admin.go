@@ -3,10 +3,10 @@ package routes
 import (
 	"net/http"
 
-	"github.com/uzimpp/CarJai/backend/handlers"
-	"github.com/uzimpp/CarJai/backend/middleware"
-	"github.com/uzimpp/CarJai/backend/services"
-	"github.com/uzimpp/CarJai/backend/utils"
+	"github.com/uzimpp/Carjai/backend/handlers"
+	"github.com/uzimpp/Carjai/backend/middleware"
+	"github.com/uzimpp/Carjai/backend/services"
+	"github.com/uzimpp/Carjai/backend/utils"
 )
 
 // AdminRoutes sets up admin authentication routes

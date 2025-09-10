@@ -1,4 +1,4 @@
-module github.com/uzimpp/CarJai/backend
+module github.com/uzimpp/Carjai/backend
 
 go 1.21.0
 

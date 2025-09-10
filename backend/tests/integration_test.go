@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/uzimpp/CarJai/backend/config"
-	"github.com/uzimpp/CarJai/backend/models"
-	"github.com/uzimpp/CarJai/backend/routes"
-	"github.com/uzimpp/CarJai/backend/services"
-	"github.com/uzimpp/CarJai/backend/utils"
+	"github.com/uzimpp/Carjai/backend/config"
+	"github.com/uzimpp/Carjai/backend/models"
+	"github.com/uzimpp/Carjai/backend/routes"
+	"github.com/uzimpp/Carjai/backend/services"
+	"github.com/uzimpp/Carjai/backend/utils"
 )
 
 // TestAdminAuthIntegration tests the complete admin authentication flow
