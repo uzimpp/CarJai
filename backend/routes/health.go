@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"net/http"
 
-	"api/handlers"
-	"api/middleware"
+	"github.com/uzimpp/CarJai/backend/handlers"
+	"github.com/uzimpp/CarJai/backend/middleware"
 )
 
 // HealthRoutes sets up health check routes

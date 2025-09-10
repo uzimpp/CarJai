@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"time"
 
-	"api/config"
-	"api/models"
-	"api/routes"
-	"api/services"
-	"api/utils"
+	"github.com/uzimpp/CarJai/backend/config"
+	"github.com/uzimpp/CarJai/backend/models"
+	"github.com/uzimpp/CarJai/backend/routes"
+	"github.com/uzimpp/CarJai/backend/services"
+	"github.com/uzimpp/CarJai/backend/utils"
 )
 
 func main() {

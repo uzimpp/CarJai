@@ -54,6 +54,9 @@ jobs:
     - name: Install dependencies
       working-directory: ./backend
       run: |
+        rm -f go.sum
+        go clean -modcache
+        go mod init github.com/uzimpp/CarJai/backend
         go mod tidy
         go mod download
         go mod verify

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"api/models"
-	"api/utils"
+	"github.com/uzimpp/CarJai/backend/models"
+	"github.com/uzimpp/CarJai/backend/utils"
 )
 
 // AdminService handles admin authentication business logic

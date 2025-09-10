@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"api/models"
-	"api/services"
-	"api/utils"
+	"github.com/uzimpp/CarJai/backend/models"
+	"github.com/uzimpp/CarJai/backend/services"
+	"github.com/uzimpp/CarJai/backend/utils"
 )
 
 // AuthMiddleware handles admin authentication

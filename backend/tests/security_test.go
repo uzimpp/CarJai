@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"api/utils"
+	"github.com/uzimpp/CarJai/backend/utils"
 )
 
 // TestPasswordSecurity tests password security features
