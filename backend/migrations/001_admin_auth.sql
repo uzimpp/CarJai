@@ -14,7 +14,7 @@ CREATE TABLE admins (
 -- Create admin_sessions table for session management
 CREATE TABLE admin_sessions (
     id SERIAL PRIMARY KEY,
-    admin_id INTEGER REFERENCES admins(id) ON DELETE CASCADE,
+    admin_id INTEGER REFERENCES admins (id) ON DELETE CASCADE,
     token VARCHAR(500) UNIQUE NOT NULL,
     ip_address INET NOT NULL,
     user_agent TEXT,
@@ -25,32 +25,27 @@ CREATE TABLE admin_sessions (
 -- Create admin_ip_whitelist table for IP restrictions
 CREATE TABLE admin_ip_whitelist (
     id SERIAL PRIMARY KEY,
-    admin_id INTEGER REFERENCES admins(id) ON DELETE CASCADE,
+    admin_id INTEGER REFERENCES admins (id) ON DELETE CASCADE,
     ip_address INET NOT NULL,
     description VARCHAR(255),
     created_at TIMESTAMP DEFAULT NOW()
 );
 
 -- Create indexes for performance optimization
-CREATE INDEX idx_admin_sessions_token ON admin_sessions(token);
-CREATE INDEX idx_admin_sessions_admin_id ON admin_sessions(admin_id);
-CREATE INDEX idx_admin_sessions_expires_at ON admin_sessions(expires_at);
-CREATE INDEX idx_admin_ip_whitelist_admin_id ON admin_ip_whitelist(admin_id);
-CREATE INDEX idx_admin_ip_whitelist_ip ON admin_ip_whitelist(ip_address);
+CREATE INDEX idx_admin_sessions_token ON admin_sessions (token);
+
+CREATE INDEX idx_admin_sessions_admin_id ON admin_sessions (admin_id);
+
+CREATE INDEX idx_admin_sessions_expires_at ON admin_sessions (expires_at);
+
+CREATE INDEX idx_admin_ip_whitelist_admin_id ON admin_ip_whitelist (admin_id);
+
+CREATE INDEX idx_admin_ip_whitelist_ip ON admin_ip_whitelist (ip_address);
 
 -- Create index for cleanup of expired sessions
-CREATE INDEX idx_admin_sessions_cleanup ON admin_sessions(expires_at) WHERE expires_at < NOW();
-
--- Insert default admin user (password: admin123)
--- Note: This is a bcrypt hash for 'admin123' - change this in production!
-INSERT INTO admins (username, password_hash, name) VALUES 
-('admin', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System Administrator');
-
--- Insert default IP whitelist for admin (localhost)
-INSERT INTO admin_ip_whitelist (admin_id, ip_address, description) VALUES 
-(1, '127.0.0.1/32', 'Localhost'),
-(1, '::1/128', 'Localhost IPv6');
-
+CREATE INDEX idx_admin_sessions_cleanup ON admin_sessions (expires_at)
+WHERE
+    expires_at < NOW();
 -- Create function to cleanup expired sessions
 CREATE OR REPLACE FUNCTION cleanup_expired_admin_sessions()
 RETURNS INTEGER AS $$
@@ -79,16 +74,27 @@ CREATE TRIGGER cleanup_expired_sessions_trigger
     EXECUTE FUNCTION trigger_cleanup_expired_sessions();
 
 -- Add comments for documentation
-COMMENT ON TABLE admins IS 'Admin users table for system administration';
-COMMENT ON TABLE admin_sessions IS 'Active admin sessions with JWT tokens';
-COMMENT ON TABLE admin_ip_whitelist IS 'IP address whitelist for admin access';
+COMMENT ON
+TABLE admins IS 'Admin users table for system administration';
+
+COMMENT ON
+TABLE admin_sessions IS 'Active admin sessions with JWT tokens';
+
+COMMENT ON
+TABLE admin_ip_whitelist IS 'IP address whitelist for admin access';
 
 COMMENT ON COLUMN admins.username IS 'Unique admin username for login';
+
 COMMENT ON COLUMN admins.password_hash IS 'Bcrypt hashed password';
+
 COMMENT ON COLUMN admins.name IS 'Display name of the admin';
+
 COMMENT ON COLUMN admins.last_login_at IS 'Timestamp of last successful login';
 
 COMMENT ON COLUMN admin_sessions.token IS 'JWT token for session authentication';
+
 COMMENT ON COLUMN admin_sessions.ip_address IS 'IP address from which session was created';
+
 COMMENT ON COLUMN admin_sessions.user_agent IS 'User agent string from login request';
+
 COMMENT ON COLUMN admin_sessions.expires_at IS 'Session expiration timestamp';

@@ -2,7 +2,7 @@ package services
 
 import (
 	"context"
-	"fmt"
+	"strings"
 	"time"
 
 	"github.com/uzimpp/CarJai/backend/models"
@@ -11,21 +11,24 @@ import (
 
 // MaintenanceService handles maintenance tasks
 type MaintenanceService struct {
-	adminRepo   *models.AdminRepository
-	sessionRepo *models.SessionRepository
-	logger      *utils.Logger
+	adminRepo      *models.AdminRepository
+	sessionRepo    *models.SessionRepository
+	ipWhitelistRepo *models.IPWhitelistRepository
+	logger         *utils.Logger
 }
 
 // NewMaintenanceService creates a new maintenance service
 func NewMaintenanceService(
 	adminRepo *models.AdminRepository,
 	sessionRepo *models.SessionRepository,
+	ipWhitelistRepo *models.IPWhitelistRepository,
 	logger *utils.Logger,
 ) *MaintenanceService {
 	return &MaintenanceService{
-		adminRepo:   adminRepo,
-		sessionRepo: sessionRepo,
-		logger:      logger,
+		adminRepo:      adminRepo,
+		sessionRepo:    sessionRepo,
+		ipWhitelistRepo: ipWhitelistRepo,
+		logger:         logger,
 	}
 }
 
@@ -63,6 +66,44 @@ func (s *MaintenanceService) StartMaintenance(ctx context.Context, config *Maint
 	
 	// Start health monitoring
 	go s.runHealthMonitoring(ctx, 5*time.Minute)
+}
+
+// SeedAdminIfMissing seeds an admin and whitelist if none exist
+func (s *MaintenanceService) SeedAdminIfMissing(adminUsername, adminPassword, adminName, adminIPWhitelist string) error {
+	if adminUsername == "" || adminPassword == "" {
+		return nil
+	}
+	// Check if admin exists
+	if _, err := s.adminRepo.GetAdminByUsername(adminUsername); err == nil {
+		return nil
+	}
+	// Hash password
+	hashed, err := utils.HashPassword(adminPassword)
+	if err != nil {
+		return err
+	}
+	// Create admin
+	admin := &models.Admin{
+		Username:     adminUsername,
+		PasswordHash: hashed,
+		Name:         adminName,
+	}
+	if err := s.adminRepo.CreateAdmin(admin); err != nil {
+		return err
+	}
+	// Seed whitelist
+	if adminIPWhitelist != "" {
+		parts := strings.Split(adminIPWhitelist, ",")
+		for _, raw := range parts {
+			cidr := strings.TrimSpace(raw)
+			if cidr == "" {
+				continue
+			}
+			_ = s.ipWhitelistRepo.AddIPToWhitelist(admin.ID, cidr, "Bootstrap")
+		}
+	}
+	s.logger.WithField("username", adminUsername).Info("Seeded default admin from env")
+	return nil
 }
 
 // runSessionCleanup runs periodic session cleanup
