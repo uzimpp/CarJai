@@ -185,31 +185,35 @@ Create a `.env` file in the `backend/` directory with the following variables:
 
 ```bash
 # Database Configuration
-DB_HOST=database
+DB_HOST=localhost
 DB_PORT=5432
-DB_USER=carjai_user
-DB_PASSWORD=carjai_password
-DB_NAME=carjai
-DB_SSLMODE=disable
+DB_USER=<your_db_user>
+DB_PASSWORD=<your_db_password>
+DB_NAME=<your_db_name>
 
 # Application Configuration
 PORT=8080
-JWT_SECRET=your-super-secret-jwt-key-here-change-in-production-min-32-chars
+JWT_SECRET=<your_jwt_secret_key> 
 JWT_EXPIRATION_HOURS=8
-ENVIRONMENT=development
 
 # Admin Configuration
-ADMIN_USERNAME=root
-ADMIN_PASSWORD=mypassword
-ADMIN_NAME=name
+ADMIN_USERNAME=<admin_username>
+ADMIN_PASSWORD=<admin_password>  
+ADMIN_NAME=<admin_display_name>
 ADMIN_ROUTE_PREFIX=/admin
-ADMIN_IP_WHITELIST=127.0.0.1,::1,172.19.0.1,172.16.0.0/12,192.168.1.0/24,10.0.0.0/8
 
 # API Configuration
 NEXT_PUBLIC_API_URL=http://localhost:8080
 
 # PostgreSQL Configuration (for database service)
-POSTGRES_PASSWORD=carjai_password
+POSTGRES_PASSWORD=<postgres_root_password> 
+
+# Additional required environment variables
+ENVIRONMENT=development
+ADMIN_IP_WHITELIST=127.0.0.1,::1 
+
+# Database SSL Configuration
+DB_SSLMODE=disable  # Set to 'verify-full' in production
 ```
 
 ### Configuration Validation
