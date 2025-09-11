@@ -3,7 +3,6 @@ package config
 import (
 	"database/sql"
 	"fmt"
-	"os"
 
 	_ "github.com/lib/pq" // PostgreSQL driver
 )
@@ -21,12 +20,12 @@ type DatabaseConfig struct {
 // LoadDatabaseConfig loads database configuration from environment variables
 func LoadDatabaseConfig() *DatabaseConfig {
 	return &DatabaseConfig{
-		Host:     getEnv("DB_HOST", "localhost"),
-		Port:     getEnv("DB_PORT", "5432"),
-		User:     getEnv("DB_USER", "postgres"),
-		Password: getEnv("DB_PASSWORD", "password"),
-		DBName:   getEnv("DB_NAME", "carjai"),
-		SSLMode:  getEnv("DB_SSLMODE", "disable"),
+		Host:     getEnv("DB_HOST"),
+		Port:     getEnv("DB_PORT"),
+		User:     getEnv("DB_USER"),
+		Password: getEnv("DB_PASSWORD"),
+		DBName:   getEnv("DB_NAME"),
+		SSLMode:  getEnv("DB_SSLMODE"),
 	}
 }
 
@@ -54,12 +53,4 @@ func ConnectDatabase(config *DatabaseConfig) (*sql.DB, error) {
 	db.SetMaxIdleConns(5)
 	
 	return db, nil
-}
-
-// getEnv gets an environment variable with a default value
-func getEnv(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
 }

@@ -1,15 +1,15 @@
 # CarJai Backend - Admin Authentication System
 
-Admin Authentication System for CarJai with IP whitelist and JWT token authentication
+A robust, production-ready admin authentication system for CarJai with comprehensive security features, built with Go and PostgreSQL.
 
 ## 🚀 Features
 
-- **Admin Authentication** - Username/password login
-- **JWT Token System** - Secure token-based authentication
-- **IP Whitelist** - Restrict access based on IP addresses
-- **Session Management** - Session management with auto-cleanup
-- **Security Headers** - CORS, XSS protection, and security headers
-- **Audit Logging** - Log admin access activities
+- **🔐 Admin Authentication** - Secure username/password login with bcrypt hashing
+- **🎫 JWT Token System** - Stateless token-based authentication with configurable expiration
+- **🛡️ IP Whitelist** - Restrict admin access based on IP addresses and CIDR ranges
+- **📊 Session Management** - Automatic session cleanup and management
+- **🔒 Security Headers** - CORS, XSS protection, HSTS, and comprehensive security headers
+- **📝 Audit Logging** - Detailed logging of admin access activities and security events
 
 ## 📋 API Endpoints
 
@@ -179,66 +179,137 @@ Authorization: Bearer <token>
 
 ## 🛠️ Setup and Installation
 
-### 1. Database Setup
+### 1. Environment Setup
+
+Create a `.env` file in the `backend/` directory with the following variables:
 
 ```bash
-# Run migration
-psql -h localhost -U postgres -d carjai -f migrations/001_admin_auth.sql
-```
-
-### 2. Environment Variables
-
-Create `.env` file from `env.example`:
-
-```bash
-cp env.example .env
-```
-
-Edit values in `.env`:
-```env
-DB_HOST=localhost
+# Database Configuration
+DB_HOST=database
 DB_PORT=5432
-DB_USER=postgres
-DB_PASSWORD=your_password
+DB_USER=carjai_user
+DB_PASSWORD=carjai_password
 DB_NAME=carjai
-JWT_SECRET=your-very-long-secret-key
+DB_SSLMODE=disable
+
+# Application Configuration
+PORT=8080
+JWT_SECRET=your-super-secret-jwt-key-here-change-in-production-min-32-chars
+JWT_EXPIRATION_HOURS=8
+ENVIRONMENT=development
+
+# Admin Configuration
+ADMIN_USERNAME=root
+ADMIN_PASSWORD=mypassword
+ADMIN_NAME=name
+ADMIN_ROUTE_PREFIX=/admin
+ADMIN_IP_WHITELIST=127.0.0.1,::1,172.19.0.1,172.16.0.0/12,192.168.1.0/24,10.0.0.0/8
+
+# API Configuration
+NEXT_PUBLIC_API_URL=http://localhost:8080
+
+# PostgreSQL Configuration (for database service)
+POSTGRES_PASSWORD=carjai_password
 ```
 
-### 3. Run Application
+### Configuration Validation
+
+The application validates all configuration values on startup:
+- **PORT**: Must be a valid port number (1-65535)
+- **JWT_SECRET**: Must be at least 32 characters long
+- **JWT_EXPIRATION_HOURS**: Must be between 1 and 168 hours (1 week max)
+- **ADMIN_USERNAME**: Must contain only alphanumeric characters and underscores (3-50 chars)
+- **ADMIN_PASSWORD**: Must be at least 8 characters long
+- **ENVIRONMENT**: Must be one of: development, staging, production
+
+### 2. Run with Docker Compose (Recommended)
 
 ```bash
-# Development
-go run main.go
+# Start all services (database, backend, frontend)
+docker compose up -d --build
 
-# Or using Docker
-docker build -t carjai-backend .
-docker run -p 8080:8080 carjai-backend
+# View logs
+docker compose logs -f
+
+# Stop services
+docker compose down
+
+# Clean restart (removes all data)
+docker compose down -v
+docker compose up -d --build
 ```
 
-## 🔐 Default Admin Account
+### 3. Manual Setup (Alternative)
 
-After running migration:
+```bash
+# 1. Start PostgreSQL database
+docker run -d --name carjai-db \
+  -e POSTGRES_USER=carjai_user \
+  -e POSTGRES_PASSWORD=carjai_password \
+  -e POSTGRES_DB=carjai \
+  -p 5432:5432 \
+  postgres:15-alpine
 
-- **Username:** `admin`
-- **Password:** `admin123`
-- **IP Whitelist:** `127.0.0.1/32`, `::1/128`
+# 2. Wait for database to be ready, then run migration
+psql -h localhost -U carjai_user -d carjai -f migrations/001_admin_auth.sql
 
-⚠️ **Change password in production!**
+# 3. Run backend
+go run main.go
+```
+
+## 🔐 Admin Account
+
+The admin account is automatically created from environment variables:
+
+- **Username:** Set via `ADMIN_USERNAME` (default: `root`)
+- **Password:** Set via `ADMIN_PASSWORD` (default: `mypassword`)
+- **Name:** Set via `ADMIN_NAME` (default: `myname`)
+- **IP Whitelist:** Automatically includes localhost, Docker networks, and private networks
+
+⚠️ **Change credentials in production by updating the `.env` file!**
 
 ## 🏗️ Project Structure
 
 ```
 backend/
-├── config/           # Configuration files
-├── handlers/         # HTTP handlers
-├── middleware/       # Middleware functions
-├── migrations/       # Database migrations
-├── models/           # Data models and database operations
-├── routes/           # Route definitions
-├── services/         # Business logic
-├── utils/            # Utility functions
-├── main.go           # Application entry point
-└── go.mod            # Go dependencies
+├── config/              # Configuration management
+│   ├── app.go          # Application configuration
+│   ├── database.go     # Database configuration
+│   ├── env.go          # Environment variable helpers
+│   └── validation.go   # Configuration validation
+├── handlers/            # HTTP request handlers
+│   ├── admin_auth.go   # Admin authentication handlers
+│   ├── admin_ip.go     # IP whitelist handlers
+│   └── health.go       # Health check handlers
+├── middleware/          # HTTP middleware
+│   ├── auth.go         # Authentication middleware
+│   ├── cors.go         # CORS middleware
+│   ├── logging.go      # Request logging middleware
+│   └── rate_limit.go   # Rate limiting middleware
+├── migrations/          # Database schema migrations
+│   └── 001_admin_auth.sql
+├── models/              # Data models and repositories
+│   ├── admin.go        # Admin-related models
+│   └── database.go     # Database connection and repositories
+├── routes/              # Route definitions
+│   ├── admin.go        # Admin routes
+│   └── health.go       # Health check routes
+├── services/            # Business logic services
+│   ├── admin_service.go    # Admin business logic
+│   ├── maintenance.go      # Background maintenance tasks
+│   └── initialization.go   # Database initialization
+├── types/               # Shared types and constants
+│   └── common.go       # Common types and constants
+├── utils/               # Utility functions
+│   ├── ip.go           # IP address utilities
+│   ├── jwt.go          # JWT token utilities
+│   ├── logger.go       # Logging utilities
+│   ├── password.go     # Password hashing utilities
+│   └── response.go     # HTTP response helpers
+├── tests/               # Test files
+├── docs/                # Documentation
+├── main.go              # Application entry point
+└── go.mod               # Go dependencies
 ```
 
 ## 🔒 Security Features
@@ -263,12 +334,18 @@ backend/
 ## 🧪 Testing
 
 ```bash
-# Test login
+# Test login (using credentials from .env file)
 curl -X POST http://localhost:8080/admin/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"admin123"}'
+  -d '{"username":"root","password":"mypassword"}'
 
 # Test protected endpoint
 curl -X GET http://localhost:8080/admin/auth/me \
   -H "Authorization: Bearer <token>"
+
+# Test health endpoint
+curl http://localhost:8080/health
+
+# Test root endpoint
+curl http://localhost:8080/
 ```

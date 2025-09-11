@@ -27,7 +27,7 @@ func AdminRoutes(
 	router := http.NewServeMux()
 	
 	// Admin authentication routes (no auth required)
-	router.HandleFunc(adminPrefix+"/auth/login", 
+	router.HandleFunc("/auth/login", 
 		middleware.CORSMiddleware(
 			middleware.SecurityHeadersMiddleware(
 				middleware.LoginRateLimit()(
@@ -40,7 +40,7 @@ func AdminRoutes(
 	)
 	
 	// Admin authentication routes (auth required)
-	router.HandleFunc(adminPrefix+"/auth/logout",
+	router.HandleFunc("/auth/logout",
 		middleware.CORSMiddleware(
 			middleware.SecurityHeadersMiddleware(
 				middleware.GeneralRateLimit()(
@@ -54,7 +54,7 @@ func AdminRoutes(
 		),
 	)
 	
-	router.HandleFunc(adminPrefix+"/auth/me",
+	router.HandleFunc("/auth/me",
 		middleware.CORSMiddleware(
 			middleware.SecurityHeadersMiddleware(
 				middleware.AdminLoggingMiddleware(
@@ -68,7 +68,7 @@ func AdminRoutes(
 		),
 	)
 	
-	router.HandleFunc(adminPrefix+"/auth/refresh",
+	router.HandleFunc("/auth/refresh",
 		middleware.CORSMiddleware(
 			middleware.SecurityHeadersMiddleware(
 				middleware.AdminLoggingMiddleware(
@@ -83,7 +83,7 @@ func AdminRoutes(
 	)
 	
 	// Admin IP whitelist management routes
-	router.HandleFunc(adminPrefix+"/ip-whitelist",
+	router.HandleFunc("/ip-whitelist",
 		middleware.CORSMiddleware(
 			middleware.SecurityHeadersMiddleware(
 				middleware.AdminLoggingMiddleware(
@@ -97,7 +97,7 @@ func AdminRoutes(
 		),
 	)
 	
-	router.HandleFunc(adminPrefix+"/ip-whitelist/add",
+	router.HandleFunc("/ip-whitelist/add",
 		middleware.CORSMiddleware(
 			middleware.SecurityHeadersMiddleware(
 				middleware.AdminLoggingMiddleware(
@@ -111,7 +111,7 @@ func AdminRoutes(
 		),
 	)
 	
-	router.HandleFunc(adminPrefix+"/ip-whitelist/remove",
+	router.HandleFunc("/ip-whitelist/remove",
 		middleware.CORSMiddleware(
 			middleware.SecurityHeadersMiddleware(
 				middleware.AdminLoggingMiddleware(

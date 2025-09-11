@@ -1,44 +1,31 @@
 package config
 
-import (
-	"os"
-	"strconv"
-)
-
 // AppConfig holds application configuration
 type AppConfig struct {
-	Port            string
-	JWTSecret       string
-	JWTExpiration   int // in hours
+	Port             string
+	JWTSecret        string
+	JWTExpiration    int // in hours
 	AdminRoutePrefix string
-	Environment     string
+	Environment      string
+	AdminUsername    string
+	AdminPassword    string
+	AdminName        string
+	AdminIPWhitelist string
 }
 
 // LoadAppConfig loads application configuration from environment variables
 func LoadAppConfig() *AppConfig {
 	return &AppConfig{
-		Port:            getEnv("PORT", "8080"),
-		JWTSecret:       getEnv("JWT_SECRET", "your-secret-key-change-in-production"),
-		JWTExpiration:   getEnvAsInt("JWT_EXPIRATION_HOURS", 8),
-		AdminRoutePrefix: getEnv("ADMIN_ROUTE_PREFIX", "/admin"),
-		Environment:     getEnv("ENVIRONMENT", "development"),
+		Port:             getEnv("PORT"),
+		JWTSecret:        getEnv("JWT_SECRET"),
+		JWTExpiration:    getEnvAsInt("JWT_EXPIRATION_HOURS"),
+		AdminRoutePrefix: getEnv("ADMIN_ROUTE_PREFIX"),
+		Environment:      getEnv("ENVIRONMENT"),
+		AdminUsername:    getEnv("ADMIN_USERNAME"),
+		AdminPassword:    getEnv("ADMIN_PASSWORD"),
+		AdminName:        getEnv("ADMIN_NAME"),
+		AdminIPWhitelist: getEnv("ADMIN_IP_WHITELIST"),
 	}
 }
 
-// getEnv gets an environment variable with a default value
-func getEnv(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
-}
-
-// getEnvAsInt gets an environment variable as integer with a default value
-func getEnvAsInt(key string, defaultValue int) int {
-	if value := os.Getenv(key); value != "" {
-		if intValue, err := strconv.Atoi(value); err == nil {
-			return intValue
-		}
-	}
-	return defaultValue
-}
+// Helper functions are now in env.go
