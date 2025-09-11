@@ -11,6 +11,7 @@ type AppConfig struct {
 	AdminPassword    string
 	AdminName        string
 	AdminIPWhitelist string
+	CORSAllowedOrigins string
 }
 
 // LoadAppConfig loads application configuration from environment variables
@@ -25,7 +26,6 @@ func LoadAppConfig() *AppConfig {
 		AdminPassword:    getEnv("ADMIN_PASSWORD"),
 		AdminName:        getEnv("ADMIN_NAME"),
 		AdminIPWhitelist: getEnv("ADMIN_IP_WHITELIST"),
+		CORSAllowedOrigins: getEnv("CORS_ALLOWED_ORIGINS"),
 	}
 }
-
-// Helper functions are now in env.go

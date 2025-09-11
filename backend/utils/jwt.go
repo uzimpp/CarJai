@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"time"
 
@@ -145,4 +147,17 @@ func IsTokenExpired(tokenString string) (bool, error) {
 	}
 	
 	return claims.ExpiresAt.Time.Before(time.Now()), nil
+}
+
+// GenerateSecureSessionID generates a cryptographically secure session ID
+func GenerateSecureSessionID() string {
+	// Generate 32 random bytes
+	bytes := make([]byte, 32)
+	if _, err := rand.Read(bytes); err != nil {
+		// Fallback to timestamp-based ID if crypto/rand fails
+		return fmt.Sprintf("session_%d_%d", time.Now().UnixNano(), time.Now().Unix())
+	}
+	
+	// Convert to hex string
+	return "session_" + hex.EncodeToString(bytes)
 }

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export default function LoginPage() {
+export default function AdminLoginPage() {
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -115,13 +115,7 @@ export default function LoginPage() {
           </div>
 
           <div className="text-center text-sm text-gray-600">
-            <p>Default credentials:</p>
-            <p>
-              <strong>Username:</strong> admin
-            </p>
-            <p>
-              <strong>Password:</strong> admin123
-            </p>
+            <p>Please contact your administrator for login credentials.</p>
           </div>
         </form>
       </div>

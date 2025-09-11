@@ -35,20 +35,30 @@ cd carjai
 
 Create the required `.env` files for both frontend and backend:
 
+```bash
+# Copy environment templates
+cp backend/env.example backend/.env
+cp frontend/env.example frontend/.env
+```
+
 ```
 ├── backend/
 │   ├── .env
+│   ├── env.example
 ├── frontend/
 │   ├── .env
+│   ├── env.example
 ├── docker-compose.yml
 
 ```
 
 ⚠️ **Important**: 
+- Copy `env.example` to `.env` and update with your secure values
 - Change the `JWT_SECRET` to a secure random string (minimum 32 characters)
 - Update admin credentials (`ADMIN_USERNAME`, `ADMIN_PASSWORD`) for production
+- Configure `CORS_ALLOWED_ORIGINS` with your frontend domains (comma-separated)
 - The backend `.env` file is required for the API to function
-- The frontend `.env.local` file is required for API communication
+- The frontend `.env` file is required for API communication
 
 ### 4. Install frontend (Next.js)
 ```bash

@@ -14,6 +14,7 @@ func AdminRoutes(
 	adminService *services.AdminService,
 	jwtManager *utils.JWTManager,
 	adminPrefix string,
+	corsAllowedOrigins string,
 ) *http.ServeMux {
 	
 	// Create middleware instances
@@ -28,7 +29,7 @@ func AdminRoutes(
 	
 	// Admin authentication routes (no auth required)
 	router.HandleFunc("/auth/login", 
-		middleware.CORSMiddleware(
+		middleware.CORSMiddleware(corsAllowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				middleware.LoginRateLimit()(
 					middleware.LoggingMiddleware(
@@ -41,7 +42,7 @@ func AdminRoutes(
 	
 	// Admin authentication routes (auth required)
 	router.HandleFunc("/auth/logout",
-		middleware.CORSMiddleware(
+		middleware.CORSMiddleware(corsAllowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				middleware.GeneralRateLimit()(
 					middleware.AdminLoggingMiddleware(
@@ -55,7 +56,7 @@ func AdminRoutes(
 	)
 	
 	router.HandleFunc("/auth/me",
-		middleware.CORSMiddleware(
+		middleware.CORSMiddleware(corsAllowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				middleware.AdminLoggingMiddleware(
 					authMiddleware.RequireAuth(
@@ -69,7 +70,7 @@ func AdminRoutes(
 	)
 	
 	router.HandleFunc("/auth/refresh",
-		middleware.CORSMiddleware(
+		middleware.CORSMiddleware(corsAllowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				middleware.AdminLoggingMiddleware(
 					authMiddleware.RequireAuth(
@@ -84,7 +85,7 @@ func AdminRoutes(
 	
 	// Admin IP whitelist management routes
 	router.HandleFunc("/ip-whitelist",
-		middleware.CORSMiddleware(
+		middleware.CORSMiddleware(corsAllowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				middleware.AdminLoggingMiddleware(
 					authMiddleware.RequireAuth(
@@ -98,7 +99,7 @@ func AdminRoutes(
 	)
 	
 	router.HandleFunc("/ip-whitelist/add",
-		middleware.CORSMiddleware(
+		middleware.CORSMiddleware(corsAllowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				middleware.AdminLoggingMiddleware(
 					authMiddleware.RequireAuth(
@@ -112,7 +113,7 @@ func AdminRoutes(
 	)
 	
 	router.HandleFunc("/ip-whitelist/remove",
-		middleware.CORSMiddleware(
+		middleware.CORSMiddleware(corsAllowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				middleware.AdminLoggingMiddleware(
 					authMiddleware.RequireAuth(

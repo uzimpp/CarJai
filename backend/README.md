@@ -21,8 +21,8 @@ Admin login
 **Request:**
 ```json
 {
-  "username": "admin",
-  "password": "admin123"
+  "username": "your_admin_username",
+  "password": "your_admin_password"
 }
 ```
 
@@ -33,7 +33,7 @@ Admin login
   "data": {
     "admin": {
       "id": 1,
-      "username": "admin",
+      "username": "your_admin_username",
       "name": "System Administrator",
       "last_login_at": "2024-01-01T10:00:00Z",
       "created_at": "2024-01-01T09:00:00Z"
@@ -78,7 +78,7 @@ Authorization: Bearer <token>
   "data": {
     "admin": {
       "id": 1,
-      "username": "admin",
+      "username": "your_admin_username",
       "name": "System Administrator",
       "last_login_at": "2024-01-01T10:00:00Z",
       "created_at": "2024-01-01T09:00:00Z"
@@ -212,6 +212,9 @@ POSTGRES_PASSWORD=<postgres_root_password>
 ENVIRONMENT=development
 ADMIN_IP_WHITELIST=127.0.0.1,::1 
 
+# CORS Configuration
+CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,https://example.com
+
 # Database SSL Configuration
 DB_SSLMODE=disable  # Set to 'verify-full' in production
 ```
@@ -225,6 +228,17 @@ The application validates all configuration values on startup:
 - **ADMIN_USERNAME**: Must contain only alphanumeric characters and underscores (3-50 chars)
 - **ADMIN_PASSWORD**: Must be at least 8 characters long
 - **ENVIRONMENT**: Must be one of: development, staging, production
+
+### CORS Configuration
+
+The `CORS_ALLOWED_ORIGINS` environment variable controls which domains can make cross-origin requests to the API:
+
+- **Format**: Comma-separated list of allowed origins
+- **Example**: `http://localhost:3000,https://example.com`
+- **Required**: Yes (application will fail to start if not set)
+- **Production**: Always set this to your actual frontend domains
+
+**Security Note**: Never use wildcard (`*`) in production. Always specify exact domains.
 
 ### 2. Run with Docker Compose (Recommended)
 
@@ -341,7 +355,7 @@ backend/
 # Test login (using credentials from .env file)
 curl -X POST http://localhost:8080/admin/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"root","password":"mypassword"}'
+  -d '{"username":"your_admin_username","password":"your_admin_password"}'
 
 # Test protected endpoint
 curl -X GET http://localhost:8080/admin/auth/me \

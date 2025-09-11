@@ -9,7 +9,7 @@ import (
 )
 
 // HealthRoutes sets up health check routes
-func HealthRoutes(db interface{}) *http.ServeMux {
+func HealthRoutes(db interface{}, corsAllowedOrigins string) *http.ServeMux {
 	// Create health handler
 	healthHandler := handlers.NewHealthHandler(db.(*sql.DB))
 	
@@ -18,7 +18,7 @@ func HealthRoutes(db interface{}) *http.ServeMux {
 	
 	// Health check endpoints
 	router.HandleFunc("/health",
-		middleware.CORSMiddleware(
+		middleware.CORSMiddleware(corsAllowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				middleware.LoggingMiddleware(
 					healthHandler.Health,
@@ -28,7 +28,7 @@ func HealthRoutes(db interface{}) *http.ServeMux {
 	)
 	
 	router.HandleFunc("/admin/health",
-		middleware.CORSMiddleware(
+		middleware.CORSMiddleware(corsAllowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				middleware.LoggingMiddleware(
 					healthHandler.AdminHealth,
@@ -38,7 +38,7 @@ func HealthRoutes(db interface{}) *http.ServeMux {
 	)
 	
 	router.HandleFunc("/metrics",
-		middleware.CORSMiddleware(
+		middleware.CORSMiddleware(corsAllowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				middleware.LoggingMiddleware(
 					healthHandler.Metrics,

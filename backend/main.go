@@ -71,10 +71,11 @@ func main() {
 		adminService,
 		jwtManager,
 		appConfig.AdminRoutePrefix,
+		appConfig.CORSAllowedOrigins,
 	)
 
 	// Setup health routes
-	healthRouter := routes.HealthRoutes(db)
+	healthRouter := routes.HealthRoutes(db, appConfig.CORSAllowedOrigins)
 
 	// Setup main router
 	mux := http.NewServeMux()
@@ -160,7 +161,7 @@ func initializeAdminUser(db *sql.DB, appConfig *config.AppConfig) error {
 		if err != nil {
 			return fmt.Errorf("failed to update admin user: %w", err)
 		}
-		fmt.Printf("✅ Admin user '%s' updated successfully\n", appConfig.AdminUsername)
+		fmt.Printf("Admin user '%s' updated successfully\n", appConfig.AdminUsername)
 	} else {
 		// Create new admin user
 		_, err = db.Exec(`
@@ -170,7 +171,7 @@ func initializeAdminUser(db *sql.DB, appConfig *config.AppConfig) error {
 		if err != nil {
 			return fmt.Errorf("failed to create admin user: %w", err)
 		}
-		fmt.Printf("✅ Admin user '%s' created successfully\n", appConfig.AdminUsername)
+		fmt.Printf("Admin user '%s' created successfully\n", appConfig.AdminUsername)
 	}
 
 	// Initialize IP whitelist for the admin user
@@ -194,7 +195,7 @@ func initializeIPWhitelist(db *sql.DB, username string) error {
 	}
 
 	if count > 0 {
-		fmt.Printf("✅ IP whitelist already initialized for admin '%s'\n", username)
+		fmt.Printf("IP whitelist already initialized for admin '%s'\n", username)
 		return nil
 	}
 
@@ -221,6 +222,6 @@ func initializeIPWhitelist(db *sql.DB, username string) error {
 		}
 	}
 
-	fmt.Printf("✅ IP whitelist initialized for admin '%s'\n", username)
+	fmt.Printf("IP whitelist initialized for admin '%s'\n", username)
 	return nil
 }

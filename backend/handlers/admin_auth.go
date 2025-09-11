@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"time"
 
 	"github.com/uzimpp/CarJai/backend/middleware"
 	"github.com/uzimpp/CarJai/backend/models"
@@ -72,11 +71,14 @@ func (h *AdminAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
+	// Generate secure session ID
+	sessionID := utils.GenerateSecureSessionID()
+	
 	// Generate JWT token
 	token, expiresAt, err := h.jwtManager.GenerateToken(
 		loginResponse.Admin.ID,
 		loginResponse.Admin.Username,
-		"session_"+string(rune(time.Now().Unix())), // Simple session ID
+		sessionID,
 	)
 	if err != nil {
 		h.writeErrorResponse(w, http.StatusInternalServerError, "Failed to generate token")
