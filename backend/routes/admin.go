@@ -51,7 +51,9 @@ func AdminRoutes(
 					middleware.GeneralRateLimit()(
 						middleware.AdminLoggingMiddleware(
 							authMiddleware.RequireAuth(
-								adminAuthHandler.Logout,
+								authMiddleware.RequireIPWhitelist(
+									adminAuthHandler.Logout,
+								),
 							),
 						),
 					),
@@ -66,7 +68,9 @@ func AdminRoutes(
 				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
 					middleware.AdminLoggingMiddleware(
 						authMiddleware.RequireAuth(
-							adminAuthHandler.Me,
+							authMiddleware.RequireIPWhitelist(
+								adminAuthHandler.Me,
+							),
 						),
 					),
 				),
@@ -80,7 +84,9 @@ func AdminRoutes(
 				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
 					middleware.AdminLoggingMiddleware(
 						authMiddleware.RequireAuth(
-							adminAuthHandler.RefreshToken,
+							authMiddleware.RequireIPWhitelist(
+								adminAuthHandler.RefreshToken,
+							),
 						),
 					),
 				),
@@ -95,7 +101,9 @@ func AdminRoutes(
 				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
 					middleware.AdminLoggingMiddleware(
 						authMiddleware.RequireAuth(
-							adminIPHandler.GetWhitelistedIPs,
+							authMiddleware.RequireIPWhitelist(
+								adminIPHandler.GetWhitelistedIPs,
+							),
 						),
 					),
 				),
@@ -109,7 +117,9 @@ func AdminRoutes(
 				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
 					middleware.AdminLoggingMiddleware(
 						authMiddleware.RequireAuth(
-							adminIPHandler.AddIPToWhitelist,
+							authMiddleware.RequireIPWhitelist(
+								adminIPHandler.AddIPToWhitelist,
+							),
 						),
 					),
 				),
@@ -123,7 +133,9 @@ func AdminRoutes(
 				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
 					middleware.AdminLoggingMiddleware(
 						authMiddleware.RequireAuth(
-							adminIPHandler.RemoveIPFromWhitelist,
+							authMiddleware.RequireIPWhitelist(
+								adminIPHandler.RemoveIPFromWhitelist,
+							),
 						),
 					),
 				),

@@ -70,21 +70,11 @@ func (h *AdminAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		h.writeErrorResponse(w, http.StatusUnauthorized, err.Error())
 		return
 	}
-	
-	// Generate secure session ID
-	sessionID := utils.GenerateSecureSessionID()
-	
-	// Generate JWT token
-	token, expiresAt, err := h.jwtManager.GenerateToken(
-		loginResponse.Admin.ID,
-		loginResponse.Admin.Username,
-		sessionID,
-	)
-	if err != nil {
-		h.writeErrorResponse(w, http.StatusInternalServerError, "Failed to generate token")
-		return
-	}
-	
+
+	// Use token created by service (already persisted with session)
+	token := loginResponse.Token
+	expiresAt := loginResponse.ExpiresAt
+
 	// Create response
 	response := models.AdminLoginResponse{
 		Success: true,

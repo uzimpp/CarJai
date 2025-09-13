@@ -8,23 +8,10 @@ export default function AdminDashboard() {
   const router = useRouter();
   const { adminUser, loading, isAuthenticated, logout } = useAdminAuth();
 
-  console.log("Dashboard render:", {
-    loading,
-    isAuthenticated,
-    adminUser: !!adminUser,
-  });
-
   useEffect(() => {
-    console.log("Dashboard useEffect:", {
-      loading,
-      isAuthenticated,
-      type: typeof isAuthenticated,
-    });
-
     // Only redirect if we're done loading and definitely not authenticated
     if (!loading && isAuthenticated === false) {
-      console.log("Dashboard: Redirecting to not-found");
-      router.push("/not-found");
+      router.push("/admin/login");
     }
   }, [loading, isAuthenticated, router]);
 
@@ -37,13 +24,16 @@ export default function AdminDashboard() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="text-lg mb-2">Authenticating...</div>
-          <div className="text-sm text-gray-500">
-            Please wait while we verify your credentials
-          </div>
+          <div className="text-lg mb-2">กำลังตรวจสอบสิทธิ์...</div>
+          <div className="text-sm text-gray-500">โปรดรอสักครู่</div>
         </div>
       </div>
     );
+  }
+
+  // If not authenticated, don't render anything (redirect will happen in useEffect)
+  if (isAuthenticated === false) {
+    return null;
   }
 
   return (
@@ -53,15 +43,17 @@ export default function AdminDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <h1 className="text-3xl font-bold text-gray-900">
-              CarJai Admin Dashboard
+              แดชบอร์ดผู้ดูแล CarJai
             </h1>
             <div className="flex items-center space-x-4">
-              <span className="text-gray-700">Welcome, {adminUser?.name}</span>
+              <span className="text-gray-700">
+                ยินดีต้อนรับ, {adminUser?.name}
+              </span>
               <button
                 onClick={handleLogout}
                 className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
               >
-                Logout
+                ออกจากระบบ
               </button>
             </div>
           </div>
@@ -74,12 +66,12 @@ export default function AdminDashboard() {
           <div className="bg-white overflow-hidden shadow rounded-lg">
             <div className="px-4 py-5 sm:p-6">
               <h2 className="text-lg font-medium text-gray-900 mb-4">
-                Admin Information
+                ข้อมูลผู้ดูแล
               </h2>
               <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
                 <div>
                   <dt className="text-sm font-medium text-gray-500">
-                    Username
+                    ชื่อบัญชี
                   </dt>
                   <dd className="mt-1 text-sm text-gray-900">
                     {adminUser?.username}
@@ -87,7 +79,7 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <dt className="text-sm font-medium text-gray-500">
-                    Full Name
+                    ชื่อผู้ใช้
                   </dt>
                   <dd className="mt-1 text-sm text-gray-900">
                     {adminUser?.name}
@@ -95,22 +87,22 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <dt className="text-sm font-medium text-gray-500">
-                    Last Login
+                    เข้าสู่ระบบล่าสุด
                   </dt>
                   <dd className="mt-1 text-sm text-gray-900">
                     {adminUser?.last_login_at
                       ? new Date(adminUser.last_login_at).toLocaleString()
-                      : "N/A"}
+                      : "ไม่มีข้อมูล"}
                   </dd>
                 </div>
                 <div>
                   <dt className="text-sm font-medium text-gray-500">
-                    Account Created
+                    สร้างบัญชีเมื่อ
                   </dt>
                   <dd className="mt-1 text-sm text-gray-900">
                     {adminUser?.created_at
                       ? new Date(adminUser.created_at).toLocaleString()
-                      : "N/A"}
+                      : "ไม่มีข้อมูล"}
                   </dd>
                 </div>
               </dl>
@@ -130,10 +122,10 @@ export default function AdminDashboard() {
                   <div className="ml-5 w-0 flex-1">
                     <dl>
                       <dt className="text-sm font-medium text-gray-500 truncate">
-                        IP Whitelist
+                        รายการ IP ที่อนุญาต
                       </dt>
                       <dd className="text-lg font-medium text-gray-900">
-                        Manage Access
+                        จัดการการเข้าถึง
                       </dd>
                     </dl>
                   </div>
@@ -152,10 +144,10 @@ export default function AdminDashboard() {
                   <div className="ml-5 w-0 flex-1">
                     <dl>
                       <dt className="text-sm font-medium text-gray-500 truncate">
-                        Sessions
+                        เซสชัน
                       </dt>
                       <dd className="text-lg font-medium text-gray-900">
-                        Active Sessions
+                        เซสชันที่กำลังใช้งาน
                       </dd>
                     </dl>
                   </div>
@@ -174,10 +166,10 @@ export default function AdminDashboard() {
                   <div className="ml-5 w-0 flex-1">
                     <dl>
                       <dt className="text-sm font-medium text-gray-500 truncate">
-                        Analytics
+                        การวิเคราะห์
                       </dt>
                       <dd className="text-lg font-medium text-gray-900">
-                        System Stats
+                        สถิติระบบ
                       </dd>
                     </dl>
                   </div>

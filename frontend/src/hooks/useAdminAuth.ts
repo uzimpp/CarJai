@@ -50,6 +50,8 @@ export function useAdminAuth() {
   const validateSession = useCallback(async () => {
     // Only run on client side
     if (typeof window === "undefined") {
+      setLoading(false);
+      setIsAuthenticated(false);
       return;
     }
 
