@@ -171,7 +171,7 @@ paths:
             schema:
               $ref: '#/components/schemas/AdminIPWhitelistRequest'
             example:
-              ip_address: 192.168.1.100/32
+               ip_address: 10.0.0.100/32
               description: Office IP
       responses:
         '201':
@@ -208,7 +208,7 @@ paths:
           description: IP address to remove
           schema:
             type: string
-            example: 192.168.1.100/32
+             example: 10.0.0.100/32
       responses:
         '200':
           description: IP removed from whitelist successfully
@@ -442,7 +442,7 @@ components:
       properties:
         ip_address:
           type: string
-          example: 192.168.1.100/32
+             example: 10.0.0.100/32
         description:
           type: string
           maxLength: 255
@@ -473,7 +473,7 @@ components:
           example: 1
         ip_address:
           type: string
-          example: 192.168.1.100/32
+             example: 10.0.0.100/32
         description:
           type: string
           example: Office IP

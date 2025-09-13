@@ -126,6 +126,40 @@ func (m *AuthMiddleware) RequireIPWhitelist(next http.HandlerFunc) http.HandlerF
 	}
 }
 
+// RequireGlobalIPWhitelist middleware that checks IP against a global whitelist
+// This works without authentication and can be used on login routes
+func (m *AuthMiddleware) RequireGlobalIPWhitelist(allowedIPs []string) func(http.HandlerFunc) http.HandlerFunc {
+	return func(next http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			// Extract client IP
+			clientIP := utils.ExtractClientIP(
+				r.RemoteAddr,
+				r.Header.Get("X-Forwarded-For"),
+				r.Header.Get("X-Real-IP"),
+			)
+			
+			if clientIP == "" {
+				m.writeErrorResponse(w, http.StatusBadRequest, "Unable to determine client IP")
+				return
+			}
+			
+			// Check if IP is whitelisted
+			isWhitelisted, err := utils.IsIPWhitelisted(clientIP, allowedIPs)
+			if err != nil {
+				m.writeErrorResponse(w, http.StatusInternalServerError, "Failed to validate IP address")
+				return
+			}
+			
+			if !isWhitelisted {
+				m.writeErrorResponse(w, http.StatusForbidden, "Access denied: IP not whitelisted")
+				return
+			}
+			// IP is allowed, continue to next handler
+			next.ServeHTTP(w, r)
+		}
+	}
+}
+
 // RequireAdminRoute middleware that ensures request is to admin routes
 func (m *AuthMiddleware) RequireAdminRoute(adminPrefix string) func(http.HandlerFunc) http.HandlerFunc {
 	return func(next http.HandlerFunc) http.HandlerFunc {

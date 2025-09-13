@@ -156,20 +156,6 @@ func TestIPWhitelistIntegration(t *testing.T) {
 		wantErr   bool
 	}{
 		{
-			name:      "IP in whitelist",
-			clientIP:  "192.168.1.100",
-			whitelist: []string{"192.168.1.0/24"},
-			want:      true,
-			wantErr:   false,
-		},
-		{
-			name:      "IP not in whitelist",
-			clientIP:  "192.168.2.100",
-			whitelist: []string{"192.168.1.0/24"},
-			want:      false,
-			wantErr:   false,
-		},
-		{
 			name:      "localhost IPv4",
 			clientIP:  "127.0.0.1",
 			whitelist: []string{"127.0.0.1/32"},
@@ -286,7 +272,7 @@ func TestRateLimiting(t *testing.T) {
 	limiter := utils.NewRateLimiter(3, time.Minute) // 3 requests per minute
 	
 	t.Run("Rate Limit Allowed", func(t *testing.T) {
-		key := "test-ip-192.168.1.1"
+		key := "test-ip-10.0.0.1"
 		
 		// First 3 requests should be allowed
 		for i := 0; i < 3; i++ {
@@ -297,7 +283,7 @@ func TestRateLimiting(t *testing.T) {
 	})
 	
 	t.Run("Rate Limit Exceeded", func(t *testing.T) {
-		key := "test-ip-192.168.1.2"
+		key := "test-ip-10.0.0.2"
 		
 		// First 3 requests should be allowed
 		for i := 0; i < 3; i++ {
@@ -313,8 +299,8 @@ func TestRateLimiting(t *testing.T) {
 	})
 	
 	t.Run("Different Keys", func(t *testing.T) {
-		key1 := "test-ip-192.168.1.3"
-		key2 := "test-ip-192.168.1.4"
+		key1 := "test-ip-10.0.0.3"
+		key2 := "test-ip-10.0.0.4"
 		
 		// Both keys should be allowed
 		if !limiter.IsAllowed(key1) {

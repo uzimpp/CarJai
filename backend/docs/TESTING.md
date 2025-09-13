@@ -201,7 +201,7 @@ curl -X GET http://localhost:8080/admin/auth/me \
 curl -X POST http://localhost:8080/admin/ip-whitelist/add \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"ip_address":"192.168.1.100/32","description":"Test IP"}'
+  -d '{"ip_address":"10.0.0.100/32","description":"Test IP"}'
 
 # Expected response:
 # {
@@ -216,12 +216,12 @@ curl -X POST http://localhost:8080/admin/ip-whitelist/add \
 # Test from whitelisted IP
 curl -X GET http://localhost:8080/admin/auth/me \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -H "X-Real-IP: 192.168.1.100"
+  -H "X-Real-IP: 10.0.0.100"
 
 # Test from non-whitelisted IP
 curl -X GET http://localhost:8080/admin/auth/me \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -H "X-Real-IP: 192.168.2.100"
+  -H "X-Real-IP: 10.0.0.100"
 
 # Expected response for non-whitelisted IP:
 # {
@@ -267,7 +267,7 @@ curl -X POST http://localhost:8080/admin/auth/login \
 curl -X POST http://localhost:8080/admin/ip-whitelist/add \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"ip_address":"192.168.1.100/32","description":"<script>alert('"'"'XSS'"'"')</script>"}'
+  -d '{"ip_address":"10.0.0.100/32","description":"<script>alert('"'"'XSS'"'"')</script>"}'
 
 # Expected: Should be sanitized or rejected
 ```

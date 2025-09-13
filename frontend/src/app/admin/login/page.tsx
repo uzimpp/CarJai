@@ -26,6 +26,14 @@ export default function AdminLoginPage() {
         body: JSON.stringify(formData),
       });
 
+      if (response.status === 403) {
+        // IP is blocked by backend middleware
+        setError(
+          "Access denied: Your IP address is not authorized to access this system."
+        );
+        return;
+      }
+
       const data = await response.json();
 
       if (data.success) {

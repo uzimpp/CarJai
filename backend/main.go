@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/uzimpp/CarJai/backend/config"
@@ -66,12 +67,26 @@ func main() {
 	ctx := context.Background()
 	go maintenanceService.StartMaintenance(ctx, nil)
 
+	// Parse allowed IPs from config
+	allowedIPs := []string{}
+	if appConfig.AdminIPWhitelist != "" {
+		// Split comma-separated IPs and trim whitespace
+		ips := strings.Split(appConfig.AdminIPWhitelist, ",")
+		for _, ip := range ips {
+			allowedIPs = append(allowedIPs, strings.TrimSpace(ip))
+		}
+	} else {
+		// Default to localhost if no IPs specified
+		allowedIPs = []string{"127.0.0.1/32", "::1/128", "localhost"}
+	}
+
 	// Setup admin routes
 	adminRouter := routes.AdminRoutes(
 		adminService,
 		jwtManager,
 		appConfig.AdminRoutePrefix,
 		appConfig.CORSAllowedOrigins,
+		allowedIPs,
 	)
 
 	// Setup health routes
@@ -98,7 +113,6 @@ func main() {
 	// Start server
 	port := ":" + appConfig.Port
 	fmt.Printf("Server starting on port %s\n", port)
-	fmt.Printf("Admin routes available at: http://localhost%s%s\n", port, appConfig.AdminRoutePrefix)
 	
 	log.Fatal(http.ListenAndServe(port, mux))
 }
@@ -206,9 +220,6 @@ func initializeIPWhitelist(db *sql.DB, username string) error {
 	}{
 		{"127.0.0.1/32", "Localhost IPv4"},
 		{"::1/128", "Localhost IPv6"},
-		{"172.19.0.1/32", "Docker host"},
-		{"172.16.0.0/12", "Docker bridge network"},
-		{"192.168.1.0/24", "Local network"},
 		{"10.0.0.0/8", "Private network"},
 	}
 

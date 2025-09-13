@@ -15,6 +15,7 @@ func AdminRoutes(
 	jwtManager *utils.JWTManager,
 	adminPrefix string,
 	corsAllowedOrigins string,
+	allowedIPs []string,
 ) *http.ServeMux {
 	
 	// Create middleware instances
@@ -27,13 +28,15 @@ func AdminRoutes(
 	// Create router
 	router := http.NewServeMux()
 	
-	// Admin authentication routes (no auth required)
+	// Admin authentication routes (no auth required, but IP whitelist required)
 	router.HandleFunc("/auth/login", 
 		middleware.CORSMiddleware(corsAllowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
-				middleware.LoginRateLimit()(
-					middleware.LoggingMiddleware(
-						adminAuthHandler.Login,
+				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
+					middleware.LoginRateLimit()(
+						middleware.LoggingMiddleware(
+							adminAuthHandler.Login,
+						),
 					),
 				),
 			),
@@ -44,10 +47,12 @@ func AdminRoutes(
 	router.HandleFunc("/auth/logout",
 		middleware.CORSMiddleware(corsAllowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
-				middleware.GeneralRateLimit()(
-					middleware.AdminLoggingMiddleware(
-						authMiddleware.RequireAuth(
-							adminAuthHandler.Logout,
+				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
+					middleware.GeneralRateLimit()(
+						middleware.AdminLoggingMiddleware(
+							authMiddleware.RequireAuth(
+								adminAuthHandler.Logout,
+							),
 						),
 					),
 				),
@@ -58,9 +63,9 @@ func AdminRoutes(
 	router.HandleFunc("/auth/me",
 		middleware.CORSMiddleware(corsAllowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
-				middleware.AdminLoggingMiddleware(
-					authMiddleware.RequireAuth(
-						authMiddleware.RequireIPWhitelist(
+				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
+					middleware.AdminLoggingMiddleware(
+						authMiddleware.RequireAuth(
 							adminAuthHandler.Me,
 						),
 					),
@@ -72,9 +77,9 @@ func AdminRoutes(
 	router.HandleFunc("/auth/refresh",
 		middleware.CORSMiddleware(corsAllowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
-				middleware.AdminLoggingMiddleware(
-					authMiddleware.RequireAuth(
-						authMiddleware.RequireIPWhitelist(
+				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
+					middleware.AdminLoggingMiddleware(
+						authMiddleware.RequireAuth(
 							adminAuthHandler.RefreshToken,
 						),
 					),
@@ -87,9 +92,9 @@ func AdminRoutes(
 	router.HandleFunc("/ip-whitelist",
 		middleware.CORSMiddleware(corsAllowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
-				middleware.AdminLoggingMiddleware(
-					authMiddleware.RequireAuth(
-						authMiddleware.RequireIPWhitelist(
+				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
+					middleware.AdminLoggingMiddleware(
+						authMiddleware.RequireAuth(
 							adminIPHandler.GetWhitelistedIPs,
 						),
 					),
@@ -101,9 +106,9 @@ func AdminRoutes(
 	router.HandleFunc("/ip-whitelist/add",
 		middleware.CORSMiddleware(corsAllowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
-				middleware.AdminLoggingMiddleware(
-					authMiddleware.RequireAuth(
-						authMiddleware.RequireIPWhitelist(
+				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
+					middleware.AdminLoggingMiddleware(
+						authMiddleware.RequireAuth(
 							adminIPHandler.AddIPToWhitelist,
 						),
 					),
@@ -115,12 +120,33 @@ func AdminRoutes(
 	router.HandleFunc("/ip-whitelist/remove",
 		middleware.CORSMiddleware(corsAllowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
-				middleware.AdminLoggingMiddleware(
-					authMiddleware.RequireAuth(
-						authMiddleware.RequireIPWhitelist(
+				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
+					middleware.AdminLoggingMiddleware(
+						authMiddleware.RequireAuth(
 							adminIPHandler.RemoveIPFromWhitelist,
 						),
 					),
+				),
+			),
+		),
+	)
+	
+	// Catch-all route for any other admin paths (like /admin/login page access)
+	router.HandleFunc("/", 
+		middleware.CORSMiddleware(corsAllowedOrigins)(
+			middleware.SecurityHeadersMiddleware(
+				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
+					func(w http.ResponseWriter, r *http.Request) {
+						// This handles any unmatched admin routes
+						// Return 404 for unmatched API routes, but allow frontend routing
+						if r.URL.Path != "/" {
+							http.NotFound(w, r)
+							return
+						}
+						// For root admin path, return success (frontend will handle routing)
+						w.WriteHeader(http.StatusOK)
+						w.Write([]byte("Admin API is running"))
+					},
 				),
 			),
 		),

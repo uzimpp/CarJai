@@ -1,60 +1,47 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-
-interface AdminUser {
-  id: number;
-  username: string;
-  name: string;
-  last_login_at: string;
-  created_at: string;
-}
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 
 export default function AdminDashboard() {
-  const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
-  const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { adminUser, loading, isAuthenticated, logout } = useAdminAuth();
+
+  console.log("Dashboard render:", {
+    loading,
+    isAuthenticated,
+    adminUser: !!adminUser,
+  });
 
   useEffect(() => {
-    // Check if user is logged in
-    const token = localStorage.getItem("adminToken");
-    const user = localStorage.getItem("adminUser");
+    console.log("Dashboard useEffect:", {
+      loading,
+      isAuthenticated,
+      type: typeof isAuthenticated,
+    });
 
-    if (!token || !user) {
+    // Only redirect if we're done loading and definitely not authenticated
+    if (!loading && isAuthenticated === false) {
+      console.log("Dashboard: Redirecting to not-found");
       router.push("/not-found");
-      return;
     }
-
-    setAdminUser(JSON.parse(user));
-    setLoading(false);
-  }, [router]);
+  }, [loading, isAuthenticated, router]);
 
   const handleLogout = async () => {
-    const token = localStorage.getItem("adminToken");
-
-    try {
-      await fetch("http://localhost:8080/admin/auth/logout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ token }),
-      });
-    } catch (err) {
-      console.error("Logout error:", err);
-    } finally {
-      localStorage.removeItem("adminToken");
-      localStorage.removeItem("adminUser");
-      router.push("/login");
-    }
+    await logout();
   };
 
-  if (loading) {
+  // Show loading while authentication is being checked
+  if (loading || isAuthenticated === null) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
+        <div className="text-center">
+          <div className="text-lg mb-2">Authenticating...</div>
+          <div className="text-sm text-gray-500">
+            Please wait while we verify your credentials
+          </div>
+        </div>
       </div>
     );
   }

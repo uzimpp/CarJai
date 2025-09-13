@@ -148,7 +148,7 @@ Authorization: Bearer <token>
 **Request:**
 ```json
 {
-  "ip_address": "192.168.1.100/32",
+  "ip_address": "10.0.0.100/32",
   "description": "Office IP"
 }
 ```
@@ -161,7 +161,7 @@ Authorization: Bearer <token>
 }
 ```
 
-#### DELETE `/admin/ip-whitelist/remove?ip=192.168.1.100/32`
+#### DELETE `/admin/ip-whitelist/remove?ip=10.0.0.100/32`
 Remove IP address from whitelist
 
 **Headers:**

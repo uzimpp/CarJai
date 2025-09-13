@@ -274,7 +274,7 @@ FROM admin_ip_whitelist
 WHERE admin_id = 1;"
 
 # Test IP validation
-curl -H "X-Real-IP: 192.168.1.100" http://localhost:8080/admin/auth/me
+curl -H "X-Real-IP: 10.0.0.100" http://localhost:8080/admin/auth/me
 ```
 
 ### Performance Issues
