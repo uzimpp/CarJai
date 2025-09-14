@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/uzimpp/CarJai/backend/middleware"
 	"github.com/uzimpp/CarJai/backend/utils"
 )
 
@@ -84,7 +85,7 @@ func TestPasswordSecurity(t *testing.T) {
 func TestJWTSecurity(t *testing.T) {
 	secretKey := "test-secret-key-for-security-testing"
 	tokenDuration := 1 * time.Hour
-	manager := utils.NewJWTManager(secretKey, tokenDuration)
+	manager := utils.NewJWTManager(secretKey, tokenDuration, "test-issuer")
 	
 	t.Run("Token Generation Security", func(t *testing.T) {
 		adminID := 1
@@ -92,7 +93,8 @@ func TestJWTSecurity(t *testing.T) {
 		sessionID := "session_123"
 		
 		// Generate token
-		token, expiresAt, err := manager.GenerateToken(adminID, username, sessionID)
+		req := utils.NewAdminTokenRequest(adminID, username, sessionID)
+		token, expiresAt, err := manager.GenerateToken(req)
 		if err != nil {
 			t.Fatalf("Failed to generate token: %v", err)
 		}
@@ -131,13 +133,19 @@ func TestJWTSecurity(t *testing.T) {
 	
 	t.Run("Token Tampering", func(t *testing.T) {
 		// Generate valid token
-		token, _, err := manager.GenerateToken(1, "admin", "session_123")
+		req := utils.NewAdminTokenRequest(1, "admin", "session_123")
+		token, _, err := manager.GenerateToken(req)
 		if err != nil {
 			t.Fatalf("Failed to generate token: %v", err)
 		}
 		
-		// Tamper with token (change last character)
-		tamperedToken := token[:len(token)-1] + "X"
+		// Tamper with token (change middle character)
+		var tamperedToken string
+		if len(token) > 10 {
+			tamperedToken = token[:len(token)/2] + "X" + token[len(token)/2+1:]
+		} else {
+			tamperedToken = token[:len(token)-1] + "X"
+		}
 		
 		// Tampered token should be rejected
 		_, err = manager.ValidateToken(tamperedToken)
@@ -148,11 +156,12 @@ func TestJWTSecurity(t *testing.T) {
 	
 	t.Run("Different Secret Keys", func(t *testing.T) {
 		// Create two managers with different secret keys
-		manager1 := utils.NewJWTManager("secret1", tokenDuration)
-		manager2 := utils.NewJWTManager("secret2", tokenDuration)
+		manager1 := utils.NewJWTManager("secret1", tokenDuration, "test-issuer")
+		manager2 := utils.NewJWTManager("secret2", tokenDuration, "test-issuer")
 		
 		// Generate token with first manager
-		token, _, err := manager1.GenerateToken(1, "admin", "session_123")
+		req := utils.NewAdminTokenRequest(1, "admin", "session_123")
+		token, _, err := manager1.GenerateToken(req)
 		if err != nil {
 			t.Fatalf("Failed to generate token: %v", err)
 		}
@@ -168,7 +177,7 @@ func TestJWTSecurity(t *testing.T) {
 // TestIPSecurity tests IP security features
 func TestIPSecurity(t *testing.T) {
 	t.Run("IP Address Validation", func(t *testing.T) {
-		validIPs := []string{,
+		validIPs := []string{
 			"127.0.0.1",
 			"::1",
 			"2001:db8::1",
@@ -200,17 +209,16 @@ func TestIPSecurity(t *testing.T) {
 			"::1/128",
 		}
 		
-		// Test allowed IPs
+		// Test allowed IPs (should match whitelist)
 		allowedIPs := []string{
-			"10.0.0.100",
-			"10.0.0.1",
 			"127.0.0.1",
 			"::1",
 		}
 		
-		// Test blocked IPs
+		// Test blocked IPs (should not match whitelist)
 		blockedIPs := []string{
 			"10.0.0.1",
+			"10.0.0.100",
 			"8.8.8.8",
 		}
 		
@@ -282,7 +290,7 @@ func TestIPSecurity(t *testing.T) {
 func TestRateLimitSecurity(t *testing.T) {
 	t.Run("Rate Limit Enforcement", func(t *testing.T) {
 		// Create rate limiter with very low limit for testing
-		limiter := utils.NewRateLimiter(2, time.Minute)
+		limiter := middleware.NewRateLimiter(2, time.Minute)
 		key := "test-ip-10.0.0.1"
 		
 		// First 2 requests should be allowed
@@ -301,7 +309,7 @@ func TestRateLimitSecurity(t *testing.T) {
 	})
 	
 	t.Run("Rate Limit Isolation", func(t *testing.T) {
-		limiter := utils.NewRateLimiter(1, time.Minute)
+		limiter := middleware.NewRateLimiter(1, time.Minute)
 		key1 := "test-ip-10.0.0.1"
 		key2 := "test-ip-10.0.0.2"
 		
@@ -310,18 +318,27 @@ func TestRateLimitSecurity(t *testing.T) {
 			t.Error("First key should be allowed")
 		}
 		
+		// Add small delay to ensure different timestamps
+		time.Sleep(time.Millisecond)
+		
 		if !limiter.IsAllowed(key2) {
 			t.Error("Second key should be allowed")
 		}
+		
+		// Add small delay to ensure different timestamps
+		time.Sleep(time.Millisecond)
 		
 		// Second request for key1 should be blocked
 		if limiter.IsAllowed(key1) {
 			t.Error("Second request for key1 should be blocked")
 		}
 		
-		// But key2 should still be allowed
-		if !limiter.IsAllowed(key2) {
-			t.Error("Second request for key2 should be allowed")
+		// Add small delay to ensure different timestamps
+		time.Sleep(time.Millisecond)
+		
+		// But key2's second request should be blocked (limit=1)
+		if limiter.IsAllowed(key2) {
+			t.Error("Second request for key2 should be blocked (limit=1)")
 		}
 	})
 }
