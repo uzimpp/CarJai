@@ -3,32 +3,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { config } from "@/config/env";
+import { AdminUser, AdminSession, AdminIPWhitelist, AdminMeResponse, AdminIPWhitelistResponse } from "@/constants/admin";
 
-interface AdminUser {
-  id: number;
-  username: string;
-  name: string;
-  last_login_at: string;
-  created_at: string;
-}
-
-interface AdminSession {
-  ip_address: string;
-  user_agent: string;
-  created_at: string;
-  last_activity_at: string;
-}
-
-interface AdminMeResponse {
-  success: boolean;
-  data: {
-    admin: AdminUser;
-    session: AdminSession;
-  };
-}
 
 export function useAdminAuth() {
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
+  const [adminSession, setAdminSession] = useState<AdminSession | null>(null);
+  const [ipWhitelist, setIpWhitelist] = useState<AdminIPWhitelist[]>([]);
   const [loading, setLoading] = useState(true);
   // null = unknown, true = authenticated, false = not authenticated
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -77,9 +58,12 @@ export function useAdminAuth() {
         const data: AdminMeResponse = await response.json();
         if (data.success) {
           setAdminUser(data.data.admin);
+          setAdminSession(data.data.session);
           setIsAuthenticated(true);
           // Update localStorage with fresh admin data
           localStorage.setItem("adminUser", JSON.stringify(data.data.admin));
+          // Fetch IP whitelist data
+          await fetchIPWhitelist(token);
         } else {
           throw new Error("Invalid session");
         }
@@ -105,6 +89,27 @@ export function useAdminAuth() {
       setLoading(false);
     }
   }, [router]);
+
+  const fetchIPWhitelist = useCallback(async (token: string) => {
+    try {
+      const response = await fetch(`${config.apiUrl}/admin/ip-whitelist`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data: AdminIPWhitelistResponse = await response.json();
+        if (data.success) {
+          setIpWhitelist(data.data);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch IP whitelist:", error);
+    }
+  }, []);
 
   useEffect(() => {
     if (mounted) {
@@ -136,9 +141,12 @@ export function useAdminAuth() {
 
   return {
     adminUser,
+    adminSession,
+    ipWhitelist,
     loading: loading || !mounted,
     isAuthenticated: mounted ? isAuthenticated : null,
     logout,
     validateSession,
+    fetchIPWhitelist: (token: string) => fetchIPWhitelist(token),
   };
 }
