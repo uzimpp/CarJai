@@ -35,4 +35,10 @@ interface AdminIPWhitelistResponse {
   message: string;
 }
 
-export type { AdminUser, AdminSession, AdminIPWhitelist, AdminMeResponse, AdminIPWhitelistResponse };
+export type {
+  AdminUser,
+  AdminSession,
+  AdminIPWhitelist,
+  AdminMeResponse,
+  AdminIPWhitelistResponse,
+};

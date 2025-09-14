@@ -3,8 +3,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { config } from "@/config/env";
-import { AdminUser, AdminSession, AdminIPWhitelist, AdminMeResponse, AdminIPWhitelistResponse } from "@/constants/admin";
-
+import {
+  AdminUser,
+  AdminSession,
+  AdminIPWhitelist,
+  AdminMeResponse,
+  AdminIPWhitelistResponse,
+} from "@/constants/admin";
 
 export function useAdminAuth() {
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
