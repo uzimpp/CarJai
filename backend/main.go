@@ -19,6 +19,9 @@ import (
 func main() {
 	// Load configuration
 	appConfig := config.LoadAppConfig()
+
+	log.Printf("AIGEN API Key loaded: [%s]", appConfig.AigenAPIKey)
+	
 	dbConfig := config.LoadDatabaseConfig()
 
 	// Connect to database
@@ -64,6 +67,22 @@ func main() {
 		utils.AppLogger,
 	)
 
+	ocrService := services.NewOCRService(appConfig.AigenAPIKey)
+
+	originsList := strings.Split(appConfig.CORSAllowedOrigins, ",")
+    allowedOrigins := make([]string, 0, len(originsList)) // สร้าง slice เปล่าๆ
+    for _, origin := range originsList {
+        trimmedOrigin := strings.TrimSpace(origin)
+        if trimmedOrigin != "" {
+            allowedOrigins = append(allowedOrigins, trimmedOrigin)
+        }
+    }
+
+	ocrRouter := routes.OCRRoutes(
+        ocrService,
+        allowedOrigins, // <-- ใช้ตัวแปรชนิด []string ที่ถูกต้อง
+    )
+
 	// Start maintenance service
 	ctx := context.Background()
 	go maintenanceService.StartMaintenance(ctx, nil)
@@ -92,6 +111,7 @@ func main() {
 	// Setup health routes
 	healthRouter := routes.HealthRoutes(db, appConfig.CORSAllowedOrigins)
 
+
 	// Setup main router
 	mux := http.NewServeMux()
 
@@ -109,6 +129,12 @@ func main() {
 
 	// Mount health routes
 	mux.Handle("/health", healthRouter)
+
+	 // 3. Mount OCR routes
+    // เราจะใช้ prefix กลางสำหรับ API ทั้งหมด ถ้ามี
+    // จาก API doc ดูเหมือนจะใช้ /api/ เป็นหลัก แต่เราจะสร้าง /api/v1/ ขึ้นมาเพื่อ versioning
+    apiV1Prefix := "/api/v1"
+    mux.Handle(apiV1Prefix+"/ocr/", http.StripPrefix(apiV1Prefix+"/ocr", ocrRouter))
 
 	// Start server
 	port := ":" + appConfig.Port

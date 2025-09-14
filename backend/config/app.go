@@ -13,6 +13,7 @@ type AppConfig struct {
 	AdminName          string
 	AdminIPWhitelist   string
 	CORSAllowedOrigins string
+	AigenAPIKey        string `env:"AIGEN_API_KEY,required"`
 }
 
 // LoadAppConfig loads application configuration from environment variables
@@ -29,5 +30,6 @@ func LoadAppConfig() *AppConfig {
 		AdminName:          getEnv("ADMIN_NAME"),
 		AdminIPWhitelist:   getEnv("ADMIN_IP_WHITELIST"),
 		CORSAllowedOrigins: getEnv("CORS_ALLOWED_ORIGINS"),
+		AigenAPIKey: getEnv("AIGEN_API_KEY"),
 	}
 }
