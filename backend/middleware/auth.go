@@ -51,14 +51,14 @@ func (m *AuthMiddleware) RequireAuth(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 		
-		// Check if session admin ID matches token admin ID
-		if session.AdminID != claims.AdminID {
+		// Check if session admin ID matches token user ID
+		if session.AdminID != claims.UserID {
 			m.writeErrorResponse(w, http.StatusUnauthorized, "Session mismatch")
 			return
 		}
 		
 		// Add admin info to request context
-		r.Header.Set("X-Admin-ID", fmt.Sprintf("%d", claims.AdminID))
+		r.Header.Set("X-Admin-ID", fmt.Sprintf("%d", claims.UserID))
 		r.Header.Set("X-Admin-Username", claims.Username)
 		r.Header.Set("X-Session-ID", claims.SessionID)
 		

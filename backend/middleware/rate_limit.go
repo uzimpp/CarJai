@@ -10,19 +10,33 @@ import (
 
 // RateLimiter represents a rate limiter
 type RateLimiter struct {
-	requests map[string][]time.Time
-	mutex    sync.RWMutex
-	limit    int
-	window   time.Duration
+	requests    map[string][]time.Time
+	mutex       sync.RWMutex
+	limit       int
+	window      time.Duration
+	cleanupTicker *time.Ticker
+	stopCleanup   chan bool
 }
 
 // NewRateLimiter creates a new rate limiter
 func NewRateLimiter(limit int, window time.Duration) *RateLimiter {
-	return &RateLimiter{
-		requests: make(map[string][]time.Time),
-		limit:    limit,
-		window:   window,
+	rl := &RateLimiter{
+		requests:    make(map[string][]time.Time),
+		limit:       limit,
+		window:      window,
+		stopCleanup: make(chan bool),
 	}
+	
+	// Start cleanup goroutine - clean every window/2 duration
+	cleanupInterval := window / 2
+	if cleanupInterval < time.Minute {
+		cleanupInterval = time.Minute // minimum 1 minute cleanup interval
+	}
+	
+	rl.cleanupTicker = time.NewTicker(cleanupInterval)
+	go rl.cleanup()
+	
+	return rl
 }
 
 // IsAllowed checks if a request is allowed for the given key
@@ -86,6 +100,55 @@ func (rl *RateLimiter) GetRemainingRequests(key string) int {
 	}
 	
 	return remaining
+}
+
+// cleanup runs periodically to remove expired entries
+func (rl *RateLimiter) cleanup() {
+	for {
+		select {
+		case <-rl.cleanupTicker.C:
+			rl.cleanupExpiredEntries()
+		case <-rl.stopCleanup:
+			rl.cleanupTicker.Stop()
+			return
+		}
+	}
+}
+
+// cleanupExpiredEntries removes all expired entries from the requests map
+func (rl *RateLimiter) cleanupExpiredEntries() {
+	rl.mutex.Lock()
+	defer rl.mutex.Unlock()
+	
+	now := time.Now()
+	cutoff := now.Add(-rl.window)
+	
+	// Clean up expired entries for all keys
+	for key, requests := range rl.requests {
+		var validRequests []time.Time
+		for _, reqTime := range requests {
+			if reqTime.After(cutoff) {
+				validRequests = append(validRequests, reqTime)
+			}
+		}
+		
+		if len(validRequests) == 0 {
+			// No valid requests, remove the key entirely
+			delete(rl.requests, key)
+		} else {
+			// Update with only valid requests
+			rl.requests[key] = validRequests
+		}
+	}
+}
+
+// Stop stops the cleanup goroutine and releases resources
+func (rl *RateLimiter) Stop() {
+	select {
+	case rl.stopCleanup <- true:
+	default:
+		// Channel might be closed already
+	}
 }
 
 // RateLimitMiddleware creates a rate limiting middleware

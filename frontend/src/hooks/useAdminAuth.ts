@@ -40,13 +40,6 @@ export function useAdminAuth() {
     setMounted(true);
   }, []);
 
-  console.log("useAdminAuth state:", {
-    loading,
-    isAuthenticated,
-    adminUser: !!adminUser,
-    mounted,
-  });
-
   const validateSession = useCallback(async () => {
     // Only run on client side
     if (typeof window === "undefined") {
@@ -56,10 +49,7 @@ export function useAdminAuth() {
     }
 
     const token = localStorage.getItem("adminToken");
-    console.log("validateSession: token exists:", !!token);
-
     if (!token) {
-      console.log("validateSession: No token, setting not authenticated");
       setLoading(false);
       setIsAuthenticated(false);
       return;
@@ -86,17 +76,14 @@ export function useAdminAuth() {
       if (response.ok) {
         const data: AdminMeResponse = await response.json();
         if (data.success) {
-          console.log("validateSession: Authentication successful");
           setAdminUser(data.data.admin);
           setIsAuthenticated(true);
           // Update localStorage with fresh admin data
           localStorage.setItem("adminUser", JSON.stringify(data.data.admin));
         } else {
-          console.log("validateSession: Invalid session data");
           throw new Error("Invalid session");
         }
       } else if (response.status === 403) {
-        console.log("validateSession: Access denied - IP not whitelisted");
         // Clear any existing session data
         localStorage.removeItem("adminToken");
         localStorage.removeItem("adminUser");
@@ -106,21 +93,15 @@ export function useAdminAuth() {
         router.push("/access-denied?reason=ip-blocked");
         return;
       } else {
-        console.log(
-          "validateSession: Session validation failed with status:",
-          response.status
-        );
         throw new Error("Session validation failed");
       }
     } catch (error) {
-      console.error("validateSession: Session validation error:", error);
       // Clear invalid session data
       localStorage.removeItem("adminToken");
       localStorage.removeItem("adminUser");
       setIsAuthenticated(false);
       setAdminUser(null);
     } finally {
-      console.log("validateSession: Setting loading to false");
       setLoading(false);
     }
   }, [router]);
@@ -144,7 +125,6 @@ export function useAdminAuth() {
         body: JSON.stringify({ token }),
       });
     } catch (err) {
-      console.error("Logout error:", err);
     } finally {
       localStorage.removeItem("adminToken");
       localStorage.removeItem("adminUser");

@@ -45,6 +45,7 @@ func main() {
 	jwtManager := utils.NewJWTManager(
 		appConfig.JWTSecret,
 		time.Duration(appConfig.JWTExpiration)*time.Hour,
+		appConfig.JWTIssuer,
 	)
 
 	// Create admin service
@@ -76,8 +77,7 @@ func main() {
 			allowedIPs = append(allowedIPs, strings.TrimSpace(ip))
 		}
 	} else {
-		// Default to localhost if no IPs specified
-		allowedIPs = []string{"127.0.0.1/32", "::1/128", "localhost"}
+		log.Fatal("ADMIN_IP_WHITELIST environment variable is required for security")
 	}
 
 	// Setup admin routes
@@ -113,7 +113,7 @@ func main() {
 	// Start server
 	port := ":" + appConfig.Port
 	fmt.Printf("Server starting on port %s\n", port)
-	
+	fmt.Printf("Welcome to CarJai Backend\n")
 	log.Fatal(http.ListenAndServe(port, mux))
 }
 
@@ -189,14 +189,14 @@ func initializeAdminUser(db *sql.DB, appConfig *config.AppConfig) error {
 	}
 
 	// Initialize IP whitelist for the admin user
-	return initializeIPWhitelist(db, appConfig.AdminUsername)
+	return initializeIPWhitelist(db, appConfig)
 }
 
-// initializeIPWhitelist adds default IP addresses to whitelist for admin user
-func initializeIPWhitelist(db *sql.DB, username string) error {
+// initializeIPWhitelist adds IP addresses from environment variables to whitelist for admin user
+func initializeIPWhitelist(db *sql.DB, appConfig *config.AppConfig) error {
 	// Get admin ID
 	var adminID int
-	err := db.QueryRow("SELECT id FROM admins WHERE username = $1", username).Scan(&adminID)
+	err := db.QueryRow("SELECT id FROM admins WHERE username = $1", appConfig.AdminUsername).Scan(&adminID)
 	if err != nil {
 		return fmt.Errorf("failed to get admin ID: %w", err)
 	}
@@ -209,30 +209,37 @@ func initializeIPWhitelist(db *sql.DB, username string) error {
 	}
 
 	if count > 0 {
-		fmt.Printf("IP whitelist already initialized for admin '%s'\n", username)
+		fmt.Printf("IP whitelist already initialized for admin '%s'\n", appConfig.AdminUsername)
 		return nil
 	}
 
-	// Add default IP addresses
-	defaultIPs := []struct {
-		ip          string
-		description string
-	}{
-		{"127.0.0.1/32", "Localhost IPv4"},
-		{"::1/128", "Localhost IPv6"},
-		{"10.0.0.0/8", "Private network"},
+	// Parse IP addresses from environment variable
+	if appConfig.AdminIPWhitelist == "" {
+		fmt.Printf("Warning: ADMIN_IP_WHITELIST is empty, admin '%s' will not be able to login\n", appConfig.AdminUsername)
+		return nil
 	}
 
-	for _, ip := range defaultIPs {
+	// Split comma-separated IPs and trim whitespace
+	ips := strings.Split(appConfig.AdminIPWhitelist, ",")
+	addedCount := 0
+
+	for _, ip := range ips {
+		ip = strings.TrimSpace(ip)
+		if ip == "" {
+			continue
+		}
+
 		_, err = db.Exec(`
-			INSERT INTO admin_ip_whitelist (admin_id, ip_address, description, created_at)
-			VALUES ($1, $2, $3, NOW())
-		`, adminID, ip.ip, ip.description)
+			INSERT INTO admin_ip_whitelist (admin_id, ip_address, description)
+			VALUES ($1, $2, $3)
+		`, adminID, ip, "Environment configured IP")
 		if err != nil {
-			log.Printf("Warning: Failed to add IP %s to whitelist: %v", ip.ip, err)
+			fmt.Printf("Warning: Failed to add IP %s to whitelist: %v\n", ip, err)
+		} else {
+			addedCount++
 		}
 	}
 
-	fmt.Printf("IP whitelist initialized for admin '%s'\n", username)
+	fmt.Printf("IP whitelist initialized for admin '%s' with %d entries\n", appConfig.AdminUsername, addedCount)
 	return nil
 }

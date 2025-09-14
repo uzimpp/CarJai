@@ -37,7 +37,10 @@ func (c *DatabaseConfig) GetConnectionString() string {
 
 // ConnectDatabase establishes a connection to the database
 func ConnectDatabase(config *DatabaseConfig) (*sql.DB, error) {
-	db, err := sql.Open("postgres", config.GetConnectionString())
+	connectionString := config.GetConnectionString()
+	fmt.Printf("Connecting to database with: %s\n", connectionString)
+	
+	db, err := sql.Open("postgres", connectionString)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database connection: %w", err)
 	}

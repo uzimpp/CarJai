@@ -9,12 +9,38 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// JWTClaims represents the JWT claims structure
+// UserRole represents the type of user
+type UserRole string
+
+const (
+	RoleAdmin UserRole = "admin"
+	RoleUser  UserRole = "user"
+)
+
+// AuthMethod represents how the user authenticated
+type AuthMethod string
+
+const (
+	AuthPassword AuthMethod = "password"
+	AuthGoogle   AuthMethod = "google"
+)
+
+// TokenRequest contains all data needed to generate a JWT token
+type TokenRequest struct {
+	UserID     int        `json:"user_id"`
+	Username   string     `json:"username"`
+	Role       UserRole   `json:"role"`
+	AuthMethod AuthMethod `json:"auth_method"`
+	SessionID  string     `json:"session_id"`
+}
+
+// JWTClaims represents the JWT claims structure for unified user system
 type JWTClaims struct {
-	AdminID   int    `json:"admin_id"`
-	Username  string `json:"username"`
-	Role      string `json:"role"`
-	SessionID string `json:"session_id"`
+	UserID     int    `json:"user_id"`      // Universal user ID (admin or regular user)
+	Username   string `json:"username"`     // Username or email
+	Role       string `json:"role"`         // "admin" | "user"
+	AuthMethod string `json:"auth_method"`  // "password" | "google"
+	SessionID  string `json:"session_id"`
 	jwt.RegisteredClaims
 }
 
@@ -22,31 +48,53 @@ type JWTClaims struct {
 type JWTManager struct {
 	secretKey     string
 	tokenDuration time.Duration
+	issuer        string
+	allowedRoles  []UserRole
 }
 
 // NewJWTManager creates a new JWT manager
-func NewJWTManager(secretKey string, tokenDuration time.Duration) *JWTManager {
+func NewJWTManager(secretKey string, tokenDuration time.Duration, issuer string) *JWTManager {
+	allowedRoles := []UserRole{RoleAdmin, RoleUser}
 	return &JWTManager{
 		secretKey:     secretKey,
 		tokenDuration: tokenDuration,
+		issuer:        issuer,
+		allowedRoles:  allowedRoles,
 	}
 }
 
-// GenerateToken generates a new JWT token for admin
-func (j *JWTManager) GenerateToken(adminID int, username, sessionID string) (string, time.Time, error) {
+// GenerateToken generates a new JWT token using a structured request
+func (j *JWTManager) GenerateToken(req TokenRequest) (string, time.Time, error) {
+	// Validate required fields
+	if req.UserID == 0 {
+		return "", time.Time{}, fmt.Errorf("user ID is required")
+	}
+	if req.Username == "" {
+		return "", time.Time{}, fmt.Errorf("username is required")
+	}
+	if req.SessionID == "" {
+		return "", time.Time{}, fmt.Errorf("session ID is required")
+	}
+	
+	// Validate role
+	if !j.isRoleAllowed(req.Role) {
+		return "", time.Time{}, fmt.Errorf("role '%s' is not allowed", req.Role)
+	}
+	
 	expirationTime := time.Now().Add(j.tokenDuration)
 	
 	claims := &JWTClaims{
-		AdminID:   adminID,
-		Username:  username,
-		Role:      "admin",
-		SessionID: sessionID,
+		UserID:     req.UserID,
+		Username:   req.Username,
+		Role:       string(req.Role),
+		AuthMethod: string(req.AuthMethod),
+		SessionID:  req.SessionID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
-			Issuer:    "carjai-admin",
-			Subject:   fmt.Sprintf("admin:%d", adminID),
+			Issuer:    j.issuer,
+			Subject:   fmt.Sprintf("%s:%d", req.Role, req.UserID),
 		},
 	}
 	
@@ -84,16 +132,16 @@ func (j *JWTManager) ValidateToken(tokenString string) (*JWTClaims, error) {
 	}
 	
 	// Validate required claims
-	if claims.AdminID == 0 {
-		return nil, fmt.Errorf("invalid admin ID in token")
+	if claims.UserID == 0 {
+		return nil, fmt.Errorf("invalid user ID in token")
 	}
 	
 	if claims.Username == "" {
 		return nil, fmt.Errorf("invalid username in token")
 	}
 	
-	if claims.Role != "admin" {
-		return nil, fmt.Errorf("invalid role in token")
+	if !j.isRoleAllowed(UserRole(claims.Role)) {
+		return nil, fmt.Errorf("invalid role '%s' in token", claims.Role)
 	}
 	
 	return claims, nil
@@ -107,7 +155,13 @@ func (j *JWTManager) RefreshToken(tokenString string) (string, time.Time, error)
 	}
 	
 	// Generate new token with same claims but new expiration
-	return j.GenerateToken(claims.AdminID, claims.Username, claims.SessionID)
+	return j.GenerateToken(TokenRequest{
+		UserID:     claims.UserID,
+		Username:   claims.Username,
+		Role:       UserRole(claims.Role),
+		AuthMethod: AuthMethod(claims.AuthMethod),
+		SessionID:  claims.SessionID,
+	})
 }
 
 // ExtractTokenFromHeader extracts JWT token from Authorization header
@@ -149,6 +203,38 @@ func IsTokenExpired(tokenString string) (bool, error) {
 	return claims.ExpiresAt.Time.Before(time.Now()), nil
 }
 
+// isRoleAllowed checks if a role is in the allowed roles list
+func (j *JWTManager) isRoleAllowed(role UserRole) bool {
+	for _, allowedRole := range j.allowedRoles {
+		if role == allowedRole {
+			return true
+		}
+	}
+	return false
+}
+
+// NewAdminTokenRequest creates a token request for admin users
+func NewAdminTokenRequest(userID int, username, sessionID string) TokenRequest {
+	return TokenRequest{
+		UserID:     userID,
+		Username:   username,
+		Role:       RoleAdmin,
+		AuthMethod: AuthPassword,
+		SessionID:  sessionID,
+	}
+}
+
+// NewUserTokenRequest creates a token request for regular users
+func NewUserTokenRequest(userID int, username string, authMethod AuthMethod, sessionID string) TokenRequest {
+	return TokenRequest{
+		UserID:     userID,
+		Username:   username,
+		Role:       RoleUser,
+		AuthMethod: authMethod,
+		SessionID:  sessionID,
+	}
+}
+
 // GenerateSecureSessionID generates a cryptographically secure session ID
 func GenerateSecureSessionID() string {
 	// Generate 32 random bytes
@@ -161,3 +247,4 @@ func GenerateSecureSessionID() string {
 	// Convert to hex string
 	return "session_" + hex.EncodeToString(bytes)
 }
+

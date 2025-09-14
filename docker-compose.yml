@@ -10,7 +10,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/docs/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+      - ./backend/migrations:/docker-entrypoint-initdb.d
     networks:
       - carjai-network
     restart: unless-stopped
@@ -31,9 +31,12 @@ services:
       - ./backend/.env
     networks:
       - carjai-network
+    depends_on:
+      database:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health/"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -51,7 +54,8 @@ services:
     networks:
       - carjai-network
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
@@ -66,6 +70,4 @@ networks:
 
 volumes:
   postgres_data:
-    driver: local
-  redis_data:
     driver: local
