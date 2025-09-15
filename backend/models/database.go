@@ -341,3 +341,208 @@ func (r *IPWhitelistRepository) IsIPWhitelisted(adminID int, ipAddress string) (
 	
 	return count > 0, nil
 }
+
+// UserRepository handles user-related database operations
+type UserRepository struct {
+	db *Database
+}
+
+// NewUserRepository creates a new user repository
+func NewUserRepository(db *Database) *UserRepository {
+	return &UserRepository{db: db}
+}
+
+// CreateUser creates a new user
+func (r *UserRepository) CreateUser(user *User) error {
+	query := `
+		INSERT INTO users (email, password_hash)
+		VALUES ($1, $2)
+		RETURNING id, created_at`
+	
+	err := r.db.DB.QueryRow(query, user.Email, user.PasswordHash).Scan(
+		&user.ID, &user.CreatedAt,
+	)
+	
+	if err != nil {
+		return fmt.Errorf("failed to create user: %w", err)
+	}
+	
+	return nil
+}
+
+// GetUserByEmail retrieves a user by email
+func (r *UserRepository) GetUserByEmail(email string) (*User, error) {
+	user := &User{}
+	query := `
+		SELECT id, email, password_hash, created_at
+		FROM users
+		WHERE email = $1`
+	
+	err := r.db.DB.QueryRow(query, email).Scan(
+		&user.ID, &user.Email, &user.PasswordHash, &user.CreatedAt,
+	)
+	
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("user not found")
+		}
+		return nil, fmt.Errorf("failed to get user by email: %w", err)
+	}
+	
+	return user, nil
+}
+
+// GetUserByID retrieves a user by ID
+func (r *UserRepository) GetUserByID(id int) (*User, error) {
+	user := &User{}
+	query := `
+		SELECT id, email, password_hash, created_at
+		FROM users
+		WHERE id = $1`
+	
+	err := r.db.DB.QueryRow(query, id).Scan(
+		&user.ID, &user.Email, &user.PasswordHash, &user.CreatedAt,
+	)
+	
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("user not found")
+		}
+		return nil, fmt.Errorf("failed to get user by ID: %w", err)
+	}
+	
+	return user, nil
+}
+
+// ValidateUserCredentials validates user email and password
+func (r *UserRepository) ValidateUserCredentials(email, password string) (*User, error) {
+	user, err := r.GetUserByEmail(email)
+	if err != nil {
+		return nil, err
+	}
+	
+	// Password validation will be handled by bcrypt in the service layer
+	return user, nil
+}
+
+// UserSessionRepository handles user session-related database operations
+type UserSessionRepository struct {
+	db *Database
+}
+
+// NewUserSessionRepository creates a new user session repository
+func NewUserSessionRepository(db *Database) *UserSessionRepository {
+	return &UserSessionRepository{db: db}
+}
+
+// CreateUserSession creates a new user session
+func (r *UserSessionRepository) CreateUserSession(session *UserSession) error {
+	query := `
+		INSERT INTO user_sessions (user_id, token, ip_address, user_agent, expires_at)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id, created_at`
+	
+	err := r.db.DB.QueryRow(query, session.UserID, session.Token, session.IPAddress, 
+		session.UserAgent, session.ExpiresAt).Scan(&session.ID, &session.CreatedAt)
+	
+	if err != nil {
+		return fmt.Errorf("failed to create user session: %w", err)
+	}
+	
+	return nil
+}
+
+// GetUserSessionByToken retrieves a user session by token
+func (r *UserSessionRepository) GetUserSessionByToken(token string) (*UserSession, error) {
+	session := &UserSession{}
+	query := `
+		SELECT id, user_id, token, ip_address, user_agent, expires_at, created_at
+		FROM user_sessions
+		WHERE token = $1`
+	
+	err := r.db.DB.QueryRow(query, token).Scan(
+		&session.ID, &session.UserID, &session.Token, &session.IPAddress,
+		&session.UserAgent, &session.ExpiresAt, &session.CreatedAt,
+	)
+	
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("user session not found")
+		}
+		return nil, fmt.Errorf("failed to get user session by token: %w", err)
+	}
+	
+	return session, nil
+}
+
+// DeleteUserSession deletes a user session by token
+func (r *UserSessionRepository) DeleteUserSession(token string) error {
+	query := `DELETE FROM user_sessions WHERE token = $1`
+	
+	result, err := r.db.DB.Exec(query, token)
+	if err != nil {
+		return fmt.Errorf("failed to delete user session: %w", err)
+	}
+	
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+	
+	if rowsAffected == 0 {
+		return fmt.Errorf("user session not found")
+	}
+	
+	return nil
+}
+
+// CleanupExpiredUserSessions removes all expired user sessions
+func (r *UserSessionRepository) CleanupExpiredUserSessions() (int64, error) {
+	query := `DELETE FROM user_sessions WHERE expires_at < NOW()`
+	
+	result, err := r.db.DB.Exec(query)
+	if err != nil {
+		return 0, fmt.Errorf("failed to cleanup expired user sessions: %w", err)
+	}
+	
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get rows affected: %w", err)
+	}
+	
+	return rowsAffected, nil
+}
+
+// GetUserSessionsByUserID retrieves all sessions for a user
+func (r *UserSessionRepository) GetUserSessionsByUserID(userID int) ([]UserSession, error) {
+	query := `
+		SELECT id, user_id, token, ip_address, user_agent, expires_at, created_at
+		FROM user_sessions
+		WHERE user_id = $1
+		ORDER BY created_at DESC`
+	
+	rows, err := r.db.DB.Query(query, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user sessions by user ID: %w", err)
+	}
+	defer rows.Close()
+	
+	var sessions []UserSession
+	for rows.Next() {
+		var session UserSession
+		err := rows.Scan(
+			&session.ID, &session.UserID, &session.Token, &session.IPAddress,
+			&session.UserAgent, &session.ExpiresAt, &session.CreatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan user session: %w", err)
+		}
+		sessions = append(sessions, session)
+	}
+	
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating user sessions: %w", err)
+	}
+	
+	return sessions, nil
+}

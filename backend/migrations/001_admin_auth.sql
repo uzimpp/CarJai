@@ -43,9 +43,7 @@ CREATE INDEX idx_admin_ip_whitelist_admin_id ON admin_ip_whitelist (admin_id);
 CREATE INDEX idx_admin_ip_whitelist_ip ON admin_ip_whitelist (ip_address);
 
 -- Create index for cleanup of expired sessions
-CREATE INDEX idx_admin_sessions_cleanup ON admin_sessions (expires_at)
-WHERE
-    expires_at < NOW();
+CREATE INDEX idx_admin_sessions_cleanup ON admin_sessions (expires_at);
 -- Create function to cleanup expired sessions
 CREATE OR REPLACE FUNCTION cleanup_expired_admin_sessions()
 RETURNS INTEGER AS $$

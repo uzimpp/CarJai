@@ -40,6 +40,8 @@ func main() {
 	adminRepo := models.NewAdminRepository(database)
 	sessionRepo := models.NewSessionRepository(database)
 	ipWhitelistRepo := models.NewIPWhitelistRepository(database)
+	userRepo := models.NewUserRepository(database)
+	userSessionRepo := models.NewUserSessionRepository(database)
 
 	// Create JWT manager
 	jwtManager := utils.NewJWTManager(
@@ -53,6 +55,13 @@ func main() {
 		adminRepo,
 		sessionRepo,
 		ipWhitelistRepo,
+		jwtManager,
+	)
+
+	// Create user service
+	userService := services.NewUserService(
+		userRepo,
+		userSessionRepo,
 		jwtManager,
 	)
 
@@ -92,6 +101,9 @@ func main() {
 	// Setup health routes
 	healthRouter := routes.HealthRoutes(db, appConfig.CORSAllowedOrigins)
 
+	// Setup user authentication routes
+	userAuthRouter := routes.UserAuthRoutes(userService, appConfig.CORSAllowedOrigins)
+
 	// Setup main router
 	mux := http.NewServeMux()
 
@@ -107,6 +119,9 @@ func main() {
 	// Mount admin routes
 	mux.Handle(appConfig.AdminRoutePrefix+"/", http.StripPrefix(appConfig.AdminRoutePrefix, adminRouter))
 
+	// Mount user auth routes
+	mux.Handle("/api/", userAuthRouter)
+
 	// Mount health routes
 	mux.Handle("/health", healthRouter)
 
@@ -120,7 +135,7 @@ func main() {
 // waitForDatabaseAndInitialize waits for database to be ready and initializes admin user
 func waitForDatabaseAndInitialize(db *sql.DB, appConfig *config.AppConfig) error {
 	// Wait for database to be ready (tables exist)
-	maxRetries := 30
+	maxRetries := 10
 	retryDelay := 2 * time.Second
 	
 	for i := 0; i < maxRetries; i++ {
@@ -135,8 +150,20 @@ func waitForDatabaseAndInitialize(db *sql.DB, appConfig *config.AppConfig) error
 		`).Scan(&tableExists)
 		
 		if err == nil && tableExists {
-			// Database is ready, initialize admin user
-			return initializeAdminUser(db, appConfig)
+			// Check if users table exists
+			var usersTableExists bool
+			err = db.QueryRow(`
+				SELECT EXISTS (
+					SELECT FROM information_schema.tables 
+					WHERE table_schema = 'public' 
+					AND table_name = 'users'
+				)
+			`).Scan(&usersTableExists)
+			
+			if err == nil && usersTableExists {
+				// Database is ready, initialize admin user
+				return initializeAdminUser(db, appConfig)
+			}
 		}
 		
 		if i < maxRetries-1 {
