@@ -106,8 +106,8 @@ export default function NavBar() {
               </span>
             </button>
             {open && (
-              <div className="absolute right-0 mt-2 w-60 rounded-xl shadow-[var(--shadow-lg)] bg-maroon text-white overflow-hidden z-50 ring-1 ring-red/20">
-                <div className="px-4 py-3 border-b border-red/20 bg-maroon/95">
+              <div className="absolute right-0 mt-2 w-60 rounded-xl shadow-[var(--shadow-lg)] bg-black text-white overflow-hidden z-50 ring-1 ring-red/20">
+                <div className="px-4 py-3 border-b border-white/5 bg-black/95">
                   <div className="text-xs text-white/80">ผู้ดูแลระบบ</div>
                   <div className="text-sm font-medium truncate">
                     {adminUser?.name || adminUser?.username}
@@ -116,27 +116,27 @@ export default function NavBar() {
                 <div className="py-2">
                   <Link
                     href="/admin/dashboard"
-                    className="block px-4 py-2 text-sm hover:bg-red/20"
+                    className="block px-4 py-2 text-sm hover:bg-maroon/30"
                   >
                     แดชบอร์ด
                   </Link>
                   <Link
                     href="/admin/dashboard#session"
-                    className="block px-4 py-2 text-sm hover:bg-red/20"
+                    className="block px-4 py-2 text-sm hover:bg-maroon/30"
                   >
                     เซสชัน
                   </Link>
                   <Link
                     href="/admin/dashboard#ip"
-                    className="block px-4 py-2 text-sm hover:bg-red/20"
+                    className="block px-4 py-2 text-sm hover:bg-maroon/30"
                   >
                     รายการ IP
                   </Link>
                 </div>
-                <div className="border-t border-red/20">
+                <div className="border-t border-white/5">
                   <button
                     onClick={handleLogout}
-                    className="w-full text-left px-4 py-2 text-sm hover:bg-red/30 flex items-center gap-2"
+                    className="w-full text-left px-4 py-2 text-sm hover:bg-maroon/60 flex items-center gap-2"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"

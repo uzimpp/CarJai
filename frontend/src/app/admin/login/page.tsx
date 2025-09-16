@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { adminAuthStorage, adminAuthAPI } from "@/lib/adminAuth";
-import { mutualLogout, authStorage } from "@/lib/auth";
+import { mutualLogout } from "@/lib/auth";
 
 export default function AdminLoginPage() {
   const { isAuthenticated, loading: authLoading } = useAdminAuth();

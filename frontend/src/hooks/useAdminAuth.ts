@@ -96,7 +96,7 @@ export function useAdminAuth() {
     // No admin data or validation failed
     setLoading(false);
     setIsAuthenticated(false);
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     if (mounted) {
