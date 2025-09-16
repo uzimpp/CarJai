@@ -2,13 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import {
-  authAPI,
-  authStorage,
-  User,
-  LoginRequest,
-  SignupRequest,
-} from "@/lib/auth";
+import { authAPI, authStorage } from "@/lib/auth";
+import { User, LoginRequest, SignupRequest } from "@/constants/user";
 
 interface AuthState {
   user: User | null;
@@ -30,7 +25,7 @@ interface AuthError {
   field?: string;
 }
 
-export function useAuth(): AuthState &
+export function useUserAuth(): AuthState &
   AuthActions & { error: AuthError | null } {
   const router = useRouter();
   const [state, setState] = useState<AuthState>({
@@ -189,3 +184,6 @@ export function useAuth(): AuthState &
     clearError,
   };
 }
+
+// Export both names for backward compatibility
+export const useAuth = useUserAuth;

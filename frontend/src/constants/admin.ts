@@ -35,10 +35,34 @@ interface AdminIPWhitelistResponse {
   message: string;
 }
 
+interface AdminAuthResponse {
+  success: boolean;
+  data: {
+    admin: AdminUser;
+    token: string;
+    expires_at: string;
+  };
+  message?: string;
+}
+
+interface AdminAuthError {
+  success: false;
+  error: string;
+  code: number;
+}
+
+interface AdminLoginRequest {
+  username: string;
+  password: string;
+}
+
 export type {
   AdminUser,
   AdminSession,
   AdminIPWhitelist,
   AdminMeResponse,
   AdminIPWhitelistResponse,
+  AdminAuthResponse,
+  AdminAuthError,
+  AdminLoginRequest,
 };

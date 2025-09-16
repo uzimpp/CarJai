@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { config } from "@/config/env";
 import {
   AdminUser,
   AdminSession,
@@ -10,6 +9,7 @@ import {
   AdminMeResponse,
   AdminIPWhitelistResponse,
 } from "@/constants/admin";
+import { adminAuthAPI, adminAuthStorage } from "@/lib/adminAuth";
 
 export function useAdminAuth() {
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
@@ -34,7 +34,7 @@ export function useAdminAuth() {
       return;
     }
 
-    const token = localStorage.getItem("adminToken");
+    const token = adminAuthStorage.getToken();
     if (!token) {
       setLoading(false);
       setIsAuthenticated(false);
@@ -42,52 +42,31 @@ export function useAdminAuth() {
     }
 
     try {
-      // Create a timeout promise that rejects after 1 minute
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Authentication timeout")), 60000);
-      });
-
-      // Race between the fetch and timeout
-      const response = (await Promise.race([
-        fetch(`${config.apiUrl}/admin/auth/me`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }),
-        timeoutPromise,
-      ])) as Response;
-
-      if (response.ok) {
-        const data: AdminMeResponse = await response.json();
-        if (data.success) {
-          setAdminUser(data.data.admin);
-          setAdminSession(data.data.session);
-          setIsAuthenticated(true);
-          // Update localStorage with fresh admin data
-          localStorage.setItem("adminUser", JSON.stringify(data.data.admin));
-          // Fetch IP whitelist data
-          await fetchIPWhitelist(token);
-        } else {
-          throw new Error("Invalid session");
-        }
-      } else if (response.status === 403) {
+      const data = await adminAuthAPI.getCurrentAdmin(token);
+      if (data.success) {
+        setAdminUser(data.data.admin);
+        setAdminSession(data.data.session);
+        setIsAuthenticated(true);
+        // Update localStorage with fresh admin data
+        adminAuthStorage.setAdmin(data.data.admin);
+        // Fetch IP whitelist data
+        await fetchIPWhitelist();
+      } else {
+        throw new Error("Invalid session");
+      }
+    } catch (error: any) {
+      // Check if it's an IP blocked error
+      if (error.message?.includes("403") || error.message?.includes("IP")) {
         // Clear any existing session data
-        localStorage.removeItem("adminToken");
-        localStorage.removeItem("adminUser");
+        adminAuthStorage.clear();
         setIsAuthenticated(false);
         setAdminUser(null);
         // Redirect to access denied page
         router.push("/access-denied?reason=ip-blocked");
         return;
-      } else {
-        throw new Error("Session validation failed");
       }
-    } catch (error) {
       // Clear invalid session data
-      localStorage.removeItem("adminToken");
-      localStorage.removeItem("adminUser");
+      adminAuthStorage.clear();
       setIsAuthenticated(false);
       setAdminUser(null);
     } finally {
@@ -95,21 +74,14 @@ export function useAdminAuth() {
     }
   }, [router]);
 
-  const fetchIPWhitelist = useCallback(async (token: string) => {
-    try {
-      const response = await fetch(`${config.apiUrl}/admin/ip-whitelist`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+  const fetchIPWhitelist = useCallback(async () => {
+    const token = adminAuthStorage.getToken();
+    if (!token) return;
 
-      if (response.ok) {
-        const data: AdminIPWhitelistResponse = await response.json();
-        if (data.success) {
-          setIpWhitelist(data.data);
-        }
+    try {
+      const data = await adminAuthAPI.getIPWhitelist(token);
+      if (data.success) {
+        setIpWhitelist(data.data);
       }
     } catch (error) {
       console.error("Failed to fetch IP whitelist:", error);
@@ -123,21 +95,16 @@ export function useAdminAuth() {
   }, [mounted, validateSession]);
 
   const logout = async () => {
-    const token = localStorage.getItem("adminToken");
+    const token = adminAuthStorage.getToken();
 
     try {
-      await fetch(`${config.apiUrl}/admin/auth/logout`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ token }),
-      });
+      if (token) {
+        await adminAuthAPI.logout(token);
+      }
     } catch (err) {
+      console.warn("Logout API call failed:", err);
     } finally {
-      localStorage.removeItem("adminToken");
-      localStorage.removeItem("adminUser");
+      adminAuthStorage.clear();
       setIsAuthenticated(false);
       setAdminUser(null);
       router.push("/admin/login");
@@ -152,6 +119,6 @@ export function useAdminAuth() {
     isAuthenticated: mounted ? isAuthenticated : null,
     logout,
     validateSession,
-    fetchIPWhitelist: (token: string) => fetchIPWhitelist(token),
+    fetchIPWhitelist,
   };
 }

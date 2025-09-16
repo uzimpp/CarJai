@@ -1,37 +1,12 @@
 // Authentication utilities and API functions
 import { config } from "@/config/env";
-
-export interface User {
-  id: number;
-  email: string;
-  created_at: string;
-}
-
-export interface AuthResponse {
-  success: boolean;
-  data: {
-    user: User;
-    token: string;
-    expires_at: string;
-  };
-  message?: string;
-}
-
-export interface AuthError {
-  success: false;
-  error: string;
-  code: number;
-}
-
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
-
-export interface SignupRequest {
-  email: string;
-  password: string;
-}
+import {
+  User,
+  AuthResponse,
+  AuthError,
+  LoginRequest,
+  SignupRequest,
+} from "@/constants/user";
 
 // API call helper
 async function apiCall<T>(
@@ -112,33 +87,33 @@ export const authAPI = {
 export const authStorage = {
   getToken(): string | null {
     if (typeof window === "undefined") return null;
-    return localStorage.getItem("carjai_token");
+    return localStorage.getItem("userToken");
   },
 
   setToken(token: string): void {
     if (typeof window === "undefined") return;
-    localStorage.setItem("carjai_token", token);
+    localStorage.setItem("userToken", token);
   },
 
   removeToken(): void {
     if (typeof window === "undefined") return;
-    localStorage.removeItem("carjai_token");
+    localStorage.removeItem("userToken");
   },
 
   getUser(): User | null {
     if (typeof window === "undefined") return null;
-    const userStr = localStorage.getItem("carjai_user");
+    const userStr = localStorage.getItem("user");
     return userStr ? JSON.parse(userStr) : null;
   },
 
   setUser(user: User): void {
     if (typeof window === "undefined") return;
-    localStorage.setItem("carjai_user", JSON.stringify(user));
+    localStorage.setItem("user", JSON.stringify(user));
   },
 
   removeUser(): void {
     if (typeof window === "undefined") return;
-    localStorage.removeItem("carjai_user");
+    localStorage.removeItem("user");
   },
 
   clear(): void {
