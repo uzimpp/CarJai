@@ -12,7 +12,6 @@ export default function AdminDashboard() {
     ipWhitelist,
     loading,
     isAuthenticated,
-    logout,
   } = useAdminAuth();
 
   useEffect(() => {
@@ -28,10 +27,6 @@ export default function AdminDashboard() {
       console.log("✅ Admin authenticated, showing dashboard");
     }
   }, [loading, isAuthenticated, router]);
-
-  const handleLogout = async () => {
-    await logout();
-  };
 
   const getTimeRemaining = (expiresAt: string) => {
     const now = new Date();
@@ -75,29 +70,8 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <h1 className="text-3xl font-bold text-gray-900">
-              แดชบอร์ดผู้ดูแล CarJai
-            </h1>
-            <div className="flex items-center space-x-4">
-              <span className="text-gray-700">
-                ยินดีต้อนรับ, {adminUser?.name}
-              </span>
-              <button
-                onClick={handleLogout}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-              >
-                ออกจากระบบ
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
       {/* Main Content */}
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">

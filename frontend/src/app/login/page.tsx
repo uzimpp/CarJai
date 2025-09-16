@@ -96,29 +96,20 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
-          <h2 className="mt-6 text-3xl font-bold text-gray-900">เข้าสู่ระบบ</h2>
-          <p className="mt-2 text-sm text-gray-600">
-            หรือ{" "}
-            <Link
-              href="/signup"
-              className="font-medium text-maroon hover:text-red transition-colors"
-            >
-              สมัครบัญชีใหม่
-            </Link>
-          </p>
+          <h2 className="text-4 font-bold text-maroon">เข้าสู่ระบบ CarJai</h2>
         </div>
 
         {/* Redirect Message */}
         {redirectMessage === "account_exists" && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="bg-maroon/5 border border-maroon/20 rounded-lg p-4">
             <div className="flex">
               <div className="flex-shrink-0">
                 <svg
-                  className="h-5 w-5 text-blue-400"
+                  className="h-5 w-5 text-maroon"
                   viewBox="0 0 20 20"
                   fill="currentColor"
                 >
@@ -130,7 +121,7 @@ function LoginForm() {
                 </svg>
               </div>
               <div className="ml-3">
-                <p className="text-sm text-blue-600">
+                <p className="text-sm text-maroon">
                   บัญชีนี้มีอยู่แล้ว กรุณาเข้าสู่ระบบแทน
                 </p>
               </div>
@@ -159,7 +150,7 @@ function LoginForm() {
                 onChange={handleInputChange}
                 className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
                   formErrors.email
-                    ? "border-red-300 focus:ring-red-500 focus:border-red-500"
+                    ? "border-red-300 focus:ring-red focus:border-red"
                     : "border-gray-300 focus:ring-maroon focus:border-maroon"
                 } placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:z-10 sm:text-sm transition-colors`}
                 placeholder="กรอกอีเมลของคุณ"
@@ -186,7 +177,7 @@ function LoginForm() {
                 onChange={handleInputChange}
                 className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
                   formErrors.password
-                    ? "border-red-300 focus:ring-red-500 focus:border-red-500"
+                    ? "border-red-300 focus:ring-red focus:border-red"
                     : "border-gray-300 focus:ring-maroon focus:border-maroon"
                 } placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:z-10 sm:text-sm transition-colors`}
                 placeholder="กรอกรหัสผ่านของคุณ"
@@ -228,7 +219,7 @@ function LoginForm() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-maroon hover:bg-red focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-maroon disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text--1 font-medium rounded-lg text-white bg-maroon hover:bg-red focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-maroon disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isSubmitting ? (
                 <div className="flex items-center">
@@ -241,13 +232,14 @@ function LoginForm() {
             </button>
           </div>
 
+          <div className="text-center text-gray-600 text--2">หรือ</div>
           {/* Additional Links */}
           <div className="text-center">
             <Link
-              href="/"
-              className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+              href="/signup"
+              className="text--1  hover:text-gray-900 transition-colors"
             >
-              ← กลับสู่หน้าหลัก
+              ยังไม่มีบัญชี
             </Link>
           </div>
         </form>

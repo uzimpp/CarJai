@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { User, LoginRequest, SignupRequest } from "@/constants/user";
 import { authAPI, authStorage, mutualLogout } from "@/lib/auth";
 
@@ -28,6 +28,7 @@ interface AuthErrorWithField {
 export function useUserAuth(): AuthState &
   AuthActions & { error: AuthErrorWithField | null } {
   const router = useRouter();
+  const pathname = usePathname();
   const [state, setState] = useState<AuthState>({
     user: null,
     token: null,
@@ -38,26 +39,54 @@ export function useUserAuth(): AuthState &
 
   // Initialize auth state from localStorage and cookies
   useEffect(() => {
-    const token = authStorage.getToken();
     const user = authStorage.getUser();
 
-    console.log("🔍 Auth initialization - Token:", token, "User:", user);
+    console.log("🔍 Auth initialization - User:", user);
 
-    if (token && user) {
-      console.log("✅ Found auth data, setting authenticated state");
+    if (user) {
+      console.log("✅ Found user data, setting authenticated state");
       setState({
         user,
-        token,
+        token: "cookie-based", // Token handled by backend via cookie
         isLoading: false,
         isAuthenticated: true,
       });
     } else {
-      console.log("❌ No auth data found, setting unauthenticated state");
+      console.log("❌ No user data found, setting unauthenticated state");
       setState((prev) => ({
         ...prev,
         isLoading: false,
       }));
     }
+  }, []);
+
+  // Re-validate user state on route changes to refresh navbar
+  useEffect(() => {
+    const user = authStorage.getUser();
+    setState((prev) => ({
+      ...prev,
+      user,
+      isAuthenticated: !!user,
+      isLoading: false,
+      token: user ? "cookie-based" : null,
+    }));
+  }, [pathname]);
+
+  // Keep in sync across tabs / programmatic storage changes
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "user") {
+        const next = authStorage.getUser();
+        setState((prev) => ({
+          ...prev,
+          user: next,
+          isAuthenticated: !!next,
+          token: next ? "cookie-based" : null,
+        }));
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   }, []);
 
   // Clear error helper
@@ -86,7 +115,7 @@ export function useUserAuth(): AuthState &
 
         setState({
           user: response.data.user,
-          token: response.data.token,
+          token: "cookie-based", // Token handled by backend via cookie
           isLoading: false,
           isAuthenticated: true,
         });
@@ -125,7 +154,7 @@ export function useUserAuth(): AuthState &
 
         setState({
           user: response.data.user,
-          token: response.data.token,
+          token: "cookie-based", // Token handled by backend via cookie
           isLoading: false,
           isAuthenticated: true,
         });
@@ -185,7 +214,7 @@ export function useUserAuth(): AuthState &
 
       setState((prev) => ({
         ...prev,
-        token: response.data.token, // Keep for compatibility
+        token: "cookie-based", // Token handled by backend via cookie
         user: response.data.user,
       }));
     } catch (err) {

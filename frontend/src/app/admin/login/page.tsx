@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { config } from "@/config/env";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
-import { adminAuthStorage } from "@/lib/adminAuth";
+import { adminAuthStorage, adminAuthAPI } from "@/lib/adminAuth";
 import { mutualLogout, authStorage } from "@/lib/auth";
 
 export default function AdminLoginPage() {
@@ -32,56 +31,35 @@ export default function AdminLoginPage() {
     console.log("🔐 Admin login attempt with:", formData);
 
     try {
-      const response = await fetch(`${config.apiUrl}/admin/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include", // Include cookies
-        body: JSON.stringify(formData),
-      });
-
-      console.log("📡 Admin login response status:", response.status);
-
-      if (response.status === 403) {
-        // IP is blocked by backend middleware
-        setError(
-          "Access denied: Your IP address is not authorized to access this system."
-        );
-        return;
-      }
-
-      const data = await response.json();
+      const data = await adminAuthAPI.login(formData);
       console.log("📋 Admin login response data:", data);
 
       if (data.success) {
         // Clear any existing user session (mutual logout)
         await mutualLogout.clearUserSession();
 
-        // Store admin data
+        // Store admin data (token is handled by backend via cookie)
         adminAuthStorage.setAdmin(data.data.admin);
         console.log("💾 Admin data stored:", data.data.admin);
-
-        // Store token if it exists in the response
-        if (data.data.token) {
-          adminAuthStorage.setToken(data.data.token);
-          console.log("💾 Admin token stored:", data.data.token);
-        } else {
-          console.log(
-            "⚠️ No token in admin login response, using cookie-based auth"
-          );
-        }
 
         // Redirect to admin dashboard
         console.log("🔀 Redirecting to admin dashboard...");
         router.push("/admin/dashboard");
         console.log("✨ Admin redirect called");
       } else {
-        setError(data.error || "Login failed");
+        setError(data.message || "Login failed");
       }
     } catch (err) {
       console.error("❌ Admin login error:", err);
-      setError("Network error. Please check if backend is running.");
+
+      // Check if it's a 403 error (IP blocked)
+      if (err instanceof Error && err.message.includes("403")) {
+        setError(
+          "Access denied: Your IP address is not authorized to access this system."
+        );
+      } else {
+        setError("Network error. Please check if backend is running.");
+      }
     } finally {
       setLoading(false);
     }
@@ -135,7 +113,7 @@ export default function AdminLoginPage() {
                 type="text"
                 autoComplete="username"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-red/20 focus:border-red/20 focus:z-10 sm:text-sm"
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-maroon focus:border-maroon focus:z-10 sm:text-sm"
                 placeholder="admin"
                 value={formData.username}
                 onChange={handleChange}
@@ -151,7 +129,7 @@ export default function AdminLoginPage() {
                 type="password"
                 autoComplete="current-password"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-red/20 focus:border-red/20 focus:z-10 sm:text-sm"
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-maroon focus:border-maroon focus:z-10 sm:text-sm"
                 placeholder="password"
                 value={formData.password}
                 onChange={handleChange}
@@ -188,7 +166,7 @@ export default function AdminLoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-red/20 hover:bg-red/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red/20 disabled:opacity-50"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-maroon hover:bg-red focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-maroon disabled:opacity-50"
             >
               {loading ? (
                 <div className="flex items-center">

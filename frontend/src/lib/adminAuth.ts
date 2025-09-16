@@ -20,6 +20,7 @@ async function apiCall<T>(
       "Content-Type": "application/json",
       ...options.headers,
     },
+    credentials: "include", // Include cookies
     ...options,
   });
 
@@ -43,32 +44,23 @@ export const adminAuthAPI = {
   },
 
   // Log out an admin
-  async logout(token: string): Promise<{ success: boolean; message: string }> {
+  async logout(): Promise<{ success: boolean; message: string }> {
     return apiCall("/admin/auth/logout", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
     });
   },
 
   // Get current admin
-  async getCurrentAdmin(token: string): Promise<AdminMeResponse> {
+  async getCurrentAdmin(): Promise<AdminMeResponse> {
     return apiCall<AdminMeResponse>("/admin/auth/me", {
       method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
     });
   },
 
   // Get IP whitelist
-  async getIPWhitelist(token: string): Promise<AdminIPWhitelistResponse> {
+  async getIPWhitelist(): Promise<AdminIPWhitelistResponse> {
     return apiCall<AdminIPWhitelistResponse>("/admin/ip-whitelist", {
       method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
     });
   },
 };

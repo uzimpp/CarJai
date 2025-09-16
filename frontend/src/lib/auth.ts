@@ -76,7 +76,8 @@ export const authAPI = {
 export const authStorage = {
   getToken(): string | null {
     if (typeof window === "undefined") return null;
-    return this.getCookie("jwt");
+    // Token is handled by backend via cookie, we don't need to store it
+    return "cookie-based"; // Placeholder to indicate cookie-based auth
   },
 
   setToken(): void {

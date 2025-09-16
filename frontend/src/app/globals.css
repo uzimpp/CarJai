@@ -32,6 +32,8 @@
   /* Step 10: 149.0116px → 186.2645px */
   --text-10: clamp(9.3132rem, 8.5656rem + 3.4177vw, 11.6415rem);
 
+  --text-landing-font-size: clamp(2rem, 1.0367rem + 4.4037vw, 5rem);
+
   /* === Spacing === */
   /* @link https://utopia.fyi/space/calculator?c=350,16,1.25,1440,20,1.25,10,2,&s=0.75|0.5|0.25|0.125,1.5|2|3|4|6|8|10,s-l|m-xl|l-2xl|xl-3xl|2xl-3xl|3xl-5xl|xs-m|2xs-s|3xs-xs|4xs-2xs&g=s,l,xl,12 */
   /* Space 4xs: 2px → 3px */
@@ -104,6 +106,7 @@
   --space-2xl-3xl: clamp(4rem, 2.8761rem + 5.1376vw, 7.5rem);
   /* Space 3xl-5xl: 96px → 200px */
   --space-3xl-5xl: clamp(6rem, 3.9128rem + 9.5413vw, 12.5rem);
+
 
   /* === Colors === */
   --color-white: #fffdfd;
