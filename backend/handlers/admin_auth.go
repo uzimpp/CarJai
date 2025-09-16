@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/uzimpp/CarJai/backend/middleware"
 	"github.com/uzimpp/CarJai/backend/models"
@@ -75,6 +76,17 @@ func (h *AdminAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	token := loginResponse.Token
 	expiresAt := loginResponse.ExpiresAt
 
+	// Set admin_jwt cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "admin_jwt",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false, // Set to true in production with HTTPS
+		SameSite: http.SameSiteStrictMode, // Stricter for admin
+		MaxAge:   int(expiresAt.Sub(time.Now()).Seconds()),
+	})
+
 	// Create response
 	response := models.AdminLoginResponse{
 		Success: true,
@@ -115,6 +127,17 @@ func (h *AdminAuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
+	// Clear admin_jwt cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "admin_jwt",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false,
+		SameSite: http.SameSiteStrictMode,
+		MaxAge:   -1, // Expire immediately
+	})
+
 	// Create response
 	response := models.AdminLogoutResponse{
 		Success: true,
@@ -131,13 +154,13 @@ func (h *AdminAuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	// Extract token from Authorization header
-	authHeader := r.Header.Get("Authorization")
-	token, err := utils.ExtractTokenFromHeader(authHeader)
+	// Get token from admin_jwt cookie
+	cookie, err := r.Cookie("admin_jwt")
 	if err != nil {
-		h.writeErrorResponse(w, http.StatusUnauthorized, "Invalid authorization header")
+		h.writeErrorResponse(w, http.StatusUnauthorized, "Authentication required")
 		return
 	}
+	token := cookie.Value
 	
 	// Get current admin information
 	adminData, err := h.adminService.GetCurrentAdmin(token)
@@ -162,13 +185,13 @@ func (h *AdminAuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	
-	// Extract token from Authorization header
-	authHeader := r.Header.Get("Authorization")
-	token, err := utils.ExtractTokenFromHeader(authHeader)
+	// Get token from admin_jwt cookie
+	cookie, err := r.Cookie("admin_jwt")
 	if err != nil {
-		h.writeErrorResponse(w, http.StatusUnauthorized, "Invalid authorization header")
+		h.writeErrorResponse(w, http.StatusUnauthorized, "Authentication required")
 		return
 	}
+	token := cookie.Value
 	
 	// Refresh token
 	newToken, expiresAt, err := h.jwtManager.RefreshToken(token)

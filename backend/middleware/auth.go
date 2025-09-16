@@ -29,13 +29,13 @@ func NewAuthMiddleware(adminService *services.AdminService, jwtManager *utils.JW
 // RequireAuth middleware that requires valid admin authentication
 func (m *AuthMiddleware) RequireAuth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Extract token from Authorization header
-		authHeader := r.Header.Get("Authorization")
-		token, err := utils.ExtractTokenFromHeader(authHeader)
+		// Get token from admin_jwt cookie
+		cookie, err := r.Cookie("admin_jwt")
 		if err != nil {
-			m.writeErrorResponse(w, http.StatusUnauthorized, "Invalid authorization header")
+			m.writeErrorResponse(w, http.StatusUnauthorized, "Authentication required")
 			return
 		}
+		token := cookie.Value
 		
 		// Validate JWT token
 		claims, err := m.jwtManager.ValidateToken(token)

@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { config } from "@/config/env";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
+import { adminAuthStorage } from "@/lib/adminAuth";
+import { mutualLogout, authStorage } from "@/lib/auth";
 
 export default function AdminLoginPage() {
   const { isAuthenticated, loading: authLoading } = useAdminAuth();
@@ -14,6 +16,17 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+
+  // Check for user session and clear it if exists
+  useEffect(() => {
+    const userToken = authStorage.getToken();
+    const user = authStorage.getUser();
+
+    if (userToken || user) {
+      console.log("🔍 Found existing user session, clearing it...");
+      authStorage.clear();
+    }
+  }, []);
 
   // If already authenticated, redirect to dashboard
   useEffect(() => {
@@ -27,14 +40,19 @@ export default function AdminLoginPage() {
     setLoading(true);
     setError("");
 
+    console.log("🔐 Admin login attempt with:", formData);
+
     try {
       const response = await fetch(`${config.apiUrl}/admin/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include", // Include cookies
         body: JSON.stringify(formData),
       });
+
+      console.log("📡 Admin login response status:", response.status);
 
       if (response.status === 403) {
         // IP is blocked by backend middleware
@@ -45,18 +63,35 @@ export default function AdminLoginPage() {
       }
 
       const data = await response.json();
+      console.log("📋 Admin login response data:", data);
 
       if (data.success) {
-        // Store token in localStorage
-        localStorage.setItem("adminToken", data.data.token);
-        localStorage.setItem("adminUser", JSON.stringify(data.data.admin));
+        // Clear any existing user session (mutual logout)
+        await mutualLogout.clearUserSession();
+
+        // Store admin data
+        adminAuthStorage.setAdmin(data.data.admin);
+        console.log("💾 Admin data stored:", data.data.admin);
+
+        // Store token if it exists in the response
+        if (data.data.token) {
+          adminAuthStorage.setToken(data.data.token);
+          console.log("💾 Admin token stored:", data.data.token);
+        } else {
+          console.log(
+            "⚠️ No token in admin login response, using cookie-based auth"
+          );
+        }
 
         // Redirect to admin dashboard
+        console.log("🔀 Redirecting to admin dashboard...");
         router.push("/admin/dashboard");
+        console.log("✨ Admin redirect called");
       } else {
         setError(data.error || "Login failed");
       }
-    } catch {
+    } catch (err) {
+      console.error("❌ Admin login error:", err);
       setError("Network error. Please check if backend is running.");
     } finally {
       setLoading(false);
@@ -109,9 +144,10 @@ export default function AdminLoginPage() {
                 id="username"
                 name="username"
                 type="text"
+                autoComplete="username"
                 required
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-red/20 focus:border-red/20 focus:z-10 sm:text-sm"
-                placeholder="admin123"
+                placeholder="admin"
                 value={formData.username}
                 onChange={handleChange}
               />
@@ -124,9 +160,10 @@ export default function AdminLoginPage() {
                 id="password"
                 name="password"
                 type="password"
+                autoComplete="current-password"
                 required
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-red/20 focus:border-red/20 focus:z-10 sm:text-sm"
-                placeholder="password123"
+                placeholder="password"
                 value={formData.password}
                 onChange={handleChange}
               />
@@ -134,8 +171,27 @@ export default function AdminLoginPage() {
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded">
-              {error || "เกิดข้อผิดพลาด โปรดลองอีกครั้ง"}
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg
+                    className="h-5 w-5 text-red-400"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-red-600">
+                    {error || "เกิดข้อผิดพลาด โปรดลองอีกครั้ง"}
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -145,7 +201,14 @@ export default function AdminLoginPage() {
               disabled={loading}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-red/20 hover:bg-red/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red/20 disabled:opacity-50"
             >
-              {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
+              {loading ? (
+                <div className="flex items-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  กำลังเข้าสู่ระบบ...
+                </div>
+              ) : (
+                "เข้าสู่ระบบ"
+              )}
             </button>
           </div>
 

@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/uzimpp/CarJai/backend/models"
 	"github.com/uzimpp/CarJai/backend/services"
-	"github.com/uzimpp/CarJai/backend/utils"
 )
 
 // UserAuthHandler handles user authentication requests
@@ -81,6 +81,17 @@ func (h *UserAuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Set jwt cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "jwt",
+		Value:    response.Data.Token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false, // Set to true in production with HTTPS
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   int(response.Data.ExpiresAt.Sub(time.Now()).Seconds()),
+	})
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(response)
@@ -133,6 +144,17 @@ func (h *UserAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Set jwt cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "jwt",
+		Value:    response.Data.Token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false, // Set to true in production with HTTPS
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   int(response.Data.ExpiresAt.Sub(time.Now()).Seconds()),
+	})
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
@@ -145,13 +167,12 @@ func (h *UserAuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get token from Authorization header
-	authHeader := r.Header.Get("Authorization")
-	token, err := utils.ExtractTokenFromHeader(authHeader)
+	// Get token from jwt cookie
+	cookie, err := r.Cookie("jwt")
 	if err != nil {
 		response := models.UserErrorResponse{
 			Success: false,
-			Error:   "Authorization header required",
+			Error:   "Authentication required",
 			Code:    http.StatusUnauthorized,
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -159,6 +180,7 @@ func (h *UserAuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(response)
 		return
 	}
+	token := cookie.Value
 
 	// Logout user
 	response, err := h.userService.Logout(token)
@@ -174,6 +196,17 @@ func (h *UserAuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Clear jwt cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "jwt",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   -1, // Expire immediately
+	})
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
@@ -186,13 +219,12 @@ func (h *UserAuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get token from Authorization header
-	authHeader := r.Header.Get("Authorization")
-	token, err := utils.ExtractTokenFromHeader(authHeader)
+	// Get token from jwt cookie
+	cookie, err := r.Cookie("jwt")
 	if err != nil {
 		response := models.UserErrorResponse{
 			Success: false,
-			Error:   "Authorization header required",
+			Error:   "Authentication required",
 			Code:    http.StatusUnauthorized,
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -200,6 +232,7 @@ func (h *UserAuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(response)
 		return
 	}
+	token := cookie.Value
 
 	// Get current user
 	response, err := h.userService.GetCurrentUser(token)
@@ -227,13 +260,12 @@ func (h *UserAuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get token from Authorization header
-	authHeader := r.Header.Get("Authorization")
-	token, err := utils.ExtractTokenFromHeader(authHeader)
+	// Get token from jwt cookie
+	cookie, err := r.Cookie("jwt")
 	if err != nil {
 		response := models.UserErrorResponse{
 			Success: false,
-			Error:   "Authorization header required",
+			Error:   "Authentication required",
 			Code:    http.StatusUnauthorized,
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -241,6 +273,7 @@ func (h *UserAuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(response)
 		return
 	}
+	token := cookie.Value
 
 	// Refresh token
 	response, err := h.userService.RefreshToken(token)

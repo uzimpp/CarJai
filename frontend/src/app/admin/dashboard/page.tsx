@@ -16,9 +16,16 @@ export default function AdminDashboard() {
   } = useAdminAuth();
 
   useEffect(() => {
+    console.log("🔍 Admin dashboard - checking auth state:", {
+      loading,
+      isAuthenticated,
+    });
     // Only redirect if we're done loading and definitely not authenticated
     if (!loading && isAuthenticated === false) {
+      console.log("❌ Admin not authenticated, redirecting to login");
       router.push("/admin/login");
+    } else if (!loading && isAuthenticated === true) {
+      console.log("✅ Admin authenticated, showing dashboard");
     }
   }, [loading, isAuthenticated, router]);
 

@@ -3,7 +3,6 @@ import { config } from "@/config/env";
 import {
   User,
   AuthResponse,
-  AuthError,
   LoginRequest,
   SignupRequest,
 } from "@/constants/user";
@@ -20,6 +19,7 @@ async function apiCall<T>(
       "Content-Type": "application/json",
       ...options.headers,
     },
+    credentials: "include", // Include cookies in requests
     ...options,
   });
 
@@ -51,34 +51,23 @@ export const authAPI = {
   },
 
   // Log out a user
-  async logout(token: string): Promise<{ success: boolean; message: string }> {
+  async logout(): Promise<{ success: boolean; message: string }> {
     return apiCall("/api/auth/logout", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
     });
   },
 
   // Get current user
-  async getCurrentUser(
-    token: string
-  ): Promise<{ success: boolean; data: { user: User } }> {
+  async getCurrentUser(): Promise<{ success: boolean; data: { user: User } }> {
     return apiCall("/api/auth/me", {
       method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
     });
   },
 
   // Refresh token
-  async refreshToken(token: string): Promise<AuthResponse> {
+  async refreshToken(): Promise<AuthResponse> {
     return apiCall<AuthResponse>("/api/auth/refresh", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
     });
   },
 };
@@ -87,17 +76,19 @@ export const authAPI = {
 export const authStorage = {
   getToken(): string | null {
     if (typeof window === "undefined") return null;
-    return localStorage.getItem("userToken");
+    return this.getCookie("jwt");
   },
 
-  setToken(token: string): void {
+  setToken(): void {
     if (typeof window === "undefined") return;
-    localStorage.setItem("userToken", token);
+    // Token is set by backend via Set-Cookie header
+    // We don't need to set it manually
   },
 
   removeToken(): void {
     if (typeof window === "undefined") return;
-    localStorage.removeItem("userToken");
+    // Token is cleared by backend via Set-Cookie header
+    // We don't need to clear it manually
   },
 
   getUser(): User | null {
@@ -120,6 +111,17 @@ export const authStorage = {
     this.removeToken();
     this.removeUser();
   },
+
+  // Helper to get cookie value
+  getCookie(name: string): string | null {
+    if (typeof document === "undefined") return null;
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) {
+      return parts.pop()?.split(";").shift() || null;
+    }
+    return null;
+  },
 };
 
 // Validation helpers
@@ -131,5 +133,48 @@ export const validation = {
 
   password: (password: string): boolean => {
     return password.length >= 6;
+  },
+};
+
+// Mutual logout utility to clear both user and admin sessions
+export const mutualLogout = {
+  async clearAdminSession(): Promise<void> {
+    try {
+      // Check if admin session exists before attempting to clear
+      const adminToken = localStorage.getItem("adminToken");
+      const adminUser = localStorage.getItem("adminUser");
+
+      if (adminToken || adminUser) {
+        await fetch(`${config.apiUrl}/admin/auth/logout`, {
+          method: "POST",
+          credentials: "include",
+        });
+        console.log("🧹 Cleared admin session");
+      } else {
+        console.log("ℹ️ No admin session to clear");
+      }
+    } catch (err) {
+      console.log("ℹ️ Error clearing admin session:", err);
+    }
+  },
+
+  async clearUserSession(): Promise<void> {
+    try {
+      // Check if user session exists before attempting to clear
+      const userToken = authStorage.getToken();
+      const user = authStorage.getUser();
+
+      if (userToken || user) {
+        await fetch(`${config.apiUrl}/api/auth/logout`, {
+          method: "POST",
+          credentials: "include",
+        });
+        console.log("🧹 Cleared user session");
+      } else {
+        console.log("ℹ️ No user session to clear");
+      }
+    } catch (err) {
+      console.log("ℹ️ Error clearing user session:", err);
+    }
   },
 };

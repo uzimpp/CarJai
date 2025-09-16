@@ -43,11 +43,17 @@ func main() {
 	userRepo := models.NewUserRepository(database)
 	userSessionRepo := models.NewUserSessionRepository(database)
 
-	// Create JWT manager
-	jwtManager := utils.NewJWTManager(
-		appConfig.JWTSecret,
-		time.Duration(appConfig.JWTExpiration)*time.Hour,
-		appConfig.JWTIssuer,
+	// Create JWT managers for user and admin
+	userJWTManager := utils.NewJWTManager(
+		appConfig.UserJWTSecret,
+		time.Duration(appConfig.UserJWTExpiration)*time.Hour,
+		appConfig.UserJWTIssuer,
+	)
+
+	adminJWTManager := utils.NewJWTManager(
+		appConfig.AdminJWTSecret,
+		time.Duration(appConfig.AdminJWTExpiration)*time.Hour,
+		appConfig.AdminJWTIssuer,
 	)
 
 	// Create admin service
@@ -55,14 +61,14 @@ func main() {
 		adminRepo,
 		sessionRepo,
 		ipWhitelistRepo,
-		jwtManager,
+		adminJWTManager,
 	)
 
 	// Create user service
 	userService := services.NewUserService(
 		userRepo,
 		userSessionRepo,
-		jwtManager,
+		userJWTManager,
 	)
 
 	// Create maintenance service
@@ -92,7 +98,7 @@ func main() {
 	// Setup admin routes
 	adminRouter := routes.AdminRoutes(
 		adminService,
-		jwtManager,
+		adminJWTManager,
 		appConfig.AdminRoutePrefix,
 		appConfig.CORSAllowedOrigins,
 		allowedIPs,
@@ -102,7 +108,7 @@ func main() {
 	healthRouter := routes.HealthRoutes(db, appConfig.CORSAllowedOrigins)
 
 	// Setup user authentication routes
-	userAuthRouter := routes.UserAuthRoutes(userService, appConfig.CORSAllowedOrigins)
+	userAuthRouter := routes.UserAuthRoutes(userService, userJWTManager, appConfig.CORSAllowedOrigins)
 
 	// Setup main router
 	mux := http.NewServeMux()

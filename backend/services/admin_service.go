@@ -91,7 +91,7 @@ func (s *AdminService) Login(req LoginRequest) (*LoginResponse, error) {
 	}
 	
 	// Generate JWT token
-	sessionID := fmt.Sprintf("session_%d_%d", admin.ID, time.Now().Unix())
+	sessionID := utils.GenerateSecureSessionID()
 	tokenReq := utils.NewAdminTokenRequest(admin.ID, admin.Username, sessionID)
 	token, expiresAt, err := s.jwtManager.GenerateToken(tokenReq)
 	if err != nil {

@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useUserAuth";
-import { validation } from "@/lib/auth";
+import { validation, mutualLogout } from "@/lib/auth";
+import { adminAuthStorage } from "@/lib/adminAuth";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login, isAuthenticated, isLoading, error, clearError } = useAuth();
 
   const [formData, setFormData] = useState({
@@ -16,20 +18,33 @@ export default function LoginPage() {
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Check for admin session and clear it if exists
+  useEffect(() => {
+    const adminToken = adminAuthStorage.getToken();
+    const adminUser = adminAuthStorage.getAdmin();
+
+    if (adminToken || adminUser) {
+      console.log("🔍 Found existing admin session, clearing it...");
+      adminAuthStorage.clear();
+    }
+  }, []);
 
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && !isLoading) {
-      router.push("/");
+      router.push("/buy");
     }
   }, [isAuthenticated, isLoading, router]);
 
-  // Clear errors when form changes
+  // Check for redirect message
+  const redirectMessage = searchParams.get("message");
+
+  // Clear errors when user starts typing
   useEffect(() => {
-    if (error) {
+    if (error && (formData.email || formData.password)) {
       clearError();
     }
-  }, [formData, clearError, error]);
+  }, [formData.email, formData.password, clearError, error]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -107,6 +122,32 @@ export default function LoginPage() {
           </p>
         </div>
 
+        {/* Redirect Message */}
+        {redirectMessage === "account_exists" && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg
+                  className="h-5 w-5 text-blue-400"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-blue-600">
+                  บัญชีนี้มีอยู่แล้ว กรุณาเข้าสู่ระบบแทน
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Form */}
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
@@ -123,11 +164,14 @@ export default function LoginPage() {
                 name="email"
                 type="email"
                 autoComplete="email"
+                autoFocus
                 value={formData.email}
                 onChange={handleInputChange}
                 className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
-                  formErrors.email ? "border-red-300" : "border-gray-300"
-                } placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-maroon focus:border-maroon focus:z-10 sm:text-sm`}
+                  formErrors.email
+                    ? "border-red-300 focus:ring-red-500 focus:border-red-500"
+                    : "border-gray-300 focus:ring-maroon focus:border-maroon"
+                } placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:z-10 sm:text-sm transition-colors`}
                 placeholder="กรอกอีเมลของคุณ"
               />
               {formErrors.email && (
@@ -151,8 +195,10 @@ export default function LoginPage() {
                 value={formData.password}
                 onChange={handleInputChange}
                 className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
-                  formErrors.password ? "border-red-300" : "border-gray-300"
-                } placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-maroon focus:border-maroon focus:z-10 sm:text-sm`}
+                  formErrors.password
+                    ? "border-red-300 focus:ring-red-500 focus:border-red-500"
+                    : "border-gray-300 focus:ring-maroon focus:border-maroon"
+                } placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:z-10 sm:text-sm transition-colors`}
                 placeholder="กรอกรหัสผ่านของคุณ"
               />
               {formErrors.password && (
@@ -166,7 +212,24 @@ export default function LoginPage() {
           {/* General Error */}
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-sm text-red-600">{error.message}</p>
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg
+                    className="h-5 w-5 text-red-400"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-red-600">{error.message}</p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -200,5 +263,22 @@ export default function LoginPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon mx-auto"></div>
+            <p className="mt-4 text-gray-600">กำลังโหลด...</p>
+          </div>
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }

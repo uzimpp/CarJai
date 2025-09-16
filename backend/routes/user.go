@@ -6,11 +6,13 @@ import (
 	"github.com/uzimpp/CarJai/backend/handlers"
 	"github.com/uzimpp/CarJai/backend/middleware"
 	"github.com/uzimpp/CarJai/backend/services"
+	"github.com/uzimpp/CarJai/backend/utils"
 )
 
 // UserAuthRoutes sets up user authentication routes
 func UserAuthRoutes(
 	userService *services.UserService,
+	userJWTManager *utils.JWTManager,
 	corsAllowedOrigins string,
 ) *http.ServeMux {
 	

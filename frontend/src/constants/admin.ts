@@ -2,7 +2,7 @@ interface AdminUser {
   id: number;
   username: string;
   name: string;
-  last_login_at: string;
+  last_login_at: string | null;
   created_at: string;
 }
 

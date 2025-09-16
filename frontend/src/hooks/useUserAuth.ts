@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { authAPI, authStorage } from "@/lib/auth";
 import { User, LoginRequest, SignupRequest } from "@/constants/user";
+import { authAPI, authStorage, mutualLogout } from "@/lib/auth";
 
 interface AuthState {
   user: User | null;
@@ -20,13 +20,13 @@ interface AuthActions {
   clearError: () => void;
 }
 
-interface AuthError {
+interface AuthErrorWithField {
   message: string;
   field?: string;
 }
 
 export function useUserAuth(): AuthState &
-  AuthActions & { error: AuthError | null } {
+  AuthActions & { error: AuthErrorWithField | null } {
   const router = useRouter();
   const [state, setState] = useState<AuthState>({
     user: null,
@@ -34,14 +34,17 @@ export function useUserAuth(): AuthState &
     isLoading: true,
     isAuthenticated: false,
   });
-  const [error, setError] = useState<AuthError | null>(null);
+  const [error, setError] = useState<AuthErrorWithField | null>(null);
 
-  // Initialize auth state from localStorage
+  // Initialize auth state from localStorage and cookies
   useEffect(() => {
     const token = authStorage.getToken();
     const user = authStorage.getUser();
 
+    console.log("🔍 Auth initialization - Token:", token, "User:", user);
+
     if (token && user) {
+      console.log("✅ Found auth data, setting authenticated state");
       setState({
         user,
         token,
@@ -49,6 +52,7 @@ export function useUserAuth(): AuthState &
         isAuthenticated: true,
       });
     } else {
+      console.log("❌ No auth data found, setting unauthenticated state");
       setState((prev) => ({
         ...prev,
         isLoading: false,
@@ -64,15 +68,21 @@ export function useUserAuth(): AuthState &
   // Login function
   const login = useCallback(
     async (data: LoginRequest) => {
+      console.log("🚀 Login function called with:", data);
       try {
         setError(null);
         setState((prev) => ({ ...prev, isLoading: true }));
 
+        console.log("📡 Calling authAPI.login...");
         const response = await authAPI.login(data);
+        console.log("✅ Login response received:", response);
 
-        // Store auth data
-        authStorage.setToken(response.data.token);
+        // Clear any existing admin session (mutual logout)
+        await mutualLogout.clearAdminSession();
+
+        // Store user data (token is handled by backend via cookie)
         authStorage.setUser(response.data.user);
+        console.log("💾 User stored in localStorage");
 
         setState({
           user: response.data.user,
@@ -80,10 +90,14 @@ export function useUserAuth(): AuthState &
           isLoading: false,
           isAuthenticated: true,
         });
+        console.log("🔄 State updated - isAuthenticated: true");
 
-        // Redirect to home page
-        router.push("/");
+        // Redirect to buy page after successful login
+        console.log("🔀 Redirecting to /buy...");
+        router.push("/buy");
+        console.log("✨ Redirect called");
       } catch (err) {
+        console.error("❌ Login error:", err);
         setError({
           message: err instanceof Error ? err.message : "Login failed",
           field: "general",
@@ -103,8 +117,7 @@ export function useUserAuth(): AuthState &
 
         const response = await authAPI.signup(data);
 
-        // Store auth data
-        authStorage.setToken(response.data.token);
+        // Store user data (token is handled by backend via cookie)
         authStorage.setUser(response.data.user);
 
         setState({
@@ -114,11 +127,20 @@ export function useUserAuth(): AuthState &
           isAuthenticated: true,
         });
 
-        // Redirect to home page
-        router.push("/");
+        // Redirect to buy page after successful signup
+        router.push("/buy");
       } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Signup failed";
+
+        // If user already exists, redirect to login page with message
+        if (errorMessage.includes("already exists")) {
+          router.push("/login?message=account_exists");
+          return;
+        }
+
         setError({
-          message: err instanceof Error ? err.message : "Signup failed",
+          message: errorMessage,
           field: "general",
         });
         setState((prev) => ({ ...prev, isLoading: false }));
@@ -130,12 +152,10 @@ export function useUserAuth(): AuthState &
   // Logout function
   const logout = useCallback(async () => {
     try {
-      if (state.token) {
-        await authAPI.logout(state.token);
-      }
+      await authAPI.logout(); // No need to pass token, backend reads from cookie
     } catch (err) {
       // Even if logout fails on server, clear local state
-      console.warn("Logout API call failed:", err);
+      console.warn("User logout API call failed:", err);
     } finally {
       // Clear local storage and state
       authStorage.clear();
@@ -145,26 +165,24 @@ export function useUserAuth(): AuthState &
         isLoading: false,
         isAuthenticated: false,
       });
+      setError(null); // Clear any existing errors
 
       // Redirect to home page
       router.push("/");
     }
-  }, [state.token, router]);
+  }, [router]);
 
   // Refresh token function
   const refreshToken = useCallback(async () => {
-    if (!state.token) return;
-
     try {
-      const response = await authAPI.refreshToken(state.token);
+      const response = await authAPI.refreshToken(); // No need to pass token
 
-      // Update stored token
-      authStorage.setToken(response.data.token);
+      // Update stored user data (token is handled by backend via cookie)
       authStorage.setUser(response.data.user);
 
       setState((prev) => ({
         ...prev,
-        token: response.data.token,
+        token: response.data.token, // Keep for compatibility
         user: response.data.user,
       }));
     } catch (err) {
@@ -172,7 +190,7 @@ export function useUserAuth(): AuthState &
       console.warn("Token refresh failed:", err);
       await logout();
     }
-  }, [state.token, logout]);
+  }, [logout]);
 
   return {
     ...state,

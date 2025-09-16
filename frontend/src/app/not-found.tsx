@@ -36,7 +36,7 @@ function NotFoundContent() {
       neutralText: "text-grey",
       headingText: "text-black",
     } as const;
-  }, [code]);
+  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center px-(--space-m)">

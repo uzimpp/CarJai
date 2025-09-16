@@ -7,7 +7,6 @@ import (
 
 	"github.com/uzimpp/CarJai/backend/models"
 	"github.com/uzimpp/CarJai/backend/services"
-	"github.com/uzimpp/CarJai/backend/utils"
 )
 
 // UserAuthMiddleware provides authentication middleware for user routes
@@ -25,13 +24,12 @@ func NewUserAuthMiddleware(userService *services.UserService) *UserAuthMiddlewar
 // RequireAuth is a middleware that requires valid user authentication
 func (m *UserAuthMiddleware) RequireAuth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Get token from Authorization header
-		authHeader := r.Header.Get("Authorization")
-		token, err := utils.ExtractTokenFromHeader(authHeader)
+		// Get token from jwt cookie
+		cookie, err := r.Cookie("jwt")
 		if err != nil {
 			response := models.UserErrorResponse{
 				Success: false,
-				Error:   "Authorization header required",
+				Error:   "Authentication required",
 				Code:    http.StatusUnauthorized,
 			}
 			w.Header().Set("Content-Type", "application/json")
@@ -39,6 +37,7 @@ func (m *UserAuthMiddleware) RequireAuth(next http.HandlerFunc) http.HandlerFunc
 			json.NewEncoder(w).Encode(response)
 			return
 		}
+		token := cookie.Value
 
 		// Validate user session
 		user, err := m.userService.ValidateUserSession(token)
@@ -68,13 +67,12 @@ func (m *UserAuthMiddleware) RequireAuth(next http.HandlerFunc) http.HandlerFunc
 // RequireAuthHandler is a middleware that requires valid user authentication and returns a handler
 func (m *UserAuthMiddleware) RequireAuthHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Get token from Authorization header
-		authHeader := r.Header.Get("Authorization")
-		token, err := utils.ExtractTokenFromHeader(authHeader)
+		// Get token from jwt cookie
+		cookie, err := r.Cookie("jwt")
 		if err != nil {
 			response := models.UserErrorResponse{
 				Success: false,
-				Error:   "Authorization header required",
+				Error:   "Authentication required",
 				Code:    http.StatusUnauthorized,
 			}
 			w.Header().Set("Content-Type", "application/json")
@@ -82,6 +80,7 @@ func (m *UserAuthMiddleware) RequireAuthHandler(next http.Handler) http.Handler 
 			json.NewEncoder(w).Encode(response)
 			return
 		}
+		token := cookie.Value
 
 		// Validate user session
 		user, err := m.userService.ValidateUserSession(token)
@@ -135,11 +134,11 @@ func GetTokenFromContext(r *http.Request) (string, bool) {
 // OptionalAuth is a middleware that validates authentication if present but doesn't require it
 func (m *UserAuthMiddleware) OptionalAuth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Get token from Authorization header
-		authHeader := r.Header.Get("Authorization")
-		if authHeader != "" {
-			token, err := utils.ExtractTokenFromHeader(authHeader)
-			if err == nil {
+		// Get token from jwt cookie
+		cookie, err := r.Cookie("jwt")
+		if err == nil {
+			token := cookie.Value
+			if token != "" {
 				// Try to validate user session
 				user, err := m.userService.ValidateUserSession(token)
 				if err == nil {
