@@ -17,17 +17,6 @@ export default function AdminLoginPage() {
   const [error, setError] = useState("");
   const router = useRouter();
 
-  // Check for user session and clear it if exists
-  useEffect(() => {
-    const userToken = authStorage.getToken();
-    const user = authStorage.getUser();
-
-    if (userToken || user) {
-      console.log("🔍 Found existing user session, clearing it...");
-      authStorage.clear();
-    }
-  }, []);
-
   // If already authenticated, redirect to dashboard
   useEffect(() => {
     if (!authLoading && isAuthenticated) {

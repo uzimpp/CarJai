@@ -18,16 +18,6 @@ function LoginForm() {
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // Check for admin session and clear it if exists
-  useEffect(() => {
-    const adminToken = adminAuthStorage.getToken();
-    const adminUser = adminAuthStorage.getAdmin();
-
-    if (adminToken || adminUser) {
-      console.log("🔍 Found existing admin session, clearing it...");
-      adminAuthStorage.clear();
-    }
-  }, []);
 
   // Redirect if already authenticated
   useEffect(() => {

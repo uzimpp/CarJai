@@ -117,6 +117,9 @@ export function useUserAuth(): AuthState &
 
         const response = await authAPI.signup(data);
 
+        // Clear any existing admin session (mutual logout)
+        await mutualLogout.clearAdminSession();
+
         // Store user data (token is handled by backend via cookie)
         authStorage.setUser(response.data.user);
 
