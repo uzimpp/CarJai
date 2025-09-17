@@ -1,26 +1,208 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* === Font Sizes === */
+  /* @link https://utopia.fyi/type/calculator?c=350,16,1.25,1440,20,1.25,10,2,&s=0.75|0.5|0.25,1.5|2|3|4|6,s-l&g=s,l,xl,12 */
+  /* Step -3: 8.192px → 10.24px */
+  --text--3: clamp(0.512rem, 0.4709rem + 0.1879vw, 0.64rem);
+  /* Step -2: 10.24px → 12.8px */
+  --text--2: clamp(0.64rem, 0.5886rem + 0.2349vw, 0.8rem);
+  /* Step -1: 12.8px → 16px */
+  --text--1: clamp(0.8rem, 0.7358rem + 0.2936vw, 1rem);
+  /* Step 0: 16px → 20px */
+  --text-0: clamp(1rem, 0.9197rem + 0.367vw, 1.25rem);
+  /* Step 1: 20px → 25px */
+  --text-1: clamp(1.25rem, 1.1497rem + 0.4587vw, 1.5625rem);
+  /* Step 2: 25px → 31.25px */
+  --text-2: clamp(1.5625rem, 1.4371rem + 0.5734vw, 1.9531rem);
+  /* Step 3: 31.25px → 39.0625px */
+  --text-3: clamp(1.9531rem, 1.7963rem + 0.7167vw, 2.4414rem);
+  /* Step 4: 39.0625px → 48.8281px */
+  --text-4: clamp(2.4414rem, 2.2454rem + 0.8959vw, 3.0518rem);
+  /* Step 5: 48.8281px → 61.0352px */
+  --text-5: clamp(3.0518rem, 2.8068rem + 1.1199vw, 3.8147rem);
+  /* Step 6: 61.0352px → 76.2939px */
+  --text-6: clamp(3.8147rem, 3.5085rem + 1.3999vw, 4.7684rem);
+  /* Step 7: 76.2939px → 95.3674px */
+  --text-7: clamp(4.7684rem, 4.3856rem + 1.7499vw, 5.9605rem);
+  /* Step 8: 95.3674px → 119.2093px */
+  --text-8: clamp(5.9605rem, 5.482rem + 2.1873vw, 7.4506rem);
+  /* Step 9: 119.2093px → 149.0116px */
+  --text-9: clamp(7.4506rem, 6.8525rem + 2.7342vw, 9.3132rem);
+  /* Step 10: 149.0116px → 186.2645px */
+  --text-10: clamp(9.3132rem, 8.5656rem + 3.4177vw, 11.6415rem);
+
+  --text-landing-font-size: clamp(2rem, 1.0367rem + 4.4037vw, 5rem);
+
+  /* === Spacing === */
+  /* @link https://utopia.fyi/space/calculator?c=350,16,1.25,1440,20,1.25,10,2,&s=0.75|0.5|0.25|0.125,1.5|2|3|4|6|8|10,s-l|m-xl|l-2xl|xl-3xl|2xl-3xl|3xl-5xl|xs-m|2xs-s|3xs-xs|4xs-2xs&g=s,l,xl,12 */
+  /* Space 4xs: 2px → 3px */
+  --space-4xs: clamp(0.125rem, 0.1049rem + 0.0917vw, 0.1875rem);
+  /* Space 3xs: 4px → 5px */
+  --space-3xs: clamp(0.25rem, 0.2299rem + 0.0917vw, 0.3125rem);
+  /* Space 2xs: 8px → 10px */
+  --space-2xs: clamp(0.5rem, 0.4599rem + 0.1835vw, 0.625rem);
+  /* Space xs: 12px → 15px */
+  --space-xs: clamp(0.75rem, 0.6898rem + 0.2752vw, 0.9375rem);
+  /* Space s: 16px → 20px */
+  --space-s: clamp(1rem, 0.9197rem + 0.367vw, 1.25rem);
+  /* Space m: 24px → 30px */
+  --space-m: clamp(1.5rem, 1.3796rem + 0.5505vw, 1.875rem);
+  /* Space l: 32px → 40px */
+  --space-l: clamp(2rem, 1.8394rem + 0.7339vw, 2.5rem);
+  /* Space xl: 48px → 60px */
+  --space-xl: clamp(3rem, 2.7592rem + 1.1009vw, 3.75rem);
+  /* Space 2xl: 64px → 80px */
+  --space-2xl: clamp(4rem, 3.6789rem + 1.4679vw, 5rem);
+  /* Space 3xl: 96px → 120px */
+  --space-3xl: clamp(6rem, 5.5183rem + 2.2018vw, 7.5rem);
+  /* Space 4xl: 128px → 160px */
+  --space-4xl: clamp(8rem, 7.3578rem + 2.9358vw, 10rem);
+  /* Space 5xl: 160px → 200px */
+  --space-5xl: clamp(10rem, 9.1972rem + 3.6697vw, 12.5rem);
+
+  /* One-up pairs */
+  /* Space 4xs-3xs: 2px → 5px */
+  --space-4xs-3xs: clamp(0.125rem, 0.0648rem + 0.2752vw, 0.3125rem);
+  /* Space 3xs-2xs: 4px → 10px */
+  --space-3xs-2xs: clamp(0.25rem, 0.1296rem + 0.5505vw, 0.625rem);
+  /* Space 2xs-xs: 8px → 15px */
+  --space-2xs-xs: clamp(0.5rem, 0.3595rem + 0.6422vw, 0.9375rem);
+  /* Space xs-s: 12px → 20px */
+  --space-xs-s: clamp(0.75rem, 0.5894rem + 0.7339vw, 1.25rem);
+  /* Space s-m: 16px → 30px */
+  --space-s-m: clamp(1rem, 0.719rem + 1.2844vw, 1.875rem);
+  /* Space m-l: 24px → 40px */
+  --space-m-l: clamp(1.5rem, 1.1789rem + 1.4679vw, 2.5rem);
+  /* Space l-xl: 32px → 60px */
+  --space-l-xl: clamp(2rem, 1.4381rem + 2.5688vw, 3.75rem);
+  /* Space xl-2xl: 48px → 80px */
+  --space-xl-2xl: clamp(3rem, 2.3578rem + 2.9358vw, 5rem);
+  /* Space 2xl-3xl: 64px → 120px */
+  --space-2xl-3xl: clamp(4rem, 2.8761rem + 5.1376vw, 7.5rem);
+  /* Space 3xl-4xl: 96px → 160px */
+  --space-3xl-4xl: clamp(6rem, 4.7156rem + 5.8716vw, 10rem);
+  /* Space 4xl-5xl: 128px → 200px */
+  --space-4xl-5xl: clamp(8rem, 6.555rem + 6.6055vw, 12.5rem);
+
+  /* Custom pairs */
+  /* Space 4xs-2xs: 2px → 10px */
+  --space-4xs-2xs: clamp(0.125rem, -0.0356rem + 0.7339vw, 0.625rem);
+  /* Space 3xs-xs: 4px → 15px */
+  --space-3xs-xs: clamp(0.25rem, 0.0292rem + 1.0092vw, 0.9375rem);
+  /* Space 2xs-s: 8px → 20px */
+  --space-2xs-s: clamp(0.5rem, 0.2592rem + 1.1009vw, 1.25rem);
+  /* Space xs-m: 12px → 30px */
+  --space-xs-m: clamp(0.75rem, 0.3888rem + 1.6514vw, 1.875rem);
+  /* Space s-l: 16px → 40px */
+  --space-s-l: clamp(1rem, 0.5183rem + 2.2018vw, 2.5rem);
+  /* Space m-xl: 24px → 60px */
+  --space-m-xl: clamp(1.5rem, 0.7775rem + 3.3028vw, 3.75rem);
+  /* Space l-2xl: 32px → 80px */
+  --space-l-2xl: clamp(2rem, 1.0367rem + 4.4037vw, 5rem);
+  /* Space xl-3xl: 48px → 120px */
+  --space-xl-3xl: clamp(3rem, 1.555rem + 6.6055vw, 7.5rem);
+  /* Space 2xl-3xl: 64px → 120px */
+  --space-2xl-3xl: clamp(4rem, 2.8761rem + 5.1376vw, 7.5rem);
+  /* Space 3xl-5xl: 96px → 200px */
+  --space-3xl-5xl: clamp(6rem, 3.9128rem + 9.5413vw, 12.5rem);
+
+
+  /* === Colors === */
+  --color-white: #fffdfd;
+  --color-black: #1d0101;
+  --color-maroon: #851d15;
+  --color-red: #cd2214;
+  --color-grey: #303030;
+
+  --color-background: var(--color-white);
+  --color-foreground: var(--color-black);
+
+  /* === Round === */
+  --round-s: 0.25rem;
+  --round-m: 0.5rem;
+  --round-l: 1rem;
+  --round-xl: 1.5rem;
+  --round-2xl: 2rem;
+  --round-3xl: 3rem;
+  --round-4xl: 4rem;
+  --round-5xl: 5rem;
+
+  /* === Border Radius === */
+  --border-radius-sm: 0.25rem;
+  --border-radius-md: 0.5rem;
+
+  /* === Animations === */
+  --ease-smooth: cubic-bezier(0.4, 0.15, 0.6, 0.85);
+  --elastic: cubic-bezier(0.52, 1.27, 0.72, 1);
+
+  /* === Pre-calculations === */
+  --navbar-height: calc(0rem);
+  --min-page-height: calc(100dvh - var(--navbar-height));
+
+  /* === Shadows === */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-fc-subject), Arial, Helvetica, sans-serif;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .bold {
+    font-weight: 700;
+    letter-spacing: 0.05rem;
+  }
+
+  .letter-spacing-0 {
+    letter-spacing: 0;
+  }
+
+  .letter-spacing-1 {
+    letter-spacing: 0.01rem;
+  }
+
+  .letter-spacing-2 {
+    letter-spacing: 0.02rem;
+  }
+
+  .letter-spacing-3 {
+    letter-spacing: 0.03rem;
+  }
+
+  .letter-spacing-4 {
+    letter-spacing: 0.04rem;
+  }
+
+  .letter-spacing-5 {
+    letter-spacing: 0.05rem;
+  }
+
+  .letter-spacing-6 {
+    letter-spacing: 0.06rem;
+  }
+
+  .letter-spacing-7 {
+    letter-spacing: 0.07rem;
+  }
+
+  .letter-spacing-8 {
+    letter-spacing: 0.08rem;
+  }
+
+  .letter-spacing-9 {
+    letter-spacing: 0.09rem;
+  }
+
+  .letter-spacing-10 {
+    letter-spacing: 0.1rem;
+  }
 }

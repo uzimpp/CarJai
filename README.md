@@ -17,6 +17,8 @@ It connects **sellers** (car owners, dealers, resellers) with **buyers** through
 
 ## ⚙️ Setup Guide
 
+
+
 ### 1. Prerequisites
 - Node.js (>= 18) & npm / yarn  
 - Go (>= 1.22)  
@@ -29,7 +31,36 @@ git clone https://github.com/uzimpp/carjai.git
 cd carjai
 ```
 
-### 3. Install frontend (Next.js)
+### 3. Environment Setup
+
+Create the required `.env` files for both frontend and backend:
+
+```bash
+# Copy environment templates
+cp backend/env.example backend/.env
+cp frontend/env.example frontend/.env
+```
+
+```
+├── backend/
+│   ├── .env
+│   ├── env.example
+├── frontend/
+│   ├── .env
+│   ├── env.example
+├── docker-compose.yml
+
+```
+
+⚠️ **Important**: 
+- Copy `env.example` to `.env` and update with your secure values
+- Change the `JWT_SECRET` to a secure random string (minimum 32 characters)
+- Update admin credentials (`ADMIN_USERNAME`, `ADMIN_PASSWORD`) for production
+- Configure `CORS_ALLOWED_ORIGINS` with your frontend domains (comma-separated)
+- The backend `.env` file is required for the API to function
+- The frontend `.env` file is required for API communication
+
+### 4. Install frontend (Next.js)
 ```bash
 cd frontend
 npm install
@@ -37,7 +68,7 @@ npm run dev
 ```
 App available at: http://localhost:3000
 
-### 4. Run backend (Go API)
+### 5. Run backend (Go API)
 ```bash
 cd backend
 go mod tidy

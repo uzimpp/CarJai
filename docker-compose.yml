@@ -1,6 +1,25 @@
-version: '3.8'
-
 services:
+  # Database service (PostgreSQL)
+  database:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/migrations:/docker-entrypoint-initdb.d
+    networks:
+      - carjai-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U carjai_user -d carjai"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # Backend Go API service
   backend:
     build:
@@ -9,10 +28,33 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - PORT=8080
-      - GIN_MODE=release
+      PORT: ${PORT}
+      ENVIRONMENT: ${ENVIRONMENT}
+      DB_NAME: ${DB_NAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_USER: ${DB_USER}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_SSLMODE: ${DB_SSLMODE}
+      USER_JWT_SECRET: ${USER_JWT_SECRET}
+      USER_JWT_EXPIRATION_HOURS: ${USER_JWT_EXPIRATION_HOURS}
+      USER_JWT_ISSUER: ${USER_JWT_ISSUER}
+      ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET}
+      ADMIN_JWT_EXPIRATION_HOURS: ${ADMIN_JWT_EXPIRATION_HOURS}
+      ADMIN_JWT_ISSUER: ${ADMIN_JWT_ISSUER}
+      ADMIN_USERNAME: ${ADMIN_USERNAME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      ADMIN_NAME: ${ADMIN_NAME}
+      ADMIN_ROUTE_PREFIX: ${ADMIN_ROUTE_PREFIX}
+      ADMIN_IP_WHITELIST: ${ADMIN_IP_WHITELIST}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      AIGEN_API_KEY: ${AIGEN_API_KEY}
     networks:
       - carjai-network
+    depends_on:
+      database:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
@@ -29,12 +71,13 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=http://localhost:8080
+      NODE_ENV: ${NODE_ENV}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     networks:
       - carjai-network
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
@@ -43,49 +86,10 @@ services:
       retries: 3
       start_period: 40s
 
-  # Database service (PostgreSQL)
-  database:
-    image: postgres:15-alpine
-    environment:
-      - POSTGRES_DB=carjai
-      - POSTGRES_USER=carjai_user
-      - POSTGRES_PASSWORD=carjai_password
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./backend/docs/schema.sql:/docker-entrypoint-initdb.d/schema.sql
-    networks:
-      - carjai-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U carjai_user -d carjai"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # Redis for caching (optional)
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - carjai-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-
 networks:
   carjai-network:
     driver: bridge
 
 volumes:
   postgres_data:
-    driver: local
-  redis_data:
     driver: local

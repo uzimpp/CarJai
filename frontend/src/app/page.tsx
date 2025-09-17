@@ -1,103 +1,90 @@
 import Image from "next/image";
+import Link from "next/link";
+import SearchBar from "@/components/global/searchbar";
 
 export default function Home() {
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="px-(--space-m) py-(--space-s) max-w-[1536px] mx-auto w-full">
+      {/* Hero */}
+      <section className="relative rounded-4xl shadow-[var(--shadow-lg)] bg-gradient-to-r from-maroon to-maroon px-(--space-l) py-(--space-2xl-3xl)">
+        <div className="relative z-10 flex flex-col items-center text-center gap-y-(--space-s) pb-(--space-xl)">
+          <h1 className="text-landing-font-size letter-spacing-6 bold text-white">
+            ค้นหารถโดนใจได้ที่คาร์ใจ
+          </h1>
+          <div className="w-full max-w-[800px]">
+            <SearchBar className="mx-auto" placeholder="รถใช้ในเมือง" />
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        {/* Decorative cars overlay layer (does not affect layout) */}
+        <div className="pointer-events-none absolute inset-0 z-0 hidden sm:flex items-end justify-between select-none translate-y-(--space-s-m)">
+          <div className="relative basis-[36%] md:basis-[34%] lg:basis-[32%] max-w-[640px] min-w-[240px] aspect-[2.2/1] -translate-x-(--space-xs-s) scale-x-[-1]">
+            <Image
+              src="/assets/cars/benz_amg.png"
+              alt="car-left"
+              fill
+              quality={100}
+              className="object-contain"
+              priority
+            />
+          </div>
+          <div className="relative basis-[36%] md:basis-[34%] lg:basis-[32%] max-w-[640px] min-w-[240px] aspect-[2.2/1] translate-x-(--space-s)">
+            <Image
+              src="/assets/cars/honda_accord.png"
+              alt="car-right"
+              fill
+              quality={100}
+              className="object-contain"
+              priority
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Quick filters */}
+      <section className="mt-(--space-l) flex flex-wrap gap-(--space-s)">
+        {[
+          { label: "รถคันเล็ก", q: "eco" },
+          { label: "สำหรับครอบครัว", q: "family" },
+          { label: "สมรรถนะสูง", q: "sport" },
+          { label: "ประหยัดน้ำมัน", q: "hybrid" },
+        ].map((c) => (
+          <Link
+            key={c.q}
+            href={`/buy?q=${encodeURIComponent(c.q)}`}
+            className="text-white bg-maroon hover:bg-red px-(--space-s) py-(--space-2xs) rounded-full text--1 transition-colors"
+          >
+            {c.label}
+          </Link>
+        ))}
+      </section>
+
+      {/* Features */}
+      <section className="mt-(--space-xl) grid grid-cols-1 sm:grid-cols-3 gap-(--space-m)">
+        {[
+          {
+            title: "รถหลากหลาย",
+            desc: "ครอบคลุมทุกสไตล์ ตั้งแต่รถใช้งานในเมืองจนถึงสปอร์ต",
+          },
+          {
+            title: "วางขายง่ายรวดเร็ว",
+            desc: "ประกาศขายได้ในไม่กี่ขั้นตอน พร้อมเครื่องมือช่วยตั้งราคา",
+          },
+          {
+            title: "ปลอดภัย โปร่งใส",
+            desc: "ระบบยืนยันตัวตนและประวัติการใช้งาน สบายใจทั้งผู้ซื้อผู้ขาย",
+          },
+        ].map((f) => (
+          <div
+            key={f.title}
+            className="rounded-3xl bg-white shadow-[var(--shadow-md)] p-(--space-m)"
+          >
+            <h3 className="text-1 bold text-maroon mb-(--space-2xs)">
+              {f.title}
+            </h3>
+            <p className="text--1 text-grey">{f.desc}</p>
+          </div>
+        ))}
+      </section>
     </div>
   );
 }
