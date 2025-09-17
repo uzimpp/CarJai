@@ -195,6 +195,38 @@ jobs:
           docker build -t carjai-backend:test ./backend
           
       - name: Start services with docker-compose
+        env:
+          # Backend environment variables
+          PORT: 8080
+          ENVIRONMENT: test
+          POSTGRES_DB: carjai
+          POSTGRES_USER: carjai_user
+          POSTGRES_PASSWORD: test_password
+          DB_NAME: carjai
+          DB_PASSWORD: test_password
+          DB_USER: carjai_user
+          DB_HOST: database
+          DB_PORT: 5432
+          DB_SSLMODE: disable
+          USER_JWT_SECRET: test_user_jwt_secret_key_at_least_32_chars_long
+          USER_JWT_EXPIRATION_HOURS: 24
+          USER_JWT_ISSUER: carjai-app
+          ADMIN_JWT_SECRET: test_admin_jwt_secret_key_at_least_32_chars_long
+          ADMIN_JWT_EXPIRATION_HOURS: 2
+          ADMIN_JWT_ISSUER: carjai-admin
+          JWT_SECRET: test_jwt_secret_key_at_least_32_characters_long
+          JWT_EXPIRATION_HOURS: 24
+          JWT_ISSUER: test_api
+          ADMIN_USERNAME: testadmin
+          ADMIN_PASSWORD: test_admin_password
+          ADMIN_NAME: Test Admin
+          ADMIN_ROUTE_PREFIX: /admin
+          ADMIN_IP_WHITELIST: 127.0.0.1/32,::1/128,172.18.0.0/16
+          CORS_ALLOWED_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+          NEXT_PUBLIC_API_URL: http://localhost:8080
+          AIGEN_API_KEY: test_key
+          # Frontend environment variables
+          NODE_ENV: test
         run: |
           # Update docker-compose.yml to use test images
           sed -i 's/carjai-frontend:latest/carjai-frontend:test/g' docker-compose.yml
