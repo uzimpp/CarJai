@@ -19,6 +19,9 @@ import (
 func main() {
 	// Load configuration
 	appConfig := config.LoadAppConfig()
+
+	log.Printf("AIGEN API Key loaded: [%s]", appConfig.AigenAPIKey)
+	
 	dbConfig := config.LoadDatabaseConfig()
 
 	// Connect to database
@@ -33,103 +36,21 @@ func main() {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
 
-	// Create database instance
-	database := models.NewDatabase(db)
+	// Initialize services
+	services := initializeServices(db, appConfig)
 
-	// Create repositories
-	adminRepo := models.NewAdminRepository(database)
-	sessionRepo := models.NewSessionRepository(database)
-	ipWhitelistRepo := models.NewIPWhitelistRepository(database)
-	userRepo := models.NewUserRepository(database)
-	userSessionRepo := models.NewUserSessionRepository(database)
+	// Parse CORS origins
+	allowedOrigins := parseCORSOrigins(appConfig.CORSAllowedOrigins)
 
-	// Create JWT managers for user and admin
-	userJWTManager := utils.NewJWTManager(
-		appConfig.UserJWTSecret,
-		time.Duration(appConfig.UserJWTExpiration)*time.Hour,
-		appConfig.UserJWTIssuer,
-	)
-
-	adminJWTManager := utils.NewJWTManager(
-		appConfig.AdminJWTSecret,
-		time.Duration(appConfig.AdminJWTExpiration)*time.Hour,
-		appConfig.AdminJWTIssuer,
-	)
-
-	// Create admin service
-	adminService := services.NewAdminService(
-		adminRepo,
-		sessionRepo,
-		ipWhitelistRepo,
-		adminJWTManager,
-	)
-
-	// Create user service
-	userService := services.NewUserService(
-		userRepo,
-		userSessionRepo,
-		userJWTManager,
-	)
-
-	// Create maintenance service
-	maintenanceService := services.NewMaintenanceService(
-		adminRepo,
-		sessionRepo,
-		ipWhitelistRepo,
-		utils.AppLogger,
-	)
+	// Setup routers
+	routers := setupRouters(services, appConfig, allowedOrigins)
 
 	// Start maintenance service
 	ctx := context.Background()
-	go maintenanceService.StartMaintenance(ctx, nil)
-
-	// Parse allowed IPs from config
-	allowedIPs := []string{}
-	if appConfig.AdminIPWhitelist != "" {
-		// Split comma-separated IPs and trim whitespace
-		ips := strings.Split(appConfig.AdminIPWhitelist, ",")
-		for _, ip := range ips {
-			allowedIPs = append(allowedIPs, strings.TrimSpace(ip))
-		}
-	} else {
-		log.Fatal("ADMIN_IP_WHITELIST environment variable is required for security")
-	}
-
-	// Setup admin routes
-	adminRouter := routes.AdminRoutes(
-		adminService,
-		adminJWTManager,
-		appConfig.AdminRoutePrefix,
-		appConfig.CORSAllowedOrigins,
-		allowedIPs,
-	)
-
-	// Setup health routes
-	healthRouter := routes.HealthRoutes(db, appConfig.CORSAllowedOrigins)
-
-	// Setup user authentication routes
-	userAuthRouter := routes.UserAuthRoutes(userService, userJWTManager, appConfig.CORSAllowedOrigins)
+	go services.Maintenance.StartMaintenance(ctx, nil)
 
 	// Setup main router
-	mux := http.NewServeMux()
-
-	// Root endpoint (only for exact match)
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/" {
-			fmt.Fprintf(w, "Hello from CarJai Backend!")
-		} else {
-			http.NotFound(w, r)
-		}
-	})
-
-	// Mount admin routes
-	mux.Handle(appConfig.AdminRoutePrefix+"/", http.StripPrefix(appConfig.AdminRoutePrefix, adminRouter))
-
-	// Mount user auth routes
-	mux.Handle("/api/", userAuthRouter)
-
-	// Mount health routes
-	mux.Handle("/health", healthRouter)
+	mux := setupMainRouter(routers, appConfig, db)
 
 	// Start server
 	port := ":" + appConfig.Port
@@ -275,4 +196,157 @@ func initializeIPWhitelist(db *sql.DB, appConfig *config.AppConfig) error {
 
 	fmt.Printf("IP whitelist initialized for admin '%s' with %d entries\n", appConfig.AdminUsername, addedCount)
 	return nil
+}
+
+// ServiceContainer holds all initialized services
+type ServiceContainer struct {
+	Admin       *services.AdminService
+	User        *services.UserService
+	Maintenance *services.MaintenanceService
+	OCR         *services.OCRService
+	UserJWT     *utils.JWTManager
+	AdminJWT    *utils.JWTManager
+}
+
+// RouterContainer holds all initialized routers
+type RouterContainer struct {
+	Admin     *http.ServeMux
+	UserAuth  *http.ServeMux
+	Health    *http.ServeMux
+	OCR       http.Handler
+}
+
+// initializeServices creates and returns all service instances
+func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContainer {
+	// Create database instance
+	database := models.NewDatabase(db)
+
+	// Create repositories
+	adminRepo := models.NewAdminRepository(database)
+	sessionRepo := models.NewSessionRepository(database)
+	ipWhitelistRepo := models.NewIPWhitelistRepository(database)
+	userRepo := models.NewUserRepository(database)
+	userSessionRepo := models.NewUserSessionRepository(database)
+
+	// Create JWT managers
+	userJWTManager := utils.NewJWTManager(
+		appConfig.UserJWTSecret,
+		time.Duration(appConfig.UserJWTExpiration)*time.Hour,
+		appConfig.UserJWTIssuer,
+	)
+
+	adminJWTManager := utils.NewJWTManager(
+		appConfig.AdminJWTSecret,
+		time.Duration(appConfig.AdminJWTExpiration)*time.Hour,
+		appConfig.AdminJWTIssuer,
+	)
+
+	return &ServiceContainer{
+		Admin: services.NewAdminService(
+			adminRepo,
+			sessionRepo,
+			ipWhitelistRepo,
+			adminJWTManager,
+		),
+		User: services.NewUserService(
+			userRepo,
+			userSessionRepo,
+			userJWTManager,
+		),
+		Maintenance: services.NewMaintenanceService(
+			adminRepo,
+			sessionRepo,
+			ipWhitelistRepo,
+			utils.AppLogger,
+		),
+		OCR:      services.NewOCRService(appConfig.AigenAPIKey),
+		UserJWT:  userJWTManager,
+		AdminJWT: adminJWTManager,
+	}
+}
+
+// parseCORSOrigins parses comma-separated CORS origins into a slice
+func parseCORSOrigins(corsOrigins string) []string {
+	originsList := strings.Split(corsOrigins, ",")
+	allowedOrigins := make([]string, 0, len(originsList))
+	for _, origin := range originsList {
+		trimmedOrigin := strings.TrimSpace(origin)
+		if trimmedOrigin != "" {
+			allowedOrigins = append(allowedOrigins, trimmedOrigin)
+		}
+	}
+	return allowedOrigins
+}
+
+// setupRouters creates and returns all router instances
+func setupRouters(services *ServiceContainer, appConfig *config.AppConfig, allowedOrigins []string) *RouterContainer {
+	// Parse allowed IPs from config
+	allowedIPs := parseAllowedIPs(appConfig.AdminIPWhitelist)
+
+	return &RouterContainer{
+		Admin: routes.AdminRoutes(
+			services.Admin,
+			services.AdminJWT,
+			appConfig.AdminRoutePrefix,
+			appConfig.CORSAllowedOrigins,
+			allowedIPs,
+		),
+		UserAuth: routes.UserAuthRoutes(
+			services.User,
+			services.UserJWT,
+			appConfig.CORSAllowedOrigins,
+		),
+		Health: nil, // Will be set up in setupMainRouter with db
+		OCR: routes.OCRRoutes(
+			services.OCR,
+			allowedOrigins,
+		),
+	}
+}
+
+// parseAllowedIPs parses comma-separated IP addresses into a slice
+func parseAllowedIPs(ipWhitelist string) []string {
+	if ipWhitelist == "" {
+		log.Fatal("ADMIN_IP_WHITELIST environment variable is required for security")
+	}
+
+	ips := strings.Split(ipWhitelist, ",")
+	allowedIPs := make([]string, 0, len(ips))
+	for _, ip := range ips {
+		trimmedIP := strings.TrimSpace(ip)
+		if trimmedIP != "" {
+			allowedIPs = append(allowedIPs, trimmedIP)
+		}
+	}
+	return allowedIPs
+}
+
+// setupMainRouter creates and configures the main HTTP router
+func setupMainRouter(routers *RouterContainer, appConfig *config.AppConfig, db *sql.DB) *http.ServeMux {
+	mux := http.NewServeMux()
+
+	// Root endpoint (only for exact match)
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/" {
+			fmt.Fprintf(w, "Hello from CarJai Backend!")
+		} else {
+			http.NotFound(w, r)
+		}
+	})
+
+	// Mount admin routes
+	mux.Handle(appConfig.AdminRoutePrefix+"/", http.StripPrefix(appConfig.AdminRoutePrefix, routers.Admin))
+
+	// Mount user auth routes
+	mux.Handle("/api/", routers.UserAuth)
+
+	// Mount health routes
+	healthRouter := routes.HealthRoutes(db, appConfig.CORSAllowedOrigins)
+	mux.Handle("/health", healthRouter)
+
+	// Mount OCR routes
+	apiPrefix := "/api"
+	mux.Handle(apiPrefix+"/ocr/", http.StripPrefix(apiPrefix+"/ocr", routers.OCR))
+
+	return mux
 }

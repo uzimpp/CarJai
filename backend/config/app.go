@@ -10,6 +10,7 @@ type AppConfig struct {
 	AdminName          string
 	AdminIPWhitelist   string
 	CORSAllowedOrigins string
+	AigenAPIKey        string `env:"AIGEN_API_KEY,required"`
 	// Separate JWT configs for user and admin
 	UserJWTSecret      string
 	UserJWTExpiration  int // in hours
@@ -38,5 +39,6 @@ func LoadAppConfig() *AppConfig {
 		AdminJWTSecret:     getEnv("ADMIN_JWT_SECRET"),
 		AdminJWTExpiration: getEnvAsInt("ADMIN_JWT_EXPIRATION_HOURS"),
 		AdminJWTIssuer:     getEnv("ADMIN_JWT_ISSUER"),
+		AigenAPIKey: getEnv("AIGEN_API_KEY"),
 	}
 }

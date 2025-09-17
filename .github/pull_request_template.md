@@ -15,7 +15,7 @@
 - Notes for reviewers:
 
 ## ✅ Checklist
-- [ ] Conventional commit title (e.g., `feat(frontend): add login`)
+- [ ] Conventional commit title (e.g., `feat: add login`)
 - [ ] Proper branch name (`feature/`, `bugfix/`, etc.)
 - [ ] Code style & linting passed
 - [ ] No debug/temp code
