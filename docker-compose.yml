@@ -2,8 +2,10 @@ services:
   # Database service (PostgreSQL)
   database:
     image: postgres:15-alpine
-    env_file:
-      - ./backend/.env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
@@ -25,8 +27,29 @@ services:
       dockerfile: dockerfile
     ports:
       - "8080:8080"
-    env_file:
-      - ./backend/.env
+    environment:
+      PORT: ${PORT}
+      ENVIRONMENT: ${ENVIRONMENT}
+      DB_NAME: ${DB_NAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_USER: ${DB_USER}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_SSLMODE: ${DB_SSLMODE}
+      USER_JWT_SECRET: ${USER_JWT_SECRET}
+      USER_JWT_EXPIRATION_HOURS: ${USER_JWT_EXPIRATION_HOURS}
+      USER_JWT_ISSUER: ${USER_JWT_ISSUER}
+      ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET}
+      ADMIN_JWT_EXPIRATION_HOURS: ${ADMIN_JWT_EXPIRATION_HOURS}
+      ADMIN_JWT_ISSUER: ${ADMIN_JWT_ISSUER}
+      ADMIN_USERNAME: ${ADMIN_USERNAME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      ADMIN_NAME: ${ADMIN_NAME}
+      ADMIN_ROUTE_PREFIX: ${ADMIN_ROUTE_PREFIX}
+      ADMIN_IP_WHITELIST: ${ADMIN_IP_WHITELIST}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      AIGEN_API_KEY: ${AIGEN_API_KEY}
     networks:
       - carjai-network
     depends_on:
@@ -47,8 +70,9 @@ services:
       dockerfile: dockerfile
     ports:
       - "3000:3000"
-    env_file:
-      - ./frontend/.env
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     networks:
       - carjai-network
     depends_on:
