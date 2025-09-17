@@ -6,6 +6,7 @@
 <!-- Check and describe what was modified -->
 - [ ] Change 1
 - [ ] Change 2
+- [ ] Change 3
 
 ## 👀 Testing & Review
 <!-- Any special context reviewers should know -->
@@ -19,3 +20,6 @@
 - [ ] Code style & linting passed
 - [ ] No debug/temp code
 - [ ] Focused, well-described PR
+- [ ] All tests passing
+- [ ] Code review completed
+- [ ] Documentation updated

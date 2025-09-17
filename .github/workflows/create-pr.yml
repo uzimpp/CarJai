@@ -63,42 +63,14 @@ jobs:
           TARGET_BRANCH="${{ github.event.inputs.target_branch || 'main' }}"
           SOURCE_BRANCH="${{ github.ref_name }}"
           
-          # Create PR body
-          PR_BODY="## 🚀 Release to Production
-          
-          This PR merges changes from \`develop\` to \`main\` for production deployment.
-          
-          ### 📊 Changes Summary
-          - **Commits**: ${{ steps.commits.outputs.count }} new commits
-          - **Source Branch**: \`$SOURCE_BRANCH\`
-          - **Target Branch**: \`$TARGET_BRANCH\`
-          - **Triggered by**: ${{ github.actor }}
-          
-          ### 📝 Recent Commits
-          ${{ steps.commits.outputs.commits }}
-          
-          ### ✅ Pre-merge Checklist
-          - [ ] All tests passing
-          - [ ] Code review completed
-          - [ ] Documentation updated
-          - [ ] Security scan passed
-          - [ ] Performance tests passed
-          
-          ### 🔄 Deployment
-          Once merged, this will trigger:
-          - Production deployment
-          - Docker image push to registry
-          - Health checks
-          - Notification to team
-          
-          ---
-          *This PR was automatically created by GitHub Actions*"
+          # Use the pull request template exactly as it is
+          PR_BODY=$(cat .github/pull_request_template.md)
           
           # Create the PR
           gh pr create \
             --base "$TARGET_BRANCH" \
             --head "$SOURCE_BRANCH" \
-            --title "🚀 Release: Merge develop to main" \
+            --title "Release: new feature" \
             --body "$PR_BODY" \
             --assignee "${{ github.actor }}"
             
@@ -106,49 +78,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.PAT_TOKEN }}
           
-      - name: Update existing PR
+      - name: Skip update (PR already exists)
         if: steps.check-pr.outputs.exists == 'true'
         run: |
           PR_NUMBER="${{ steps.check-pr.outputs.pr_number }}"
-          
-          # Update PR body with latest commits
-          PR_BODY="## 🚀 Release to Production
-          
-          This PR merges changes from \`develop\` to \`main\` for production deployment.
-          
-          ### 📊 Changes Summary
-          - **Commits**: ${{ steps.commits.outputs.count }} new commits
-          - **Source Branch**: \`${{ github.ref_name }}\`
-          - **Target Branch**: \`${{ github.event.inputs.target_branch || 'main' }}\`
-          - **Triggered by**: ${{ github.actor }}
-          - **Last Updated**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
-          
-          ### 📝 Recent Commits
-          ${{ steps.commits.outputs.commits }}
-          
-          ### ✅ Pre-merge Checklist
-          - [ ] All tests passing
-          - [ ] Code review completed
-          - [ ] Documentation updated
-          - [ ] Security scan passed
-          - [ ] Performance tests passed
-          
-          ### 🔄 Deployment
-          Once merged, this will trigger:
-          - Production deployment
-          - Docker image push to registry
-          - Health checks
-          - Notification to team
-          
-          ---
-          *This PR was automatically updated by GitHub Actions*"
-          
-          # Update the PR
-          gh pr edit "$PR_NUMBER" --body "$PR_BODY"
-          
-          echo "✅ Pull Request #$PR_NUMBER updated successfully"
-        env:
-          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
+          echo "ℹ️ Pull Request #$PR_NUMBER already exists"
+          echo "📝 Manual updates required - workflow will not overwrite existing PR"
+          echo "🔗 PR URL: https://github.com/${{ github.repository }}/pull/$PR_NUMBER"
           
       - name: Add reviewers
         if: steps.check-pr.outputs.exists == 'false'
@@ -168,14 +104,24 @@ jobs:
           
       - name: Notify team
         run: |
-          echo "📢 Pull Request notification sent"
-          echo "PR: #$(gh pr list --base "${{ github.event.inputs.target_branch || 'main' }}" --head "${{ github.ref_name }}" --json number --jq '.[0].number')"
-          echo "URL: https://github.com/${{ github.repository }}/pull/$(gh pr list --base "${{ github.event.inputs.target_branch || 'main' }}" --head "${{ github.ref_name }}" --json number --jq '.[0].number')"
+          PR_NUMBER=$(gh pr list --base "${{ github.event.inputs.target_branch || 'main' }}" --head "${{ github.ref_name }}" --json number --jq '.[0].number')
+          
+          if [ "${{ steps.check-pr.outputs.exists }}" == "true" ]; then
+            echo "📢 Existing PR notification"
+            echo "PR: #$PR_NUMBER (already exists)"
+            echo "URL: https://github.com/${{ github.repository }}/pull/$PR_NUMBER"
+            echo "ℹ️ No changes made to existing PR - manual review required"
+          else
+            echo "📢 New PR notification"
+            echo "PR: #$PR_NUMBER (newly created)"
+            echo "URL: https://github.com/${{ github.repository }}/pull/$PR_NUMBER"
+            echo "✅ New PR created with template format"
+          fi
           
           # Add notification logic here (Slack, Discord, email, etc.)
           # Example:
           # curl -X POST -H 'Content-type: application/json' \
-          #   --data '{"text":"📝 New PR created for production release!"}' \
+          #   --data '{"text":"📝 PR notification for production release!"}' \
           #   ${{ secrets.SLACK_WEBHOOK_URL }}
         env:
           GH_TOKEN: ${{ secrets.PAT_TOKEN }}
