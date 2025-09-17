@@ -6,10 +6,10 @@ import (
 
 // User represents a regular user in the system
 type User struct {
-	ID           int        `json:"id" db:"id"`
-	Email        string     `json:"email" db:"email"`
-	PasswordHash string     `json:"-" db:"password_hash"`
-	CreatedAt    time.Time  `json:"created_at" db:"created_at"`
+	ID           int       `json:"id" db:"id"`
+	Email        string    `json:"email" db:"email"`
+	PasswordHash string    `json:"-" db:"password_hash"`
+	CreatedAt    time.Time `json:"created_at" db:"created_at"`
 }
 
 // UserSession represents an active user session
@@ -35,11 +35,16 @@ type UserLoginRequest struct {
 	Password string `json:"password" validate:"required,min=6"`
 }
 
+// UserGoogleLoginRequest represents the request payload for Google login
+type UserGoogleLoginRequest struct {
+	IDToken string `json:"id_token" validate:"required"`
+}
+
 // UserAuthResponse represents the response payload for successful authentication
 type UserAuthResponse struct {
-	Success   bool        `json:"success"`
-	Data      UserAuthData `json:"data"`
-	Message   string      `json:"message,omitempty"`
+	Success bool         `json:"success"`
+	Data    UserAuthData `json:"data"`
+	Message string       `json:"message,omitempty"`
 }
 
 // UserAuthData contains the authentication data returned after login/signup
@@ -58,8 +63,8 @@ type UserPublic struct {
 
 // UserMeResponse represents the response payload for GET /api/auth/me
 type UserMeResponse struct {
-	Success bool        `json:"success"`
-	Data    UserMeData  `json:"data"`
+	Success bool       `json:"success"`
+	Data    UserMeData `json:"data"`
 }
 
 // UserMeData contains the current user session information

@@ -138,6 +138,59 @@ func (h *UserAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+// GoogleLogin handles user login via Google ID token
+func (h *UserAuthHandler) GoogleLogin(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req models.UserGoogleLoginRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response := models.UserErrorResponse{
+			Success: false,
+			Error:   "Invalid request body",
+			Code:    http.StatusBadRequest,
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	if req.IDToken == "" {
+		response := models.UserErrorResponse{
+			Success: false,
+			Error:   "id_token is required",
+			Code:    http.StatusBadRequest,
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	ip := getClientIP(r)
+	ua := r.UserAgent()
+
+	response, err := h.userService.LoginWithGoogle(req.IDToken, ip, ua)
+	if err != nil {
+		errorResponse := models.UserErrorResponse{
+			Success: false,
+			Error:   "Invalid Google token",
+			Code:    http.StatusUnauthorized,
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(errorResponse)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+
 // Logout handles user logout requests
 func (h *UserAuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {

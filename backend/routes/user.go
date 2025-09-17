@@ -13,13 +13,13 @@ func UserAuthRoutes(
 	userService *services.UserService,
 	corsAllowedOrigins string,
 ) *http.ServeMux {
-	
+
 	// Create handler instance
 	userAuthHandler := handlers.NewUserAuthHandler(userService)
-	
+
 	// Create router
 	router := http.NewServeMux()
-	
+
 	// User authentication routes (no auth required)
 	router.HandleFunc("/api/auth/signup",
 		middleware.CORSMiddleware(corsAllowedOrigins)(
@@ -32,7 +32,7 @@ func UserAuthRoutes(
 			),
 		),
 	)
-	
+
 	router.HandleFunc("/api/auth/login",
 		middleware.CORSMiddleware(corsAllowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
@@ -44,7 +44,20 @@ func UserAuthRoutes(
 			),
 		),
 	)
-	
+
+	// Google login
+	router.HandleFunc("/api/auth/google/login",
+		middleware.CORSMiddleware(corsAllowedOrigins)(
+			middleware.SecurityHeadersMiddleware(
+				middleware.LoginRateLimit()( // reuse login rate limit
+					middleware.LoggingMiddleware(
+						userAuthHandler.GoogleLogin,
+					),
+				),
+			),
+		),
+	)
+
 	// User authentication routes (auth required)
 	router.HandleFunc("/api/auth/logout",
 		middleware.CORSMiddleware(corsAllowedOrigins)(
@@ -57,7 +70,7 @@ func UserAuthRoutes(
 			),
 		),
 	)
-	
+
 	router.HandleFunc("/api/auth/me",
 		middleware.CORSMiddleware(corsAllowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
@@ -69,7 +82,7 @@ func UserAuthRoutes(
 			),
 		),
 	)
-	
+
 	router.HandleFunc("/api/auth/refresh",
 		middleware.CORSMiddleware(corsAllowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
@@ -81,6 +94,6 @@ func UserAuthRoutes(
 			),
 		),
 	)
-	
+
 	return router
 }

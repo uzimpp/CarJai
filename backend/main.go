@@ -63,6 +63,7 @@ func main() {
 		userRepo,
 		userSessionRepo,
 		jwtManager,
+		"", // UserRoutePrefix removed as it's not defined in AppConfig
 	)
 
 	// Create maintenance service

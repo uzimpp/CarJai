@@ -9,6 +9,15 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// GoogleIDTokenClaims represents the subset of Google ID token claims we use
+type GoogleIDTokenClaims struct {
+	Issuer   string `json:"iss"`
+	Subject  string `json:"sub"`
+	Audience string `json:"aud"`
+	Email    string `json:"email"`
+	Exp      int64  `json:"exp"`
+}
+
 // UserRole represents the type of user
 type UserRole string
 
@@ -36,10 +45,10 @@ type TokenRequest struct {
 
 // JWTClaims represents the JWT claims structure for unified user system
 type JWTClaims struct {
-	UserID     int    `json:"user_id"`      // Universal user ID (admin or regular user)
-	Username   string `json:"username"`     // Username or email
-	Role       string `json:"role"`         // "admin" | "user"
-	AuthMethod string `json:"auth_method"`  // "password" | "google"
+	UserID     int    `json:"user_id"`     // Universal user ID (admin or regular user)
+	Username   string `json:"username"`    // Username or email
+	Role       string `json:"role"`        // "admin" | "user"
+	AuthMethod string `json:"auth_method"` // "password" | "google"
 	SessionID  string `json:"session_id"`
 	jwt.RegisteredClaims
 }
@@ -75,14 +84,14 @@ func (j *JWTManager) GenerateToken(req TokenRequest) (string, time.Time, error) 
 	if req.SessionID == "" {
 		return "", time.Time{}, fmt.Errorf("session ID is required")
 	}
-	
+
 	// Validate role
 	if !j.isRoleAllowed(req.Role) {
 		return "", time.Time{}, fmt.Errorf("role '%s' is not allowed", req.Role)
 	}
-	
+
 	expirationTime := time.Now().Add(j.tokenDuration)
-	
+
 	claims := &JWTClaims{
 		UserID:     req.UserID,
 		Username:   req.Username,
@@ -97,13 +106,13 @@ func (j *JWTManager) GenerateToken(req TokenRequest) (string, time.Time, error) 
 			Subject:   fmt.Sprintf("%s:%d", req.Role, req.UserID),
 		},
 	}
-	
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString([]byte(j.secretKey))
 	if err != nil {
 		return "", time.Time{}, fmt.Errorf("failed to sign token: %w", err)
 	}
-	
+
 	return tokenString, expirationTime, nil
 }
 
@@ -116,34 +125,34 @@ func (j *JWTManager) ValidateToken(tokenString string) (*JWTClaims, error) {
 		}
 		return []byte(j.secretKey), nil
 	})
-	
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse token: %w", err)
 	}
-	
+
 	claims, ok := token.Claims.(*JWTClaims)
 	if !ok || !token.Valid {
 		return nil, fmt.Errorf("invalid token")
 	}
-	
+
 	// Check if token is expired
 	if claims.ExpiresAt != nil && claims.ExpiresAt.Time.Before(time.Now()) {
 		return nil, fmt.Errorf("token expired")
 	}
-	
+
 	// Validate required claims
 	if claims.UserID == 0 {
 		return nil, fmt.Errorf("invalid user ID in token")
 	}
-	
+
 	if claims.Username == "" {
 		return nil, fmt.Errorf("invalid username in token")
 	}
-	
+
 	if !j.isRoleAllowed(UserRole(claims.Role)) {
 		return nil, fmt.Errorf("invalid role '%s' in token", claims.Role)
 	}
-	
+
 	return claims, nil
 }
 
@@ -153,7 +162,7 @@ func (j *JWTManager) RefreshToken(tokenString string) (string, time.Time, error)
 	if err != nil {
 		return "", time.Time{}, fmt.Errorf("invalid token for refresh: %w", err)
 	}
-	
+
 	// Generate new token with same claims but new expiration
 	return j.GenerateToken(TokenRequest{
 		UserID:     claims.UserID,
@@ -169,18 +178,18 @@ func ExtractTokenFromHeader(authHeader string) (string, error) {
 	if authHeader == "" {
 		return "", fmt.Errorf("authorization header is required")
 	}
-	
+
 	// Check if header starts with "Bearer "
 	const bearerPrefix = "Bearer "
 	if len(authHeader) < len(bearerPrefix) || authHeader[:len(bearerPrefix)] != bearerPrefix {
 		return "", fmt.Errorf("authorization header must start with 'Bearer '")
 	}
-	
+
 	token := authHeader[len(bearerPrefix):]
 	if token == "" {
 		return "", fmt.Errorf("token is empty")
 	}
-	
+
 	return token, nil
 }
 
@@ -190,16 +199,16 @@ func IsTokenExpired(tokenString string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("failed to parse token: %w", err)
 	}
-	
+
 	claims, ok := token.Claims.(*JWTClaims)
 	if !ok {
 		return false, fmt.Errorf("invalid token claims")
 	}
-	
+
 	if claims.ExpiresAt == nil {
 		return false, fmt.Errorf("token has no expiration time")
 	}
-	
+
 	return claims.ExpiresAt.Time.Before(time.Now()), nil
 }
 
@@ -243,8 +252,7 @@ func GenerateSecureSessionID() string {
 		// Fallback to timestamp-based ID if crypto/rand fails
 		return fmt.Sprintf("session_%d_%d", time.Now().UnixNano(), time.Now().Unix())
 	}
-	
+
 	// Convert to hex string
 	return "session_" + hex.EncodeToString(bytes)
 }
-

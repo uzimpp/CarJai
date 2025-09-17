@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/uzimpp/CarJai/backend/models"
@@ -13,14 +14,16 @@ type UserService struct {
 	userRepo        *models.UserRepository
 	userSessionRepo *models.UserSessionRepository
 	jwtManager      *utils.JWTManager
+	googleClientID  string
 }
 
 // NewUserService creates a new user service
-func NewUserService(userRepo *models.UserRepository, userSessionRepo *models.UserSessionRepository, jwtManager *utils.JWTManager) *UserService {
+func NewUserService(userRepo *models.UserRepository, userSessionRepo *models.UserSessionRepository, jwtManager *utils.JWTManager, googleClientID string) *UserService {
 	return &UserService{
 		userRepo:        userRepo,
 		userSessionRepo: userSessionRepo,
 		jwtManager:      jwtManager,
+		googleClientID:  googleClientID,
 	}
 }
 
@@ -62,7 +65,7 @@ func (s *UserService) Signup(email, password string) (*models.UserAuthResponse, 
 	session := &models.UserSession{
 		UserID:    user.ID,
 		Token:     token,
-		IPAddress: "127.0.0.1", // This should be passed from the handler
+		IPAddress: "127.0.0.1",     // This should be passed from the handler
 		UserAgent: "CarJai-Client", // This should be passed from the handler
 		ExpiresAt: expiresAt,
 	}
@@ -110,7 +113,7 @@ func (s *UserService) Login(email, password string) (*models.UserAuthResponse, e
 	session := &models.UserSession{
 		UserID:    user.ID,
 		Token:     token,
-		IPAddress: "127.0.0.1", // This should be passed from the handler
+		IPAddress: "127.0.0.1",     // This should be passed from the handler
 		UserAgent: "CarJai-Client", // This should be passed from the handler
 		ExpiresAt: expiresAt,
 	}
@@ -230,7 +233,7 @@ func (s *UserService) RefreshToken(token string) (*models.UserAuthResponse, erro
 	session := &models.UserSession{
 		UserID:    user.ID,
 		Token:     newToken,
-		IPAddress: "127.0.0.1", // This should be passed from the handler
+		IPAddress: "127.0.0.1",     // This should be passed from the handler
 		UserAgent: "CarJai-Client", // This should be passed from the handler
 		ExpiresAt: expiresAt,
 	}
@@ -248,5 +251,60 @@ func (s *UserService) RefreshToken(token string) (*models.UserAuthResponse, erro
 			ExpiresAt: expiresAt,
 		},
 		Message: "Token refreshed successfully",
+	}, nil
+}
+
+// LoginWithGoogle verifies Google ID token, upserts the user, and returns a JWT session
+func (s *UserService) LoginWithGoogle(idToken, ipAddress, userAgent string) (*models.UserAuthResponse, error) {
+	// Use context.Background() here; callers can be enhanced to pass request-scoped ctx
+	email, _, err := utils.VerifyGoogleIDToken(context.Background(), idToken, s.googleClientID)
+	if err != nil {
+		return nil, fmt.Errorf("google auth failed: %w", err)
+	}
+
+	normalizedEmail := email
+
+	user, err := s.userRepo.GetUserByEmail(normalizedEmail)
+	if err != nil {
+		// Provision new user with random secret hash
+		randomSecret := utils.GenerateSecureSessionID()
+		hashed, hashErr := bcrypt.GenerateFromPassword([]byte(randomSecret), 12)
+		if hashErr != nil {
+			return nil, fmt.Errorf("failed to provision account: %w", hashErr)
+		}
+		newUser := &models.User{Email: normalizedEmail, PasswordHash: string(hashed)}
+		if createErr := s.userRepo.CreateUser(newUser); createErr != nil {
+			return nil, fmt.Errorf("failed to create user: %w", createErr)
+		}
+		user = newUser
+	}
+
+	sessionID := utils.GenerateSecureSessionID()
+	token, expiresAt, err := s.jwtManager.GenerateToken(utils.NewUserTokenRequest(
+		user.ID, user.Email, utils.AuthGoogle, sessionID,
+	))
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate token: %w", err)
+	}
+
+	session := &models.UserSession{
+		UserID:    user.ID,
+		Token:     token,
+		IPAddress: ipAddress,
+		UserAgent: userAgent,
+		ExpiresAt: expiresAt,
+	}
+	if err := s.userSessionRepo.CreateUserSession(session); err != nil {
+		return nil, fmt.Errorf("failed to create session: %w", err)
+	}
+
+	return &models.UserAuthResponse{
+		Success: true,
+		Data: models.UserAuthData{
+			User:      user.ToPublic(),
+			Token:     token,
+			ExpiresAt: expiresAt,
+		},
+		Message: "Login successful",
 	}, nil
 }
