@@ -1,36 +1,114 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CarJai Frontend - Next.js Application
 
-## Getting Started
+A modern, responsive frontend application for CarJai built with Next.js 14, featuring user authentication, admin dashboard, and document verification capabilities.
 
-First, run the development server:
+## 🚀 Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+### Authentication & User Management
+- **🔐 Dual Authentication** - Separate login systems for users and admins
+- **👤 User Registration & Login** - Complete user account management
+- **🛡️ Protected Routes** - Secure route protection with authentication guards
+- **🔄 Session Management** - Automatic token refresh and session handling
+
+### Admin Dashboard
+- **📊 Admin Panel** - Comprehensive admin dashboard for system management
+- **🛡️ IP Whitelist Management** - Admin IP address management interface
+- **👥 User Management** - User account administration and monitoring
+- **📈 System Monitoring** - Real-time system health and metrics
+
+### Document Verification
+- **📄 OCR Integration** - AI-powered document scanning and verification
+- **🔍 Document Upload** - Secure document upload with validation
+- **✅ Verification Workflow** - Complete document verification process
+- **📋 Document Management** - Document history and status tracking
+
+
+## 🏗️ Project Structure
+
+```
+frontend/
+├── src/
+│   ├── app/                    # Next.js App Router pages
+│   │   ├── about-us/          # About us page
+│   │   ├── admin/             # Admin dashboard pages
+│   │   │   ├── dashboard/     # Admin dashboard
+│   │   │   └── login/         # Admin login
+│   │   ├── buy/               # Car buying page
+│   │   ├── login/             # User login page
+│   │   ├── signup/            # User registration page
+│   │   ├── verify-document/   # Document verification page
+│   │   ├── privacy/           # Privacy policy
+│   │   ├── terms/             # Terms of service
+│   │   ├── layout.tsx         # Root layout
+│   │   ├── page.tsx           # Home page
+│   │   └── globals.css        # Global styles
+│   ├── components/            # React components
+│   │   ├── auth/              # Authentication components
+│   │   │   └── ProtectedRoute.tsx
+│   │   ├── features/          # Feature-specific components
+│   │   │   └── ocr/           # OCR document components
+│   │   │       └── DocumentUploader.tsx
+│   │   └── global/            # Global UI components
+│   │       ├── footer.tsx
+│   │       ├── navbar.tsx
+│   │       └── searchbar.tsx
+│   ├── config/                # Configuration files
+│   │   └── env.ts
+│   ├── constants/             # Application constants
+│   │   ├── admin.ts
+│   │   └── user.ts
+│   ├── hooks/                 # Custom React hooks
+│   │   ├── useAdminAuth.ts
+│   │   └── useUserAuth.ts
+│   └── lib/                   # Utility libraries
+│       ├── adminAuth.ts
+│       └── auth.ts
+├── public/                    # Static assets
+│   ├── assets/               # Images and media
+│   │   └── cars/             # Car images
+│   ├── fonts/                # Custom fonts
+│   └── logo/                 # Logo assets
+├── package.json
+├── next.config.ts
+├── tailwind.config.ts
+└── tsconfig.json
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 📱 Pages & Routes
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Public Pages
+- `/` - Home page
+- `/about-us` - About us page
+- `/login` - User login
+- `/signup` - User registration
+- `/privacy` - Privacy policy
+- `/terms` - Terms of service
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### User Pages
+- `/buy` - Car marketplace (requires user auth)
+- `/verify-document` - Document verification (requires user auth)
 
-## Learn More
+### Admin Pages
+- `/admin/login` - Admin login
+- `/admin/dashboard` - Admin dashboard (requires admin auth)
 
-To learn more about Next.js, take a look at the following resources:
+### Code Quality
+- **TypeScript** - Full type safety
+- **ESLint** - Code linting and formatting
+- **Prettier** - Code formatting
+- **Tailwind CSS** - CSS framework
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Docker
+```bash
+# Build Docker image
+docker build -t carjai-frontend .
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# Run container
+docker run -p 3000:3000 carjai-frontend
+```
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Environment Variables for Production
+```env
+NEXT_PUBLIC_API_URL=https://api.carjai.com
+NODE_ENV=production
+```

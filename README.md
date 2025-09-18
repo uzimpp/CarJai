@@ -6,7 +6,7 @@ It connects **sellers** (car owners, dealers, resellers) with **buyers** through
 ---
 
 ## 📖 Project Overview
-**Key Features (planned):**
+**Key Features: **
 - Buyers can browse, search, and filter cars (brand, model, year, price, province).
 - Sellers can create listings with car details, photos, and supporting documents.
 - Admins can approve/reject listings, verify documents, and ban fraudulent sellers.
@@ -17,13 +17,8 @@ It connects **sellers** (car owners, dealers, resellers) with **buyers** through
 
 ## ⚙️ Setup Guide
 
-
-
 ### 1. Prerequisites
-- Node.js (>= 18) & npm / yarn  
-- Go (>= 1.22)  
-- PostgreSQL (>= 15)  
-- Docker (optional for containerized run)  
+- Docker (for containerized run)  
 
 ### 2. Clone the repo
 ```bash
@@ -32,71 +27,39 @@ cd carjai
 ```
 
 ### 3. Environment Setup
-
-Create the required `.env` files for both frontend and backend:
+Copy `env.example` to `.env` and configure:
+- Database credentials
+- JWT secrets
+- Admin credentials
+- External API keys
 
 ```bash
 # Copy environment templates
-cp backend/env.example backend/.env
-cp frontend/env.example frontend/.env
+cp env.example .env
 ```
 
+The structure should look like this
 ```
 ├── backend/
-│   ├── .env
-│   ├── env.example
 ├── frontend/
-│   ├── .env
-│   ├── env.example
+├── .env
+├── env.example
 ├── docker-compose.yml
 
 ```
 
-⚠️ **Important**: 
-- Copy `env.example` to `.env` and update with your secure values
-- Change the `JWT_SECRET` to a secure random string (minimum 32 characters)
-- Update admin credentials (`ADMIN_USERNAME`, `ADMIN_PASSWORD`) for production
-- Configure `CORS_ALLOWED_ORIGINS` with your frontend domains (comma-separated)
-- The backend `.env` file is required for the API to function
-- The frontend `.env` file is required for API communication
-
-### 4. Install frontend (Next.js)
-```bash
-cd frontend
-npm install
-npm run dev
-```
-App available at: http://localhost:3000
-
-### 5. Run backend (Go API)
-```bash
-cd backend
-go mod tidy
-go run main.go
-```
-API available at: http://localhost:8080
-
----
-
 ## 🐳 Run with Docker
-
-After building images, you can run containers directly:
-
-Frontend
-```bash
-docker build -t carjai-frontend ./frontend
-docker run -it --name frontend -p 3000:3000 --rm carjai-frontend
-```
-→ Visit http://localhost:3000
-
-Backend
-```bash
-docker build -t carjai-backend ./backend
-docker run -it --rm --name backend -p 8080:8080 carjai-backend
-```
-→ Visit http://localhost:8080
 
 run everything with:
 ```bash
 docker compose up -d
 ```
+
+→ Visit Frontend at http://localhost:3000
+→ Visit Backend at http://localhost:8080
+
+## 📚 Documentation
+
+- [API Documentation](backend/docs/API.md) - Complete API reference
+- [Backend Docs](backend/README.md) - Backend-specific documentation
+- [Frontend Docs](frontend/README.md) - Frontend-specific documentation
