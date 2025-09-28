@@ -5,7 +5,9 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/uzimpp/CarJai/backend/services" // <-- แก้ไข import path ให้ตรงกับโปรเจคของน้อง
+	"github.com/uzimpp/CarJai/backend/middleware"
+	"github.com/uzimpp/CarJai/backend/services"
+	"github.com/uzimpp/CarJai/backend/utils"
 )
 
 // APIResponse เป็น struct กลางสำหรับตอบกลับ
@@ -22,12 +24,19 @@ type OCRResultData struct {
 // ocrUploadHandler คือ handler ที่จัดการการอัปโหลดไฟล์
 func ocrUploadHandler(ocrService *services.OCRService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		log.Println("Received new OCR request")
+		// Get user information from context (set by auth middleware)
+		user, ok := middleware.GetUserFromContext(r)
+		if !ok {
+			sendJSONError(w, "User not found in request context.", http.StatusInternalServerError)
+			return
+		}
+
+		log.Printf("Received new OCR request from user: %s (ID: %d)", user.Email, user.ID)
 
 		// --- จุดที่แก้ไข ---
 		// คำนวณ 5.5 MB ให้เป็นจำนวนเต็มของ bytes ก่อน
 		// 1 MB = 1024 * 1024 bytes
-		const maxUploadSize = int64(5.5 * 1024 * 1024) 
+		const maxUploadSize = int64(5.5 * 1024 * 1024)
 
 		if err := r.ParseMultipartForm(maxUploadSize); err != nil {
 			sendJSONError(w, "File is too large.", http.StatusBadRequest)
@@ -44,54 +53,40 @@ func ocrUploadHandler(ocrService *services.OCRService) http.HandlerFunc {
 
 		extractedText, err := ocrService.ExtractTextFromFile(file, handler)
 		if err != nil {
-			log.Printf("OCR service error: %v", err)
+			log.Printf("OCR service error for user %s: %v", user.Email, err)
 			sendJSONError(w, "Failed to process document.", http.StatusInternalServerError)
 			return
 		}
 
+		log.Printf("OCR processing completed for user: %s", user.Email)
 		sendJSONSuccess(w, OCRResultData{ExtractedText: extractedText}, http.StatusOK)
 	}
 }
 
 // OCRRoutes สร้าง router สำหรับฟีเจอร์ OCR
-func OCRRoutes(ocrService *services.OCRService, corsAllowedOrigins []string) http.Handler {
-	mux := http.NewServeMux()
-	handler := ocrUploadHandler(ocrService)
+func OCRRoutes(ocrService *services.OCRService, userService *services.UserService, userJWTManager *utils.JWTManager, allowedOrigins []string) http.Handler {
+	// Create user auth middleware
+	userAuthMiddleware := middleware.NewUserAuthMiddleware(userService)
 
-	// เราจะใช้ Middleware สำหรับ CORS ที่นี่
-	corsHandler := corsMiddleware(handler, corsAllowedOrigins)
+	// Create router
+	router := http.NewServeMux()
 
-	mux.Handle("/verify-document", corsHandler) // Endpoint: /api/v1/ocr/verify-document
+	// OCR upload endpoint with user authentication required
+	router.HandleFunc("/api/ocr/verify-document",
+		middleware.CORSMiddleware(allowedOrigins)(
+			middleware.SecurityHeadersMiddleware(
+				middleware.GeneralRateLimit()(
+					middleware.LoggingMiddleware(
+						userAuthMiddleware.RequireAuth(
+							ocrUploadHandler(ocrService),
+						),
+					),
+				),
+			),
+		),
+	)
 
-	return mux
-}
-
-// corsMiddleware (อาจจะมีอยู่แล้วในโปรเจค, ถ้าไม่มีให้เพิ่มเข้าไป)
-func corsMiddleware(next http.Handler, allowedOrigins []string) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		origin := r.Header.Get("Origin")
-		isAllowed := false
-		for _, allowed := range allowedOrigins {
-			if origin == allowed {
-				isAllowed = true
-				break
-			}
-		}
-
-		if isAllowed {
-			w.Header().Set("Access-Control-Allow-Origin", origin)
-		}
-		
-		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-
-		next.ServeHTTP(w, r)
-	})
+	return router
 }
 
 // Helper functions for sending JSON responses

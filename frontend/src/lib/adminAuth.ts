@@ -1,5 +1,4 @@
 // Admin authentication utilities and API functions
-import { config } from "@/config/env";
 import {
   AdminUser,
   AdminMeResponse,
@@ -7,31 +6,7 @@ import {
   AdminAuthResponse,
   AdminLoginRequest,
 } from "@/constants/admin";
-
-// API call helper
-async function apiCall<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const url = `${config.apiUrl}${endpoint}`;
-
-  const response = await fetch(url, {
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-    credentials: "include", // Include cookies
-    ...options,
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.error || `HTTP ${response.status}`);
-  }
-
-  return data;
-}
+import { apiCall } from "./apiCall";
 
 // Admin authentication API functions
 export const adminAuthAPI = {
@@ -65,41 +40,38 @@ export const adminAuthAPI = {
   },
 };
 
-// Local storage helpers for admin authentication
+// Pure cookie-based authentication - no localStorage needed!
+// All authentication state comes from backend cookies
 export const adminAuthStorage = {
+  // Cookie-based auth doesn't need client-side token storage
   getToken(): string | null {
-    if (typeof window === "undefined") return null;
-    return localStorage.getItem("adminToken");
+    return "cookie-based"; // Placeholder - actual auth via HTTP-only cookies
   },
 
-  setToken(token: string): void {
-    if (typeof window === "undefined") return;
-    localStorage.setItem("adminToken", token);
+  setToken(): void {
+    // Tokens are set by backend via Set-Cookie header
+    // No client-side storage needed
   },
 
   removeToken(): void {
-    if (typeof window === "undefined") return;
-    localStorage.removeItem("adminToken");
+    // Tokens are cleared by backend via Set-Cookie header
+    // No client-side storage needed
   },
 
+  // No localStorage - always fetch fresh from backend
   getAdmin(): AdminUser | null {
-    if (typeof window === "undefined") return null;
-    const adminStr = localStorage.getItem("adminUser");
-    return adminStr ? JSON.parse(adminStr) : null;
+    return null; // Always fetch from backend
   },
 
-  setAdmin(admin: AdminUser): void {
-    if (typeof window === "undefined") return;
-    localStorage.setItem("adminUser", JSON.stringify(admin));
+  setAdmin(): void {
+    // No localStorage - UI state managed by React hooks
   },
 
   removeAdmin(): void {
-    if (typeof window === "undefined") return;
-    localStorage.removeItem("adminUser");
+    // No localStorage - UI state managed by React hooks
   },
 
   clear(): void {
-    this.removeToken();
-    this.removeAdmin();
+    // No localStorage to clear - pure cookie-based
   },
 };

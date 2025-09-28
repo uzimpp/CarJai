@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useUserAuth";
-import { validation } from "@/lib/auth";
+import { validation } from "@/lib/userAuth";
 
 export default function SignupPage() {
   const router = useRouter();

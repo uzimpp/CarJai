@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useUserAuth";
-import { validation } from "@/lib/auth";
+import { validation } from "@/lib/userAuth";
 
 function LoginForm() {
   const router = useRouter();

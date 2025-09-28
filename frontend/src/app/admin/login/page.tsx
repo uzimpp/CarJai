@@ -3,11 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
-import { adminAuthStorage, adminAuthAPI } from "@/lib/adminAuth";
-import { mutualLogout } from "@/lib/auth";
 
 export default function AdminLoginPage() {
-  const { isAuthenticated, loading: authLoading } = useAdminAuth();
+  const { isAuthenticated, loading: authLoading, login } = useAdminAuth();
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -31,24 +29,14 @@ export default function AdminLoginPage() {
     console.log("🔐 Admin login attempt with:", formData);
 
     try {
-      const data = await adminAuthAPI.login(formData);
+      // Use the hook's login function instead of calling API directly
+      const data = await login(formData);
       console.log("📋 Admin login response data:", data);
 
-      if (data.success) {
-        // Clear any existing user session (mutual logout)
-        await mutualLogout.clearUserSession();
-
-        // Store admin data (token is handled by backend via cookie)
-        adminAuthStorage.setAdmin(data.data.admin);
-        console.log("💾 Admin data stored:", data.data.admin);
-
-        // Redirect to admin dashboard
-        console.log("🔀 Redirecting to admin dashboard...");
-        router.push("/admin/dashboard");
-        console.log("✨ Admin redirect called");
-      } else {
-        setError(data.message || "Login failed");
-      }
+      // Login hook handles state updates, just redirect
+      console.log("🔀 Redirecting to admin dashboard...");
+      router.push("/admin/dashboard");
+      console.log("✨ Admin redirect called");
     } catch (err) {
       console.error("❌ Admin login error:", err);
 

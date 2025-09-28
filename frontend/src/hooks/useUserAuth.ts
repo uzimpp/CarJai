@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { User, LoginRequest, SignupRequest } from "@/constants/user";
-import { authAPI, authStorage, mutualLogout } from "@/lib/auth";
+import { authAPI } from "@/lib/userAuth";
+import { mutualLogout } from "@/lib/mutualLogout";
 
 interface AuthState {
   user: User | null;
@@ -37,57 +38,57 @@ export function useUserAuth(): AuthState &
   });
   const [error, setError] = useState<AuthErrorWithField | null>(null);
 
-  // Initialize auth state from localStorage and cookies
-  useEffect(() => {
-    const user = authStorage.getUser();
+  // Validate user session with backend (pure cookie-based)
+  const validateUserSession = useCallback(async () => {
+    console.log(
+      "🔍 Validating user session with backend (pure cookie-based)..."
+    );
 
-    console.log("🔍 Auth initialization - User:", user);
+    try {
+      // Pure cookie-based validation - no localStorage involved
+      const response = await authAPI.getCurrentUser();
+      if (response.success) {
+        console.log("✅ User session validated with backend (cookie-based)");
 
-    if (user) {
-      console.log("✅ Found user data, setting authenticated state");
-      setState({
-        user,
-        token: "cookie-based", // Token handled by backend via cookie
-        isLoading: false,
-        isAuthenticated: true,
-      });
-    } else {
-      console.log("❌ No user data found, setting unauthenticated state");
-      setState((prev) => ({
-        ...prev,
-        isLoading: false,
-      }));
+        // Update React state directly - no localStorage storage
+        setState({
+          user: response.data.user,
+          token: "cookie-based",
+          isLoading: false,
+          isAuthenticated: true,
+        });
+        return;
+      }
+    } catch (error) {
+      console.error("User session validation failed:", error);
     }
+
+    // Validation failed - not authenticated
+    console.log("❌ User not authenticated (pure cookie-based)");
+    setState({
+      user: null,
+      token: null,
+      isLoading: false,
+      isAuthenticated: false,
+    });
   }, []);
+
+  // Initialize auth state - validate with backend first (cookie-based)
+  useEffect(() => {
+    console.log("🔍 User auth initialization - validating with backend...");
+    validateUserSession();
+  }, [validateUserSession]);
 
   // Re-validate user state on route changes to refresh navbar
+  // Only if not already loading to prevent infinite loops
   useEffect(() => {
-    const user = authStorage.getUser();
-    setState((prev) => ({
-      ...prev,
-      user,
-      isAuthenticated: !!user,
-      isLoading: false,
-      token: user ? "cookie-based" : null,
-    }));
-  }, [pathname]);
+    if (!state.isLoading) {
+      validateUserSession();
+    }
+  }, [pathname, validateUserSession, state.isLoading]);
 
-  // Keep in sync across tabs / programmatic storage changes
-  useEffect(() => {
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === "user") {
-        const next = authStorage.getUser();
-        setState((prev) => ({
-          ...prev,
-          user: next,
-          isAuthenticated: !!next,
-          token: next ? "cookie-based" : null,
-        }));
-      }
-    };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, []);
+  // No localStorage listeners needed - pure cookie-based authentication
+  // Browser will handle cookie changes automatically
 
   // Clear error helper
   const clearError = useCallback(() => {
@@ -109,17 +110,14 @@ export function useUserAuth(): AuthState &
         // Clear any existing admin session (mutual logout)
         await mutualLogout.clearAdminSession();
 
-        // Store user data (token is handled by backend via cookie)
-        authStorage.setUser(response.data.user);
-        console.log("💾 User stored in localStorage");
-
+        // Update React state directly - no localStorage storage
         setState({
           user: response.data.user,
           token: "cookie-based", // Token handled by backend via cookie
           isLoading: false,
           isAuthenticated: true,
         });
-        console.log("🔄 State updated - isAuthenticated: true");
+        console.log("🔄 State updated - pure cookie-based authentication");
 
         // Redirect to buy page after successful login
         console.log("🔀 Redirecting to /buy...");
@@ -149,9 +147,7 @@ export function useUserAuth(): AuthState &
         // Clear any existing admin session (mutual logout)
         await mutualLogout.clearAdminSession();
 
-        // Store user data (token is handled by backend via cookie)
-        authStorage.setUser(response.data.user);
-
+        // Update React state directly - no localStorage storage
         setState({
           user: response.data.user,
           token: "cookie-based", // Token handled by backend via cookie
@@ -189,8 +185,7 @@ export function useUserAuth(): AuthState &
       // Even if logout fails on server, clear local state
       console.warn("User logout API call failed:", err);
     } finally {
-      // Clear local storage and state
-      authStorage.clear();
+      // Clear React state (no localStorage to clear in pure cookie-based)
       setState({
         user: null,
         token: null,
@@ -209,9 +204,7 @@ export function useUserAuth(): AuthState &
     try {
       const response = await authAPI.refreshToken(); // No need to pass token
 
-      // Update stored user data (token is handled by backend via cookie)
-      authStorage.setUser(response.data.user);
-
+      // Update React state directly - no localStorage storage
       setState((prev) => ({
         ...prev,
         token: "cookie-based", // Token handled by backend via cookie

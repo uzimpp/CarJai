@@ -68,11 +68,12 @@ services:
     build:
       context: ./frontend
       dockerfile: dockerfile
+      args:
+        DOCKER_ENV: "true"
     ports:
       - "3000:3000"
     environment:
       NODE_ENV: ${NODE_ENV}
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     networks:
       - carjai-network
     depends_on:

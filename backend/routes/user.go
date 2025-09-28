@@ -13,18 +13,18 @@ import (
 func UserAuthRoutes(
 	userService *services.UserService,
 	userJWTManager *utils.JWTManager,
-	corsAllowedOrigins string,
+	allowedOrigins []string,
 ) *http.ServeMux {
-	
+
 	// Create handler instance
 	userAuthHandler := handlers.NewUserAuthHandler(userService)
-	
+
 	// Create router
 	router := http.NewServeMux()
-	
+
 	// User authentication routes (no auth required)
 	router.HandleFunc("/api/auth/signup",
-		middleware.CORSMiddleware(corsAllowedOrigins)(
+		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				middleware.GeneralRateLimit()(
 					middleware.LoggingMiddleware(
@@ -34,9 +34,9 @@ func UserAuthRoutes(
 			),
 		),
 	)
-	
+
 	router.HandleFunc("/api/auth/login",
-		middleware.CORSMiddleware(corsAllowedOrigins)(
+		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				middleware.LoginRateLimit()(
 					middleware.LoggingMiddleware(
@@ -46,10 +46,10 @@ func UserAuthRoutes(
 			),
 		),
 	)
-	
+
 	// User authentication routes (auth required)
 	router.HandleFunc("/api/auth/logout",
-		middleware.CORSMiddleware(corsAllowedOrigins)(
+		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				middleware.GeneralRateLimit()(
 					middleware.LoggingMiddleware(
@@ -59,9 +59,9 @@ func UserAuthRoutes(
 			),
 		),
 	)
-	
+
 	router.HandleFunc("/api/auth/me",
-		middleware.CORSMiddleware(corsAllowedOrigins)(
+		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				middleware.GeneralRateLimit()(
 					middleware.LoggingMiddleware(
@@ -71,9 +71,9 @@ func UserAuthRoutes(
 			),
 		),
 	)
-	
+
 	router.HandleFunc("/api/auth/refresh",
-		middleware.CORSMiddleware(corsAllowedOrigins)(
+		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				middleware.GeneralRateLimit()(
 					middleware.LoggingMiddleware(
@@ -83,6 +83,6 @@ func UserAuthRoutes(
 			),
 		),
 	)
-	
+
 	return router
 }

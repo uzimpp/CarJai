@@ -51,12 +51,12 @@ func (l *Logger) WithField(key string, value interface{}) *Logger {
 		level:  l.level,
 		fields: make(map[string]interface{}),
 	}
-	
+
 	// Copy existing fields
 	for k, v := range l.fields {
 		newLogger.fields[k] = v
 	}
-	
+
 	// Add new field
 	newLogger.fields[key] = value
 	return newLogger
@@ -68,17 +68,17 @@ func (l *Logger) WithFields(fields map[string]interface{}) *Logger {
 		level:  l.level,
 		fields: make(map[string]interface{}),
 	}
-	
+
 	// Copy existing fields
 	for k, v := range l.fields {
 		newLogger.fields[k] = v
 	}
-	
+
 	// Add new fields
 	for k, v := range fields {
 		newLogger.fields[k] = v
 	}
-	
+
 	return newLogger
 }
 
@@ -87,7 +87,7 @@ func (l *Logger) log(level LogLevel, message string) {
 	if level < l.level {
 		return
 	}
-	
+
 	levelNames := map[LogLevel]string{
 		DEBUG: "DEBUG",
 		INFO:  "INFO",
@@ -95,23 +95,23 @@ func (l *Logger) log(level LogLevel, message string) {
 		ERROR: "ERROR",
 		FATAL: "FATAL",
 	}
-	
+
 	entry := LogEntry{
 		Timestamp: time.Now(),
 		Level:     levelNames[level],
 		Message:   message,
 		Fields:    l.fields,
 	}
-	
+
 	// Output as JSON
 	jsonData, err := json.Marshal(entry)
 	if err != nil {
 		log.Printf("Failed to marshal log entry: %v", err)
 		return
 	}
-	
+
 	log.Println(string(jsonData))
-	
+
 	// Exit on fatal
 	if level == FATAL {
 		os.Exit(1)
@@ -150,14 +150,12 @@ func (l *Logger) LogAdminAction(adminID int, action, resource string, details ma
 		"action":   action,
 		"resource": resource,
 	}
-	
+
 	// Add details if provided
-	if details != nil {
-		for k, v := range details {
-			fields[k] = v
-		}
+	for k, v := range details {
+		fields[k] = v
 	}
-	
+
 	l.WithFields(fields).Info(fmt.Sprintf("Admin action: %s on %s", action, resource))
 }
 
@@ -167,14 +165,12 @@ func (l *Logger) LogSecurityEvent(eventType, description string, details map[str
 		"event_type":  eventType,
 		"description": description,
 	}
-	
+
 	// Add details if provided
-	if details != nil {
-		for k, v := range details {
-			fields[k] = v
-		}
+	for k, v := range details {
+		fields[k] = v
 	}
-	
+
 	l.WithFields(fields).Warn(fmt.Sprintf("Security event: %s - %s", eventType, description))
 }
 
@@ -186,7 +182,7 @@ func (l *Logger) LogFailedLogin(username, ipAddress, userAgent, reason string) {
 		"user_agent": userAgent,
 		"reason":     reason,
 	}
-	
+
 	l.WithFields(fields).Warn("Failed login attempt")
 }
 
@@ -198,7 +194,7 @@ func (l *Logger) LogSuccessfulLogin(adminID int, username, ipAddress, userAgent 
 		"ip_address": ipAddress,
 		"user_agent": userAgent,
 	}
-	
+
 	l.WithFields(fields).Info("Successful login")
 }
 
@@ -210,7 +206,7 @@ func (l *Logger) LogIPWhitelistChange(adminID int, action, ipAddress, descriptio
 		"ip_address":  ipAddress,
 		"description": description,
 	}
-	
+
 	l.WithFields(fields).Info(fmt.Sprintf("IP whitelist %s: %s", action, ipAddress))
 }
 

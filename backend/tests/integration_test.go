@@ -21,16 +21,16 @@ func TestAdminAuthIntegration(t *testing.T) {
 	// Create test configuration
 	appConfig := &config.AppConfig{
 		Port:            "8080",
-		JWTSecret:       "test-secret-key-for-testing-only",
-		JWTExpiration:   8,
+		AdminJWTSecret:       "test-secret-key-for-testing-only",
+		AdminJWTExpiration:   8,
 		AdminRoutePrefix: "/admin",
 		Environment:     "test",
 	}
 	
 	// Create JWT manager
 	_ = utils.NewJWTManager(
-		appConfig.JWTSecret,
-		time.Duration(appConfig.JWTExpiration)*time.Hour,
+		appConfig.UserJWTSecret,
+		time.Duration(appConfig.UserJWTExpiration)*time.Hour,
 		"test-issuer",
 	)
 	

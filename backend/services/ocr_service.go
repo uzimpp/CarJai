@@ -51,17 +51,26 @@ func NewOCRService(apiKey string) *OCRService {
 func (s *OCRService) ExtractTextFromFile(file multipart.File, handler *multipart.FileHeader) (string, error) {
 	// ส่วนของการสร้างและส่ง Request ถูกต้องสมบูรณ์แล้ว ไม่ต้องแก้ไข
 	fileBytes, err := io.ReadAll(file)
-	if err != nil { return "", fmt.Errorf("could not read file bytes: %w", err) }
+	if err != nil {
+		return "", fmt.Errorf("could not read file bytes: %w", err)
+	}
+
 	base64Image := base64.StdEncoding.EncodeToString(fileBytes)
 	requestPayload := aigenJSONRequest{Image: base64Image}
 	jsonBody, err := json.Marshal(requestPayload)
-	if err != nil { return "", fmt.Errorf("could not marshal json request: %w", err) }
+	if err != nil {
+		return "", fmt.Errorf("could not marshal json request: %w", err)
+	}
 	req, err := http.NewRequest("POST", aigenAPIURL, bytes.NewBuffer(jsonBody))
-	if err != nil { return "", fmt.Errorf("could not create request to AIGEN: %w", err) }
+	if err != nil {
+		return "", fmt.Errorf("could not create request to AIGEN: %w", err)
+	}
 	req.Header.Set("x-aigen-key", s.apiKey)
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := s.client.Do(req)
-	if err != nil { return "", fmt.Errorf("failed to call AIGEN service: %w", err) }
+	if err != nil {
+		return "", fmt.Errorf("failed to call AIGEN service: %w", err)
+	}
 	defer resp.Body.Close()
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil { return "", fmt.Errorf("failed to read AIGEN response body: %w", err) }

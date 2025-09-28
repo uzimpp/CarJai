@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { config } from "@/config/env";
+import { apiCall } from "@/lib/apiCall";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ACCEPTED_FILE_TYPES = ["image/jpeg", "image/png", "application/pdf"];
@@ -47,16 +47,15 @@ export default function DocumentUploader() {
     formData.append("file", selectedFile);
 
     try {
-      const response = await fetch(`${config.apiUrl}/api/ocr/verify-document`, {
+      // Use centralized apiCall helper for consistent cookie-based authentication
+      const result = await apiCall<{
+        success: boolean;
+        data?: { extracted_text: string };
+        message?: string;
+      }>("/api/ocr/verify-document", {
         method: "POST",
-        body: formData,
+        body: formData, // apiCall now handles FormData properly
       });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || "An unknown backend error occurred.");
-      }
 
       if (
         result.data?.extracted_text &&

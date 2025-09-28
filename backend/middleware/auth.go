@@ -36,32 +36,32 @@ func (m *AuthMiddleware) RequireAuth(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 		token := cookie.Value
-		
+
 		// Validate JWT token
 		claims, err := m.jwtManager.ValidateToken(token)
 		if err != nil {
 			m.writeErrorResponse(w, http.StatusUnauthorized, "Invalid or expired token")
 			return
 		}
-		
+
 		// Validate session in database
 		session, err := m.adminService.ValidateSession(token)
 		if err != nil {
 			m.writeErrorResponse(w, http.StatusUnauthorized, "Invalid session")
 			return
 		}
-		
+
 		// Check if session admin ID matches token user ID
 		if session.AdminID != claims.UserID {
 			m.writeErrorResponse(w, http.StatusUnauthorized, "Session mismatch")
 			return
 		}
-		
+
 		// Add admin info to request context
 		r.Header.Set("X-Admin-ID", fmt.Sprintf("%d", claims.UserID))
 		r.Header.Set("X-Admin-Username", claims.Username)
 		r.Header.Set("X-Session-ID", claims.SessionID)
-		
+
 		// Call next handler
 		next.ServeHTTP(w, r)
 	}
@@ -76,51 +76,51 @@ func (m *AuthMiddleware) RequireIPWhitelist(next http.HandlerFunc) http.HandlerF
 			m.writeErrorResponse(w, http.StatusUnauthorized, "Admin ID not found")
 			return
 		}
-		
+
 		// Convert admin ID to int
 		adminID, err := strconv.Atoi(adminIDStr)
 		if err != nil {
 			m.writeErrorResponse(w, http.StatusBadRequest, "Invalid admin ID")
 			return
 		}
-		
+
 		// Extract client IP
 		clientIP := utils.ExtractClientIP(
 			r.RemoteAddr,
 			r.Header.Get("X-Forwarded-For"),
 			r.Header.Get("X-Real-IP"),
 		)
-		
+
 		if clientIP == "" {
 			m.writeErrorResponse(w, http.StatusBadRequest, "Unable to determine client IP")
 			return
 		}
-		
+
 		// Get whitelisted IPs for admin
 		whitelistedIPs, err := m.adminService.GetWhitelistedIPs(adminID)
 		if err != nil {
 			m.writeErrorResponse(w, http.StatusInternalServerError, "Failed to check IP whitelist")
 			return
 		}
-		
+
 		// Convert to string slice
 		var ipList []string
 		for _, entry := range whitelistedIPs {
 			ipList = append(ipList, entry.IPAddress)
 		}
-		
+
 		// Check if IP is whitelisted
 		isWhitelisted, err := utils.IsIPWhitelisted(clientIP, ipList)
 		if err != nil {
 			m.writeErrorResponse(w, http.StatusInternalServerError, "Failed to validate IP address")
 			return
 		}
-		
+
 		if !isWhitelisted {
 			m.writeErrorResponse(w, http.StatusForbidden, "IP address not authorized")
 			return
 		}
-		
+
 		// Call next handler
 		next.ServeHTTP(w, r)
 	}
@@ -137,19 +137,19 @@ func (m *AuthMiddleware) RequireGlobalIPWhitelist(allowedIPs []string) func(http
 				r.Header.Get("X-Forwarded-For"),
 				r.Header.Get("X-Real-IP"),
 			)
-			
+
 			if clientIP == "" {
 				m.writeErrorResponse(w, http.StatusBadRequest, "Unable to determine client IP")
 				return
 			}
-			
+
 			// Check if IP is whitelisted
 			isWhitelisted, err := utils.IsIPWhitelisted(clientIP, allowedIPs)
 			if err != nil {
 				m.writeErrorResponse(w, http.StatusInternalServerError, "Failed to validate IP address")
 				return
 			}
-			
+
 			if !isWhitelisted {
 				m.writeErrorResponse(w, http.StatusForbidden, "Access denied: IP not whitelisted")
 				return
@@ -169,7 +169,7 @@ func (m *AuthMiddleware) RequireAdminRoute(adminPrefix string) func(http.Handler
 				m.writeErrorResponse(w, http.StatusNotFound, "Admin route not found")
 				return
 			}
-			
+
 			// Call next handler
 			next.ServeHTTP(w, r)
 		}
@@ -180,12 +180,12 @@ func (m *AuthMiddleware) RequireAdminRoute(adminPrefix string) func(http.Handler
 func (m *AuthMiddleware) writeErrorResponse(w http.ResponseWriter, statusCode int, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	
+
 	response := models.AdminErrorResponse{
 		Success: false,
 		Error:   message,
 		Code:    statusCode,
 	}
-	
+
 	json.NewEncoder(w).Encode(response)
 }
