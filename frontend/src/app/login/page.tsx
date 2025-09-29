@@ -56,15 +56,15 @@ function LoginForm() {
     const errors: Record<string, string> = {};
 
     if (!formData.email) {
-      errors.email = "กรุณากรอกอีเมล";
+      errors.email = "Please enter your email";
     } else if (!validation.email(formData.email)) {
-      errors.email = "รูปแบบอีเมลไม่ถูกต้อง";
+      errors.email = "Invalid email format";
     }
 
     if (!formData.password) {
-      errors.password = "กรุณากรอกรหัสผ่าน";
+      errors.password = "Please enter your password";
     } else if (!validation.password(formData.password)) {
-      errors.password = "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร";
+      errors.password = "Password must be at least 6 characters";
     }
 
     setFormErrors(errors);
@@ -89,7 +89,7 @@ function LoginForm() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon mx-auto"></div>
-          <p className="mt-4 text-gray-600">กำลังโหลด...</p>
+          <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
     );
@@ -100,7 +100,7 @@ function LoginForm() {
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
-          <h2 className="text-4 font-bold text-maroon">เข้าสู่ระบบ CarJai</h2>
+          <h2 className="text-4 font-bold text-maroon">Login to CarJai</h2>
         </div>
 
         {/* Redirect Message */}
@@ -122,7 +122,7 @@ function LoginForm() {
               </div>
               <div className="ml-3">
                 <p className="text-sm text-maroon">
-                  บัญชีนี้มีอยู่แล้ว กรุณาเข้าสู่ระบบแทน
+                  Account already exists. Please login instead.
                 </p>
               </div>
             </div>
@@ -138,7 +138,7 @@ function LoginForm() {
                 htmlFor="email"
                 className="block text-sm font-medium text-gray-700"
               >
-                อีเมล
+                Email
               </label>
               <input
                 id="email"
@@ -153,7 +153,7 @@ function LoginForm() {
                     ? "border-red-300 focus:ring-red focus:border-red"
                     : "border-gray-300 focus:ring-maroon focus:border-maroon"
                 } placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:z-10 sm:text-sm transition-colors`}
-                placeholder="กรอกอีเมลของคุณ"
+                placeholder="Enter your email"
               />
               {formErrors.email && (
                 <p className="mt-1 text-sm text-red-600">{formErrors.email}</p>
@@ -166,7 +166,7 @@ function LoginForm() {
                 htmlFor="password"
                 className="block text-sm font-medium text-gray-700"
               >
-                รหัสผ่าน
+                Password
               </label>
               <input
                 id="password"
@@ -180,7 +180,7 @@ function LoginForm() {
                     ? "border-red-300 focus:ring-red focus:border-red"
                     : "border-gray-300 focus:ring-maroon focus:border-maroon"
                 } placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:z-10 sm:text-sm transition-colors`}
-                placeholder="กรอกรหัสผ่านของคุณ"
+                placeholder="Enter your password"
               />
               {formErrors.password && (
                 <p className="mt-1 text-sm text-red-600">
@@ -210,7 +210,7 @@ function LoginForm() {
                 <div className="ml-3">
                   <p className="text-sm text-red-600">
                     {error.message.includes("invalid credentials")
-                      ? "อีเมลหรือรหัสผ่านไม่ถูกต้อง"
+                      ? "Invalid email or password"
                       : error.message}
                   </p>
                 </div>
@@ -228,22 +228,22 @@ function LoginForm() {
               {isSubmitting ? (
                 <div className="flex items-center">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  กำลังเข้าสู่ระบบ...
+                  Signing in...
                 </div>
               ) : (
-                "เข้าสู่ระบบ"
+                "Sign In"
               )}
             </button>
           </div>
 
-          <div className="text-center text-gray-600 text--2">หรือ</div>
+          <div className="text-center text-gray-600 text--2">or</div>
           {/* Additional Links */}
           <div className="text-center">
             <Link
               href="/signup"
               className="text--1  hover:text-gray-900 transition-colors"
             >
-              ยังไม่มีบัญชี
+              Don't have an account?
             </Link>
           </div>
         </form>
@@ -259,7 +259,7 @@ export default function LoginPage() {
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon mx-auto"></div>
-            <p className="mt-4 text-gray-600">กำลังโหลด...</p>
+            <p className="mt-4 text-gray-600">Loading...</p>
           </div>
         </div>
       }

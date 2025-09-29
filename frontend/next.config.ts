@@ -18,10 +18,6 @@ const nextConfig: NextConfig = {
       backendUrl = "https://api.carjai.com"; // Change to your actual API URL
     }
 
-    console.log(
-      `🔧 Next.js Rewrites: Docker=${isDocker}, Dev=${isDev}, Backend URL: ${backendUrl}`
-    );
-
     return [
       {
         source: "/admin/:path*",

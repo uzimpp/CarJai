@@ -62,21 +62,21 @@ export default function SignupPage() {
     const errors: Record<string, string> = {};
 
     if (!formData.email) {
-      errors.email = "กรุณากรอกอีเมล";
+      errors.email = "Please enter your email";
     } else if (!validation.email(formData.email)) {
-      errors.email = "รูปแบบอีเมลไม่ถูกต้อง";
+      errors.email = "Invalid email format";
     }
 
     if (!formData.password) {
-      errors.password = "กรุณากรอกรหัสผ่าน";
+      errors.password = "Please enter your password";
     } else if (!validation.password(formData.password)) {
-      errors.password = "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร";
+      errors.password = "Password must be at least 6 characters";
     }
 
     if (!formData.confirmPassword) {
-      errors.confirmPassword = "กรุณายืนยันรหัสผ่าน";
+      errors.confirmPassword = "Please confirm your password";
     } else if (formData.password !== formData.confirmPassword) {
-      errors.confirmPassword = "รหัสผ่านไม่ตรงกัน";
+      errors.confirmPassword = "Passwords do not match";
     }
 
     setFormErrors(errors);
@@ -104,7 +104,7 @@ export default function SignupPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon mx-auto"></div>
-          <p className="mt-4 text-gray-600">กำลังโหลด...</p>
+          <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
     );
@@ -115,7 +115,9 @@ export default function SignupPage() {
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
-          <h2 className="text-4 font-bold text-maroon">สร้างบัญชี CarJai</h2>
+          <h2 className="text-4 font-bold text-maroon">
+            Create CarJai Account
+          </h2>
         </div>
 
         {/* Form */}
@@ -127,7 +129,7 @@ export default function SignupPage() {
                 htmlFor="email"
                 className="block text-sm font-medium text-gray-700"
               >
-                อีเมล
+                Email
               </label>
               <input
                 id="email"
@@ -141,7 +143,7 @@ export default function SignupPage() {
                     ? "border-red-300 focus:ring-red focus:border-red"
                     : "border-gray-300 focus:ring-maroon focus:border-maroon"
                 } placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:z-10 sm:text-sm`}
-                placeholder="กรอกอีเมลของคุณ"
+                placeholder="Enter your email"
               />
               {formErrors.email && (
                 <p className="mt-1 text-sm text-red-600">{formErrors.email}</p>
@@ -154,7 +156,7 @@ export default function SignupPage() {
                 htmlFor="password"
                 className="block text-sm font-medium text-gray-700"
               >
-                รหัสผ่าน
+                Password
               </label>
               <input
                 id="password"
@@ -168,7 +170,7 @@ export default function SignupPage() {
                     ? "border-red-300 focus:ring-red focus:border-red"
                     : "border-gray-300 focus:ring-maroon focus:border-maroon"
                 } placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:z-10 sm:text-sm`}
-                placeholder="กรอกรหัสผ่านของคุณ"
+                placeholder="Enter your password"
               />
               {formErrors.password && (
                 <p className="mt-1 text-sm text-red-600">
@@ -176,7 +178,7 @@ export default function SignupPage() {
                 </p>
               )}
               <p className="mt-1 text-xs text-gray-500">
-                รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร
+                Password must be at least 6 characters
               </p>
             </div>
 
@@ -186,7 +188,7 @@ export default function SignupPage() {
                 htmlFor="confirmPassword"
                 className="block text-sm font-medium text-gray-700"
               >
-                ยืนยันรหัสผ่าน
+                Confirm Password
               </label>
               <input
                 id="confirmPassword"
@@ -200,7 +202,7 @@ export default function SignupPage() {
                     ? "border-red-300 focus:ring-red focus:border-red"
                     : "border-gray-300 focus:ring-maroon focus:border-maroon"
                 } placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:z-10 sm:text-sm`}
-                placeholder="กรอกรหัสผ่านอีกครั้ง"
+                placeholder="Enter password again"
               />
               {formErrors.confirmPassword && (
                 <p className="mt-1 text-sm text-red-600">
@@ -230,34 +232,13 @@ export default function SignupPage() {
                 <div className="ml-3">
                   <p className="text-sm text-red-600">
                     {error.message.includes("already exists")
-                      ? "อีเมลนี้มีบัญชีอยู่แล้ว กรุณาใช้อีเมลอื่น"
+                      ? "This email already has an account. Please use a different email."
                       : error.message}
                   </p>
                 </div>
               </div>
             </div>
           )}
-
-          {/* Terms and Conditions */}
-          <div className="text-xs text-gray-600">
-            <p>
-              การสมัครบัญชีถือว่าคุณยอมรับ{" "}
-              <Link
-                href="/terms"
-                className="text-maroon hover:text-red underline"
-              >
-                ข้อกำหนดการใช้งาน
-              </Link>{" "}
-              และ{" "}
-              <Link
-                href="/privacy"
-                className="text-maroon hover:text-red underline"
-              >
-                นโยบายความเป็นส่วนตัว
-              </Link>{" "}
-              ของเรา
-            </p>
-          </div>
 
           {/* Submit Button */}
           <div>
@@ -269,22 +250,22 @@ export default function SignupPage() {
               {isSubmitting ? (
                 <div className="flex items-center">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  กำลังสร้างบัญชี...
+                  Creating account...
                 </div>
               ) : (
-                "สมัครบัญชี"
+                "Sign Up"
               )}
             </button>
           </div>
 
-          <div className="text-center text-gray-600 text--2">หรือ</div>
+          <div className="text-center text-gray-600 text--2">or</div>
           {/* Additional Links */}
           <div className="text-center">
             <Link
               href="/login"
               className="text--1  hover:text-gray-900 transition-colors"
             >
-              มีบัญชีอยู่แล้ว
+              Already have an account?
             </Link>
           </div>
         </form>

@@ -33,7 +33,8 @@ export default function AdminLoginPage() {
       });
       router.push("/admin/dashboard");
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Login failed. Please try again.";
+      const errorMessage =
+        err instanceof Error ? err.message : "Login failed. Please try again.";
 
       if (
         errorMessage.includes("403") ||
@@ -66,8 +67,8 @@ export default function AdminLoginPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="text-lg mb-2">กำลังตรวจสอบสถานะการเข้าสู่ระบบ...</div>
-          <div className="text-sm text-gray-500">โปรดรอสักครู่</div>
+          <div className="text-lg mb-2">Checking login status...</div>
+          <div className="text-sm text-gray-500">Please wait</div>
         </div>
       </div>
     );
@@ -83,10 +84,10 @@ export default function AdminLoginPage() {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            เข้าสู่ระบบผู้ดูแล
+            Admin Login
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            ลงชื่อเข้าใช้บัญชีผู้ดูแลระบบของ CarJai
+            Sign in to your CarJai admin account
           </p>
         </div>
 
@@ -94,7 +95,7 @@ export default function AdminLoginPage() {
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
               <label htmlFor="username" className="sr-only">
-                ชื่อบัญชี
+                Username
               </label>
               <input
                 id="username"
@@ -110,7 +111,7 @@ export default function AdminLoginPage() {
             </div>
             <div>
               <label htmlFor="password" className="sr-only">
-                รหัสผ่าน
+                Password
               </label>
               <input
                 id="password"
@@ -144,7 +145,7 @@ export default function AdminLoginPage() {
                 </div>
                 <div className="ml-3">
                   <p className="text-sm text-red-600">
-                    {error || "เกิดข้อผิดพลาด โปรดลองอีกครั้ง"}
+                    {error || "An error occurred. Please try again."}
                   </p>
                 </div>
               </div>
@@ -160,16 +161,19 @@ export default function AdminLoginPage() {
               {loading ? (
                 <div className="flex items-center">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  กำลังเข้าสู่ระบบ...
+                  Signing in...
                 </div>
               ) : (
-                "เข้าสู่ระบบ"
+                "Sign In"
               )}
             </button>
           </div>
 
           <div className="text-center text-sm text-gray-600">
-            <p>หากต้องการบัญชีผู้ดูแล กรุณาติดต่อผู้ดูแลระบบ</p>
+            <p>
+              If you need an admin account, please contact the system
+              administrator
+            </p>
           </div>
         </form>
       </div>

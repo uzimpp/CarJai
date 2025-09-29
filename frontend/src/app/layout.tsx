@@ -23,7 +23,7 @@ const syne = Syne({
 
 export const metadata: Metadata = {
   title: "CarJai",
-  description: "A second-hand car marketplace platform in Thailand",
+  description: "A second-hand car marketplace platform",
 };
 
 export default function RootLayout({
@@ -32,7 +32,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="th">
+    <html lang="en">
       {/* ${fcSubject.variable} var(--font-fc-subject)*/}
       <body className={`${syne.variable} antialiased`}>
         <NavBar />

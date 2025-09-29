@@ -18,17 +18,17 @@ function NotFoundContent() {
     return {
       code: safeCode,
       title:
-        titleParam || (safeCode === 403 ? "ปฏิเสธการเข้าถึง" : "ไม่พบหน้านี้"),
+        titleParam || (safeCode === 403 ? "Access Denied" : "Page Not Found"),
       message:
         messageParam ||
         (safeCode === 403
-          ? "คุณไม่มีสิทธิ์เข้าถึงทรัพยากรนี้"
-          : "ไม่พบหน้าที่คุณต้องการ หรืออาจถูกย้ายไปแล้ว"),
+          ? "You don't have permission to access this resource"
+          : "The page you're looking for doesn't exist or may have been moved"),
     };
   }, [searchParams]);
 
   const accent = useMemo(() => {
-    // ใช้สีตามธีมของเว็บไซต์ (แดง/ดำ/เทา) ให้ลุคสอดคล้องทั้งระบบ
+    // Use website theme colors (red/black/gray) for consistent look across the system
     return {
       ring: "ring-2 ring-red",
       text: "text-red",
@@ -56,17 +56,17 @@ function NotFoundContent() {
             onClick={() => router.push("/")}
             className="w-full bg-grey hover:bg-black text-white font-medium py-2.5 px-4 rounded-md transition"
           >
-            กลับหน้าแรก
+            Back to Home
           </button>
           <button
             onClick={() => router.push("/admin/login")}
             className={`w-full ${accent.btn} text-white font-medium py-2.5 px-4 rounded-md transition`}
           >
-            ไปยังหน้าเข้าสู่ระบบผู้ดูแล
+            Go to Admin Login
           </button>
         </div>
 
-        <div className="mt-6 text-sm text-grey">รหัสข้อผิดพลาด: {code}</div>
+        <div className="mt-6 text-sm text-grey">Error Code: {code}</div>
       </div>
     </div>
   );
@@ -77,7 +77,7 @@ export default function NotFound() {
     <Suspense
       fallback={
         <div className="min-h-screen flex items-center justify-center">
-          กำลังโหลด...
+          Loading...
         </div>
       }
     >

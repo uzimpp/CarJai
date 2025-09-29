@@ -6,13 +6,8 @@ import { useAdminAuth } from "@/hooks/useAdminAuth";
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const {
-    adminUser,
-    adminSession,
-    ipWhitelist,
-    loading,
-    isAuthenticated,
-  } = useAdminAuth();
+  const { adminUser, adminSession, ipWhitelist, loading, isAuthenticated } =
+    useAdminAuth();
 
   useEffect(() => {
     console.log("🔍 Admin dashboard - checking auth state:", {
@@ -33,15 +28,15 @@ export default function AdminDashboard() {
     const expiry = new Date(expiresAt);
     const diff = expiry.getTime() - now.getTime();
 
-    if (diff <= 0) return "หมดอายุแล้ว";
+    if (diff <= 0) return "Expired";
 
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
     if (hours > 0) {
-      return `${hours} ชั่วโมง ${minutes} นาที`;
+      return `${hours} hours ${minutes} minutes`;
     } else {
-      return `${minutes} นาที`;
+      return `${minutes} minutes`;
     }
   };
 
@@ -57,8 +52,8 @@ export default function AdminDashboard() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="text-lg mb-2">กำลังตรวจสอบสิทธิ์...</div>
-          <div className="text-sm text-gray-500">โปรดรอสักครู่</div>
+          <div className="text-lg mb-2">Checking permissions...</div>
+          <div className="text-sm text-gray-500">Please wait</div>
         </div>
       </div>
     );
@@ -79,7 +74,7 @@ export default function AdminDashboard() {
           <div className="bg-white overflow-hidden shadow rounded-lg mb-6">
             <div className="px-4 py-5 sm:p-6">
               <h2 className="text-lg font-medium text-gray-900 mb-4">
-                ข้อมูลเซสชันปัจจุบัน
+                Current Session Information
               </h2>
               {adminSession && (
                 <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
@@ -93,7 +88,7 @@ export default function AdminDashboard() {
                   </div>
                   <div>
                     <dt className="text-sm font-medium text-gray-500">
-                      เวลาที่สร้างเซสชัน
+                      Session Created
                     </dt>
                     <dd className="mt-1 text-sm text-gray-900">
                       {new Date(adminSession.created_at).toLocaleString()}
@@ -101,7 +96,7 @@ export default function AdminDashboard() {
                   </div>
                   <div>
                     <dt className="text-sm font-medium text-gray-500">
-                      หมดอายุเมื่อ
+                      Expires At
                     </dt>
                     <dd className="mt-1 text-sm text-gray-900">
                       {new Date(adminSession.expires_at).toLocaleString()}
@@ -109,7 +104,7 @@ export default function AdminDashboard() {
                   </div>
                   <div>
                     <dt className="text-sm font-medium text-gray-500">
-                      เวลาที่เหลือ
+                      Time Remaining
                     </dt>
                     <dd
                       className={`mt-1 text-sm font-medium ${
@@ -121,7 +116,7 @@ export default function AdminDashboard() {
                       {getTimeRemaining(adminSession.expires_at)}
                       {isSessionExpiringSoon(adminSession.expires_at) && (
                         <span className="ml-2 text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
-                          ใกล้หมดอายุ
+                          Expiring Soon
                         </span>
                       )}
                     </dd>
@@ -135,7 +130,7 @@ export default function AdminDashboard() {
           <div className="bg-white overflow-hidden shadow rounded-lg mb-6">
             <div className="px-4 py-5 sm:p-6">
               <h2 className="text-lg font-medium text-gray-900 mb-4">
-                รายการ IP ที่อนุญาต ({ipWhitelist.length} รายการ)
+                Allowed IP List ({ipWhitelist.length} entries)
               </h2>
               {ipWhitelist.length > 0 ? (
                 <div className="overflow-hidden">
@@ -146,10 +141,10 @@ export default function AdminDashboard() {
                           IP Address
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          คำอธิบาย
+                          Description
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          เพิ่มเมื่อ
+                          Added On
                         </th>
                       </tr>
                     </thead>
@@ -173,7 +168,7 @@ export default function AdminDashboard() {
               ) : (
                 <div className="text-center py-8">
                   <div className="text-gray-500 text-sm">
-                    ไม่มี IP ที่อนุญาตในระบบ
+                    No allowed IPs in the system
                   </div>
                 </div>
               )}
@@ -184,12 +179,12 @@ export default function AdminDashboard() {
           <div className="bg-white overflow-hidden shadow rounded-lg">
             <div className="px-4 py-5 sm:p-6">
               <h2 className="text-lg font-medium text-gray-900 mb-4">
-                ข้อมูลผู้ดูแล
+                Administrator Information
               </h2>
               <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
                 <div>
                   <dt className="text-sm font-medium text-gray-500">
-                    ชื่อบัญชี
+                    Username
                   </dt>
                   <dd className="mt-1 text-sm text-gray-900">
                     {adminUser?.username}
@@ -197,7 +192,7 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <dt className="text-sm font-medium text-gray-500">
-                    ชื่อผู้ใช้
+                    Display Name
                   </dt>
                   <dd className="mt-1 text-sm text-gray-900">
                     {adminUser?.name}
@@ -205,22 +200,22 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <dt className="text-sm font-medium text-gray-500">
-                    เข้าสู่ระบบล่าสุด
+                    Last Login
                   </dt>
                   <dd className="mt-1 text-sm text-gray-900">
                     {adminUser?.last_login_at
                       ? new Date(adminUser.last_login_at).toLocaleString()
-                      : "ไม่มีข้อมูล"}
+                      : "No data"}
                   </dd>
                 </div>
                 <div>
                   <dt className="text-sm font-medium text-gray-500">
-                    สร้างบัญชีเมื่อ
+                    Account Created
                   </dt>
                   <dd className="mt-1 text-sm text-gray-900">
                     {adminUser?.created_at
                       ? new Date(adminUser.created_at).toLocaleString()
-                      : "ไม่มีข้อมูล"}
+                      : "No data"}
                   </dd>
                 </div>
               </dl>

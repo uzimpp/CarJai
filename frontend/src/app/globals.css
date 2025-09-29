@@ -156,9 +156,16 @@
 }
 
 @layer components {
+  .medium {
+    font-weight: 500;
+  }
+
+  .semi-bold {
+    font-weight: 600;
+  }
+
   .bold {
     font-weight: 700;
-    letter-spacing: 0.05rem;
   }
 
   .letter-spacing-0 {
