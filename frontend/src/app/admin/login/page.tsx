@@ -26,27 +26,28 @@ export default function AdminLoginPage() {
     setLoading(true);
     setError("");
 
-    console.log("🔐 Admin login attempt with:", formData);
-
     try {
-      // Use the hook's login function instead of calling API directly
-      const data = await login(formData);
-      console.log("📋 Admin login response data:", data);
-
-      // Login hook handles state updates, just redirect
-      console.log("🔀 Redirecting to admin dashboard...");
+      await login({
+        username: formData.username,
+        password: formData.password,
+      });
       router.push("/admin/dashboard");
-      console.log("✨ Admin redirect called");
     } catch (err) {
-      console.error("❌ Admin login error:", err);
+      const errorMessage = err instanceof Error ? err.message : "Login failed. Please try again.";
 
-      // Check if it's a 403 error (IP blocked)
-      if (err instanceof Error && err.message.includes("403")) {
+      if (
+        errorMessage.includes("403") ||
+        errorMessage.includes("IP address not whitelisted")
+      ) {
         setError(
-          "Access denied: Your IP address is not authorized to access this system."
+          "Your IP address is blocked. Contact the administrator for access."
         );
+      } else if (errorMessage.includes("invalid credentials")) {
+        setError("Invalid username or password.");
+      } else if (errorMessage.includes("Authentication required")) {
+        setError("Session expired. Please try again.");
       } else {
-        setError("Network error. Please check if backend is running.");
+        setError(errorMessage);
       }
     } finally {
       setLoading(false);

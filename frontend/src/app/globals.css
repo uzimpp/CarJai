@@ -107,7 +107,6 @@
   /* Space 3xl-5xl: 96px → 200px */
   --space-3xl-5xl: clamp(6rem, 3.9128rem + 9.5413vw, 12.5rem);
 
-
   /* === Colors === */
   --color-white: #fffdfd;
   --color-black: #1d0101;
@@ -152,7 +151,7 @@
   body {
     background: var(--background);
     color: var(--foreground);
-    font-family: var(--font-fc-subject), Arial, Helvetica, sans-serif;
+    font-family: var(--font-syne), Arial, Helvetica, sans-serif;
   }
 }
 

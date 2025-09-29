@@ -3,13 +3,14 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useAuth } from "@/hooks/useUserAuth";
+import { useUserAuth } from "@/hooks/useUserAuth";
 import { validation } from "@/lib/userAuth";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login, isAuthenticated, isLoading, error, clearError } = useAuth();
+  const { login, isAuthenticated, isLoading, error, clearError } =
+    useUserAuth();
 
   const [formData, setFormData] = useState({
     email: "",
@@ -207,7 +208,11 @@ function LoginForm() {
                   </svg>
                 </div>
                 <div className="ml-3">
-                  <p className="text-sm text-red-600">{error.message}</p>
+                  <p className="text-sm text-red-600">
+                    {error.message.includes("invalid credentials")
+                      ? "อีเมลหรือรหัสผ่านไม่ถูกต้อง"
+                      : error.message}
+                  </p>
                 </div>
               </div>
             </div>

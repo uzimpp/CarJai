@@ -3,12 +3,13 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useAuth } from "@/hooks/useUserAuth";
+import { useUserAuth } from "@/hooks/useUserAuth";
 import { validation } from "@/lib/userAuth";
 
 export default function SignupPage() {
   const router = useRouter();
-  const { signup, isAuthenticated, isLoading, error, clearError } = useAuth();
+  const { signup, isAuthenticated, isLoading, error, clearError } =
+    useUserAuth();
 
   const [formData, setFormData] = useState({
     email: "",
@@ -227,7 +228,11 @@ export default function SignupPage() {
                   </svg>
                 </div>
                 <div className="ml-3">
-                  <p className="text-sm text-red-600">{error.message}</p>
+                  <p className="text-sm text-red-600">
+                    {error.message.includes("already exists")
+                      ? "อีเมลนี้มีบัญชีอยู่แล้ว กรุณาใช้อีเมลอื่น"
+                      : error.message}
+                  </p>
                 </div>
               </div>
             </div>

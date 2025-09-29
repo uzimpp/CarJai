@@ -8,8 +8,8 @@ export default function Home() {
       {/* Hero */}
       <section className="relative rounded-4xl shadow-[var(--shadow-lg)] bg-gradient-to-r from-maroon to-maroon px-(--space-l) py-(--space-2xl-3xl)">
         <div className="relative z-10 flex flex-col items-center text-center gap-y-(--space-s) pb-(--space-xl)">
-          <h1 className="text-landing-font-size letter-spacing-6 bold text-white">
-            ค้นหารถโดนใจได้ที่คาร์ใจ
+          <h1 className="text-5 bold text-white">
+            Looking for a dream car?
           </h1>
           <div className="w-full max-w-[800px]">
             <SearchBar className="mx-auto" placeholder="รถใช้ในเมือง" />

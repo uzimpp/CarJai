@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useAuth } from "@/hooks/useUserAuth";
+import { useUserAuth } from "@/hooks/useUserAuth";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useEffect, useRef, useState } from "react";
 
@@ -12,7 +12,7 @@ export default function NavBar() {
     isAuthenticated: isUserAuthed,
     logout: userLogout,
     isLoading: isUserLoading,
-  } = useAuth();
+  } = useUserAuth();
   const {
     adminUser,
     isAuthenticated: isAdminAuthed,
