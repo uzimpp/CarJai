@@ -25,7 +25,7 @@ func NewUserService(userRepo *models.UserRepository, userSessionRepo *models.Use
 }
 
 // Signup creates a new user account
-func (s *UserService) Signup(email, password string) (*models.UserAuthResponse, error) {
+func (s *UserService) Signup(email, password, ipAddress, userAgent string) (*models.UserAuthResponse, error) {
 	// Check if user already exists
 	existingUser, err := s.userRepo.GetUserByEmail(email)
 	if err == nil && existingUser != nil {
@@ -62,8 +62,8 @@ func (s *UserService) Signup(email, password string) (*models.UserAuthResponse, 
 	session := &models.UserSession{
 		UserID:    user.ID,
 		Token:     token,
-		IPAddress: "127.0.0.1", // This should be passed from the handler
-		UserAgent: "CarJai-Client", // This should be passed from the handler
+		IPAddress: ipAddress,
+		UserAgent: userAgent,
 		ExpiresAt: expiresAt,
 	}
 
@@ -84,7 +84,7 @@ func (s *UserService) Signup(email, password string) (*models.UserAuthResponse, 
 }
 
 // Login authenticates a user
-func (s *UserService) Login(email, password string) (*models.UserAuthResponse, error) {
+func (s *UserService) Login(email, password, ipAddress, userAgent string) (*models.UserAuthResponse, error) {
 	// Get user by email
 	user, err := s.userRepo.GetUserByEmail(email)
 	if err != nil {
@@ -110,8 +110,8 @@ func (s *UserService) Login(email, password string) (*models.UserAuthResponse, e
 	session := &models.UserSession{
 		UserID:    user.ID,
 		Token:     token,
-		IPAddress: "127.0.0.1", // This should be passed from the handler
-		UserAgent: "CarJai-Client", // This should be passed from the handler
+		IPAddress: ipAddress,
+		UserAgent: userAgent,
 		ExpiresAt: expiresAt,
 	}
 
@@ -198,7 +198,7 @@ func (s *UserService) ValidateUserSession(token string) (*models.User, error) {
 }
 
 // RefreshToken generates a new token for the user
-func (s *UserService) RefreshToken(token string) (*models.UserAuthResponse, error) {
+func (s *UserService) RefreshToken(token, ipAddress, userAgent string) (*models.UserAuthResponse, error) {
 	// Validate current token
 	claims, err := s.jwtManager.ValidateToken(token)
 	if err != nil {
@@ -230,8 +230,8 @@ func (s *UserService) RefreshToken(token string) (*models.UserAuthResponse, erro
 	session := &models.UserSession{
 		UserID:    user.ID,
 		Token:     newToken,
-		IPAddress: "127.0.0.1", // This should be passed from the handler
-		UserAgent: "CarJai-Client", // This should be passed from the handler
+		IPAddress: ipAddress,
+		UserAgent: userAgent,
 		ExpiresAt: expiresAt,
 	}
 

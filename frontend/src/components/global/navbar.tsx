@@ -68,25 +68,25 @@ export default function NavBar() {
           href="/"
           className="text-gray-700 hover:text-gray-900 transition-colors"
         >
-          หน้าหลัก
+          Home
         </Link>
         <Link
           href="/about-us"
           className="text-gray-700 hover:text-gray-900 transition-colors"
         >
-          เกี่ยวกับเรา
+          About Us
         </Link>
         <Link
           href="/buy"
           className="text-gray-700 hover:text-gray-900 transition-colors"
         >
-          ซื้อ/ขายรถ
+          Buy/Sell Car
         </Link>
 
         {isLoading ? (
           <div className="flex items-center gap-x-(--space-2xs)">
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-maroon"></div>
-            <span className="text-sm text-gray-600">กำลังโหลด...</span>
+            <span className="text-sm text-gray-600">Loading...</span>
           </div>
         ) : isAuthedAdmin ? (
           <div className="relative" ref={menuRef}>
@@ -94,47 +94,34 @@ export default function NavBar() {
               onClick={() => setOpen((v) => !v)}
               className="flex items-center gap-x-(--space-2xs) px-(--space-s) py-(--space-2xs) bg-black text-white rounded-full hover:opacity-90"
             >
-              <div className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-medium">
-                  {(adminUser?.name || adminUser?.username)
-                    ?.charAt(0)
-                    .toUpperCase()}
-                </span>
-              </div>
               <span className="text-sm hidden sm:block">
                 {adminUser?.name || adminUser?.username}
               </span>
             </button>
             {open && (
               <div className="absolute right-0 mt-2 w-60 rounded-xl shadow-[var(--shadow-lg)] bg-black text-white overflow-hidden z-50 ring-1 ring-red/20">
-                <div className="px-4 py-3 border-b border-white/5 bg-black/95">
-                  <div className="text-xs text-white/80">ผู้ดูแลระบบ</div>
-                  <div className="text-sm font-medium truncate">
-                    {adminUser?.name || adminUser?.username}
-                  </div>
-                </div>
                 <div className="py-2">
                   <Link
                     href="/admin/dashboard"
                     className="block px-4 py-2 text-sm hover:bg-maroon/30"
                   >
-                    แดชบอร์ด
+                    Dashboard
                   </Link>
                   <Link
                     href="/admin/dashboard#session"
                     className="block px-4 py-2 text-sm hover:bg-maroon/30"
                   >
-                    เซสชัน
+                    Session
                   </Link>
                   <Link
                     href="/admin/dashboard#ip"
                     className="block px-4 py-2 text-sm hover:bg-maroon/30"
                   >
-                    รายการ IP
+                    IP List
                   </Link>
                 </div>
-                <div className="border-t border-white/5">
-                  <button
+                <button className="border-t border-white/5">
+                  <div
                     onClick={handleLogout}
                     className="w-full text-left px-4 py-2 text-sm hover:bg-maroon/60 flex items-center gap-2"
                   >
@@ -153,9 +140,9 @@ export default function NavBar() {
                         strokeLinejoin="round"
                       />
                     </svg>
-                    ออกจากระบบผู้ดูแล
-                  </button>
-                </div>
+                    Logout
+                  </div>
+                </button>
               </div>
             )}
           </div>
@@ -165,17 +152,12 @@ export default function NavBar() {
               onClick={() => setOpen((v) => !v)}
               className="flex items-center gap-x-(--space-2xs) px-(--space-s) py-(--space-2xs) bg-maroon text-white rounded-full hover:bg-red"
             >
-              <div className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-medium">
-                  {user?.email?.charAt(0).toUpperCase()}
-                </span>
-              </div>
               <span className="text-sm hidden sm:block">{user?.email}</span>
             </button>
             {open && (
               <div className="absolute right-0 mt-(--space-xs) w-60 rounded-xl shadow-[var(--shadow-lg)] bg-maroon text-white overflow-hidden z-50 ring-1 ring-red/20">
                 <div className="px-4 py-3 border-b border-red/20 bg-maroon/95">
-                  <div className="text-xs text-white/80">บัญชีผู้ใช้</div>
+                  <div className="text-xs text-white/80">User Account</div>
                   <div className="text-sm font-medium truncate">
                     {user?.email}
                   </div>
@@ -185,23 +167,23 @@ export default function NavBar() {
                     href="/dashboard"
                     className="block px-4 py-2 text-sm hover:bg-red/20"
                   >
-                    โปรไฟล์
+                    Profile
                   </Link>
                   <Link
                     href="/dashboard#orders"
                     className="block px-4 py-2 text-sm hover:bg-red/20"
                   >
-                    ประวัติการซื้อขาย
+                    Buy/Sell History
                   </Link>
                   <Link
                     href="/dashboard#favorites"
                     className="block px-4 py-2 text-sm hover:bg-red/20"
                   >
-                    ถูกใจ
+                    Favorites
                   </Link>
                 </div>
-                <div className="border-t border-red/20">
-                  <button
+                <button className="border-t border-red/20">
+                  <div
                     onClick={handleLogout}
                     className="w-full text-left px-4 py-2 text-sm hover:bg-red/30 flex items-center gap-2"
                   >
@@ -220,9 +202,9 @@ export default function NavBar() {
                         strokeLinejoin="round"
                       />
                     </svg>
-                    ออกจากระบบ
-                  </button>
-                </div>
+                    Logout
+                  </div>
+                </button>
               </div>
             )}
           </div>

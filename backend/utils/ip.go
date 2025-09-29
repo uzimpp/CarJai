@@ -78,7 +78,6 @@ func IsIPWhitelisted(clientIP string, whitelist []string) (bool, error) {
 // ExtractClientIP extracts the real client IP from HTTP request headers
 func ExtractClientIP(remoteAddr, xForwardedFor, xRealIP string) string {
 	// Priority order: X-Real-IP > X-Forwarded-For > RemoteAddr
-	
 	// Check X-Real-IP header first
 	if xRealIP != "" {
 		// X-Real-IP should contain a single IP
@@ -87,7 +86,7 @@ func ExtractClientIP(remoteAddr, xForwardedFor, xRealIP string) string {
 			return ip.String()
 		}
 	}
-	
+
 	// Check X-Forwarded-For header
 	if xForwardedFor != "" {
 		// X-Forwarded-For can contain multiple IPs separated by commas

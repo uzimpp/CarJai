@@ -34,14 +34,14 @@ func NewAdminAuthHandler(
 // Login handles admin login
 func (h *AdminAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		h.writeErrorResponse(w, http.StatusMethodNotAllowed, "Method not allowed")
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
 	// Parse request body
 	var loginReq models.AdminLoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&loginReq); err != nil {
-		h.writeErrorResponse(w, http.StatusBadRequest, "Invalid request body")
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
@@ -53,7 +53,7 @@ func (h *AdminAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if clientIP == "" {
-		h.writeErrorResponse(w, http.StatusBadRequest, "Unable to determine client IP")
+		utils.WriteError(w, http.StatusBadRequest, "Unable to determine client IP")
 		return
 	}
 
@@ -68,7 +68,7 @@ func (h *AdminAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	// Attempt login
 	loginResponse, err := h.adminService.Login(loginRequest)
 	if err != nil {
-		h.writeErrorResponse(w, http.StatusUnauthorized, err.Error())
+		utils.WriteError(w, http.StatusUnauthorized, err.Error())
 		return
 	}
 
@@ -98,20 +98,20 @@ func (h *AdminAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		Message: "Login successful",
 	}
 
-	h.writeJSONResponse(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, response)
 }
 
 // Logout handles admin logout
 func (h *AdminAuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		h.writeErrorResponse(w, http.StatusMethodNotAllowed, "Method not allowed")
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
 	// Read token from cookie
 	cookie, err := r.Cookie("admin_jwt")
 	if err != nil || cookie.Value == "" {
-		h.writeErrorResponse(w, http.StatusUnauthorized, "Authentication required")
+		utils.WriteError(w, http.StatusUnauthorized, "Authentication required")
 		return
 	}
 
@@ -119,7 +119,7 @@ func (h *AdminAuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	logoutRequest := services.LogoutRequest{Token: cookie.Value}
 	err = h.adminService.Logout(logoutRequest)
 	if err != nil {
-		h.writeErrorResponse(w, http.StatusUnauthorized, err.Error())
+		utils.WriteError(w, http.StatusUnauthorized, err.Error())
 		return
 	}
 
@@ -140,20 +140,20 @@ func (h *AdminAuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		Message: "Logout successful",
 	}
 
-	h.writeJSONResponse(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, response)
 }
 
 // Me handles getting current admin information
 func (h *AdminAuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		h.writeErrorResponse(w, http.StatusMethodNotAllowed, "Method not allowed")
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
 	// Get token from admin_jwt cookie
 	cookie, err := r.Cookie("admin_jwt")
 	if err != nil {
-		h.writeErrorResponse(w, http.StatusUnauthorized, "Authentication required")
+		utils.WriteError(w, http.StatusUnauthorized, "Authentication required")
 		return
 	}
 	token := cookie.Value
@@ -161,7 +161,7 @@ func (h *AdminAuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 	// Get current admin information
 	adminData, err := h.adminService.GetCurrentAdmin(token)
 	if err != nil {
-		h.writeErrorResponse(w, http.StatusUnauthorized, err.Error())
+		utils.WriteError(w, http.StatusUnauthorized, err.Error())
 		return
 	}
 
@@ -171,20 +171,20 @@ func (h *AdminAuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 		Data:    *adminData,
 	}
 
-	h.writeJSONResponse(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, response)
 }
 
 // RefreshToken handles token refresh
 func (h *AdminAuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		h.writeErrorResponse(w, http.StatusMethodNotAllowed, "Method not allowed")
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
 	// Get token from admin_jwt cookie
 	cookie, err := r.Cookie("admin_jwt")
 	if err != nil {
-		h.writeErrorResponse(w, http.StatusUnauthorized, "Authentication required")
+		utils.WriteError(w, http.StatusUnauthorized, "Authentication required")
 		return
 	}
 	token := cookie.Value
@@ -192,7 +192,7 @@ func (h *AdminAuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) 
 	// Refresh token
 	newToken, expiresAt, err := h.jwtManager.RefreshToken(token)
 	if err != nil {
-		h.writeErrorResponse(w, http.StatusUnauthorized, err.Error())
+		utils.WriteError(w, http.StatusUnauthorized, err.Error())
 		return
 	}
 
@@ -204,26 +204,5 @@ func (h *AdminAuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) 
 		"message":    "Token refreshed successfully",
 	}
 
-	h.writeJSONResponse(w, http.StatusOK, response)
-}
-
-// writeJSONResponse writes a JSON response
-func (h *AdminAuthHandler) writeJSONResponse(w http.ResponseWriter, statusCode int, data interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(data)
-}
-
-// writeErrorResponse writes a JSON error response
-func (h *AdminAuthHandler) writeErrorResponse(w http.ResponseWriter, statusCode int, message string) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-
-	response := models.AdminErrorResponse{
-		Success: false,
-		Error:   message,
-		Code:    statusCode,
-	}
-
-	json.NewEncoder(w).Encode(response)
+	utils.WriteJSON(w, http.StatusOK, response)
 }
