@@ -19,7 +19,6 @@ export function useAdminAuth() {
   // null = unknown, true = authenticated, false = not authenticated
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [mounted, setMounted] = useState(false);
-  const router = useRouter();
   const pathname = usePathname();
 
   // Handle SSR - only run on client side

@@ -30,7 +30,7 @@ export default function ConditionalLayout({
   return (
     <>
       {shouldShowNavbar && <NavBar />}
-      <main className="min-h-screen flex justify-center">{children}</main>
+      <main className="flex justify-center">{children}</main>
       {shouldShowFooter && <Footer />}
     </>
   );

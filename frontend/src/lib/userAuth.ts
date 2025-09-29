@@ -4,6 +4,8 @@ import {
   AuthResponse,
   LoginRequest,
   SignupRequest,
+  GoogleAuthRequest,
+  GoogleAuthResponse,
 } from "@/constants/user";
 import { apiCall } from "./apiCall";
 
@@ -43,6 +45,14 @@ export const authAPI = {
   async refreshToken(): Promise<AuthResponse> {
     return apiCall<AuthResponse>("/api/auth/refresh", {
       method: "POST",
+    });
+  },
+
+  // Google OAuth authentication
+  async googleAuth(data: GoogleAuthRequest): Promise<GoogleAuthResponse> {
+    return apiCall<GoogleAuthResponse>("/api/auth/google", {
+      method: "POST",
+      body: JSON.stringify(data),
     });
   },
 };

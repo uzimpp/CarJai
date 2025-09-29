@@ -89,7 +89,7 @@ func (h *UserAuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 		Secure:   false, // Set to true in production with HTTPS
 		SameSite: http.SameSiteLaxMode,
-		MaxAge:   int(response.Data.ExpiresAt.Sub(time.Now()).Seconds()),
+		MaxAge:   int(time.Until(response.Data.ExpiresAt).Seconds()),
 	})
 
 	w.Header().Set("Content-Type", "application/json")
@@ -152,7 +152,7 @@ func (h *UserAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 		Secure:   false, // Set to true in production with HTTPS
 		SameSite: http.SameSiteLaxMode,
-		MaxAge:   int(response.Data.ExpiresAt.Sub(time.Now()).Seconds()),
+		MaxAge:   int(time.Until(response.Data.ExpiresAt).Seconds()),
 	})
 
 	w.Header().Set("Content-Type", "application/json")

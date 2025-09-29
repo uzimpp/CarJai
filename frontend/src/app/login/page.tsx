@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import { validation } from "@/lib/userAuth";
+import GoogleLoginButton from "@/components/auth/GoogleLoginButton";
 
 function LoginForm() {
   const router = useRouter();
@@ -78,7 +79,10 @@ function LoginForm() {
 
     setIsSubmitting(true);
     try {
-      await login(formData);
+      const result = await login(formData);
+      if (result.success) {
+        router.push("/buy");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -97,9 +101,9 @@ function LoginForm() {
 
   return (
     <div className="flex items-center justify-center px-(--space-m) max-w-[1536px] mx-auto w-full">
-      <div className="max-w-md w-full gap-y-(--space-l) p-(--space-m)">
+      <div className="flex flex-col max-w-md w-full  mx-auto">
         {/* Header */}
-        <div className="text-center">
+        <div className="flex text-center mb-(--space-l) w-full justify-center mx-auto">
           <h2 className="text-5 font-bold line-height-0">Sign in</h2>
         </div>
 
@@ -131,10 +135,10 @@ function LoginForm() {
 
         {/* Form */}
         <form
-          className="mt-(--space-l) space-y-(--space-m)"
+          className="flex flex-col gap-y-(--space-l)"
           onSubmit={handleSubmit}
         >
-          <div className="space-y-(--space-s)">
+          <div className="flex flex-col space-y-(--space-s)">
             {/* Email Field */}
             <div>
               <label
@@ -151,11 +155,11 @@ function LoginForm() {
                 autoFocus
                 value={formData.email}
                 onChange={handleInputChange}
-                className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
+                className={`mt-1 appearance-none relative block w-full px-3 py-2 text-0 border ${
                   formErrors.email
                     ? "border-red-300 focus:ring-red focus:border-red"
                     : "border-gray-300 focus:ring-maroon focus:border-maroon"
-                } placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:z-10 sm:text-sm transition-colors`}
+                } placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:z-10`}
                 placeholder="Enter your email"
               />
               {formErrors.email && (
@@ -178,11 +182,11 @@ function LoginForm() {
                 autoComplete="current-password"
                 value={formData.password}
                 onChange={handleInputChange}
-                className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
+                className={`mt-1 appearance-none relative block w-full px-3 py-2 text-0 border ${
                   formErrors.password
                     ? "border-red-300 focus:ring-red focus:border-red"
                     : "border-gray-300 focus:ring-maroon focus:border-maroon"
-                } placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:z-10 sm:text-sm transition-colors`}
+                } placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:z-10`}
                 placeholder="Enter your password"
               />
               {formErrors.password && (
@@ -199,7 +203,7 @@ function LoginForm() {
               <div className="flex">
                 <div className="flex-shrink-0">
                   <svg
-                    className="h-(--space-s) w-(--space-s) text-red-400"
+                    className="h-5 w-5 text-red-400"
                     viewBox="0 0 20 20"
                     fill="currentColor"
                   >
@@ -210,7 +214,7 @@ function LoginForm() {
                     />
                   </svg>
                 </div>
-                <div className="ml-(--space-s)">
+                <div className="ml-3">
                   <p className="text-0 text-red-600">
                     {error.message.includes("invalid credentials")
                       ? "Invalid email or password"
@@ -222,25 +226,39 @@ function LoginForm() {
           )}
 
           {/* Submit Button */}
-          <div className="py-(--space-2xs)">
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="group relative w-full flex justify-center py-(--space-2xs) px-(--space-s) border border-transparent text-0 font-medium rounded-lg text-white bg-black hover:bg-maroon focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-maroon disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isSubmitting ? (
-                <div className="flex items-center">
-                  <div className="animate-spin rounded-full h-(--space-s) w-(--space-s) border-b-2 border-white mr-2"></div>
-                  Signing in...
-                </div>
-              ) : (
-                "Sign In"
-              )}
-            </button>
-          </div>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="group relative w-full flex justify-center py-(--space-2xs) px-(--space-s) border border-transparent text-0 font-medium rounded-lg text-white bg-black hover:bg-maroon focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-maroon disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {isSubmitting ? (
+              <div className="flex items-center">
+                <div className="animate-spin rounded-full h-(--space-s) w-(--space-s) border-b-2 border-white mr-2"></div>
+                Signing in...
+              </div>
+            ) : (
+              "Continue"
+            )}
+          </button>
         </form>
+        <div className="">
+          {/* Divider */}
+          <div className="relative my-(--space-3xs)">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300" />
+            </div>
+            <div className="relative flex justify-center text--1">
+              <span className="px-2 bg-white text-gray-400">or</span>
+            </div>
+          </div>
+
+          {/* Google Login Button */}
+          <div className="">
+            <GoogleLoginButton mode="login" disabled={isSubmitting} />
+          </div>
+        </div>
         {/* Additional Links */}
-        <div className="text-center ">
+        <div className="text-center mt-(--space-xs)">
           <Link
             href="/signup"
             className="text--1 hover:text-maroon transition-colors"

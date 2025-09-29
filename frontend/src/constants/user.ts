@@ -30,4 +30,27 @@ interface SignupRequest {
   password: string;
 }
 
-export type { User, AuthResponse, AuthError, LoginRequest, SignupRequest };
+interface GoogleAuthRequest {
+  credential: string;
+  mode: "login" | "signup";
+}
+
+interface GoogleAuthResponse {
+  success: boolean;
+  data: {
+    user: User;
+    token: string;
+    expires_at: string;
+  };
+  message?: string;
+}
+
+export type {
+  User,
+  AuthResponse,
+  AuthError,
+  LoginRequest,
+  SignupRequest,
+  GoogleAuthRequest,
+  GoogleAuthResponse,
+};

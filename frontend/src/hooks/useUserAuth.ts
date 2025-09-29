@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { User, LoginRequest, SignupRequest } from "@/constants/user";
 import { authAPI } from "@/lib/userAuth";
 import { mutualLogout } from "@/lib/mutualLogout";
@@ -14,8 +14,10 @@ interface AuthState {
 }
 
 interface AuthActions {
-  login: (data: LoginRequest) => Promise<void>;
-  signup: (data: SignupRequest) => Promise<void>;
+  login: (data: LoginRequest) => Promise<{ success: boolean; error?: string }>;
+  signup: (
+    data: SignupRequest
+  ) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   clearError: () => void;
 }
@@ -27,7 +29,6 @@ interface AuthErrorWithField {
 
 export function useUserAuth(): AuthState &
   AuthActions & { error: AuthErrorWithField | null } {
-  const router = useRouter();
   const pathname = usePathname();
   const [state, setState] = useState<AuthState>({
     user: null,
@@ -75,69 +76,57 @@ export function useUserAuth(): AuthState &
     setError(null);
   }, []);
 
-  const login = useCallback(
-    async (data: LoginRequest) => {
-      setError(null);
-      setState((prev) => ({ ...prev, isLoading: true }));
+  const login = useCallback(async (data: LoginRequest) => {
+    setError(null);
+    setState((prev) => ({ ...prev, isLoading: true }));
 
-      try {
-        const response = await authAPI.login(data);
-        await mutualLogout.clearAdminSession();
+    try {
+      const response = await authAPI.login(data);
+      await mutualLogout.clearAdminSession();
 
-        setState({
-          user: response.data.user,
-          token: "cookie-based",
-          isLoading: false,
-          isAuthenticated: true,
-        });
+      setState({
+        user: response.data.user,
+        token: "cookie-based",
+        isLoading: false,
+        isAuthenticated: true,
+      });
+      return { success: true };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Login failed";
+      setError({
+        message,
+        field: "general",
+      });
+      setState((prev) => ({ ...prev, isLoading: false }));
+      return { success: false, error: message };
+    }
+  }, []);
 
-        router.push("/buy");
-      } catch (err) {
-        setError({
-          message: err instanceof Error ? err.message : "Login failed",
-          field: "general",
-        });
-        setState((prev) => ({ ...prev, isLoading: false }));
-      }
-    },
-    [router]
-  );
+  const signup = useCallback(async (data: SignupRequest) => {
+    setError(null);
+    setState((prev) => ({ ...prev, isLoading: true }));
 
-  const signup = useCallback(
-    async (data: SignupRequest) => {
-      setError(null);
-      setState((prev) => ({ ...prev, isLoading: true }));
+    try {
+      const response = await authAPI.signup(data);
+      await mutualLogout.clearAdminSession();
 
-      try {
-        const response = await authAPI.signup(data);
-        await mutualLogout.clearAdminSession();
-
-        setState({
-          user: response.data.user,
-          token: "cookie-based",
-          isLoading: false,
-          isAuthenticated: true,
-        });
-
-        router.push("/buy");
-      } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : "Signup failed";
-
-        if (errorMessage.includes("already exists")) {
-          router.push("/login?message=account_exists");
-          return;
-        }
-
-        setError({
-          message: errorMessage,
-          field: "general",
-        });
-        setState((prev) => ({ ...prev, isLoading: false }));
-      }
-    },
-    [router]
-  );
+      setState({
+        user: response.data.user,
+        token: "cookie-based",
+        isLoading: false,
+        isAuthenticated: true,
+      });
+      return { success: true };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Signup failed";
+      setError({
+        message,
+        field: "general",
+      });
+      setState((prev) => ({ ...prev, isLoading: false }));
+      return { success: false, error: message };
+    }
+  }, []);
 
   const logout = useCallback(async () => {
     try {
@@ -152,9 +141,8 @@ export function useUserAuth(): AuthState &
         isAuthenticated: false,
       });
       setError(null);
-      router.push("/");
     }
-  }, [router]);
+  }, []);
 
   return {
     ...state,
@@ -165,4 +153,3 @@ export function useUserAuth(): AuthState &
     clearError,
   };
 }
-
