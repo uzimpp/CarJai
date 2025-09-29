@@ -89,10 +89,10 @@ export default function NavBar() {
             About Us
           </Link>
           <Link
-            href="/buy"
+            href="/sell"
             className="text-gray-700 hover:text-gray-900 transition-colors"
           >
-            Buy/Sell Cars
+            Sell Cars
           </Link>
 
           {isLoading ? (

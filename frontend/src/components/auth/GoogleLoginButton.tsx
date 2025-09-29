@@ -15,7 +15,7 @@ export default function GoogleLoginButton({
   className = "",
   disabled = false,
 }: GoogleLoginButtonProps) {
-  const { googleLogin, isLoading, error, clearError } = useGoogleAuth();
+  const { googleLogin, isLoading, clearError } = useGoogleAuth();
   const router = useRouter();
 
   // Load Google OAuth script

@@ -65,7 +65,7 @@ export default function AdminLoginPage() {
   // While checking existing session, show a quick loader to avoid flicker
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="text-lg mb-2">Checking login status...</div>
           <div className="text-sm text-gray-500">Please wait</div>
@@ -80,21 +80,22 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Admin Login
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Sign in to your CarJai admin account
-          </p>
+    <div className="flex items-center justify-center px-(--space-m) max-w-[1536px] mx-auto w-full">
+      <div className="flex flex-col max-w-md w-full">
+        <div className="text-center mb-(--space-l)">
+          <h2 className="text-5 font-bold line-height-0">Admin Portal</h2>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm -space-y-px">
+        <form
+          className="flex flex-col gap-y-(--space-l)"
+          onSubmit={handleSubmit}
+        >
+          <div className="flex flex-col space-y-(--space-s)">
             <div>
-              <label htmlFor="username" className="sr-only">
+              <label
+                htmlFor="username"
+                className="block text-0 font-medium text-gray-700"
+              >
                 Username
               </label>
               <input
@@ -102,15 +103,18 @@ export default function AdminLoginPage() {
                 name="username"
                 type="text"
                 autoComplete="username"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-maroon focus:border-maroon focus:z-10 sm:text-sm"
-                placeholder="admin"
                 value={formData.username}
                 onChange={handleChange}
+                className="mt-1 appearance-none relative block w-full px-3 py-2 text-0 border border-black/50 focus:ring-maroon focus:border-maroon placeholder-black/30 text-gray-900 rounded-lg focus:outline-none focus:z-10"
+                placeholder="Enter your username"
               />
             </div>
+
             <div>
-              <label htmlFor="password" className="sr-only">
+              <label
+                htmlFor="password"
+                className="block text-0 font-medium text-gray-700"
+              >
                 Password
               </label>
               <input
@@ -118,17 +122,16 @@ export default function AdminLoginPage() {
                 name="password"
                 type="password"
                 autoComplete="current-password"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-maroon focus:border-maroon focus:z-10 sm:text-sm"
-                placeholder="password"
                 value={formData.password}
                 onChange={handleChange}
+                className="mt-1 appearance-none relative block w-full px-3 py-2 text-0 border border-black/50 focus:ring-maroon focus:border-maroon placeholder-black/30 text-gray-900 rounded-lg focus:outline-none focus:z-10"
+                placeholder="Enter your password"
               />
             </div>
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-(--space-s)">
               <div className="flex">
                 <div className="flex-shrink-0">
                   <svg
@@ -144,7 +147,7 @@ export default function AdminLoginPage() {
                   </svg>
                 </div>
                 <div className="ml-3">
-                  <p className="text-sm text-red-600">
+                  <p className="text-0 text-red-600">
                     {error || "An error occurred. Please try again."}
                   </p>
                 </div>
@@ -152,28 +155,23 @@ export default function AdminLoginPage() {
             </div>
           )}
 
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-maroon hover:bg-red focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-maroon disabled:opacity-50"
-            >
-              {loading ? (
-                <div className="flex items-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Signing in...
-                </div>
-              ) : (
-                "Sign In"
-              )}
-            </button>
-          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="group relative w-full flex justify-center py-(--space-2xs) px-(--space-s) border border-transparent text-0 font-medium rounded-lg text-white bg-black hover:bg-maroon focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-maroon disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {loading ? (
+              <div className="flex items-center">
+                <div className="animate-spin rounded-full h-(--space-s) w-(--space-s) border-b-2 border-white mr-2"></div>
+                Signing in...
+              </div>
+            ) : (
+              "Continue"
+            )}
+          </button>
 
-          <div className="text-center text-sm text-gray-600">
-            <p>
-              If you need an admin account, please contact the system
-              administrator
-            </p>
+          <div className="text-center text--1 text-gray-600">
+            <p>If you need an admin account, contact the administrator.</p>
           </div>
         </form>
       </div>

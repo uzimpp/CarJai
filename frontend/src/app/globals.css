@@ -2,7 +2,7 @@
 
 @theme {
   /* === Font Sizes === */
-/* @link https://utopia.fyi/type/calculator?c=350,15,1.25,1440,17,1.25,10,3,&s=0.75|0.5|0.25,1.5|2|3|4|6|8|10,s-l&g=s,l,xl,12 */
+  /* @link https://utopia.fyi/type/calculator?c=350,15,1.25,1440,17,1.25,10,3,&s=0.75|0.5|0.25,1.5|2|3|4|6|8|10,s-l&g=s,l,xl,12 */
 
   /* Step -3: 7.68px → 8.704px */
   --text--3: clamp(0.48rem, 0.4594rem + 0.0939vw, 0.544rem);
@@ -117,7 +117,7 @@
     font-family: var(--font-syne), Arial, Helvetica, sans-serif;
     line-height: 1.6;
   }
-  
+
   main {
     margin-top: var(--navbar-height);
     min-height: calc(100dvh - var(--navbar-height));
@@ -187,5 +187,5 @@
 
   .line-height-0 {
     line-height: 0.9;
-  }  
+  }
 }

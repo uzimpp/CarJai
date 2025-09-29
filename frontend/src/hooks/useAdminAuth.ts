@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   AdminUser,
   AdminSession,
@@ -78,9 +78,8 @@ export function useAdminAuth() {
   }, [mounted, validateSession]);
 
   // Re-validate on route changes to keep navbar and admin pages in sync
-  // Only if not already loading to prevent infinite loops
   useEffect(() => {
-    if (!mounted || loading) return;
+    if (!mounted) return;
     validateSession();
   }, [pathname, mounted, validateSession]);
 

@@ -23,9 +23,7 @@ export async function apiCall<T>(
   // Read body ONCE, then try JSON; avoids "body stream already read"
   const rawText = await response.text();
   let data: unknown = null;
-  try {
-    data = rawText ? JSON.parse(rawText) : null;
-  } catch (_ignored) {}
+  data = rawText ? JSON.parse(rawText) : null;
 
   if (!response.ok) {
     // Safely extract server-provided error/message if JSON object

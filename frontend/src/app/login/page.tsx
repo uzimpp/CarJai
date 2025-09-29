@@ -263,7 +263,7 @@ function LoginForm() {
             href="/signup"
             className="text--1 hover:text-maroon transition-colors"
           >
-            Don't have an account?
+            Don&apos;t have an account?
           </Link>
         </div>
       </div>

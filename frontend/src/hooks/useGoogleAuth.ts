@@ -38,7 +38,10 @@ export function useGoogleAuth(): GoogleAuthState & GoogleAuthActions {
         const client = window.google!.accounts.oauth2.initTokenClient({
           client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
           scope: "openid profile email",
-          callback: async (response: any) => {
+          callback: async (response: {
+            access_token?: string;
+            error?: string;
+          }) => {
             try {
               if (response.error) {
                 throw new Error(response.error);
@@ -49,7 +52,7 @@ export function useGoogleAuth(): GoogleAuthState & GoogleAuthActions {
 
               // Send the credential to your backend
               const authResult = await authAPI.googleAuth({
-                credential: response.access_token,
+                credential: response.access_token as string,
                 mode,
               });
 
@@ -107,7 +110,10 @@ declare global {
           initTokenClient: (config: {
             client_id: string;
             scope: string;
-            callback: (response: any) => void;
+            callback: (response: {
+              access_token?: string;
+              error?: string;
+            }) => void;
           }) => {
             requestAccessToken: () => void;
           };
