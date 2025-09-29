@@ -11,7 +11,7 @@ type SearchBarProps = {
 
 export default function SearchBar({
   className = "",
-  placeholder = "city car...",
+  placeholder = "Search cars...",
   actionPath = "/buy",
 }: SearchBarProps) {
   const router = useRouter();

@@ -65,7 +65,7 @@ export default function NavBar() {
             className="flex flex-row items-center gap-x-(--space-4xs)"
           >
             <Image src="/logo/logo.png" alt="logo" width={32} height={32} />
-            <h1 className="step-3 font-bold ml-(--space-3xs)">arJai</h1>
+            <h1 className="text-1 font-semibold ml-(--space-3xs)">arJai</h1>
           </Link>
         </div>
 
