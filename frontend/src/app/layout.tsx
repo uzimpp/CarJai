@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { Syne } from "next/font/google";
 // import localFont from "next/font/local";
 import "./globals.css";
-import NavBar from "@/components/global/navbar";
-import Footer from "@/components/global/footer";
+import ConditionalLayout from "@/components/global/Layout";
 
 const syne = Syne({
   variable: "--font-syne",
@@ -35,11 +34,7 @@ export default function RootLayout({
     <html lang="en">
       {/* ${fcSubject.variable} var(--font-fc-subject)*/}
       <body className={`${syne.variable} antialiased`}>
-        <NavBar />
-        {/* className="!pb-(--space-4xl) px-(--space-m) py-(--space-s)
-        max-w-[1728px] mx-auto w-full flex justify-self-center justify-center"  */}
-        <main className="min-h-screen">{children}</main>
-        <Footer />
+        <ConditionalLayout>{children}</ConditionalLayout>
       </body>
     </html>
   );

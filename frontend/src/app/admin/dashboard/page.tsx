@@ -50,7 +50,7 @@ export default function AdminDashboard() {
   // Show loading while authentication is being checked
   if (loading || isAuthenticated === null) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center">
         <div className="text-center">
           <div className="text-lg mb-2">Checking permissions...</div>
           <div className="text-sm text-gray-500">Please wait</div>
@@ -65,7 +65,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="px-(--space-m) max-w-[1536px] mx-auto w-full">
       {/* Header */}
       {/* Main Content */}
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">

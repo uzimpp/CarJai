@@ -86,7 +86,7 @@ function LoginForm() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
@@ -96,20 +96,20 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="flex items-center justify-center px-(--space-m) max-w-[1536px] mx-auto w-full">
+      <div className="max-w-md w-full gap-y-(--space-l) p-(--space-m)">
         {/* Header */}
         <div className="text-center">
-          <h2 className="text-4 font-bold text-maroon">Login to CarJai</h2>
+          <h2 className="text-5 font-bold line-height-0">Sign in</h2>
         </div>
 
         {/* Redirect Message */}
         {redirectMessage === "account_exists" && (
-          <div className="bg-maroon/5 border border-maroon/20 rounded-lg p-4">
+          <div className="bg-maroon/5 border border-maroon/20 rounded-lg p-(--space-s)">
             <div className="flex">
               <div className="flex-shrink-0">
                 <svg
-                  className="h-5 w-5 text-maroon"
+                  className="h-(--space-s) w-(--space-s) text-maroon"
                   viewBox="0 0 20 20"
                   fill="currentColor"
                 >
@@ -120,8 +120,8 @@ function LoginForm() {
                   />
                 </svg>
               </div>
-              <div className="ml-3">
-                <p className="text-sm text-maroon">
+              <div className="ml-(--space-s)">
+                <p className="text--1 text-maroon">
                   Account already exists. Please login instead.
                 </p>
               </div>
@@ -130,13 +130,16 @@ function LoginForm() {
         )}
 
         {/* Form */}
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-4">
+        <form
+          className="mt-(--space-l) space-y-(--space-m)"
+          onSubmit={handleSubmit}
+        >
+          <div className="space-y-(--space-s)">
             {/* Email Field */}
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-0 font-medium text-gray-700"
               >
                 Email
               </label>
@@ -156,7 +159,7 @@ function LoginForm() {
                 placeholder="Enter your email"
               />
               {formErrors.email && (
-                <p className="mt-1 text-sm text-red-600">{formErrors.email}</p>
+                <p className="mt-1 text-0 text-red-600">{formErrors.email}</p>
               )}
             </div>
 
@@ -164,7 +167,7 @@ function LoginForm() {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-0 font-medium text-gray-700"
               >
                 Password
               </label>
@@ -183,7 +186,7 @@ function LoginForm() {
                 placeholder="Enter your password"
               />
               {formErrors.password && (
-                <p className="mt-1 text-sm text-red-600">
+                <p className="mt-1 text-0 text-red-600">
                   {formErrors.password}
                 </p>
               )}
@@ -192,11 +195,11 @@ function LoginForm() {
 
           {/* General Error */}
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-(--space-s)">
               <div className="flex">
                 <div className="flex-shrink-0">
                   <svg
-                    className="h-5 w-5 text-red-400"
+                    className="h-(--space-s) w-(--space-s) text-red-400"
                     viewBox="0 0 20 20"
                     fill="currentColor"
                   >
@@ -207,8 +210,8 @@ function LoginForm() {
                     />
                   </svg>
                 </div>
-                <div className="ml-3">
-                  <p className="text-sm text-red-600">
+                <div className="ml-(--space-s)">
+                  <p className="text-0 text-red-600">
                     {error.message.includes("invalid credentials")
                       ? "Invalid email or password"
                       : error.message}
@@ -219,15 +222,15 @@ function LoginForm() {
           )}
 
           {/* Submit Button */}
-          <div>
+          <div className="py-(--space-2xs)">
             <button
               type="submit"
               disabled={isSubmitting}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text--1 font-medium rounded-lg text-white bg-maroon hover:bg-red focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-maroon disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="group relative w-full flex justify-center py-(--space-2xs) px-(--space-s) border border-transparent text-0 font-medium rounded-lg text-white bg-black hover:bg-maroon focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-maroon disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isSubmitting ? (
                 <div className="flex items-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  <div className="animate-spin rounded-full h-(--space-s) w-(--space-s) border-b-2 border-white mr-2"></div>
                   Signing in...
                 </div>
               ) : (
@@ -235,18 +238,16 @@ function LoginForm() {
               )}
             </button>
           </div>
-
-          <div className="text-center text-gray-600 text--2">or</div>
-          {/* Additional Links */}
-          <div className="text-center">
-            <Link
-              href="/signup"
-              className="text--1  hover:text-gray-900 transition-colors"
-            >
-              Don't have an account?
-            </Link>
-          </div>
         </form>
+        {/* Additional Links */}
+        <div className="text-center ">
+          <Link
+            href="/signup"
+            className="text--1 hover:text-maroon transition-colors"
+          >
+            Don't have an account?
+          </Link>
+        </div>
       </div>
     </div>
   );

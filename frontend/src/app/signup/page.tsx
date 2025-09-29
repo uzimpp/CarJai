@@ -101,7 +101,7 @@ export default function SignupPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
@@ -111,23 +111,26 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen  flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="flex items-center justify-center p-(--space-m) ">
+      <div className="max-w-md w-full gap-y-(--space-l)">
         {/* Header */}
         <div className="text-center">
-          <h2 className="text-4 font-bold text-maroon">
-            Create CarJai Account
+          <h2 className="text-5 font-bold line-height-0">
+            Get Started on CarJai
           </h2>
         </div>
 
         {/* Form */}
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-4">
+        <form
+          className="mt-(--space-l) space-y-(--space-m)"
+          onSubmit={handleSubmit}
+        >
+          <div className="space-y-(--space-s)">
             {/* Email Field */}
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-0 font-medium text-gray-700"
               >
                 Email
               </label>
@@ -146,7 +149,7 @@ export default function SignupPage() {
                 placeholder="Enter your email"
               />
               {formErrors.email && (
-                <p className="mt-1 text-sm text-red-600">{formErrors.email}</p>
+                <p className="mt-1 text-0 text-red-600">{formErrors.email}</p>
               )}
             </div>
 
@@ -154,7 +157,7 @@ export default function SignupPage() {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-0 font-medium text-gray-700"
               >
                 Password
               </label>
@@ -173,11 +176,11 @@ export default function SignupPage() {
                 placeholder="Enter your password"
               />
               {formErrors.password && (
-                <p className="mt-1 text-sm text-red-600">
+                <p className="mt-1 text-0 text-red-600">
                   {formErrors.password}
                 </p>
               )}
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text--1 text-gray-500">
                 Password must be at least 6 characters
               </p>
             </div>
@@ -186,7 +189,7 @@ export default function SignupPage() {
             <div>
               <label
                 htmlFor="confirmPassword"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-0 font-medium text-gray-700"
               >
                 Confirm Password
               </label>
@@ -205,7 +208,7 @@ export default function SignupPage() {
                 placeholder="Enter password again"
               />
               {formErrors.confirmPassword && (
-                <p className="mt-1 text-sm text-red-600">
+                <p className="mt-1 text-0 text-red-600">
                   {formErrors.confirmPassword}
                 </p>
               )}
@@ -230,7 +233,7 @@ export default function SignupPage() {
                   </svg>
                 </div>
                 <div className="ml-3">
-                  <p className="text-sm text-red-600">
+                  <p className="text-0 text-red-600">
                     {error.message.includes("already exists")
                       ? "This email already has an account. Please use a different email."
                       : error.message}
@@ -241,15 +244,15 @@ export default function SignupPage() {
           )}
 
           {/* Submit Button */}
-          <div>
+          <div className="py-(--space-2xs)">
             <button
               type="submit"
               disabled={isSubmitting}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text--1 font-medium rounded-lg text-white bg-maroon hover:bg-red focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-maroon disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="group relative w-full flex justify-center py-(--space-2xs) px-(--space-s) border border-transparent text-0 font-medium rounded-lg text-white bg-black hover:bg-maroon focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-maroon disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isSubmitting ? (
                 <div className="flex items-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  <div className="animate-spin rounded-full h-(--space-s) w-(--space-s) border-b-2 border-white mr-2"></div>
                   Creating account...
                 </div>
               ) : (
@@ -257,18 +260,16 @@ export default function SignupPage() {
               )}
             </button>
           </div>
-
-          <div className="text-center text-gray-600 text--2">or</div>
-          {/* Additional Links */}
-          <div className="text-center">
-            <Link
-              href="/login"
-              className="text--1  hover:text-gray-900 transition-colors"
-            >
-              Already have an account?
-            </Link>
-          </div>
         </form>
+        {/* Additional Links */}
+        <div className="text-center ">
+          <Link
+            href="/login"
+            className="text--1 hover:text-maroon transition-colors"
+          >
+            Already have an account?
+          </Link>
+        </div>
       </div>
     </div>
   );

@@ -1,15 +1,15 @@
 import Image from "next/image";
 import Link from "next/link";
-import SearchBar from "@/components/global/searchbar";
+import SearchBar from "@/components/global/SearchBar";
 
 export default function Home() {
   return (
-    <div className="px-(--space-m) py-(--space-s) max-w-[1536px] mx-auto w-full">
+    <div className="px-(--space-m) max-w-[1536px] mx-auto w-full">
       {/* Hero */}
-      <section className="relative rounded-4xl shadow-[var(--shadow-lg)] bg-gradient-to-r from-maroon to-maroon px-(--space-l) py-(--space-2xl-3xl)">
-        <div className="relative z-10 flex flex-col items-center text-center gap-y-(--space-s) pb-(--space-xl)">
-          <h1 className="text-5 bold text-white">Looking for a dream car?</h1>
-          <div className="w-full max-w-[800px]">
+      <section className="relative rounded-4xl shadow-[var(--shadow-lg)] bg-gradient-to-r from-maroon to-maroon px-(--space-xl) py-(--space-2xl-3xl)">
+        <div className="relative z-10 flex flex-col items-center text-center gap-y-(--space-s) pb-(--space-xl) my-(--space-xs)">
+          <h1 className="text-6 bold text-white">Looking for a dream car?</h1>
+          <div className="w-full max-w-[768px]">
             <SearchBar className="mx-auto" placeholder="City car" />
           </div>
         </div>
