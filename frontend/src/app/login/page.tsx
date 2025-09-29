@@ -101,7 +101,7 @@ function LoginForm() {
 
   return (
     <div className="flex items-center justify-center px-(--space-m) max-w-[1536px] mx-auto w-full">
-      <div className="flex flex-col max-w-md w-full  mx-auto">
+      <div className="flex flex-col max-w-md w-full mx-auto">
         {/* Header */}
         <div className="flex text-center mb-(--space-l) w-full justify-center mx-auto">
           <h2 className="text-5 font-bold line-height-0">Sign in</h2>
