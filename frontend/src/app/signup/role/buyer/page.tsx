@@ -48,57 +48,55 @@ export default function BuyerProfilePage() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen px-(--space-m) py-(--space-xl)">
-      <div className="max-w-2xl w-full">
-        {/* Header */}
-        <div className="mb-(--space-l)">
-          <h1 className="text-4 font-bold text-gray-900 mb-(--space-2xs)">
-            Set Up Your Buyer Profile
-          </h1>
-          <p className="text-0 text-gray-600">
-            Tell us about your car preferences so we can help you find the
-            perfect match
-          </p>
-        </div>
+    <div className="">
+      {/* Header */}
+      <div className="mb-(--space-l)">
+        <h1 className="text-4 font-bold text-gray-900 mb-(--space-2xs)">
+          Set Up Your Buyer Profile
+        </h1>
+        <p className="text-0 text-gray-600">
+          Tell us about your car preferences so we can help you find the perfect
+          match
+        </p>
+      </div>
 
-        {/* Error Display */}
-        {error && (
-          <div className="mb-(--space-m) bg-red-50 border border-red-200 rounded-lg p-(--space-s)">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg
-                  className="h-5 w-5 text-red-400"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-0 text-red-600">{error}</p>
-              </div>
+      {/* Error Display */}
+      {error && (
+        <div className="mb-(--space-m) bg-red-50 border border-red-200 rounded-lg p-(--space-s)">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg
+                className="h-5 w-5 text-red-400"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-0 text-red-600">{error}</p>
             </div>
           </div>
-        )}
-
-        {/* Form */}
-        <div className="bg-white rounded-lg border border-gray-200 p-(--space-l)">
-          <BuyerForm onSubmit={handleSubmit} submitLabel="Complete Profile" />
         </div>
+      )}
 
-        {/* Skip Option */}
-        <div className="mt-(--space-m) text-center">
-          <button
-            onClick={() => router.push("/buy")}
-            className="text--1 text-gray-600 hover:text-maroon transition-colors"
-          >
-            Skip for now
-          </button>
-        </div>
+      {/* Form */}
+      <div className="bg-white rounded-lg border border-gray-200 p-(--space-l)">
+        <BuyerForm onSubmit={handleSubmit} submitLabel="Complete Profile" />
+      </div>
+
+      {/* Skip Option */}
+      <div className="mt-(--space-m) text-center">
+        <button
+          onClick={() => router.push("/buy")}
+          className="text--1 text-gray-600 hover:text-maroon transition-colors"
+        >
+          Skip for now
+        </button>
       </div>
     </div>
   );

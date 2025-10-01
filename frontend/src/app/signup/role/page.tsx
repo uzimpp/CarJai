@@ -52,9 +52,9 @@ export default function RoleSelectionPage() {
           <h1 className="text-5 font-bold text-gray-900 mb-(--space-2xs)">
             Choose Your Role
           </h1>
-          <p className="text-0 text-gray-600">
+          {/* <p className="text-0 text-gray-600">
             Select how you&apos;d like to use CarJai
-          </p>
+          </p> */}
         </div>
 
         {/* Role Cards */}
@@ -137,9 +137,9 @@ export default function RoleSelectionPage() {
                 </div>
 
                 {/* Arrow */}
-                <div className="mt-(--space-m) flex justify-end">
+                <div className="mt-(--space-m) flex justify-center p-(--space-3xs) bg-black group-hover:bg-maroon rounded-xl transition-all duration-300">
                   <svg
-                    className="w-6 h-6 text-maroon group-hover:translate-x-1 transition-transform"
+                    className="w-6 h-6 text-white group-hover:translate-x-1 transition-transform"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -147,7 +147,7 @@ export default function RoleSelectionPage() {
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      strokeWidth={2}
+                      strokeWidth={1.75}
                       d="M17 8l4 4m0 0l-4 4m4-4H3"
                     />
                   </svg>
@@ -234,9 +234,9 @@ export default function RoleSelectionPage() {
                 </div>
 
                 {/* Arrow */}
-                <div className="mt-(--space-m) flex justify-end">
+                <div className="mt-(--space-m) flex justify-center p-(--space-3xs) bg-black group-hover:bg-maroon rounded-xl transition-all duration-300">
                   <svg
-                    className="w-6 h-6 text-maroon group-hover:translate-x-1 transition-transform"
+                    className="w-6 h-6 text-white group-hover:translate-x-1 transition-transform"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -244,7 +244,7 @@ export default function RoleSelectionPage() {
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      strokeWidth={2}
+                      strokeWidth={1.75}
                       d="M17 8l4 4m0 0l-4 4m4-4H3"
                     />
                   </svg>
@@ -255,9 +255,9 @@ export default function RoleSelectionPage() {
         </div>
 
         {/* Note */}
-        <p className="text--1 text-center text-gray-500 mt-(--space-m)">
+        {/* <p className="text--1 text-center text-gray-500 mt-(--space-m)">
           You can add or switch roles later in your settings
-        </p>
+        </p> */}
       </div>
     </div>
   );
