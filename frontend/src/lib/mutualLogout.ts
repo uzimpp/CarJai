@@ -1,24 +1,22 @@
-// Mutual logout utility to clear both user and admin sessions (pure cookie-based)
+// Mutual sign out utility to clear both user and admin sessions (pure cookie-based)
 export const mutualLogout = {
   async clearAdminSession(): Promise<void> {
     try {
-      // Pure cookie-based logout - always attempt to clear backend session
-      await fetch("/admin/auth/logout", {
+      // Pure cookie-based sign out - always attempt to clear backend session
+      await fetch("/admin/auth/signout", {
         method: "POST",
         credentials: "include",
       });
-    } catch (err) {
-    }
+    } catch (err) {}
   },
 
   async clearUserSession(): Promise<void> {
     try {
-      // Pure cookie-based logout - always attempt to clear backend session
-      await fetch("/api/auth/logout", {
+      // Pure cookie-based sign out - always attempt to clear backend session
+      await fetch("/api/auth/signout", {
         method: "POST",
         credentials: "include",
       });
-    } catch (err) {
-    }
+    } catch (err) {}
   },
 };

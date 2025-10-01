@@ -252,7 +252,7 @@ jobs:
           curl -X POST http://localhost:8080/admin/auth/login \
             -H "Content-Type: application/json" \
             -d '{"username":"admin","password":"admin123"}' \
-            -f || echo "Login test failed"
+            -f || echo "Signin test failed"
           
       - name: Stop services
         run: docker compose down

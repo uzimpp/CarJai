@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import { validation } from "@/lib/profileAPI";
-import GoogleLoginButton from "@/components/auth/GoogleLoginButton";
+import GoogleSigninButton from "@/components/auth/GoogleSigninButton";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -103,7 +103,7 @@ export default function SignupPage() {
           router.push("/signup/role");
         }, 100);
       } else if (result.error?.includes("already exists")) {
-        router.push("/login?message=account_exists");
+        router.push("/signin?message=account_exists");
       }
     } finally {
       setIsSubmitting(false);
@@ -122,11 +122,11 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex items-center justify-center px-(--space-m) max-w-[1536px] mx-auto w-full">
-      <div className="flex flex-col max-w-md w-full">
+    <div className="flex items-center justify-center px-(--space-m) max-w-[1536px] mx-auto w-full p-(--space-m)">
+      <div className="flex flex-col max-w-md w-full p-(--space-m) pt-(--space-l) rounded-xl mx-auto">
         {/* Header */}
         <div className="text-center mb-(--space-l)">
-          <h2 className="text-5 font-bold line-height-0">Create an account</h2>
+          <h2 className="text-4 font-bold line-height-12">Create an account</h2>
         </div>
 
         {/* Form */}
@@ -281,13 +281,13 @@ export default function SignupPage() {
 
           {/* Google Signup Button */}
           <div className="">
-            <GoogleLoginButton mode="signup" disabled={isSubmitting} />
+            <GoogleSigninButton mode="signup" disabled={isSubmitting} />
           </div>
         </div>
         {/* Additional Links */}
         <div className="text-center mt-(--space-xs)">
           <Link
-            href="/login"
+            href="/signin"
             className="text--1 hover:text-maroon transition-colors"
           >
             Already have an account?

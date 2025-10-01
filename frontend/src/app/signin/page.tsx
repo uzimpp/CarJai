@@ -5,12 +5,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import { validation } from "@/lib/profileAPI";
-import GoogleLoginButton from "@/components/auth/GoogleLoginButton";
+import GoogleSigninButton from "@/components/auth/GoogleSigninButton";
 
-function LoginForm() {
+function SigninForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login, isAuthenticated, isLoading, error, clearError } =
+  const { signin, isAuthenticated, isLoading, error, clearError } =
     useUserAuth();
 
   const [formData, setFormData] = useState({
@@ -79,7 +79,7 @@ function LoginForm() {
 
     setIsSubmitting(true);
     try {
-      const result = await login(formData);
+      const result = await signin(formData);
       if (result.success) {
         router.push("/buy");
       }
@@ -100,11 +100,11 @@ function LoginForm() {
   }
 
   return (
-    <div className="flex items-center justify-center px-(--space-m) max-w-[1536px] mx-auto w-full">
-      <div className="flex flex-col max-w-md w-full mx-auto">
+    <div className="flex items-center justify-center px-(--space-m) max-w-[1536px] mx-auto w-full p-(--space-m)">
+      <div className="flex flex-col max-w-md w-full p-(--space-m) pt-(--space-l) rounded-xl mx-auto">
         {/* Header */}
         <div className="flex text-center mb-(--space-l) w-full justify-center mx-auto">
-          <h2 className="text-5 font-bold line-height-0">Sign in</h2>
+          <h2 className="text-4 font-bold line-height-0">Sign in</h2>
         </div>
 
         {/* Redirect Message */}
@@ -126,7 +126,7 @@ function LoginForm() {
               </div>
               <div className="ml-(--space-s)">
                 <p className="text--1 text-maroon">
-                  Account already exists. Please login instead.
+                  Account already exists. Please signin instead.
                 </p>
               </div>
             </div>
@@ -237,7 +237,7 @@ function LoginForm() {
                 Signing in...
               </div>
             ) : (
-              "Continue"
+              "Sign in"
             )}
           </button>
         </form>
@@ -252,9 +252,9 @@ function LoginForm() {
             </div>
           </div>
 
-          {/* Google Login Button */}
+          {/* Google Signin Button */}
           <div className="">
-            <GoogleLoginButton mode="login" disabled={isSubmitting} />
+            <GoogleSigninButton mode="signin" disabled={isSubmitting} />
           </div>
         </div>
         {/* Additional Links */}
@@ -271,7 +271,7 @@ function LoginForm() {
   );
 }
 
-export default function LoginPage() {
+export default function SigninPage() {
   return (
     <Suspense
       fallback={
@@ -283,7 +283,7 @@ export default function LoginPage() {
         </div>
       }
     >
-      <LoginForm />
+      <SigninForm />
     </Suspense>
   );
 }

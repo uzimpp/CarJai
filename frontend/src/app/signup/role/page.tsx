@@ -9,12 +9,12 @@ export default function RoleSelectionPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading, roles } = useUserAuth();
 
-  // Redirect to login if not authenticated
+  // Redirect to signin if not authenticated
   // But give a small grace period for auth state to load after signup
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!isLoading && !isAuthenticated) {
-        router.push("/login");
+        router.push("/signin");
       }
     }, 200);
 
@@ -49,12 +49,12 @@ export default function RoleSelectionPage() {
       <div className="max-w-2xl w-full">
         {/* Header */}
         <div className="text-center mb-(--space-xl)">
-          <h1 className="text-5 font-bold text-gray-900 mb-(--space-2xs)">
+          <h1 className="text-5 font-bold text-gray-900 line-height-12">
             Choose Your Role
           </h1>
-          {/* <p className="text-0 text-gray-600">
+          <p className="text-0 text-gray-600 ">
             Select how you&apos;d like to use CarJai
-          </p> */}
+          </p>
         </div>
 
         {/* Role Cards */}
@@ -65,9 +65,9 @@ export default function RoleSelectionPage() {
               <div className="flex flex-col h-full">
                 {/* Icon */}
                 <div className="mb-(--space-m)">
-                  <div className="w-16 h-16 bg-maroon/10 rounded-full flex items-center justify-center group-hover:bg-maroon/20 transition-colors">
+                  <div className="w-16 h-16 bg-black/10 rounded-full flex items-center justify-center group-hover:bg-maroon/20 transition-colors">
                     <svg
-                      className="w-8 h-8 text-maroon"
+                      className="w-8 h-8 text-black group-hover:text-maroon transition-colors"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -162,9 +162,9 @@ export default function RoleSelectionPage() {
               <div className="flex flex-col h-full">
                 {/* Icon */}
                 <div className="mb-(--space-m)">
-                  <div className="w-16 h-16 bg-maroon/10 rounded-full flex items-center justify-center group-hover:bg-maroon/20 transition-colors">
+                  <div className="w-16 h-16 bg-black/10 rounded-full flex items-center justify-center group-hover:bg-maroon/20 transition-colors">
                     <svg
-                      className="w-8 h-8 text-maroon"
+                      className="w-8 h-8 text-black group-hover:text-maroon transition-colors"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"

@@ -52,15 +52,15 @@ go run main.go
 ## 📡 API Endpoints
 
 ### Admin Authentication
-- `POST /admin/auth/login` - Admin login
-- `POST /admin/auth/logout` - Admin logout
+- `POST /admin/auth/signin` - Admin sign in
+- `POST /admin/auth/signout` - Admin sign out
 - `GET /admin/auth/me` - Get admin info
 - `POST /admin/auth/refresh` - Refresh token
 
 ### User Authentication
 - `POST /api/auth/signup` - User registration
-- `POST /api/auth/login` - User login
-- `POST /api/auth/logout` - User logout
+- `POST /api/auth/signin` - User sign in
+- `POST /api/auth/signout` - User sign out
 - `GET /api/auth/me` - Get user info
 - `POST /api/auth/refresh` - Refresh token
 

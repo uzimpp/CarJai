@@ -35,12 +35,12 @@ func UserAuthRoutes(
 		),
 	)
 
-	router.HandleFunc("/api/auth/login",
+	router.HandleFunc("/api/auth/signin",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				middleware.LoginRateLimit()(
 					middleware.LoggingMiddleware(
-						userAuthHandler.Login,
+						userAuthHandler.Signin,
 					),
 				),
 			),
@@ -48,12 +48,12 @@ func UserAuthRoutes(
 	)
 
 	// User authentication routes (auth required)
-	router.HandleFunc("/api/auth/logout",
+	router.HandleFunc("/api/auth/signout",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				middleware.GeneralRateLimit()(
 					middleware.LoggingMiddleware(
-						userAuthHandler.Logout,
+						userAuthHandler.Signout,
 					),
 				),
 			),
