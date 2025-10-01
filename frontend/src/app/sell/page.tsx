@@ -102,6 +102,5 @@ export default function SellLanding() {
           ... draft list ...
         </div> */}
       </div>
-    </div>
   );
 }
