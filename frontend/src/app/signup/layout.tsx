@@ -28,7 +28,7 @@ export default function SignupLayout({
     <div className="flex flex-col px-(--space-m) max-w-[1536px] mx-auto w-full mb-(--space-3xl)">
       {/* Step Indicator */}
       {showSteps && (
-        <div className="py-(--space-m) my-(--space-3xs) max-w-2xl mx-auto w-full bg-white border-b border-gray-200">
+        <div className="py-(--space-m) my-(--space-3xs) max-w-xl mx-auto w-full bg-white border-b border-gray-200">
           <div className="flex items-start px-(--space-xs)">
             {/* Step 1: Account */}
             <div className="flex flex-col items-center">
@@ -174,7 +174,7 @@ export default function SignupLayout({
       )}
 
       {/* Main Content */}
-      <section className="!my-(--space-l) flex justify-center max-w-[500px] mx-auto">
+      <section className="!my-(--space-l) flex justify-center max-w-2xl h-full mx-auto">
         {children}
       </section>
     </div>

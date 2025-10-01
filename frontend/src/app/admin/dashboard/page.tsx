@@ -15,7 +15,7 @@ export default function AdminDashboard() {
     loading,
     isAuthenticated,
     validateSession,
-    logout,
+    signout,
   } = useAdminAuth();
 
   const [ipForm, setIpForm] = useState({ ip: "", description: "" });
@@ -62,8 +62,8 @@ export default function AdminDashboard() {
     });
     // Only redirect if we're done loading and definitely not authenticated
     if (!loading && isAuthenticated === false) {
-      console.log("❌ Admin not authenticated, redirecting to login");
-      router.push("/admin/login");
+      console.log("❌ Admin not authenticated, redirecting to signin");
+      router.push("/admin/signin");
     } else if (!loading && isAuthenticated === true) {
       console.log("✅ Admin authenticated, showing dashboard");
     }
@@ -143,10 +143,10 @@ export default function AdminDashboard() {
               Refresh
             </button>
             <button
-              onClick={logout}
+              onClick={signout}
               className="px-(--space-s) py-(--space-3xs) bg-black/30 hover:bg-black/40 rounded-full text-white transition-colors"
             >
-              Logout
+              Sign Out
             </button>
           </div>
         </div>
@@ -319,7 +319,7 @@ export default function AdminDashboard() {
                   </dd>
                 </div>
                 <div>
-                  <dt className="text--1 text-gray-500">Last Login</dt>
+                  <dt className="text--1 text-gray-500">Last Signin</dt>
                   <dd className="mt-1 text-0 text-gray-900">
                     {adminUser?.last_login_at
                       ? new Date(adminUser.last_login_at).toLocaleString()

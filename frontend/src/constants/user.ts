@@ -111,7 +111,7 @@ interface SellerResponse {
   message?: string;
 }
 
-interface LoginRequest {
+interface SigninRequest {
   email: string;
   password: string;
 }
@@ -123,7 +123,7 @@ interface SignupRequest {
 
 interface GoogleAuthRequest {
   credential: string;
-  mode: "login" | "signup";
+  mode: "signin" | "signup";
 }
 
 interface GoogleAuthResponse {
@@ -144,7 +144,7 @@ export type {
   AuthResponse,
   MeResponse,
   AuthError,
-  LoginRequest,
+  SigninRequest,
   SignupRequest,
   GoogleAuthRequest,
   GoogleAuthResponse,

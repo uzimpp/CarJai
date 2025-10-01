@@ -96,14 +96,14 @@ func (h *UserAuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusCreated, response)
 }
 
-// Login handles user login requests
-func (h *UserAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
+// Signin handles user sign in requests
+func (h *UserAuthHandler) Signin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	var req models.UserLoginRequest
+	var req models.UserSigninRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response := models.UserErrorResponse{
 			Success: false,
@@ -137,8 +137,8 @@ func (h *UserAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	)
 	userAgent := r.UserAgent()
 
-	// Login user
-	response, err := h.userService.Login(req.Email, req.Password, clientIP, userAgent)
+	// Sign in user
+	response, err := h.userService.Signin(req.Email, req.Password, clientIP, userAgent)
 	if err != nil {
 		errorResponse := models.UserErrorResponse{
 			Success: false,
@@ -165,8 +165,8 @@ func (h *UserAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusOK, response)
 }
 
-// Logout handles user logout requests
-func (h *UserAuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
+// Signout handles user sign out requests
+func (h *UserAuthHandler) Signout(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -180,8 +180,8 @@ func (h *UserAuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	}
 	token := cookie.Value
 
-	// Logout user
-	response, err := h.userService.Logout(token)
+	// Sign out user
+	response, err := h.userService.Signout(token)
 	if err != nil {
 		errorResponse := models.UserErrorResponse{
 			Success: false,

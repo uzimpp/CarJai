@@ -37,8 +37,8 @@ Tests authentication, authorization, and input validation.
 ### Admin Authentication
 
 ```bash
-# Test admin login (saves cookie to file)
-curl -X POST http://localhost:8080/admin/auth/login \
+# Test admin sign in (saves cookie to file)
+curl -X POST http://localhost:8080/admin/auth/signin \
   -H "Content-Type: application/json" \
   -d '{"username":"myadmin","password":"your_password"}' \
   -c admin_cookies.txt
@@ -57,8 +57,8 @@ curl -X POST http://localhost:8080/api/auth/signup \
   -d '{"username":"user123","email":"user@example.com","password":"password123","name":"John Doe"}' \
   -c user_cookies.txt
 
-# Test user login (saves cookie to file)
-curl -X POST http://localhost:8080/api/auth/login \
+# Test user sign in (saves cookie to file)
+curl -X POST http://localhost:8080/api/auth/signin \
   -H "Content-Type: application/json" \
   -d '{"username":"user123","password":"password123"}' \
   -c user_cookies.txt
@@ -92,8 +92,8 @@ curl http://localhost:8080/metrics
 ### SQL Injection Testing
 
 ```bash
-# Test SQL injection in login
-curl -X POST http://localhost:8080/admin/auth/login \
+# Test SQL injection in sign in
+curl -X POST http://localhost:8080/admin/auth/signin \
   -H "Content-Type: application/json" \
   -d '{"username":"admin'\'' OR 1=1--","password":"anything"}'
 
@@ -130,12 +130,12 @@ curl -X GET http://localhost:8080/api/auth/me
 # Ubuntu/Debian: sudo apt-get install apache2-utils
 # macOS: brew install httpd
 
-# Test login endpoint
+# Test sign in endpoint
 ab -n 100 -c 10 -H "Content-Type: application/json" \
-  -p login_data.json http://localhost:8080/admin/auth/login
+  -p signin_data.json http://localhost:8080/admin/auth/signin
 
 # Create test data
-echo '{"username":"myadmin","password":"your_password"}' > login_data.json
+echo '{"username":"myadmin","password":"your_password"}' > signin_data.json
 ```
 
 ### Concurrent Testing
@@ -181,14 +181,14 @@ go tool cover -func=coverage.out
 - **API Tests**: > 90% endpoint coverage
 
 ### Performance Goals
-- **Login Response**: < 200ms
+- **Sign in Response**: < 200ms
 - **Token Validation**: < 50ms
 - **Health Check**: < 50ms
 - **OCR Processing**: < 5 seconds
 
 ### Security Goals
 - **Password Hashing**: bcrypt with cost 12+
-- **Rate Limiting**: 5 login attempts per 15 minutes
+- **Rate Limiting**: 5 sign in attempts per 15 minutes
 - **Input Validation**: 100% of user inputs sanitized
 
 ## 🚨 Common Issues

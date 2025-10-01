@@ -29,8 +29,8 @@ type UserSignupRequest struct {
 	Password string `json:"password" validate:"required,min=6"`
 }
 
-// UserLoginRequest represents the request payload for user login
-type UserLoginRequest struct {
+// UserSigninRequest represents the request payload for user sign in
+type UserSigninRequest struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required,min=6"`
 }
@@ -42,7 +42,7 @@ type UserAuthResponse struct {
 	Message string       `json:"message,omitempty"`
 }
 
-// UserAuthData contains the authentication data returned after login/signup
+// UserAuthData contains the authentication data returned after signin/signup
 type UserAuthData struct {
 	User      UserPublic `json:"user"`
 	Token     string     `json:"token"`
@@ -81,8 +81,8 @@ type UserProfiles struct {
 	SellerComplete bool `json:"sellerComplete"`
 }
 
-// UserLogoutResponse represents the response payload for user logout
-type UserLogoutResponse struct {
+// UserSignoutResponse represents the response payload for user sign out
+type UserSignoutResponse struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
 }

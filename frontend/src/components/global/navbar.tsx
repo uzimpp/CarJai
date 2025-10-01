@@ -15,13 +15,13 @@ export default function NavBar() {
   const {
     user,
     isAuthenticated: isUserAuthed,
-    logout: userLogout,
+    signout: userSignout,
     isLoading: isUserLoading,
   } = useUserAuth();
   const {
     adminUser,
     isAuthenticated: isAdminAuthed,
-    logout: adminLogout,
+    signout: adminSignout,
     loading: isAdminLoading,
   } = useAdminAuth();
 
@@ -32,15 +32,15 @@ export default function NavBar() {
   // Determine if search bar should be shown
   const shouldShowSearchBar = !noSearchBarPages.includes(pathname);
 
-  const handleLogout = async () => {
+  const handleSignout = async () => {
     try {
       if (isAuthedAdmin) {
-        await adminLogout();
+        await adminSignout();
       } else if (isAuthedUser) {
-        await userLogout();
+        await userSignout();
       }
     } catch (error) {
-      console.error("Logout failed:", error);
+      console.error("Sign out failed:", error);
     }
   };
 
@@ -146,7 +146,7 @@ export default function NavBar() {
                   </div>
                   <div className="border-t border-white/5">
                     <button
-                      onClick={handleLogout}
+                      onClick={handleSignout}
                       className="w-full text-left px-4 py-2 text-sm hover:bg-maroon/60 flex items-center gap-2"
                     >
                       <svg
@@ -164,7 +164,7 @@ export default function NavBar() {
                           strokeLinejoin="round"
                         />
                       </svg>
-                      Logout Admin
+                      Sign Out
                     </button>
                   </div>
                 </div>
@@ -213,7 +213,7 @@ export default function NavBar() {
                   </div>
                   <div className="border-t border-red/20">
                     <button
-                      onClick={handleLogout}
+                      onClick={handleSignout}
                       className="w-full text-left px-4 py-2 text-sm hover:bg-red/30 flex items-center gap-2"
                     >
                       <svg
@@ -231,7 +231,7 @@ export default function NavBar() {
                           strokeLinejoin="round"
                         />
                       </svg>
-                      Logout
+                      Sign Out
                     </button>
                   </div>
                 </div>

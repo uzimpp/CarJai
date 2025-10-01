@@ -12,10 +12,10 @@ export default function BuyerProfilePage() {
   const { isAuthenticated, isLoading } = useUserAuth();
   const [error, setError] = useState<string | null>(null);
 
-  // Redirect to login if not authenticated
+  // Redirect to signin if not authenticated
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.push("/login");
+      router.push("/signin");
     }
   }, [isAuthenticated, isLoading, router]);
 
@@ -51,7 +51,7 @@ export default function BuyerProfilePage() {
     <div className="">
       {/* Header */}
       <div className="mb-(--space-l)">
-        <h1 className="text-4 font-bold text-gray-900 mb-(--space-2xs)">
+        <h1 className="text-4 font-bold text-gray-900 mb-(--space-2xs) line-height-12">
           Set Up Your Buyer Profile
         </h1>
         <p className="text-0 text-gray-600">

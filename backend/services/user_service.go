@@ -90,8 +90,8 @@ func (s *UserService) Signup(email, password, ipAddress, userAgent string) (*mod
 	}, nil
 }
 
-// Login authenticates a user
-func (s *UserService) Login(email, password, ipAddress, userAgent string) (*models.UserAuthResponse, error) {
+// Signin authenticates a user
+func (s *UserService) Signin(email, password, ipAddress, userAgent string) (*models.UserAuthResponse, error) {
 	// Get user by email
 	user, err := s.userRepo.GetUserByEmail(email)
 	if err != nil {
@@ -134,21 +134,21 @@ func (s *UserService) Login(email, password, ipAddress, userAgent string) (*mode
 			Token:     token,
 			ExpiresAt: expiresAt,
 		},
-		Message: "Login successful",
+		Message: "Sign in successful",
 	}, nil
 }
 
-// Logout invalidates a user session
-func (s *UserService) Logout(token string) (*models.UserLogoutResponse, error) {
+// Signout invalidates a user session
+func (s *UserService) Signout(token string) (*models.UserSignoutResponse, error) {
 	// Delete session from database
 	err := s.userSessionRepo.DeleteUserSession(token)
 	if err != nil {
-		return nil, fmt.Errorf("failed to logout: %w", err)
+		return nil, fmt.Errorf("failed to sign out: %w", err)
 	}
 
-	return &models.UserLogoutResponse{
+	return &models.UserSignoutResponse{
 		Success: true,
-		Message: "Logout successful",
+		Message: "Sign out successful",
 	}, nil
 }
 
