@@ -3,18 +3,6 @@
 import { usePathname } from "next/navigation";
 import { useUserAuth } from "@/hooks/useUserAuth";
 
-interface Step {
-  number: number;
-  label: string;
-  path: string;
-}
-
-const steps: Step[] = [
-  { number: 1, label: "Account", path: "/signup" },
-  { number: 2, label: "Role", path: "/signup/role" },
-  { number: 3, label: "Profile", path: "/signup/role/" }, // matches both buyer and seller
-];
-
 export default function SignupLayout({
   children,
 }: {
@@ -37,75 +25,158 @@ export default function SignupLayout({
   const showSteps = isAuthenticated || pathname !== "/signup";
 
   return (
-    <div className="flex flex-col min-h-screen items-center justify-center px-(--space-m) max-w-[1536px] mx-auto w-full">
+    <div className="flex flex-col px-(--space-m) max-w-[1536px] mx-auto w-full mb-(--space-3xl)">
       {/* Step Indicator */}
       {showSteps && (
-        <div className="bg-white border-b border-gray-200">
-          <div className="max-w-3xl mx-auto px-(--space-m) py-(--space-m)">
-            <div className="flex items-center justify-between">
-              {steps.map((step, index) => (
-                <div key={step.number} className="flex items-center flex-1">
-                  {/* Step Circle */}
-                  <div className="flex flex-col items-center">
-                    <div
-                      className={`w-10 h-10 rounded-full flex items-center justify-center text-0 font-semibold transition-all duration-200 ${
-                        currentStep > step.number
-                          ? "bg-green-500 text-white"
-                          : currentStep === step.number
-                          ? "bg-maroon text-white ring-4 ring-maroon/20"
-                          : "bg-gray-200 text-gray-500"
-                      }`}
-                    >
-                      {currentStep > step.number ? (
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={3}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                      ) : (
-                        step.number
-                      )}
-                    </div>
-                    <span
-                      className={`mt-2 text--1 font-medium transition-colors ${
-                        currentStep >= step.number
-                          ? "text-gray-900"
-                          : "text-gray-400"
-                      }`}
-                    >
-                      {step.label}
-                    </span>
-                  </div>
+        <div className="py-(--space-m) my-(--space-3xs) max-w-2xl mx-auto w-full bg-white border-b border-gray-200">
+          <div className="flex items-start px-(--space-xs)">
+            {/* Step 1: Account */}
+            <div className="flex flex-col items-center">
+              <div
+                className={`w-(--space-m) h-(--space-m) rounded-full flex items-center justify-center text--1 font-semibold transition-all duration-200 ${
+                  currentStep > 1
+                    ? "bg-green-500 text-white"
+                    : currentStep === 1
+                    ? "bg-black text-white ring-4 ring-black/20"
+                    : "bg-gray-200 text-gray-500"
+                }`}
+              >
+                {currentStep > 1 ? (
+                  <svg
+                    className="w-(--space-s) h-(--space-s)"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={3}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                ) : (
+                  "1"
+                )}
+              </div>
+              <span
+                className={`mt-2 text-sm font-medium transition-colors ${
+                  currentStep >= 1 ? "text-gray-900" : "text-gray-400"
+                }`}
+              >
+                Account
+              </span>
+            </div>
 
-                  {/* Connector Line */}
-                  {index < steps.length - 1 && (
-                    <div className="flex-1 h-0.5 mx-4 mt-[-24px]">
-                      <div
-                        className={`h-full transition-colors duration-300 ${
-                          currentStep > step.number
-                            ? "bg-green-500"
-                            : "bg-gray-200"
-                        }`}
-                      />
-                    </div>
-                  )}
-                </div>
-              ))}
+            {/* Connector Line 1-2 */}
+            <div className="flex items-center flex-1 pt-(--space-xs) px-2">
+              <div
+                className={`w-full h-1 rounded transition-colors duration-300 ${
+                  currentStep >= 2
+                    ? currentStep === 2
+                      ? "bg-black"
+                      : "bg-green-500/60"
+                    : "bg-gray-200"
+                }`}
+              />
+            </div>
+
+            {/* Step 2: Role */}
+            <div className="flex flex-col items-center">
+              <div
+                className={`w-(--space-m) h-(--space-m) rounded-full flex items-center justify-center text--1 font-semibold transition-all duration-200 ${
+                  currentStep > 2
+                    ? "bg-green-500 text-white"
+                    : currentStep === 2
+                    ? "bg-black text-white ring-4 ring-black/20"
+                    : "bg-gray-200 text-gray-500"
+                }`}
+              >
+                {currentStep > 2 ? (
+                  <svg
+                    className="w-(--space-s) h-(--space-s)"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={3}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                ) : (
+                  "2"
+                )}
+              </div>
+              <span
+                className={`mt-2 text-sm font-medium transition-colors ${
+                  currentStep >= 2 ? "text-gray-900" : "text-gray-400"
+                }`}
+              >
+                Role
+              </span>
+            </div>
+
+            {/* Connector Line 2-3 */}
+            <div className="flex items-center flex-1 pt-(--space-xs) px-2">
+              <div
+                className={`w-full h-1 rounded transition-colors duration-300 ${
+                  currentStep >= 3
+                    ? currentStep === 3
+                      ? "bg-black/60"
+                      : "bg-green-500/60"
+                    : "bg-gray-200"
+                }`}
+              />
+            </div>
+
+            {/* Step 3: Profile */}
+            <div className="flex flex-col items-center">
+              <div
+                className={`w-(--space-m) h-(--space-m) rounded-full flex items-center justify-center text--1 font-semibold transition-all duration-200 ${
+                  currentStep > 3
+                    ? "bg-green-500 text-white"
+                    : currentStep === 3
+                    ? "bg-black text-white ring-4 ring-black/20"
+                    : "bg-gray-200 text-gray-400"
+                }`}
+              >
+                {currentStep > 3 ? (
+                  <svg
+                    className="w-(--space-s) h-(--space-s)"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={3}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                ) : (
+                  "3"
+                )}
+              </div>
+              <span
+                className={`mt-2 text-sm font-medium transition-colors ${
+                  currentStep >= 3 ? "text-gray-900" : "text-gray-400"
+                }`}
+              >
+                Profile
+              </span>
             </div>
           </div>
         </div>
       )}
 
       {/* Main Content */}
-      <div className="py-(--space-xl)">{children}</div>
+      <section className="!my-(--space-l) flex justify-center max-w-[500px] mx-auto">
+        {children}
+      </section>
     </div>
   );
 }

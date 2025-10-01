@@ -230,7 +230,7 @@ export default function SellerForm({
       </div>
 
       {/* Contacts Section */}
-      <div className="border-t pt-(--space-m)">
+      <div className="border-y border-gray-200 py-(--space-m)">
         <div className="flex justify-between items-center mb-(--space-s)">
           <h3 className="text-0 font-medium text-gray-900">
             Contact Information
@@ -257,9 +257,9 @@ export default function SellerForm({
               key={index}
               className="border border-gray-200 rounded-lg p-(--space-s)"
             >
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-(--space-s)">
+              <div className="flex gap-(--space-s)">
                 {/* Contact Type */}
-                <div>
+                <div className="">
                   <label
                     htmlFor={`contact-type-${index}`}
                     className="block text--1 font-medium text-gray-700 mb-1"
@@ -273,7 +273,7 @@ export default function SellerForm({
                       handleContactChange(index, "contactType", e.target.value)
                     }
                     disabled={isLoading || isSubmitting}
-                    className="appearance-none relative block w-full px-3 py-2 text--1 border border-gray-300 focus:ring-maroon focus:border-maroon text-gray-900 rounded-lg focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="appearance-none relative block px-3 py-2 text--1 border border-gray-300 focus:ring-maroon focus:border-maroon text-gray-900 rounded-lg focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {CONTACT_TYPES.map((type) => (
                       <option key={type.value} value={type.value}>
@@ -284,7 +284,7 @@ export default function SellerForm({
                 </div>
 
                 {/* Contact Value */}
-                <div>
+                <div className="flex flex-col">
                   <label
                     htmlFor={`contact-value-${index}`}
                     className="block text--1 font-medium text-gray-700 mb-1"
@@ -366,7 +366,7 @@ export default function SellerForm({
       </div>
 
       {/* Action Buttons */}
-      <div className="flex gap-x-(--space-s) justify-end border-t pt-(--space-m)">
+      <div className="flex gap-x-(--space-s) justify-end pt-(--space-s)">
         {onCancel && (
           <button
             type="button"
