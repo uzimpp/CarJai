@@ -2,16 +2,24 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   async rewrites() {
+    // Use environment variable or detect Docker environment
+    // In Docker, we use the backend service name; otherwise localhost
+    const isDocker = process.env.DOCKER_ENV === "true";
     const isDev = process.env.NODE_ENV === "development";
 
     let backendUrl;
-    if (isDev) {
-      // Local development with docker
+    if (isDocker) {
+      // Running in Docker Compose - use backend service name
+      backendUrl = "http://backend:8080";
+    } else if (isDev) {
+      // Local development - use localhost
       backendUrl = "http://localhost:8080";
     } else {
       // Production deployment
-      backendUrl = "https://api.carjai.com";
+      backendUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.carjai.com";
     }
+
+    console.log("Backend URL configured:", backendUrl);
 
     return [
       {

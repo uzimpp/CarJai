@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useUserAuth } from "@/hooks/useUserAuth";
-import { validation } from "@/lib/userAuth";
+import { validation } from "@/lib/profileAPI";
 import GoogleLoginButton from "@/components/auth/GoogleLoginButton";
 
 export default function SignupPage() {
@@ -20,10 +20,12 @@ export default function SignupPage() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated - check if they have roles already
   useEffect(() => {
     if (isAuthenticated && !isLoading) {
-      router.push("/buy");
+      // If user already has a role, redirect them appropriately
+      // This handles users who already completed signup coming back to this page
+      router.push("/signup/role");
     }
   }, [isAuthenticated, isLoading, router]);
 
@@ -96,7 +98,10 @@ export default function SignupPage() {
         password: formData.password,
       });
       if (result.success) {
-        router.push("/buy");
+        // Account created successfully, wait a moment for state to update, then redirect
+        setTimeout(() => {
+          router.push("/signup/role");
+        }, 100);
       } else if (result.error?.includes("already exists")) {
         router.push("/login?message=account_exists");
       }
