@@ -2,13 +2,21 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
-import { User, LoginRequest, SignupRequest } from "@/constants/user";
+import {
+  User,
+  LoginRequest,
+  SignupRequest,
+  UserRoles,
+  UserProfiles,
+} from "@/constants/user";
 import { authAPI } from "@/lib/userAuth";
 import { mutualLogout } from "@/lib/mutualLogout";
 
 interface AuthState {
   user: User | null;
   token: string | null;
+  roles: UserRoles | null;
+  profiles: UserProfiles | null;
   isLoading: boolean;
   isAuthenticated: boolean;
 }
@@ -33,6 +41,8 @@ export function useUserAuth(): AuthState &
   const [state, setState] = useState<AuthState>({
     user: null,
     token: null,
+    roles: null,
+    profiles: null,
     isLoading: true,
     isAuthenticated: false,
   });
@@ -45,6 +55,8 @@ export function useUserAuth(): AuthState &
         setState({
           user: response.data.user,
           token: "cookie-based",
+          roles: response.data.roles,
+          profiles: response.data.profiles,
           isLoading: false,
           isAuthenticated: true,
         });
@@ -55,6 +67,8 @@ export function useUserAuth(): AuthState &
       setState({
         user: null,
         token: null,
+        roles: null,
+        profiles: null,
         isLoading: false,
         isAuthenticated: false,
       });
@@ -76,57 +90,55 @@ export function useUserAuth(): AuthState &
     setError(null);
   }, []);
 
-  const login = useCallback(async (data: LoginRequest) => {
-    setError(null);
-    setState((prev) => ({ ...prev, isLoading: true }));
+  const login = useCallback(
+    async (data: LoginRequest) => {
+      setError(null);
+      setState((prev) => ({ ...prev, isLoading: true }));
 
-    try {
-      const response = await authAPI.login(data);
-      await mutualLogout.clearAdminSession();
+      try {
+        await authAPI.login(data);
+        await mutualLogout.clearAdminSession();
 
-      setState({
-        user: response.data.user,
-        token: "cookie-based",
-        isLoading: false,
-        isAuthenticated: true,
-      });
-      return { success: true };
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Login failed";
-      setError({
-        message,
-        field: "general",
-      });
-      setState((prev) => ({ ...prev, isLoading: false }));
-      return { success: false, error: message };
-    }
-  }, []);
+        // After login, fetch the updated user data with roles
+        await validateSession();
+        return { success: true };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Login failed";
+        setError({
+          message,
+          field: "general",
+        });
+        setState((prev) => ({ ...prev, isLoading: false }));
+        return { success: false, error: message };
+      }
+    },
+    [validateSession]
+  );
 
-  const signup = useCallback(async (data: SignupRequest) => {
-    setError(null);
-    setState((prev) => ({ ...prev, isLoading: true }));
+  const signup = useCallback(
+    async (data: SignupRequest) => {
+      setError(null);
+      setState((prev) => ({ ...prev, isLoading: true }));
 
-    try {
-      const response = await authAPI.signup(data);
-      await mutualLogout.clearAdminSession();
+      try {
+        await authAPI.signup(data);
+        await mutualLogout.clearAdminSession();
 
-      setState({
-        user: response.data.user,
-        token: "cookie-based",
-        isLoading: false,
-        isAuthenticated: true,
-      });
-      return { success: true };
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Signup failed";
-      setError({
-        message,
-        field: "general",
-      });
-      setState((prev) => ({ ...prev, isLoading: false }));
-      return { success: false, error: message };
-    }
-  }, []);
+        // After signup, fetch the updated user data with roles
+        await validateSession();
+        return { success: true };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Signup failed";
+        setError({
+          message,
+          field: "general",
+        });
+        setState((prev) => ({ ...prev, isLoading: false }));
+        return { success: false, error: message };
+      }
+    },
+    [validateSession]
+  );
 
   const logout = useCallback(async () => {
     try {
@@ -137,6 +149,8 @@ export function useUserAuth(): AuthState &
       setState({
         user: null,
         token: null,
+        roles: null,
+        profiles: null,
         isLoading: false,
         isAuthenticated: false,
       });

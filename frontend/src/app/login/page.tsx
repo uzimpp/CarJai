@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useUserAuth } from "@/hooks/useUserAuth";
-import { validation } from "@/lib/userAuth";
+import { validation } from "@/lib/profileAPI";
 import GoogleLoginButton from "@/components/auth/GoogleLoginButton";
 
 function LoginForm() {

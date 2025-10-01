@@ -13,6 +13,7 @@ type UserService struct {
 	userRepo        *models.UserRepository
 	userSessionRepo *models.UserSessionRepository
 	jwtManager      *utils.JWTManager
+	profileService  *ProfileService
 }
 
 // NewUserService creates a new user service
@@ -21,7 +22,13 @@ func NewUserService(userRepo *models.UserRepository, userSessionRepo *models.Use
 		userRepo:        userRepo,
 		userSessionRepo: userSessionRepo,
 		jwtManager:      jwtManager,
+		profileService:  nil, // Will be set later to avoid circular dependency
 	}
+}
+
+// SetProfileService sets the profile service (to avoid circular dependency)
+func (s *UserService) SetProfileService(profileService *ProfileService) {
+	s.profileService = profileService
 }
 
 // Signup creates a new user account
@@ -145,7 +152,7 @@ func (s *UserService) Logout(token string) (*models.UserLogoutResponse, error) {
 	}, nil
 }
 
-// GetCurrentUser returns the current user from JWT token
+// GetCurrentUser returns the current user from JWT token with roles and completeness
 func (s *UserService) GetCurrentUser(token string) (*models.UserMeResponse, error) {
 	// Validate token
 	claims, err := s.jwtManager.ValidateToken(token)
@@ -159,10 +166,21 @@ func (s *UserService) GetCurrentUser(token string) (*models.UserMeResponse, erro
 		return nil, fmt.Errorf("user not found: %w", err)
 	}
 
+	// Get roles and completeness if profile service is set
+	roles := models.UserRoles{Buyer: false, Seller: false}
+	profiles := models.UserProfiles{BuyerComplete: false, SellerComplete: false}
+
+	if s.profileService != nil {
+		roles, _ = s.profileService.GetRolesForUser(user.ID)
+		profiles, _ = s.profileService.GetProfilesCompletenessForUser(user.ID)
+	}
+
 	return &models.UserMeResponse{
 		Success: true,
 		Data: models.UserMeData{
-			User: user.ToPublic(),
+			User:     user.ToPublic(),
+			Roles:    roles,
+			Profiles: profiles,
 		},
 	}, nil
 }

@@ -4,6 +4,10 @@ FROM node:alpine
 # Set the working directory inside the container
 WORKDIR /app
 
+# Accept build argument for Docker environment detection
+ARG DOCKER_ENV
+ENV DOCKER_ENV=$DOCKER_ENV
+
 # Copy package.json and package-lock.json (if available)
 COPY package*.json ./
 
