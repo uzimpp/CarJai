@@ -48,9 +48,9 @@ export default function BuyerProfilePage() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center w-full my-(--space-3xl)">
+    <div className="flex flex-col items-center justify-center w-full p-(--space-s-m) my-(--space-xl-2xl)">
       {/* Header */}
-      <div className="mb-(--space-l)">
+      <div className="mb-(--space-m-l)">
         <h1 className="text-4 font-bold text-gray-900 mb-(--space-2xs) line-height-12">
           Set Up Your Buyer Profile
         </h1>
@@ -88,7 +88,6 @@ export default function BuyerProfilePage() {
       <div className="flex flex-col w-full max-w-lg bg-white rounded-lg border border-gray-200 p-(--space-l)">
         <BuyerForm onSubmit={handleSubmit} submitLabel="Complete Profile" />
       </div>
-
     </div>
   );
 }

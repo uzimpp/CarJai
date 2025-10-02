@@ -48,9 +48,9 @@ export default function SellerProfilePage() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center w-full my-(--space-3xl)">
+    <div className="flex flex-col items-center justify-center w-full p-(--space-s-m) my-(--space-xl-2xl)">
       {/* Header */}
-      <div className="mb-(--space-l)">
+      <div className="mb-(--space-m-l)">
         <h1 className="text-4 font-bold text-gray-900 mb-(--space-2xs) line-height-12">
           Set Up Your Seller Profile
         </h1>
