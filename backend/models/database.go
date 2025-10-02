@@ -355,11 +355,11 @@ func NewUserRepository(db *Database) *UserRepository {
 // CreateUser creates a new user
 func (r *UserRepository) CreateUser(user *User) error {
 	query := `
-		INSERT INTO users (email, password_hash)
-		VALUES ($1, $2)
+		INSERT INTO users (email, username, name, password_hash)
+		VALUES ($1, $2, $3, $4)
 		RETURNING id, created_at`
 
-	err := r.db.DB.QueryRow(query, user.Email, user.PasswordHash).Scan(
+	err := r.db.DB.QueryRow(query, user.Email, user.Username, user.Name, user.PasswordHash).Scan(
 		&user.ID, &user.CreatedAt,
 	)
 
@@ -374,12 +374,12 @@ func (r *UserRepository) CreateUser(user *User) error {
 func (r *UserRepository) GetUserByEmail(email string) (*User, error) {
 	user := &User{}
 	query := `
-		SELECT id, email, password_hash, created_at
+		SELECT id, email, username, name, password_hash, created_at
 		FROM users
 		WHERE email = $1`
 
 	err := r.db.DB.QueryRow(query, email).Scan(
-		&user.ID, &user.Email, &user.PasswordHash, &user.CreatedAt,
+		&user.ID, &user.Email, &user.Username, &user.Name, &user.PasswordHash, &user.CreatedAt,
 	)
 
 	if err != nil {
@@ -392,16 +392,38 @@ func (r *UserRepository) GetUserByEmail(email string) (*User, error) {
 	return user, nil
 }
 
+// GetUserByUsername retrieves a user by username
+func (r *UserRepository) GetUserByUsername(username string) (*User, error) {
+	user := &User{}
+	query := `
+		SELECT id, email, username, name, password_hash, created_at
+		FROM users
+		WHERE username = $1`
+
+	err := r.db.DB.QueryRow(query, username).Scan(
+		&user.ID, &user.Email, &user.Username, &user.Name, &user.PasswordHash, &user.CreatedAt,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("user not found")
+		}
+		return nil, fmt.Errorf("failed to get user by username: %w", err)
+	}
+
+	return user, nil
+}
+
 // GetUserByID retrieves a user by ID
 func (r *UserRepository) GetUserByID(id int) (*User, error) {
 	user := &User{}
 	query := `
-		SELECT id, email, password_hash, created_at
+		SELECT id, email, username, name, password_hash, created_at
 		FROM users
 		WHERE id = $1`
 
 	err := r.db.DB.QueryRow(query, id).Scan(
-		&user.ID, &user.Email, &user.PasswordHash, &user.CreatedAt,
+		&user.ID, &user.Email, &user.Username, &user.Name, &user.PasswordHash, &user.CreatedAt,
 	)
 
 	if err != nil {

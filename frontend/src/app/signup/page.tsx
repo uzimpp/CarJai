@@ -16,6 +16,8 @@ export default function SignupPage() {
     email: "",
     password: "",
     confirmPassword: "",
+    username: "",
+    name: "",
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -33,7 +35,11 @@ export default function SignupPage() {
   useEffect(() => {
     if (
       error &&
-      (formData.email || formData.password || formData.confirmPassword)
+      (formData.email ||
+        formData.password ||
+        formData.confirmPassword ||
+        formData.username ||
+        formData.name)
     ) {
       clearError();
     }
@@ -41,6 +47,8 @@ export default function SignupPage() {
     formData.email,
     formData.password,
     formData.confirmPassword,
+    formData.username,
+    formData.name,
     clearError,
     error,
   ]);
@@ -82,6 +90,25 @@ export default function SignupPage() {
       errors.confirmPassword = "Passwords do not match";
     }
 
+    if (!formData.username) {
+      errors.username = "Please enter a username";
+    } else if (formData.username.length < 3) {
+      errors.username = "Username must be at least 3 characters";
+    } else if (formData.username.length > 20) {
+      errors.username = "Username must be less than 20 characters";
+    } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
+      errors.username =
+        "Username can only contain letters, numbers, and underscores";
+    }
+
+    if (!formData.name) {
+      errors.name = "Please enter your full name";
+    } else if (formData.name.length < 2) {
+      errors.name = "Name must be at least 2 characters";
+    } else if (formData.name.length > 100) {
+      errors.name = "Name must be less than 100 characters";
+    }
+
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -96,6 +123,8 @@ export default function SignupPage() {
       const result = await signup({
         email: formData.email,
         password: formData.password,
+        username: formData.username,
+        name: formData.name,
       });
       if (result.success) {
         // Account created successfully, wait a moment for state to update, then redirect
@@ -122,7 +151,7 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex items-center justify-center px-(--space-m) max-w-[1536px] mx-auto w-full p-(--space-m)">
+    <div className="flex items-center justify-center px-(--space-s-m) max-w-[1536px] mx-auto w-full p-(--space-m)">
       <div className="flex flex-col max-w-md w-full p-(--space-m) pt-(--space-l) rounded-xl mx-auto">
         {/* Header */}
         <div className="text-center mb-(--space-l)">
@@ -135,6 +164,65 @@ export default function SignupPage() {
           onSubmit={handleSubmit}
         >
           <div className="flex flex-col space-y-(--space-s)">
+            {/* Name Field */}
+            <div>
+              <label
+                htmlFor="name"
+                className="block text-0 font-medium text-gray-700"
+              >
+                Full Name
+              </label>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                autoComplete="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                className={`mt-1 appearance-none relative block w-full px-3 py-2 text-0 border ${
+                  formErrors.name
+                    ? "border-red-300 focus:ring-red focus:border-red"
+                    : "border-gray-300 focus:ring-maroon focus:border-maroon"
+                } placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:z-10`}
+                placeholder="Enter your full name"
+              />
+              {formErrors.name && (
+                <p className="mt-1 text-0 text-red-600">{formErrors.name}</p>
+              )}
+            </div>
+
+            {/* Username Field */}
+            <div>
+              <label
+                htmlFor="username"
+                className="block text-0 font-medium text-gray-700"
+              >
+                Username
+              </label>
+              <input
+                id="username"
+                name="username"
+                type="text"
+                autoComplete="username"
+                value={formData.username}
+                onChange={handleInputChange}
+                className={`mt-1 appearance-none relative block w-full px-3 py-2 text-0 border ${
+                  formErrors.username
+                    ? "border-red-300 focus:ring-red focus:border-red"
+                    : "border-gray-300 focus:ring-maroon focus:border-maroon"
+                } placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:z-10`}
+                placeholder="Choose a username"
+              />
+              {formErrors.username && (
+                <p className="mt-1 text-0 text-red-600">
+                  {formErrors.username}
+                </p>
+              )}
+              <p className="mt-1 text--1 text-gray-500">
+                3-20 characters, letters, numbers, and underscores only
+              </p>
+            </div>
+
             {/* Email Field */}
             <div>
               <label

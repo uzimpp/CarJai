@@ -48,7 +48,7 @@ export default function BuyerProfilePage() {
   }
 
   return (
-    <div className="">
+    <div className="flex flex-col items-center justify-center w-full my-(--space-3xl)">
       {/* Header */}
       <div className="mb-(--space-l)">
         <h1 className="text-4 font-bold text-gray-900 mb-(--space-2xs) line-height-12">
@@ -85,19 +85,10 @@ export default function BuyerProfilePage() {
       )}
 
       {/* Form */}
-      <div className="bg-white rounded-lg border border-gray-200 p-(--space-l)">
+      <div className="flex flex-col w-full max-w-lg bg-white rounded-lg border border-gray-200 p-(--space-l)">
         <BuyerForm onSubmit={handleSubmit} submitLabel="Complete Profile" />
       </div>
 
-      {/* Skip Option */}
-      <div className="mt-(--space-m) text-center">
-        <button
-          onClick={() => router.push("/buy")}
-          className="text--1 text-gray-600 hover:text-maroon transition-colors"
-        >
-          Skip for now
-        </button>
-      </div>
     </div>
   );
 }
