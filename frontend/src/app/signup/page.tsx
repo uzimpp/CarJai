@@ -151,10 +151,10 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex items-center justify-center px-(--space-s-m) max-w-[1536px] mx-auto w-full p-(--space-m)">
-      <div className="flex flex-col max-w-md w-full p-(--space-m) pt-(--space-l) rounded-xl mx-auto">
+    <div className="flex items-center justify-center max-w-[1536px] mx-auto w-full p-(--space-s-m) my-(--space-xl-2xl)">
+      <div className="flex flex-col max-w-[480px] w-full p-(--space-s-m) pt-(--space-m-l) rounded-xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-(--space-l)">
+        <div className="text-center mb-(--space-m-l)">
           <h2 className="text-4 font-bold line-height-12">Create an account</h2>
         </div>
 

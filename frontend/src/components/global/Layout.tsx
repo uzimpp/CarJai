@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useRef, useState, useEffect } from "react";
 import NavBar from "@/components/global/NavBar";
 import Footer from "@/components/global/Footer";
+import Signup from "@/components/auth/Signup";
 
 interface ConditionalLayoutProps {
   children: React.ReactNode;
@@ -13,11 +14,24 @@ export default function ConditionalLayout({
   children,
 }: ConditionalLayoutProps) {
   const pathname = usePathname();
-  const navRef = useRef<HTMLHeadElement>(null);
-  const [navHeight, setNavHeight] = useState(0);
+  // Don't show step indicator on the initial signup page for unauthenticated users
+  const headRef = useRef<HTMLHeadElement>(null);
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const footerRef = useRef<HTMLElement>(null);
+  const [footerHeight, setFooterHeight] = useState(0);
 
-  // Define pages where navbar and footer should NOT appear
-  const hideLayoutPages = [
+  // Determine current step based on pathname
+  const getCurrentStep = () => {
+    if (pathname === "/signup") return 1;
+    if (pathname === "/signup/role") return 2;
+    if (pathname.startsWith("/signup/role/")) return 3;
+    return 1;
+  };
+  const currentStep = getCurrentStep();
+
+  // Define pages where only navbar should appear (no footer)
+  const hideFooterPages = [
+    "/admin/dashboard",
     "/admin/signin",
     "/signin",
     "/signup",
@@ -27,49 +41,94 @@ export default function ConditionalLayout({
     "/404",
   ];
 
-  // Define pages where only navbar should appear (no footer)
-  const hideFooterPages = ["/admin/dashboard", "/admin/signin"];
-
   // Define pages where only footer should appear (no navbar)
-  const hideNavbarPages = ["/admin/signin"];
+  const hideNavbarPages = [
+    "/admin/signin",
+    "/signin",
+    "/signup",
+    "/signup/role",
+    "/signup/role/buyer",
+    "/signup/role/seller",
+    "/404",
+  ];
 
-  const shouldShowNavbar =
-    !hideLayoutPages.includes(pathname) && !hideNavbarPages.includes(pathname);
-  const shouldShowFooter =
-    !hideLayoutPages.includes(pathname) && !hideFooterPages.includes(pathname);
+  // Define pages where navbar and footer should NOT appear
+  const showStepIndicator = [
+    "/signup/role",
+    "/signup/role/buyer",
+    "/signup/role/seller",
+  ];
+
+  const shouldShowNavbar = !hideNavbarPages.includes(pathname);
+  const shouldShowFooter = !hideFooterPages.includes(pathname);
+  const shouldShowStepIndicator = showStepIndicator.includes(pathname);
 
   // Measure navbar height
   useEffect(() => {
-    const updateNavHeight = () => {
-      if (navRef.current) {
-        setNavHeight(navRef.current.offsetHeight);
+    const updateHeaderHeight = () => {
+      if (headRef.current) {
+        setHeaderHeight(headRef.current.offsetHeight);
+      }
+    };
+    const updateFooterHeight = () => {
+      if (footerRef.current) {
+        setFooterHeight(footerRef.current.offsetHeight);
+      }
+    };
+    // Update on mount and when pathname changes
+    updateHeaderHeight();
+    updateFooterHeight();
+    // Update on window resize
+    window.addEventListener("resize", updateHeaderHeight);
+    return () => window.removeEventListener("resize", updateHeaderHeight);
+  }, [pathname, shouldShowNavbar]);
+
+  // Measure footer height
+  useEffect(() => {
+    const updateFooterHeight = () => {
+      if (footerRef.current) {
+        setFooterHeight(footerRef.current.offsetHeight);
       }
     };
 
     // Update on mount and when pathname changes
-    updateNavHeight();
+    updateFooterHeight();
 
     // Update on window resize
-    window.addEventListener("resize", updateNavHeight);
-    return () => window.removeEventListener("resize", updateNavHeight);
-  }, [pathname, shouldShowNavbar]);
+    window.addEventListener("resize", updateFooterHeight);
+    return () => window.removeEventListener("resize", updateFooterHeight);
+  }, [pathname, shouldShowFooter]);
 
   return (
-    <>
-      {shouldShowNavbar && (
-      <header className="fixed top-0 left-0 right-0 pb-(--space-l) max-w-[1536px] mx-auto w-full z-100"
-          ref={navRef as React.RefObject<HTMLHeadElement>}
-        >
-          <NavBar />
-        </header>
-      )}
+    <div className="min-h-screen flex flex-col">
+      <header
+        className="fixed top-0 left-0 right-0 w-full z-100 bg-white"
+        ref={headRef as React.RefObject<HTMLHeadElement>}
+      >
+        {shouldShowNavbar && <NavBar />}
+        {shouldShowStepIndicator && <Signup currentStep={currentStep} />}
+      </header>
+
       <main
-        className="flex justify-center w-full"
-        style={{ marginTop: shouldShowNavbar ? `${navHeight}px` : "0" }}
+        className="flex-1 flex justify-center w-full rounded-b-4xl bg-white z-50"
+        style={{
+          paddingTop: `${
+            shouldShowStepIndicator || shouldShowNavbar ? headerHeight : 0
+          }px`,
+          marginBottom: shouldShowFooter ? Math.max(footerHeight - 33, 0) : 0,
+        }}
       >
         {children}
       </main>
-      {shouldShowFooter && <Footer />}
-    </>
+
+      {shouldShowFooter && (
+        <footer
+          className="fixed bottom-0 left-0 right-0 w-full bg-black"
+          ref={footerRef as React.RefObject<HTMLElement>}
+        >
+          <Footer />
+        </footer>
+      )}
+    </div>
   );
 }

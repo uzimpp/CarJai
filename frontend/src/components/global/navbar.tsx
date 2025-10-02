@@ -47,7 +47,7 @@ export default function NavBar() {
   };
 
   return (
-    <div className="flex justify-between flex-row items-center bg-white px-(--space-s-m) py-(--space-s)">
+    <div className="flex justify-between flex-row items-center bg-white px-(--space-s-m) py-(--space-s) max-w-[1536px] mx-auto">
       <div className="flex flex-row items-center gap-x-(--space-4xs)">
         <Link
           href="/"
@@ -75,7 +75,7 @@ export default function NavBar() {
           href="/buy"
           className="text-0 text-gray-700 hover:text-maroon transition-colors font-medium"
         >
-          Buy Cars
+          Browse Cars
         </Link>
         <Link
           href="/sell"
