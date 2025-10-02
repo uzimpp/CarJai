@@ -8,6 +8,8 @@ import (
 type User struct {
 	ID           int       `json:"id" db:"id"`
 	Email        string    `json:"email" db:"email"`
+	Username     string    `json:"username" db:"username"`
+	Name         string    `json:"name" db:"name"`
 	PasswordHash string    `json:"-" db:"password_hash"`
 	CreatedAt    time.Time `json:"created_at" db:"created_at"`
 }
@@ -27,12 +29,14 @@ type UserSession struct {
 type UserSignupRequest struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required,min=6"`
+	Username string `json:"username" validate:"required,min=3,max=20"`
+	Name     string `json:"name" validate:"required,min=2,max=100"`
 }
 
 // UserSigninRequest represents the request payload for user sign in
 type UserSigninRequest struct {
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required,min=6"`
+	EmailOrUsername string `json:"email_or_username" validate:"required"`
+	Password        string `json:"password" validate:"required,min=6"`
 }
 
 // UserAuthResponse represents the response payload for successful authentication
@@ -53,6 +57,8 @@ type UserAuthData struct {
 type UserPublic struct {
 	ID        int       `json:"id"`
 	Email     string    `json:"email"`
+	Username  string    `json:"username"`
+	Name      string    `json:"name"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
@@ -99,6 +105,8 @@ func (u *User) ToPublic() UserPublic {
 	return UserPublic{
 		ID:        u.ID,
 		Email:     u.Email,
+		Username:  u.Username,
+		Name:      u.Name,
 		CreatedAt: u.CreatedAt,
 	}
 }

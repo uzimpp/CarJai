@@ -48,7 +48,7 @@ export default function SellerProfilePage() {
   }
 
   return (
-    <div className="">
+    <div className="flex flex-col items-center justify-center w-full my-(--space-3xl)">
       {/* Header */}
       <div className="mb-(--space-l)">
         <h1 className="text-4 font-bold text-gray-900 mb-(--space-2xs) line-height-12">
@@ -84,7 +84,7 @@ export default function SellerProfilePage() {
       )}
 
       {/* Form */}
-      <div className="bg-white rounded-lg border border-gray-200 p-(--space-l)">
+      <div className="flex flex-col w-full max-w-lg bg-white rounded-lg border border-gray-200 p-(--space-l)">
         <SellerForm onSubmit={handleSubmit} submitLabel="Complete Profile" />
       </div>
 

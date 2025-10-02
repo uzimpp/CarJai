@@ -25,11 +25,11 @@ export default function SignupLayout({
   const showSteps = isAuthenticated || pathname !== "/signup";
 
   return (
-    <div className="flex flex-col px-(--space-m) max-w-[1536px] mx-auto w-full mb-(--space-3xl)">
+    <div className="flex flex-col px-(--space-s-m) max-w-[1536px] mx-auto w-full">
       {/* Step Indicator */}
       {showSteps && (
-        <div className="py-(--space-m) my-(--space-3xs) max-w-xl mx-auto w-full bg-white border-b border-gray-200">
-          <div className="flex items-start px-(--space-xs)">
+        <div className="fixed top-0 left-0 py-(--space-xs-s) mx-auto w-full bg-white border-b border-gray-200">
+          <div className="flex items-start px-(--space-m-xl) max-w-xl mx-auto w-full">
             {/* Step 1: Account */}
             <div className="flex flex-col items-center">
               <div

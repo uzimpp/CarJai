@@ -129,6 +129,10 @@
     margin-top: var(--navbar-height);
     min-height: calc(100dvh - var(--navbar-height));
   }
+
+  section {
+    margin-bottom: var(--space-xl);
+  }
 }
 
 @layer components {
@@ -207,7 +211,7 @@
   .line-height-12 {
     line-height: 1.2;
   }
-  
+
   .line-height-13 {
     line-height: 1.3;
   }

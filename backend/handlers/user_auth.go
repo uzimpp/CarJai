@@ -36,10 +36,10 @@ func (h *UserAuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Basic validation
-	if req.Email == "" || req.Password == "" {
+	if req.Email == "" || req.Password == "" || req.Username == "" || req.Name == "" {
 		response := models.UserErrorResponse{
 			Success: false,
-			Error:   "Email and password are required",
+			Error:   "Email, password, username, and name are required",
 			Code:    http.StatusBadRequest,
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -60,6 +60,30 @@ func (h *UserAuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(req.Username) < 4 || len(req.Username) > 20 {
+		response := models.UserErrorResponse{
+			Success: false,
+			Error:   "Username must be between 3 and 20 characters",
+			Code:    http.StatusBadRequest,
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	if len(req.Name) < 2 || len(req.Name) > 100 {
+		response := models.UserErrorResponse{
+			Success: false,
+			Error:   "Name must be between 2 and 100 characters",
+			Code:    http.StatusBadRequest,
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
 	// Extract client context (consistent with admin)
 	clientIP := utils.ExtractClientIP(
 		r.RemoteAddr,
@@ -69,7 +93,7 @@ func (h *UserAuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 	userAgent := r.UserAgent()
 
 	// Create user
-	response, err := h.userService.Signup(req.Email, req.Password, clientIP, userAgent)
+	response, err := h.userService.Signup(req.Email, req.Password, req.Username, req.Name, clientIP, userAgent)
 	if err != nil {
 		errorResponse := models.UserErrorResponse{
 			Success: false,
@@ -117,10 +141,10 @@ func (h *UserAuthHandler) Signin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Basic validation
-	if req.Email == "" || req.Password == "" {
+	if req.EmailOrUsername == "" || req.Password == "" {
 		response := models.UserErrorResponse{
 			Success: false,
-			Error:   "Email and password are required",
+			Error:   "Email/username and password are required",
 			Code:    http.StatusBadRequest,
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -138,7 +162,7 @@ func (h *UserAuthHandler) Signin(w http.ResponseWriter, r *http.Request) {
 	userAgent := r.UserAgent()
 
 	// Sign in user
-	response, err := h.userService.Signin(req.Email, req.Password, clientIP, userAgent)
+	response, err := h.userService.Signin(req.EmailOrUsername, req.Password, clientIP, userAgent)
 	if err != nil {
 		errorResponse := models.UserErrorResponse{
 			Success: false,

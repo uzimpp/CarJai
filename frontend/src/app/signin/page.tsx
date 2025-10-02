@@ -14,7 +14,7 @@ function SigninForm() {
     useUserAuth();
 
   const [formData, setFormData] = useState({
-    email: "",
+    email_or_username: "",
     password: "",
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -32,10 +32,10 @@ function SigninForm() {
 
   // Clear errors when user starts typing
   useEffect(() => {
-    if (error && (formData.email || formData.password)) {
+    if (error && (formData.email_or_username || formData.password)) {
       clearError();
     }
-  }, [formData.email, formData.password, clearError, error]);
+  }, [formData.email_or_username, formData.password, clearError, error]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -56,10 +56,13 @@ function SigninForm() {
   const validateForm = () => {
     const errors: Record<string, string> = {};
 
-    if (!formData.email) {
-      errors.email = "Please enter your email";
-    } else if (!validation.email(formData.email)) {
-      errors.email = "Invalid email format";
+    if (!formData.email_or_username) {
+      errors.email_or_username = "Please enter your email or username";
+    } else if (
+      formData.email_or_username.includes("@") &&
+      !validation.email(formData.email_or_username)
+    ) {
+      errors.email_or_username = "Invalid email format";
     }
 
     if (!formData.password) {
@@ -100,7 +103,7 @@ function SigninForm() {
   }
 
   return (
-    <div className="flex items-center justify-center px-(--space-m) max-w-[1536px] mx-auto w-full p-(--space-m)">
+    <div className="flex items-center justify-center px-(--space-s-m) max-w-[1536px] mx-auto w-full p-(--space-m)">
       <div className="flex flex-col max-w-md w-full p-(--space-m) pt-(--space-l) rounded-xl mx-auto">
         {/* Header */}
         <div className="flex text-center mb-(--space-l) w-full justify-center mx-auto">
@@ -139,31 +142,33 @@ function SigninForm() {
           onSubmit={handleSubmit}
         >
           <div className="flex flex-col space-y-(--space-s)">
-            {/* Email Field */}
+            {/* Email/Username Field */}
             <div>
               <label
-                htmlFor="email"
+                htmlFor="email_or_username"
                 className="block text-0 font-medium text-gray-700"
               >
-                Email
+                Email or Username
               </label>
               <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
+                id="email_or_username"
+                name="email_or_username"
+                type="text"
+                autoComplete="username"
                 autoFocus
-                value={formData.email}
+                value={formData.email_or_username}
                 onChange={handleInputChange}
                 className={`mt-1 appearance-none relative block w-full px-3 py-2 text-0 border ${
-                  formErrors.email
+                  formErrors.email_or_username
                     ? "border-red-300 focus:ring-red focus:border-red"
                     : "border-gray-300 focus:ring-maroon focus:border-maroon"
                 } placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:z-10`}
-                placeholder="Enter your email"
+                placeholder="Enter your email or username"
               />
-              {formErrors.email && (
-                <p className="mt-1 text-0 text-red-600">{formErrors.email}</p>
+              {formErrors.email_or_username && (
+                <p className="mt-1 text-0 text-red-600">
+                  {formErrors.email_or_username}
+                </p>
               )}
             </div>
 
@@ -217,7 +222,7 @@ function SigninForm() {
                 <div className="ml-3">
                   <p className="text-0 text-red-600">
                     {error.message.includes("invalid credentials")
-                      ? "Invalid email or password"
+                      ? "Invalid email/username or password"
                       : error.message}
                   </p>
                 </div>

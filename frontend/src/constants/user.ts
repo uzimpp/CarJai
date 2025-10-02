@@ -1,6 +1,8 @@
 interface User {
   id: number;
   email: string;
+  username: string;
+  name: string;
   created_at: string;
 }
 
@@ -112,13 +114,15 @@ interface SellerResponse {
 }
 
 interface SigninRequest {
-  email: string;
+  email_or_username: string;
   password: string;
 }
 
 interface SignupRequest {
   email: string;
   password: string;
+  username: string;
+  name: string;
 }
 
 interface GoogleAuthRequest {
