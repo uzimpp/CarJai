@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/uzimpp/CarJai/backend/config"
 	"github.com/uzimpp/CarJai/backend/models"
 	"github.com/uzimpp/CarJai/backend/services"
 	"github.com/uzimpp/CarJai/backend/utils"
@@ -13,12 +14,14 @@ import (
 // UserAuthHandler handles user authentication requests
 type UserAuthHandler struct {
 	userService *services.UserService
+	appConfig   *config.AppConfig
 }
 
 // NewUserAuthHandler creates a new user auth handler
-func NewUserAuthHandler(userService *services.UserService) *UserAuthHandler {
+func NewUserAuthHandler(userService *services.UserService, appConfig *config.AppConfig) *UserAuthHandler {
 	return &UserAuthHandler{
 		userService: userService,
+		appConfig:   appConfig,
 	}
 }
 
@@ -147,6 +150,80 @@ func (h *UserAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(errorResponse)
+		return
+	}
+
+	// Set jwt cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "jwt",
+		Value:    response.Data.Token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false, // Set to true in production with HTTPS
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   int(time.Until(response.Data.ExpiresAt).Seconds()),
+	})
+
+	utils.WriteJSON(w, http.StatusOK, response)
+}
+
+// GoogleAuth handles Google OAuth authentication requests
+func (h *UserAuthHandler) GoogleAuth(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req models.GoogleAuthRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	// Basic validation
+	if req.Credential == "" {
+		response := models.UserErrorResponse{
+			Success: false,
+			Error:   "Google credential is required",
+			Code:    http.StatusBadRequest,
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	if req.Mode != "login" && req.Mode != "signup" {
+		response := models.UserErrorResponse{
+			Success: false,
+			Error:   "Mode must be either 'login' or 'signup'",
+			Code:    http.StatusBadRequest,
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// Extract client context
+	clientIP := utils.ExtractClientIP(
+		r.RemoteAddr,
+		r.Header.Get("X-Forwarded-For"),
+		r.Header.Get("X-Real-IP"),
+	)
+	userAgent := r.UserAgent()
+
+	// Authenticate with Google
+	response, err := h.userService.GoogleAuth(req.Credential, req.Mode, clientIP, userAgent, h.appConfig.GoogleClientID)
+	if err != nil {
+		errorResponse := models.UserErrorResponse{
+			Success: false,
+			Error:   err.Error(),
+			Code:    http.StatusBadRequest,
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(errorResponse)
 		return
 	}

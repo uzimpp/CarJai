@@ -35,6 +35,12 @@ type UserLoginRequest struct {
 	Password string `json:"password" validate:"required,min=6"`
 }
 
+// GoogleAuthRequest represents the request payload for Google OAuth authentication
+type GoogleAuthRequest struct {
+	Credential string `json:"credential" validate:"required"`
+	Mode       string `json:"mode" validate:"required,oneof=login signup"`
+}
+
 // UserAuthResponse represents the response payload for successful authentication
 type UserAuthResponse struct {
 	Success bool         `json:"success"`

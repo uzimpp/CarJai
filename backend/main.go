@@ -123,7 +123,7 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 	})
 	// Mount all routes
 	mux.Handle("/api/auth/",
-		routes.UserAuthRoutes(services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
+		routes.UserAuthRoutes(services.User, services.UserJWT, appConfig.CORSAllowedOrigins, appConfig))
 	mux.Handle("/api/profile/",
 		routes.ProfileRoutes(services.Profile, services.User, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/sellers/",

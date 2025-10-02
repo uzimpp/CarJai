@@ -1,11 +1,14 @@
 package services
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/uzimpp/CarJai/backend/models"
 	"github.com/uzimpp/CarJai/backend/utils"
 	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/api/oauth2/v2"
+	"google.golang.org/api/option"
 )
 
 // UserService handles user-related business logic
@@ -266,5 +269,110 @@ func (s *UserService) RefreshToken(token, ipAddress, userAgent string) (*models.
 			ExpiresAt: expiresAt,
 		},
 		Message: "Token refreshed successfully",
+	}, nil
+}
+
+// GoogleAuth handles Google OAuth authentication
+func (s *UserService) GoogleAuth(credential, mode, ipAddress, userAgent, clientID string) (*models.UserAuthResponse, error) {
+	// Verify Google ID token
+	userInfo, err := s.verifyGoogleToken(credential, clientID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to verify Google token: %w", err)
+	}
+
+	// Check if user exists
+	existingUser, err := s.userRepo.GetUserByEmail(userInfo.Email)
+	
+	if mode == "signup" {
+		// For signup mode, user should not exist
+		if err == nil && existingUser != nil {
+			return nil, fmt.Errorf("user with email %s already exists", userInfo.Email)
+		}
+		
+		// Create new user
+		user := &models.User{
+			Email:        userInfo.Email,
+			PasswordHash: "", // No password for Google OAuth users
+		}
+
+		err = s.userRepo.CreateUser(user)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create user: %w", err)
+		}
+
+		return s.createAuthResponse(user, ipAddress, userAgent, utils.AuthGoogle)
+	} else {
+		// For login mode, user should exist
+		if err != nil || existingUser == nil {
+			return nil, fmt.Errorf("user with email %s not found", userInfo.Email)
+		}
+
+		return s.createAuthResponse(existingUser, ipAddress, userAgent, utils.AuthGoogle)
+	}
+}
+
+// verifyGoogleToken verifies the Google ID token and returns user info
+func (s *UserService) verifyGoogleToken(idToken, clientID string) (*oauth2.Userinfo, error) {
+	ctx := context.Background()
+	
+	// Create OAuth2 service
+	oauth2Service, err := oauth2.NewService(ctx, option.WithoutAuthentication())
+	if err != nil {
+		return nil, fmt.Errorf("failed to create OAuth2 service: %w", err)
+	}
+
+	// Verify the token
+	tokenInfo, err := oauth2Service.Tokeninfo().IdToken(idToken).Do()
+	if err != nil {
+		return nil, fmt.Errorf("failed to verify token: %w", err)
+	}
+
+	// Verify audience (client ID)
+	if tokenInfo.Audience != clientID {
+		return nil, fmt.Errorf("invalid token audience")
+	}
+
+	// Create userinfo from token info
+	userInfo := &oauth2.Userinfo{
+		Email: tokenInfo.Email,
+		Id:    tokenInfo.UserId,
+	}
+
+	return userInfo, nil
+}
+
+// createAuthResponse creates a standardized auth response
+func (s *UserService) createAuthResponse(user *models.User, ipAddress, userAgent string, authMethod utils.AuthMethod) (*models.UserAuthResponse, error) {
+	// Generate session
+	sessionID := utils.GenerateSecureSessionID()
+	token, expiresAt, err := s.jwtManager.GenerateToken(utils.NewUserTokenRequest(
+		user.ID, user.Email, authMethod, sessionID,
+	))
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate token: %w", err)
+	}
+
+	// Create session record
+	session := &models.UserSession{
+		UserID:    user.ID,
+		Token:     token,
+		IPAddress: ipAddress,
+		UserAgent: userAgent,
+		ExpiresAt: expiresAt,
+	}
+
+	err = s.userSessionRepo.CreateUserSession(session)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create session: %w", err)
+	}
+
+	return &models.UserAuthResponse{
+		Success: true,
+		Data: models.UserAuthData{
+			User:      user.ToPublic(),
+			Token:     token,
+			ExpiresAt: expiresAt,
+		},
+		Message: "Authentication successful",
 	}, nil
 }

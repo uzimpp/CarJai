@@ -18,6 +18,9 @@ type AppConfig struct {
 	AdminIPWhitelist	[]string
 	CORSAllowedOrigins	[]string
 	AigenAPIKey			string `env:"AIGEN_API_KEY,required"`
+	// Google OAuth configuration
+	GoogleClientID		string
+	GoogleClientSecret	string
 	// Separate JWT configs for user and admin
 	UserJWTSecret		string
 	UserJWTExpiration	int // in hours
@@ -42,6 +45,9 @@ func LoadAppConfig() *AppConfig {
 		AdminName:          utils.GetEnv("ADMIN_NAME"),
 		AdminIPWhitelist:   allowedIPs,
 		CORSAllowedOrigins: allowedOrigins,
+		// Google OAuth configs
+		GoogleClientID:     utils.GetEnv("GOOGLE_CLIENT_ID"),
+		GoogleClientSecret: utils.GetEnv("GOOGLE_CLIENT_SECRET"),
 		// User JWT configs
 		UserJWTSecret:     utils.GetEnv("USER_JWT_SECRET"),
 		UserJWTExpiration: utils.GetEnvAsInt("USER_JWT_EXPIRATION_HOURS"),
