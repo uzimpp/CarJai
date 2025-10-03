@@ -5,6 +5,7 @@ import { useRef, useState, useEffect } from "react";
 import NavBar from "@/components/global/NavBar";
 import Footer from "@/components/global/Footer";
 import Signup from "@/components/auth/Signup";
+import { Fragment } from "react";
 
 interface ConditionalLayoutProps {
   children: React.ReactNode;
@@ -100,13 +101,15 @@ export default function ConditionalLayout({
   }, [pathname, shouldShowFooter]);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <Fragment>
       <header
-        className="fixed top-0 left-0 right-0 w-full z-100 bg-white"
+        className="fixed top-0 left-0 right-0 z-100"
         ref={headRef as React.RefObject<HTMLHeadElement>}
       >
-        {shouldShowNavbar && <NavBar />}
-        {shouldShowStepIndicator && <Signup currentStep={currentStep} />}
+        <div className="max-w-[1536px] w-full mx-auto">
+          {shouldShowNavbar && <NavBar />}
+          {shouldShowStepIndicator && <Signup currentStep={currentStep} />}
+        </div>
       </header>
 
       <main
@@ -115,20 +118,20 @@ export default function ConditionalLayout({
           paddingTop: `${
             shouldShowStepIndicator || shouldShowNavbar ? headerHeight : 0
           }px`,
-          marginBottom: shouldShowFooter ? Math.max(footerHeight - 33, 0) : 0,
+          marginBottom: shouldShowFooter
+            ? `calc(${footerHeight}px - 12rem)`
+            : 0,
         }}
       >
         {children}
       </main>
 
-      {shouldShowFooter && (
-        <footer
-          className="fixed bottom-0 left-0 right-0 w-full bg-black"
-          ref={footerRef as React.RefObject<HTMLElement>}
-        >
-          <Footer />
-        </footer>
-      )}
-    </div>
+      <footer
+        className="z-0 fixed bottom-0 left-0 right-0 w-full bg-[#181414]"
+        ref={footerRef as React.RefObject<HTMLElement>}
+      >
+        {shouldShowFooter && <Footer />}
+      </footer>
+    </Fragment>
   );
 }

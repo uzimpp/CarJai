@@ -134,7 +134,7 @@
   }
 
   body {
-    background: var(--color-grey);
+    background: var(--color-white);
     color: var(--color-black);
     font-family: var(--font-syne), Arial, Helvetica, sans-serif;
     line-height: 1.6;

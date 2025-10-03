@@ -45,7 +45,7 @@ export default function RoleSelectionPage() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center w-full p-(--space-s-m) my-(--space-xl-2xl)">
+    <div className="flex flex-col items-center justify-center w-full p-(--space-s-m)">
       {/* Header */}
       <div className="text-center mb-(--space-m-l)">
         <h1 className="text-4 font-bold text-gray-900 line-height-12">
