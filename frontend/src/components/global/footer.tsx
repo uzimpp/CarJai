@@ -3,7 +3,7 @@ import Image from "next/image";
 
 export default function Footer() {
   return (
-    <div className="max-w-[1536px] mx-auto pt-8">
+    <div className="max-w-[1536px] mx-auto pt-48">
       {/* Main Footer Content */}
       <div className="flex sm:flex-row flex-col-reverse gap-(--space-xl) justify-between p-(--space-l-xl) text-white">
         {/* Brand Section */}

@@ -37,12 +37,12 @@ export default function Home() {
       description: "Perfect for urban driving and daily commute",
       image: "/assets/cars/honda_accord.png",
       count: "180+ cars",
-      gradient: "from-maroon to-red",
+      gradient: "from-maroon to-red/70",
     },
     {
       title: "Luxury & Performance",
       description: "High-end sports cars and luxury vehicles",
-      image: "/assets/cars/benz_amg.png",
+      image: "/assets/cars/porsche_stinger.png",
       count: "120+ cars",
       gradient: "from-gray-900 to-gray-500",
     },
@@ -56,7 +56,7 @@ export default function Home() {
   ];
 
   return (
-    <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full ">
+    <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full">
       {/* Hero */}
       <section className="relative rounded-4xl shadow-[var(--shadow-lg)] bg-maroon px-(--space-xl) py-(--space-2xl-3xl)">
         <div className="relative z-10 flex flex-col items-center text-center gap-y-(--space-s) pb-(--space-xl) my-(--space-xs) w-full">
@@ -130,19 +130,16 @@ export default function Home() {
             <Link
               key={cat.title}
               href={`/buy?category=${encodeURIComponent(cat.title)}`}
-              className="group relative shadow-lg rounded-tr-5xl rounded-2xl hover:shadow-2xl transition-all duration-300 h-80 hover:-translate-y-2"
+              className="group relative shadow-lg rounded-tr-5xl rounded-2xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
             >
-              <div
-                className={`absolute inset-0 bg-gradient-to-br rounded-tr-xl rounded-xl ${cat.gradient} opacity-91 group-hover:opacity-95 transition-opacity`}
-              />
-              <div className="relative w-full h-full flex flex-col justify-between p-(--space-l)">
+              <div className={`w-full h-full flex flex-col justify-center p-(--space-m-xl) gap-y-(--space-l) inset-0 bg-gradient-to-br rounded-tr-xl rounded-xl ${cat.gradient}`}>
                 <div>
                   <h3 className="text-3 font-bold text-white mb-2 line-height-12">
                     {cat.title}
                   </h3>
                   <p className="text-0 text-white/90">{cat.description}</p>
                 </div>
-                <div className="relative w-full h-32">
+                <div className="relative aspect-[2/1] w-full">
                   <Image
                     src={cat.image}
                     alt={cat.title}
@@ -213,7 +210,6 @@ export default function Home() {
       </section>
 
       <Cta />
-
     </div>
   );
 }

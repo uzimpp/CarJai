@@ -151,7 +151,7 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex items-center justify-center max-w-[1536px] mx-auto w-full p-(--space-s-m) my-(--space-xl-2xl)">
+    <div className="flex items-center justify-center max-w-[1536px] mx-auto w-full p-(--space-s-m)">
       <div className="flex flex-col max-w-[480px] w-full p-(--space-s-m) pt-(--space-m-l) rounded-xl mx-auto">
         {/* Header */}
         <div className="text-center mb-(--space-m-l)">
