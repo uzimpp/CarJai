@@ -1,12 +1,23 @@
 package middleware
 
 import (
-	"log"
+	"bytes"
 	"net"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/uzimpp/CarJai/backend/utils"
 )
+
+// getRequestSize calculates the approximate size of the incoming request
+func getRequestSize(r *http.Request) int64 {
+	size := int64(0)
+	if r.ContentLength > 0 {
+		size = r.ContentLength
+	}
+	return size
+}
 
 // getClientIP extracts the real client IP from the request
 func getClientIP(r *http.Request) string {
@@ -31,40 +42,57 @@ func getClientIP(r *http.Request) string {
 	return ip
 }
 
-// LoggingMiddleware logs HTTP requests with detailed information
+// LoggingMiddleware logs HTTP requests with structured logging
 func LoggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		
 		// Extract request information
 		clientIP := getClientIP(r)
-		timestamp := start.Format("2006-01-02 15:04:05")
 		
-		// Create a custom ResponseWriter to capture status code
-		wrapped := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+		// Create ResponseWriter to capture response data
+		responseBuffer := &bytes.Buffer{}
+		wrapped := &responseWriter{
+			ResponseWriter: w, 
+			statusCode:     http.StatusOK,
+			responseData:   responseBuffer,
+		}
 		
 		// Call next handler
 		next.ServeHTTP(wrapped, r)
 		
-		// Log the request with detailed information
+		// Calculate metrics
 		duration := time.Since(start)
-		log.Printf("[%s] %s %s %d %v | IP: %s | User-Agent: %s | Referer: %s",
-			timestamp,
-			r.Method,
-			r.URL.Path,
+		requestSize := getRequestSize(r)
+		responseSize := int64(responseBuffer.Len())
+		
+		// Prepare response data for logging (limit size for performance)
+		responseData := responseBuffer.String()
+		if len(responseData) > 1000 {
+			responseData = responseData[:1000] + "...[truncated]"
+		}
+		
+		// Use structured logging with all three core concepts
+		utils.AppLogger.LogHTTPRequest(
+			r.Method,                    // Core concept 2: Destination endpoint (method)
+			r.URL.Path,                  // Core concept 2: Destination endpoint (path)
+			clientIP,                    // Core concept 1: Requestor IP
+			r.UserAgent(),
 			wrapped.statusCode,
 			duration,
-			clientIP,
-			r.UserAgent(),
-			r.Header.Get("Referer"),
+			requestSize,
+			responseSize,
+			responseData,                // Core concept 3: Returned data
 		)
 	}
 }
 
-// responseWriter wraps http.ResponseWriter to capture status code
+// Enhanced responseWriter wraps http.ResponseWriter to capture status code and response data
+// This allows us to log the complete request-response cycle including returned data
 type responseWriter struct {
 	http.ResponseWriter
-	statusCode int
+	statusCode   int
+	responseData *bytes.Buffer
 }
 
 func (rw *responseWriter) WriteHeader(code int) {
@@ -72,7 +100,16 @@ func (rw *responseWriter) WriteHeader(code int) {
 	rw.ResponseWriter.WriteHeader(code)
 }
 
-// AdminLoggingMiddleware logs admin-specific requests with additional context
+func (rw *responseWriter) Write(data []byte) (int, error) {
+	// Capture response data for logging
+	if rw.responseData != nil {
+		rw.responseData.Write(data)
+	}
+	return rw.ResponseWriter.Write(data)
+}
+
+// AdminLoggingMiddleware logs admin-specific requests with enhanced structured logging
+// Includes additional admin context along with the three core logging concepts
 func AdminLoggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -82,43 +119,62 @@ func AdminLoggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		adminUsername := r.Header.Get("X-Admin-Username")
 		sessionID := r.Header.Get("X-Session-ID")
 		
-		// Extract request information
+		// Extract request information (Core concept 1: Requestor IP)
 		clientIP := getClientIP(r)
-		timestamp := start.Format("2006-01-02 15:04:05")
 		
-		// Create a custom ResponseWriter to capture status code
-		wrapped := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+		// Create enhanced ResponseWriter to capture response data (Core concept 3: Returned data)
+		responseBuffer := &bytes.Buffer{}
+		wrapped := &responseWriter{
+			ResponseWriter: w, 
+			statusCode:     http.StatusOK,
+			responseData:   responseBuffer,
+		}
 		
 		// Call next handler
 		next.ServeHTTP(wrapped, r)
 		
-		// Log the admin request with additional context
+		// Calculate metrics
 		duration := time.Since(start)
-		log.Printf("[ADMIN %s] %s %s %d %v | IP: %s | AdminID: %s | Username: %s | SessionID: %s | User-Agent: %s",
-			timestamp,
-			r.Method,
-			r.URL.Path,
+		requestSize := getRequestSize(r)
+		responseSize := int64(responseBuffer.Len())
+		
+		// Prepare response data for logging (limit size for performance)
+		responseData := responseBuffer.String()
+		if len(responseData) > 1000 {
+			responseData = responseData[:1000] + "...[truncated]"
+		}
+		
+		// Use structured logging with admin context and all three core concepts
+		utils.AppLogger.LogHTTPRequestWithContext(
+			r.Method,                    // Core concept 2: Destination endpoint (method)
+			r.URL.Path,                  // Core concept 2: Destination endpoint (path)
+			clientIP,                    // Core concept 1: Requestor IP
+			r.UserAgent(),
 			wrapped.statusCode,
 			duration,
-			clientIP,
-			adminID,
-			adminUsername,
-			sessionID,
-			r.UserAgent(),
+			requestSize,
+			responseSize,
+			responseData,                // Core concept 3: Returned data
+			map[string]interface{}{
+				"admin_id":       adminID,
+				"admin_username": adminUsername,
+				"session_id":     sessionID,
+				"request_type":   "admin",
+			},
 		)
 	}
 }
 
-// DetailedLoggingMiddleware provides comprehensive request logging with all available information
+// DetailedLoggingMiddleware provides comprehensive request logging with enhanced structured format
+// Captures all available request/response information along with the three core logging concepts
 func DetailedLoggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		
-		// Extract comprehensive request information
+		// Extract comprehensive request information (Core concept 1: Requestor IP)
 		clientIP := getClientIP(r)
-		timestamp := start.Format("2006-01-02 15:04:05")
 		
-		// Get additional request details
+		// Get additional request details for comprehensive logging
 		host := r.Host
 		scheme := "http"
 		if r.TLS != nil {
@@ -126,27 +182,48 @@ func DetailedLoggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		}
 		fullURL := scheme + "://" + host + r.URL.RequestURI()
 		
-		// Create a custom ResponseWriter to capture status code
-		wrapped := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+		// Create enhanced ResponseWriter to capture response data (Core concept 3: Returned data)
+		responseBuffer := &bytes.Buffer{}
+		wrapped := &responseWriter{
+			ResponseWriter: w, 
+			statusCode:     http.StatusOK,
+			responseData:   responseBuffer,
+		}
 		
 		// Call next handler
 		next.ServeHTTP(wrapped, r)
 		
-		// Log comprehensive request information
+		// Calculate metrics
 		duration := time.Since(start)
-		log.Printf("[%s] %s %s %d %v | IP: %s | Host: %s | URL: %s | User-Agent: %s | Referer: %s | Content-Length: %s | Content-Type: %s",
-			timestamp,
-			r.Method,
-			r.URL.Path,
+		requestSize := getRequestSize(r)
+		responseSize := int64(responseBuffer.Len())
+		
+		// Prepare response data for logging (limit size for performance)
+		responseData := responseBuffer.String()
+		if len(responseData) > 1000 {
+			responseData = responseData[:1000] + "...[truncated]"
+		}
+		
+		// Use structured logging with comprehensive context and all three core concepts
+		utils.AppLogger.LogHTTPRequestWithContext(
+			r.Method,                    // Core concept 2: Destination endpoint (method)
+			r.URL.Path,                  // Core concept 2: Destination endpoint (path)
+			clientIP,                    // Core concept 1: Requestor IP
+			r.UserAgent(),
 			wrapped.statusCode,
 			duration,
-			clientIP,
-			host,
-			fullURL,
-			r.UserAgent(),
-			r.Header.Get("Referer"),
-			r.Header.Get("Content-Length"),
-			r.Header.Get("Content-Type"),
+			requestSize,
+			responseSize,
+			responseData,                // Core concept 3: Returned data
+			map[string]interface{}{
+				"host":           host,
+				"scheme":         scheme,
+				"full_url":       fullURL,
+				"referer":        r.Header.Get("Referer"),
+				"content_length": r.Header.Get("Content-Length"),
+				"content_type":   r.Header.Get("Content-Type"),
+				"request_type":   "detailed",
+			},
 		)
 	}
 }
