@@ -18,10 +18,10 @@ export default function SettingsPage() {
   const [showBuyerForm, setShowBuyerForm] = useState(false);
   const [showSellerForm, setShowSellerForm] = useState(false);
 
-  // Redirect to login if not authenticated
+  // Redirect to signin if not authenticated
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.push("/login");
+      router.push("/signin");
     }
   }, [isAuthenticated, isLoading, router]);
 

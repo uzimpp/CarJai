@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import {
   User,
-  LoginRequest,
+  SigninRequest,
   SignupRequest,
   UserRoles,
   UserProfiles,
@@ -22,11 +22,13 @@ interface AuthState {
 }
 
 interface AuthActions {
-  login: (data: LoginRequest) => Promise<{ success: boolean; error?: string }>;
+  signin: (
+    data: SigninRequest
+  ) => Promise<{ success: boolean; error?: string }>;
   signup: (
     data: SignupRequest
   ) => Promise<{ success: boolean; error?: string }>;
-  logout: () => Promise<void>;
+  signout: () => Promise<void>;
   clearError: () => void;
 }
 
@@ -90,20 +92,20 @@ export function useUserAuth(): AuthState &
     setError(null);
   }, []);
 
-  const login = useCallback(
-    async (data: LoginRequest) => {
+  const signin = useCallback(
+    async (data: SigninRequest) => {
       setError(null);
       setState((prev) => ({ ...prev, isLoading: true }));
 
       try {
-        await authAPI.login(data);
+        await authAPI.signin(data);
         await mutualLogout.clearAdminSession();
 
-        // After login, fetch the updated user data with roles
+        // After signin, fetch the updated user data with roles
         await validateSession();
         return { success: true };
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Login failed";
+        const message = err instanceof Error ? err.message : "Signin failed";
         setError({
           message,
           field: "general",
@@ -140,11 +142,11 @@ export function useUserAuth(): AuthState &
     [validateSession]
   );
 
-  const logout = useCallback(async () => {
+  const signout = useCallback(async () => {
     try {
-      await authAPI.logout();
+      await authAPI.signout();
     } catch {
-      // Ignore logout errors
+      // Ignore sign out errors
     } finally {
       setState({
         user: null,
@@ -161,9 +163,9 @@ export function useUserAuth(): AuthState &
   return {
     ...state,
     error,
-    login,
+    signin,
     signup,
-    logout,
+    signout,
     clearError,
   };
 }

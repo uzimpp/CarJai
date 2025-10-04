@@ -12,9 +12,9 @@ export default function SellPage() {
   // Redirect logic for seller guard
   useEffect(() => {
     if (!isLoading) {
-      // Not authenticated → redirect to login
+      // Not authenticated → redirect to signin
       if (!isAuthenticated) {
-        router.push("/login?redirect=/sell");
+        router.push("/signin?redirect=/sell");
         return;
       }
 

@@ -6,7 +6,7 @@ import {
   AdminUser,
   AdminSession,
   AdminIPWhitelist,
-  AdminLoginRequest,
+  AdminSigninRequest,
 } from "@/constants/admin";
 import { adminAuthAPI } from "@/lib/adminAuth";
 import { mutualLogout } from "@/lib/mutualLogout";
@@ -83,13 +83,13 @@ export function useAdminAuth() {
     validateSession();
   }, [pathname, mounted, validateSession]);
 
-  const login = useCallback(async (data: AdminLoginRequest) => {
+  const signin = useCallback(async (data: AdminSigninRequest) => {
     setLoading(true);
     try {
-      const response = await adminAuthAPI.login(data);
+      const response = await adminAuthAPI.signin(data);
 
       if (!response.success) {
-        throw new Error(response.message || "Login failed");
+        throw new Error(response.message || "Signin failed");
       }
 
       await mutualLogout.clearUserSession();
@@ -110,7 +110,7 @@ export function useAdminAuth() {
           setIpWhitelist(whitelistData.data);
         }
       } catch {
-        // Ignore post-login data fetch errors
+        // Ignore post-signin data fetch errors
       }
 
       return response;
@@ -121,14 +121,14 @@ export function useAdminAuth() {
     }
   }, []);
 
-  const logout = useCallback(async () => {
+  const signout = useCallback(async () => {
     try {
       await Promise.all([
-        adminAuthAPI.logout(),
+        adminAuthAPI.signout(),
         mutualLogout.clearUserSession(),
       ]);
     } catch {
-      // Ignore logout API errors
+      // Ignore sign out API errors
     } finally {
       setIsAuthenticated(false);
       setAdminUser(null);
@@ -143,8 +143,8 @@ export function useAdminAuth() {
     ipWhitelist,
     loading: loading || !mounted,
     isAuthenticated: mounted ? isAuthenticated : null,
-    login,
-    logout,
+    signin,
+    signout,
     validateSession,
     fetchIPWhitelist: () => fetchIPWhitelist(),
   };

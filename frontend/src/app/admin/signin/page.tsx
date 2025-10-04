@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 
-export default function AdminLoginPage() {
-  const { isAuthenticated, loading: authLoading, login } = useAdminAuth();
+export default function AdminSigninPage() {
+  const { isAuthenticated, loading: authLoading, signin } = useAdminAuth();
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -27,14 +27,14 @@ export default function AdminLoginPage() {
     setError("");
 
     try {
-      await login({
+      await signin({
         username: formData.username,
         password: formData.password,
       });
       router.push("/admin/dashboard");
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : "Login failed. Please try again.";
+        err instanceof Error ? err.message : "Signin failed. Please try again.";
 
       if (
         errorMessage.includes("403") ||
@@ -67,7 +67,7 @@ export default function AdminLoginPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="text-lg mb-2">Checking login status...</div>
+          <div className="text-lg mb-2">Checking signin status...</div>
           <div className="text-sm text-gray-500">Please wait</div>
         </div>
       </div>
@@ -166,7 +166,7 @@ export default function AdminLoginPage() {
                 Signing in...
               </div>
             ) : (
-              "Continue"
+              "Sign In"
             )}
           </button>
 
