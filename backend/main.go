@@ -135,6 +135,8 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 		routes.OCRRoutes(services.OCR, services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
 	mux.Handle("/health/",
 		routes.HealthRoutes(db, appConfig.CORSAllowedOrigins))
+	mux.Handle("/api/scrape/",
+		routes.InspectionRoutes(appConfig.CORSAllowedOrigins))
 
 	return mux
 }

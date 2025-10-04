@@ -2,22 +2,56 @@
 
 import { useState } from "react";
 import { apiCall } from "@/lib/apiCall";
+import ExtractedDataForm from "./ExtractedDataForm"; // <-- Import component ใหม่
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ACCEPTED_FILE_TYPES = ["image/jpeg", "image/png", "application/pdf"];
 
+// สร้าง Type สำหรับข้อมูลที่ผ่านการประมวลผลแล้ว
+type ParsedOcrData = Record<string, string>;
+
 export default function DocumentUploader() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [ocrResult, setOcrResult] = useState<string>("");
+  // เปลี่ยน State จาก string เป็น Object เพื่อเก็บข้อมูลที่มีโครงสร้าง
+  const [extractedData, setExtractedData] = useState<ParsedOcrData | null>(
+    null
+  );
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
+
+  // ฟังก์ชันสำหรับแปลงข้อความดิบจาก OCR เป็น Object
+  const parseOcrResult = (text: string): ParsedOcrData => {
+    const data: ParsedOcrData = {};
+    const lines = text.split("\n");
+
+    // ลองแปลง key จาก OCR ให้เป็น key ที่เรากำหนดไว้ใน DOCUMENT_FIELDS
+    // เพื่อเพิ่มโอกาสในการ map ข้อมูลได้ถูกต้อง
+    const keyMapping: Record<string, string> = {
+      license_expiry_date: "expiry_date",
+      ownership: "license_plate",
+      // เพิ่ม mapping อื่นๆ ตามที่จำเป็น
+    };
+    
+    lines.forEach((line) => {
+      const parts = line.split(":");
+      if (parts.length >= 2) {
+        let key = parts[0].trim();
+        const value = parts.slice(1).join(":").trim();
+        
+        // ตรวจสอบกับ mapping
+        key = keyMapping[key] || key;
+        data[key] = value;
+      }
+    });
+    return data;
+  };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     setError("");
-    setOcrResult("");
+    setExtractedData(null); // <-- Reset ข้อมูลที่เคยดึงได้
     setSelectedFile(null);
 
     if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
@@ -32,7 +66,7 @@ export default function DocumentUploader() {
     }
     setSelectedFile(file);
   };
-
+  
   const handleSubmit = async () => {
     if (!selectedFile) {
       setError("Please select a file first.");
@@ -41,32 +75,32 @@ export default function DocumentUploader() {
 
     setIsLoading(true);
     setError("");
-    setOcrResult("");
+    setExtractedData(null);
 
     const formData = new FormData();
     formData.append("file", selectedFile);
 
     try {
-      // Use centralized apiCall helper for consistent cookie-based authentication
       const result = await apiCall<{
         success: boolean;
         data?: { extracted_text: string };
         message?: string;
       }>("/api/ocr/verify-document", {
         method: "POST",
-        body: formData, // apiCall now handles FormData properly
+        body: formData,
       });
 
       if (
         result.data?.extracted_text &&
         result.data.extracted_text.trim() !== ""
       ) {
-        setOcrResult(result.data.extracted_text);
+        // แปลงผลลัพธ์เป็น Object แล้วเก็บใน State
+        const parsedData = parseOcrResult(result.data.extracted_text);
+        setExtractedData(parsedData);
       } else {
         setError("No text found in the image.");
       }
     } catch (err) {
-      // <-- จุดที่แก้ไข Error ที่ 1
       if (err instanceof Error) {
         setError(err.message);
       } else {
@@ -77,7 +111,16 @@ export default function DocumentUploader() {
     }
   };
 
-  // *** หมายเหตุ: ให้น้องลองหาเครื่องหมาย ' (apostrophe) ในส่วน JSX ด้านล่างนี้ แล้วแก้เป็น &apos; ***
+  // Handler เพื่อรับการเปลี่ยนแปลงข้อมูลจาก Child component
+  const handleDataChange = (field: string, value: string) => {
+    if (extractedData) {
+      setExtractedData({
+        ...extractedData,
+        [field]: value,
+      });
+    }
+  };
+  
   return (
     <div className="w-full max-w-2xl p-8 space-y-6 bg-white rounded-2xl shadow-lg">
       <div className="text-center">
@@ -122,17 +165,9 @@ export default function DocumentUploader() {
         {isLoading ? "Processing..." : "Extract Text"}
       </button>
 
-      {ocrResult && !error && (
-        <div className="mt-6">
-          <h3 className="text-lg font-semibold text-gray-800">
-            Extracted Text Results:
-          </h3>
-          <textarea
-            readOnly
-            value={ocrResult}
-            className="w-full h-48 p-4 mt-2 font-mono text-sm bg-gray-50 border border-gray-300 rounded-xl focus:ring-1 focus:ring-red-500 focus:border-red-500"
-          />
-        </div>
+      {/* ส่วนที่เปลี่ยนแปลง: แสดง Component ใหม่แทน textarea เดิม */}
+      {extractedData && !error && (
+        <ExtractedDataForm data={extractedData} onDataChange={handleDataChange} />
       )}
     </div>
   );
