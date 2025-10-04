@@ -7,10 +7,12 @@ import ExtractedDataForm from "./ExtractedDataForm"; // <-- Import component ใ
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ACCEPTED_FILE_TYPES = ["image/jpeg", "image/png", "application/pdf"];
 
-// สร้าง Type สำหรับข้อมูลที่ผ่านการประมวลผลแล้ว
-type ParsedOcrData = Record<string, string>;
 
-export default function DocumentUploader() {
+interface DocumentUploaderProps {
+  onComplete?: (extractedText: string) => void;
+}
+
+export default function DocumentUploader({ onComplete }: DocumentUploaderProps = {}) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   // เปลี่ยน State จาก string เป็น Object เพื่อเก็บข้อมูลที่มีโครงสร้าง
   const [extractedData, setExtractedData] = useState<ParsedOcrData | null>(
@@ -94,9 +96,10 @@ export default function DocumentUploader() {
         result.data?.extracted_text &&
         result.data.extracted_text.trim() !== ""
       ) {
-        // แปลงผลลัพธ์เป็น Object แล้วเก็บใน State
-        const parsedData = parseOcrResult(result.data.extracted_text);
-        setExtractedData(parsedData);
+        setOcrResult(result.data.extracted_text);
+        if (onComplete) {
+          onComplete(result.data.extracted_text);
+        }
       } else {
         setError("No text found in the image.");
       }

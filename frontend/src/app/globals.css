@@ -46,6 +46,21 @@
   --space-3xl: clamp(5.625rem, 5.3842rem + 1.1009vw, 6.375rem);
   --space-4xl: clamp(7.5rem, 7.1789rem + 1.4679vw, 8.5rem);
   --space-5xl: clamp(9.375rem, 8.9736rem + 1.8349vw, 10.625rem);
+  --space-6xl: clamp(11.25rem, 10.7736rem + 2.2019vw, 12.75rem);
+  --space-7xl: clamp(13.125rem, 12.5736rem + 2.5688vw, 14.875rem);
+  --space-8xl: clamp(15rem, 14.3736rem + 2.9358vw, 17rem);
+  --space-9xl: clamp(16.875rem, 16.1736rem + 3.3028vw, 19.125rem);
+  --space-10xl: clamp(18.75rem, 17.9736rem + 3.6698vw, 21.25rem);
+  --space-11xl: clamp(20.625rem, 19.7736rem + 4.0368vw, 23.375rem);
+  --space-12xl: clamp(22.5rem, 21.5736rem + 4.4038vw, 25.5rem);
+  --space-13xl: clamp(24.375rem, 23.3736rem + 4.7707vw, 27.625rem);
+  --space-14xl: clamp(26.25rem, 25.1736rem + 5.1377vw, 29.75rem);
+  --space-15xl: clamp(28.125rem, 26.9736rem + 5.5047vw, 31.875rem);
+  --space-16xl: clamp(30rem, 28.7736rem + 5.8717vw, 34rem);
+  --space-17xl: clamp(31.875rem, 30.5736rem + 6.2386vw, 36.125rem);
+  --space-18xl: clamp(33.75rem, 32.3736rem + 6.6056vw, 38.25rem);
+  --space-19xl: clamp(35.625rem, 34.1736rem + 6.9725vw, 40.375rem);
+  --space-20xl: clamp(37.5rem, 36.0736rem + 7.3394vw, 42.5rem);
 
   /* One-up pairs */
   --space-3xs-2xs: clamp(0.25rem, 0.1497rem + 0.4587vw, 0.5625rem);
@@ -74,6 +89,8 @@
   --color-white: #fffdfd;
   --color-black: #1d0101;
   --color-maroon: #851d15;
+  --color-maroon-500: rgba(128, 0, 32, 0.5);
+  --color-maroon-800: rgba(128, 0, 32, 0.8);
   --color-red: #cd2214;
   --color-grey: #303030;
 
@@ -111,9 +128,14 @@
 }
 
 @layer base {
+  ::selection {
+    color: var(--color-white);
+    background: var(--color-maroon-800);
+  }
+
   body {
-    background: var(--background);
-    color: var(--foreground);
+    background: var(--color-white);
+    color: var(--color-black);
     font-family: var(--font-syne), Arial, Helvetica, sans-serif;
     line-height: 1.6;
   }
@@ -121,6 +143,10 @@
   main {
     margin-top: var(--navbar-height);
     min-height: calc(100dvh - var(--navbar-height));
+  }
+
+  section {
+    margin-bottom: var(--space-xl);
   }
 }
 
@@ -185,7 +211,35 @@
     letter-spacing: 0.1rem;
   }
 
-  .line-height-0 {
+  .line-height-09 {
     line-height: 0.9;
+  }
+
+  .line-height-1 {
+    line-height: 1;
+  }
+
+  .line-height-11 {
+    line-height: 1.1;
+  }
+
+  .line-height-12 {
+    line-height: 1.2;
+  }
+
+  .line-height-13 {
+    line-height: 1.3;
+  }
+
+  .line-height-14 {
+    line-height: 1.4;
+  }
+
+  .line-height-15 {
+    line-height: 1.5;
+  }
+
+  .line-height-16 {
+    line-height: 1.6;
   }
 }

@@ -11,6 +11,87 @@ interface BuyerFormProps {
   isLoading?: boolean;
 }
 
+// Thai provinces list
+const THAI_PROVINCES = [
+  "Bangkok",
+  "Amnat Charoen",
+  "Ang Thong",
+  "Bueng Kan",
+  "Buriram",
+  "Chachoengsao",
+  "Chai Nat",
+  "Chaiyaphum",
+  "Chanthaburi",
+  "Chiang Mai",
+  "Chiang Rai",
+  "Chonburi",
+  "Chumphon",
+  "Kalasin",
+  "Kamphaeng Phet",
+  "Kanchanaburi",
+  "Khon Kaen",
+  "Krabi",
+  "Lampang",
+  "Lamphun",
+  "Loei",
+  "Lopburi",
+  "Mae Hong Son",
+  "Maha Sarakham",
+  "Mukdahan",
+  "Nakhon Nayok",
+  "Nakhon Pathom",
+  "Nakhon Phanom",
+  "Nakhon Ratchasima",
+  "Nakhon Sawan",
+  "Nakhon Si Thammarat",
+  "Nan",
+  "Narathiwat",
+  "Nong Bua Lam Phu",
+  "Nong Khai",
+  "Nonthaburi",
+  "Pathum Thani",
+  "Pattani",
+  "Phang Nga",
+  "Phatthalung",
+  "Phayao",
+  "Phetchabun",
+  "Phetchaburi",
+  "Phichit",
+  "Phitsanulok",
+  "Phra Nakhon Si Ayutthaya",
+  "Phrae",
+  "Phuket",
+  "Prachinburi",
+  "Prachuap Khiri Khan",
+  "Ranong",
+  "Ratchaburi",
+  "Rayong",
+  "Roi Et",
+  "Sa Kaeo",
+  "Sakon Nakhon",
+  "Samut Prakan",
+  "Samut Sakhon",
+  "Samut Songkhram",
+  "Saraburi",
+  "Satun",
+  "Sing Buri",
+  "Sisaket",
+  "Songkhla",
+  "Sukhothai",
+  "Suphan Buri",
+  "Surat Thani",
+  "Surin",
+  "Tak",
+  "Trang",
+  "Trat",
+  "Ubon Ratchathani",
+  "Udon Thani",
+  "Uthai Thani",
+  "Uttaradit",
+  "Yala",
+  "Yasothon",
+];
+
 export default function BuyerForm({
   initialData,
   onSubmit,
@@ -27,6 +108,14 @@ export default function BuyerForm({
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Autocomplete state
+  const [provinceInput, setProvinceInput] = useState(
+    initialData?.province || ""
+  );
+  const [showProvinceDropdown, setShowProvinceDropdown] = useState(false);
+  const [filteredProvinces, setFilteredProvinces] =
+    useState<string[]>(THAI_PROVINCES);
+
   useEffect(() => {
     if (initialData) {
       setFormData({
@@ -34,8 +123,48 @@ export default function BuyerForm({
         budgetMin: initialData.budgetMin || null,
         budgetMax: initialData.budgetMax || null,
       });
+      setProvinceInput(initialData.province || "");
     }
   }, [initialData]);
+
+  // Filter provinces based on input
+  const handleProvinceInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const value = e.target.value;
+    setProvinceInput(value);
+
+    // Filter provinces
+    const filtered = THAI_PROVINCES.filter((province) =>
+      province.toLowerCase().includes(value.toLowerCase())
+    );
+    setFilteredProvinces(filtered);
+    setShowProvinceDropdown(true);
+
+    // Update form data
+    setFormData((prev) => ({
+      ...prev,
+      province: value,
+    }));
+
+    // Clear error
+    if (formErrors.province) {
+      setFormErrors((prev) => ({
+        ...prev,
+        province: "",
+      }));
+    }
+  };
+
+  // Select province from dropdown
+  const handleProvinceSelect = (province: string) => {
+    setProvinceInput(province);
+    setFormData((prev) => ({
+      ...prev,
+      province: province,
+    }));
+    setShowProvinceDropdown(false);
+  };
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -109,8 +238,8 @@ export default function BuyerForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-y-(--space-m)">
-      {/* Province Field */}
-      <div>
+      {/* Province Field - Autocomplete */}
+      <div className="relative">
         <label
           htmlFor="province"
           className="block text-0 font-medium text-gray-700 mb-1"
@@ -121,16 +250,51 @@ export default function BuyerForm({
           id="province"
           name="province"
           type="text"
-          value={formData.province || ""}
-          onChange={handleInputChange}
-          placeholder="e.g., Bangkok"
+          value={provinceInput}
+          onChange={handleProvinceInputChange}
+          onFocus={() => {
+            setShowProvinceDropdown(true);
+            setFilteredProvinces(THAI_PROVINCES);
+          }}
+          onBlur={() => {
+            // Delay to allow click on dropdown item
+            setTimeout(() => setShowProvinceDropdown(false), 200);
+          }}
+          placeholder="Type to search provinces..."
           disabled={isLoading || isSubmitting}
-          className={`appearance-none relative block w-full px-3 py-2 text-0 border ${
+          autoComplete="off"
+          className={`relative block w-full px-3 py-2 text-0 border ${
             formErrors.province
               ? "border-red-300 focus:ring-red focus:border-red"
               : "border-gray-300 focus:ring-maroon focus:border-maroon"
           } placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed`}
         />
+
+        {/* Dropdown List */}
+        {showProvinceDropdown && filteredProvinces.length > 0 && (
+          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+            {filteredProvinces.map((province) => (
+              <button
+                key={province}
+                type="button"
+                onClick={() => handleProvinceSelect(province)}
+                className="w-full text-left px-3 py-2 text-0 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors"
+              >
+                {province}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* No results message */}
+        {showProvinceDropdown &&
+          filteredProvinces.length === 0 &&
+          provinceInput && (
+            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-3">
+              <p className="text-0 text-gray-500">No provinces found</p>
+            </div>
+          )}
+
         {formErrors.province && (
           <p className="mt-1 text--1 text-red-600">{formErrors.province}</p>
         )}
@@ -149,6 +313,7 @@ export default function BuyerForm({
           name="budgetMin"
           type="number"
           min="0"
+          step="10000"
           value={formData.budgetMin === null ? "" : formData.budgetMin}
           onChange={handleInputChange}
           placeholder="e.g., 500000"
@@ -177,6 +342,7 @@ export default function BuyerForm({
           name="budgetMax"
           type="number"
           min="0"
+          step="10000"
           value={formData.budgetMax === null ? "" : formData.budgetMax}
           onChange={handleInputChange}
           placeholder="e.g., 1000000"

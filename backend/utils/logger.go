@@ -174,8 +174,8 @@ func (l *Logger) LogSecurityEvent(eventType, description string, details map[str
 	l.WithFields(fields).Warn(fmt.Sprintf("Security event: %s - %s", eventType, description))
 }
 
-// LogFailedLogin logs a failed login attempt
-func (l *Logger) LogFailedLogin(username, ipAddress, userAgent, reason string) {
+// LogFailedSignin logs a failed login attempt
+func (l *Logger) LogFailedSignin(username, ipAddress, userAgent, reason string) {
 	fields := map[string]interface{}{
 		"username":   username,
 		"ip_address": ipAddress,
@@ -186,8 +186,8 @@ func (l *Logger) LogFailedLogin(username, ipAddress, userAgent, reason string) {
 	l.WithFields(fields).Warn("Failed login attempt")
 }
 
-// LogSuccessfulLogin logs a successful login
-func (l *Logger) LogSuccessfulLogin(adminID int, username, ipAddress, userAgent string) {
+// LogSuccessfulSignin logs a successful login
+func (l *Logger) LogSuccessfulSignin(adminID int, username, ipAddress, userAgent string) {
 	fields := map[string]interface{}{
 		"admin_id":   adminID,
 		"username":   username,

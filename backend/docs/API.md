@@ -19,8 +19,8 @@ The API uses JWT (JSON Web Tokens) stored in HTTP cookies for authentication. Th
 
 ### Admin Authentication
 
-#### POST `/admin/auth/login`
-Admin login with IP whitelist validation
+#### POST `/admin/auth/signin`
+Admin sign in with IP whitelist validation
 
 **Request:**
 ```json
@@ -39,18 +39,18 @@ Admin login with IP whitelist validation
       "id": 1,
       "username": "your_admin_username",
       "name": "System Administrator",
-      "last_login_at": "2024-01-01T10:00:00Z",
+      "last_signin_at": "2024-01-01T10:00:00Z",
       "created_at": "2024-01-01T09:00:00Z"
     },
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
     "expires_at": "2024-01-01T18:00:00Z"
   },
-  "message": "Login successful"
+  "message": "Sign in successful"
 }
 ```
 
-#### POST `/admin/auth/logout`
-Admin logout
+#### POST `/admin/auth/signout`
+Admin sign out
 
 **Request:**
 ```json
@@ -84,19 +84,19 @@ User registration
 }
 ```
 
-#### POST `/api/auth/login`
-User login
+#### POST `/api/auth/signin`
+User sign in
 
 **Request:**
 ```json
 {
-  "username": "user123",
+  "email": "user@example.com",
   "password": "secure_password"
 }
 ```
 
-#### POST `/api/auth/logout`
-User logout
+#### POST `/api/auth/signout`
+User sign out
 
 **Request:**
 ```json
@@ -246,8 +246,8 @@ All endpoints return errors in the following format:
 ### Using curl with cookies
 
 ```bash
-# Test admin login (saves cookie to file)
-curl -X POST http://localhost:8080/admin/auth/login \
+# Test admin sign in (saves cookie to file)
+curl -X POST http://localhost:8080/admin/auth/signin \
   -H "Content-Type: application/json" \
   -d '{"username":"myadmin","password":"your_password"}' \
   -c cookies.txt
