@@ -45,6 +45,7 @@ export default function ConditionalLayout({
   // Define pages where only footer should appear (no navbar)
   const hideNavbarPages = [
     "/admin/signin",
+    "/admin/dashboard",
     "/signin",
     "/signup",
     "/signup/role",

@@ -65,12 +65,6 @@ export default function AccountBtn({
                   Dashboard
                 </Link>
                 <Link
-                  href="/admin/dashboard#session"
-                  className="block px-4 py-2 text-sm hover:bg-maroon/30"
-                >
-                  Sessions
-                </Link>
-                <Link
                   href="/admin/dashboard#ip"
                   className="block px-4 py-2 text-sm hover:bg-maroon/30"
                 >
@@ -143,6 +137,51 @@ export default function AccountBtn({
                 </div>
               </div>
 
+              {/* Continue where you left off (onboarding) */}
+              {(() => {
+                const needsSeller = roles?.seller && !profiles?.sellerComplete;
+                const needsBuyer = roles?.buyer && !profiles?.buyerComplete;
+                const noRoles = roles && !roles.buyer && !roles.seller;
+
+                let path: string | null = null;
+                let label: string | null = null;
+
+                if (needsSeller) {
+                  path = "/signup/role/seller";
+                  label = "Complete your seller profile";
+                } else if (needsBuyer) {
+                  path = "/signup/role/buyer";
+                  label = "Complete your buyer profile";
+                } else if (noRoles) {
+                  path = "/signup/role";
+                  label = "Choose your role to continue";
+                }
+
+                if (!path || !label) return null;
+
+                return (
+                  <div className="px-4 py-3 bg-amber-50 border-y border-amber-200">
+                    <Link
+                      href={path}
+                      onClick={() => setOpen(false)}
+                      className="flex items-center gap-2 text-0 font-medium text-amber-900 hover:text-maroon"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        className="w-5 h-5"
+                      >
+                        <path d="M10.75 3a.75.75 0 00-1.5 0v6.69L6.53 7.97a.75.75 0 10-1.06 1.06l4 4 .008.008a.747.747 0 001.044-.008l4-4a.75.75 0 10-1.06-1.06l-2.72 1.72V3z" />
+                        <path d="M3.5 12.75a.75.75 0 011.5 0v2A1.75 1.75 0 006.75 16.5h6.5A1.75 1.75 0 0015 14.75v-2a.75.75 0 011.5 0v2A3.25 3.25 0 0113.25 18H6.75A3.25 3.25 0 013.5 14.75v-2z" />
+                      </svg>
+                      <span>Continue where you left off</span>
+                    </Link>
+                    <div className="text--1 text-amber-800 mt-1">{label}</div>
+                  </div>
+                );
+              })()}
+
               {/* Role Status Badges */}
               {(roles?.buyer || roles?.seller) && (
                 <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
@@ -214,6 +253,46 @@ export default function AccountBtn({
 
                 {roles?.seller && (
                   <Link
+                    href={`/seller/${user?.id}`}
+                    onClick={() => setOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-maroon/10 hover:text-maroon transition-colors"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      className="w-5 h-5"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 2a4 4 0 110 8 4 4 0 010-8zm-6 14a6 6 0 1112 0v1a1 1 0 01-1 1H5a1 1 0 01-1-1v-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <span className="font-medium">View Public Profile</span>
+                  </Link>
+                )}
+
+                {roles?.buyer && (
+                  <Link
+                    href="/favorites"
+                    onClick={() => setOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-maroon/10 hover:text-maroon transition-colors"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      className="w-5 h-5"
+                    >
+                      <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 18.657l-6.828-6.83a4 4 0 010-5.655z" />
+                    </svg>
+                    <span className="font-medium">Favorites</span>
+                  </Link>
+                )}
+
+                {roles?.seller && (
+                  <Link
                     href="/sell"
                     onClick={() => setOpen(false)}
                     className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-maroon/10 hover:text-maroon transition-colors"
@@ -267,13 +346,13 @@ export default function AccountBtn({
         <div className="flex items-center gap-x-(--space-2xs)">
           <Link
             href="/signin"
-            className="text-0 font-medium text-gray-700 hover:text-maroon transition-colors px-(--space-s) py-(--space-2xs)"
+            className="text-0 font-medium text-gray-700 hover:text-maroon border border-gray-300 rounded-full transition-colors px-(--space-s) py-(--space-3xs-2xs)"
           >
             Sign In
           </Link>
           <Link
             href="/signup"
-            className="flex items-center justify-center text-white text-0 font-medium py-(--space-2xs) px-(--space-m) bg-maroon rounded-full hover:bg-red transition-colors shadow-sm"
+            className="flex items-center justify-center text-white text-0 font-medium py-(--space-3xs-2xs) px-(--space-m) bg-maroon rounded-full hover:bg-red transition-colors shadow-sm"
           >
             Sign Up
           </Link>

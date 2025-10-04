@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import { profileAPI } from "@/lib/profileAPI";
@@ -10,7 +10,7 @@ import SellerForm from "@/components/features/profile/SellerForm";
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { isAuthenticated, isLoading } = useUserAuth();
+  const { isAuthenticated, isLoading, user, roles, profiles } = useUserAuth();
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,26 +25,51 @@ export default function SettingsPage() {
     }
   }, [isAuthenticated, isLoading, router]);
 
-  // Fetch profile data
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (isAuthenticated) {
-        try {
-          const response = await profileAPI.getProfile();
-          setProfileData(response.data);
-          // Auto-show forms if roles exist
-          setShowBuyerForm(response.data.roles.buyer);
-          setShowSellerForm(response.data.roles.seller);
-        } catch (err) {
-          console.error("Failed to fetch profile:", err);
-        } finally {
-          setLoadingProfile(false);
-        }
-      }
-    };
+  // Fetch role-specific profiles after /api/auth/me via useUserAuth
+  const fetchProfile = useCallback(async () => {
+    if (!isAuthenticated) return;
+    try {
+      setError(null);
 
+      // Build initial aggregate from /api/auth/me (hook)
+      const aggregate: ProfileData = {
+        user: user!,
+        roles: roles || { buyer: false, seller: false },
+        profiles: profiles || { buyerComplete: false, sellerComplete: false },
+      } as ProfileData;
+
+      // Conditionally fetch buyer
+      if (roles?.buyer) {
+        try {
+          const buyerRes = await profileAPI.getBuyerProfile();
+          aggregate.buyer = buyerRes.data;
+        } catch {}
+      }
+
+      // Conditionally fetch seller (and contacts)
+      if (roles?.seller) {
+        try {
+          const sellerRes = await profileAPI.getSellerProfile();
+          aggregate.seller = sellerRes.data.seller;
+          aggregate.contacts = sellerRes.data.contacts || [];
+        } catch {}
+      }
+
+      setProfileData(aggregate);
+      setShowBuyerForm(!!roles?.buyer);
+      setShowSellerForm(!!roles?.seller);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to fetch profile";
+      setError(message);
+    } finally {
+      setLoadingProfile(false);
+    }
+  }, [isAuthenticated, roles, profiles, user]);
+
+  useEffect(() => {
     fetchProfile();
-  }, [isAuthenticated]);
+  }, [fetchProfile]);
 
   const handleBuyerSubmit = async (data: BuyerRequest) => {
     try {
@@ -91,8 +116,38 @@ export default function SettingsPage() {
     );
   }
 
-  if (!isAuthenticated || !profileData) {
-    return null;
+  if (!isAuthenticated && !isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="mt-4 text-gray-600">Please sign in to view settings.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!profileData) {
+    return (
+      <div className="min-h-screen px-(--space-m) py-(--space-xl) max-w-[1200px] mx-auto">
+        <div className="rounded-xl border border-red-200 bg-red-50 p-(--space-l)">
+          <h1 className="text-2 font-bold text-red-800 mb-(--space-s)">
+            Unable to load settings
+          </h1>
+          <p className="text-0 text-red-700 mb-(--space-m)">
+            {error || "We couldn't load your profile. Please try again."}
+          </p>
+          <button
+            onClick={() => {
+              setLoadingProfile(true);
+              fetchProfile();
+            }}
+            className="inline-flex items-center px-(--space-m) py-(--space-2xs) text-0 font-medium rounded-lg text-white bg-maroon hover:bg-red transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -181,7 +236,7 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {/* Buyer Profile Section */}
+      {/* Buyer Profile Section (no role switching) */}
       <section className="mb-(--space-xl)">
         <div className="flex justify-between items-center mb-(--space-m)">
           <div>
@@ -199,17 +254,10 @@ export default function SettingsPage() {
               </p>
             )}
           </div>
-          {!profileData.roles.buyer && !showBuyerForm && (
-            <button
-              onClick={() => setShowBuyerForm(true)}
-              className="px-(--space-m) py-(--space-2xs) text-0 font-medium rounded-lg text-white bg-black hover:bg-maroon transition-colors"
-            >
-              Become a Buyer
-            </button>
-          )}
+          {/* Role switching removed: no CTA to become buyer */}
         </div>
 
-        {profileData.roles.buyer || showBuyerForm ? (
+        {profileData.roles.buyer ? (
           <div className="bg-white rounded-lg border border-gray-200 p-(--space-l)">
             <BuyerForm
               initialData={profileData.buyer}
@@ -220,8 +268,7 @@ export default function SettingsPage() {
         ) : (
           <div className="bg-gray-50 rounded-lg border border-gray-200 p-(--space-l)">
             <p className="text-0 text-gray-600">
-              You haven&apos;t set up a buyer profile yet. Click &quot;Become a
-              Buyer&quot; to get started.
+              Your account doesn&apos;t have the Buyer role.
             </p>
           </div>
         )}
@@ -245,17 +292,10 @@ export default function SettingsPage() {
               </p>
             )}
           </div>
-          {!profileData.roles.seller && !showSellerForm && (
-            <button
-              onClick={() => setShowSellerForm(true)}
-              className="px-(--space-m) py-(--space-2xs) text-0 font-medium rounded-lg text-white bg-black hover:bg-maroon transition-colors"
-            >
-              Become a Seller
-            </button>
-          )}
+          {/* Role switching removed: no CTA to become seller */}
         </div>
 
-        {profileData.roles.seller || showSellerForm ? (
+        {profileData.roles.seller ? (
           <div className="bg-white rounded-lg border border-gray-200 p-(--space-l)">
             <SellerForm
               initialData={
@@ -276,8 +316,7 @@ export default function SettingsPage() {
         ) : (
           <div className="bg-gray-50 rounded-lg border border-gray-200 p-(--space-l)">
             <p className="text-0 text-gray-600">
-              You haven&apos;t set up a seller profile yet. Click &quot;Become a
-              Seller&quot; to get started.
+              Your account doesn&apos;t have the Seller role.
             </p>
           </div>
         )}
