@@ -6,7 +6,11 @@ import { apiCall } from "@/lib/apiCall";
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ACCEPTED_FILE_TYPES = ["image/jpeg", "image/png", "application/pdf"];
 
-export default function DocumentUploader() {
+interface DocumentUploaderProps {
+  onComplete?: (extractedText: string) => void;
+}
+
+export default function DocumentUploader({ onComplete }: DocumentUploaderProps = {}) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [ocrResult, setOcrResult] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -62,6 +66,9 @@ export default function DocumentUploader() {
         result.data.extracted_text.trim() !== ""
       ) {
         setOcrResult(result.data.extracted_text);
+        if (onComplete) {
+          onComplete(result.data.extracted_text);
+        }
       } else {
         setError("No text found in the image.");
       }
