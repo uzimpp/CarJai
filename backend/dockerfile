@@ -26,6 +26,8 @@ RUN apk --no-cache add ca-certificates
 
 WORKDIR /root/
 
+RUN apk update && apk add --no-cache chromium chromium-chromedriver
+
 # Copy the binary from builder stage
 COPY --from=builder /app/main .
 
