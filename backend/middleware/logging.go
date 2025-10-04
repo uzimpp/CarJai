@@ -72,17 +72,17 @@ func LoggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			responseData = responseData[:1000] + "...[truncated]"
 		}
 		
-		// Use structured logging with all three core concepts
+		// Use structured logging with all available request/response information
 		utils.AppLogger.LogHTTPRequest(
-			r.Method,                    // Core concept 2: Destination endpoint (method)
-			r.URL.Path,                  // Core concept 2: Destination endpoint (path)
-			clientIP,                    // Core concept 1: Requestor IP
+			r.Method,
+			r.URL.Path,
+			clientIP,
 			r.UserAgent(),
 			wrapped.statusCode,
 			duration,
 			requestSize,
 			responseSize,
-			responseData,                // Core concept 3: Returned data
+			responseData,
 		)
 	}
 }
@@ -109,7 +109,7 @@ func (rw *responseWriter) Write(data []byte) (int, error) {
 }
 
 // AdminLoggingMiddleware logs admin-specific requests with enhanced structured logging
-// Includes additional admin context along with the three core logging concepts
+// Includes additional admin context
 func AdminLoggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -119,10 +119,10 @@ func AdminLoggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		adminUsername := r.Header.Get("X-Admin-Username")
 		sessionID := r.Header.Get("X-Session-ID")
 		
-		// Extract request information (Core concept 1: Requestor IP)
+		// Extract request information
 		clientIP := getClientIP(r)
 		
-		// Create enhanced ResponseWriter to capture response data (Core concept 3: Returned data)
+		// Create enhanced ResponseWriter to capture response data
 		responseBuffer := &bytes.Buffer{}
 		wrapped := &responseWriter{
 			ResponseWriter: w, 
@@ -144,17 +144,17 @@ func AdminLoggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			responseData = responseData[:1000] + "...[truncated]"
 		}
 		
-		// Use structured logging with admin context and all three core concepts
+		// Use structured logging with admin context
 		utils.AppLogger.LogHTTPRequestWithContext(
-			r.Method,                    // Core concept 2: Destination endpoint (method)
-			r.URL.Path,                  // Core concept 2: Destination endpoint (path)
-			clientIP,                    // Core concept 1: Requestor IP
+			r.Method,
+			r.URL.Path,
+			clientIP,
 			r.UserAgent(),
 			wrapped.statusCode,
 			duration,
 			requestSize,
 			responseSize,
-			responseData,                // Core concept 3: Returned data
+			responseData,
 			map[string]interface{}{
 				"admin_id":       adminID,
 				"admin_username": adminUsername,
@@ -166,12 +166,12 @@ func AdminLoggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 }
 
 // DetailedLoggingMiddleware provides comprehensive request logging with enhanced structured format
-// Captures all available request/response information along with the three core logging concepts
+// Captures all available request/response information
 func DetailedLoggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		
-		// Extract comprehensive request information (Core concept 1: Requestor IP)
+		// Extract comprehensive request information
 		clientIP := getClientIP(r)
 		
 		// Get additional request details for comprehensive logging
@@ -182,7 +182,7 @@ func DetailedLoggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		}
 		fullURL := scheme + "://" + host + r.URL.RequestURI()
 		
-		// Create enhanced ResponseWriter to capture response data (Core concept 3: Returned data)
+		// Create enhanced ResponseWriter to capture response data	
 		responseBuffer := &bytes.Buffer{}
 		wrapped := &responseWriter{
 			ResponseWriter: w, 
@@ -204,17 +204,17 @@ func DetailedLoggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			responseData = responseData[:1000] + "...[truncated]"
 		}
 		
-		// Use structured logging with comprehensive context and all three core concepts
+		// Use structured logging with comprehensive context
 		utils.AppLogger.LogHTTPRequestWithContext(
-			r.Method,                    // Core concept 2: Destination endpoint (method)
-			r.URL.Path,                  // Core concept 2: Destination endpoint (path)
-			clientIP,                    // Core concept 1: Requestor IP
+			r.Method,
+			r.URL.Path,
+			clientIP,
 			r.UserAgent(),
 			wrapped.statusCode,
 			duration,
 			requestSize,
 			responseSize,
-			responseData,                // Core concept 3: Returned data
+			responseData,
 			map[string]interface{}{
 				"host":           host,
 				"scheme":         scheme,

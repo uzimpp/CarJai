@@ -21,7 +21,7 @@ const (
 
 // LogEntry represents a log entry
 type LogEntry struct {
-	Timestamp time.Time              `json:"timestamp"`
+	Timestamp string                 `json:"timestamp"`
 	Level     string                 `json:"level"`
 	Message   string                 `json:"message"`
 	Fields    map[string]interface{} `json:"fields,omitempty"`
@@ -104,7 +104,7 @@ func (l *Logger) log(level LogLevel, message string) {
 	}
 
 	entry := LogEntry{
-		Timestamp: time.Now(),
+		Timestamp: time.Now().Format("2006-01-02 15:04:05"),
 		Level:     levelNames[level],
 		Message:   message,
 		Fields:    l.fields,
@@ -220,7 +220,7 @@ func (l *Logger) LogIPWhitelistChange(adminID int, action, ipAddress, descriptio
 // LogHTTPRequest logs HTTP requests with comprehensive information
 func (l *Logger) LogHTTPRequest(method, path, ipAddress, userAgent string, status int, duration time.Duration, requestSize, responseSize int64, responseData interface{}) {
 	entry := LogEntry{
-		Timestamp:    time.Now(),
+		Timestamp:    time.Now().Format("2006-01-02 15:04:05"),
 		Level:        "INFO",
 		Message:      "HTTP Request",
 		IPAddress:    ipAddress,
@@ -248,7 +248,7 @@ func (l *Logger) LogHTTPRequest(method, path, ipAddress, userAgent string, statu
 // LogHTTPRequestWithContext logs HTTP requests with additional context
 func (l *Logger) LogHTTPRequestWithContext(method, path, ipAddress, userAgent string, status int, duration time.Duration, requestSize, responseSize int64, responseData interface{}, context map[string]interface{}) {
 	entry := LogEntry{
-		Timestamp:    time.Now(),
+		Timestamp:    time.Now().Format("2006-01-02 15:04:05"),
 		Level:        "INFO",
 		Message:      "HTTP Request",
 		IPAddress:    ipAddress,
