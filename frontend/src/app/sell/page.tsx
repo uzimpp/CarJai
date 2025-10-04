@@ -5,11 +5,10 @@ import { useRouter } from "next/navigation";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import DocumentUploader from "@/components/features/ocr/DocumentUploader";
 import CarImageUploader from "@/components/features/ocr/CarImageUploader";
-import CarDataForm from "@/components/features/sell/CarDataForm"; // 👈 [1] Import Component ใหม่
+import CarDataForm from "@/components/features/sell/CarDataForm";
+import QrCodeUploader from "@/components/features/inspection/QrCodeUploader"; // 👈 [1] Import Component ใหม่
 import { apiCall } from "@/lib/apiCall";
-import { CarFormData } from "@/lib/ocrUtils"; // 👈 [2] Import Type ที่สร้างไว้จากส่วนกลาง
-
-// ❌ ไม่จำเป็นต้องประกาศ interface CarFormData ที่นี่แล้ว เพราะเรา import มาแล้ว
+import { CarFormData } from "@/lib/ocrUtils";
 
 type Step = "ocr" | "form" | "inspection" | "inspectionConfig" | "images" | "success";
 
@@ -19,13 +18,10 @@ export default function SellPage() {
 
   const [currentStep, setCurrentStep] = useState<Step>("ocr");
   const [ocrData, setOcrData] = useState<string>("");
-  const [carFormData, setCarFormData] = useState<CarFormData>({
-    price: 0,
-  });
+  const [carFormData, setCarFormData] = useState<CarFormData>({ price: 0 });
   const [inspectionData, setInspectionData] = useState<string>("");
-  const [inspectionConfigData, setInspectionConfigData] = useState<CarFormData>({
-    price: 0,
-  });
+  const [inspectionUrl, setInspectionUrl] = useState<string>(""); // 👈 [2] เพิ่ม State สำหรับเก็บ URL จาก QR Code
+  const [inspectionConfigData, setInspectionConfigData] = useState<CarFormData>({ price: 0 });
   const [createdCarId, setCreatedCarId] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -71,22 +67,25 @@ export default function SellPage() {
   };
 
   const handleSkipOcr = () => {
-    setOcrData(""); // ล้างข้อมูล OCR เดิมเมื่อกดข้าม
+    setOcrData("");
     setCurrentStep("form");
   };
 
-  // 👇 [3] Handler ใหม่สำหรับรับข้อมูลจาก CarDataForm component
   const handleCarFormSubmit = (data: CarFormData) => {
     setCarFormData(data);
     setCurrentStep("inspection");
   };
 
-  const handleInspectionComplete = (extractedText: string) => {
-    setInspectionData(extractedText);
-    setCurrentStep("inspectionConfig");
+  // 👇 [3] สร้าง Handler ใหม่สำหรับรับ URL จาก QrCodeUploader
+  const handleQrScanComplete = (url: string) => {
+    console.log("URL ที่ได้จาก QR Code:", url);
+    setInspectionUrl(url); // เก็บ URL ที่ได้ไว้ใน State
+    setCurrentStep("inspectionConfig"); // ไปยัง Step 4: inspectionConfig
   };
 
+  // 👇 [4] แก้ไข Handler เดิมเล็กน้อย
   const handleSkipInspection = () => {
+    setInspectionUrl(""); // Clear URL เมื่อกดข้าม
     setInspectionData("");
     setCurrentStep("inspectionConfig");
   };
@@ -97,7 +96,6 @@ export default function SellPage() {
     setError("");
 
     try {
-      // รวมข้อมูลจากฟอร์มแรก (carFormData) และฟอร์มที่สอง (inspectionConfigData)
       const finalCarData = {
         ...carFormData,
         ...inspectionConfigData,
@@ -136,6 +134,7 @@ export default function SellPage() {
     setOcrData("");
     setCarFormData({ price: 0 });
     setInspectionData("");
+    setInspectionUrl("");
     setInspectionConfigData({ price: 0 });
     setCreatedCarId(null);
     setError("");
@@ -303,7 +302,7 @@ export default function SellPage() {
             </div>
           )}
 
-          {/* 👇 [4] Step 2: Car Form ถูกแทนที่ด้วย Component ใหม่ทั้งหมด */}
+          {/* Step 2: Car Form */}
           {currentStep === "form" && (
             <CarDataForm
               ocrData={ocrData}
@@ -314,30 +313,19 @@ export default function SellPage() {
             />
           )}
 
-          {/* Step 3: Inspection OCR */}
+          {/* 👇 [5] แก้ไข Step 3: Inspection ให้ใช้ Component ใหม่ */}
           {currentStep === "inspection" && (
             <div className="w-full max-w-4xl space-y-6">
-              <div className="w-full max-w-2xl p-8 space-y-6 bg-white rounded-2xl shadow-lg mx-auto">
-                <div className="text-center">
-                  <h2 className="text-3xl font-bold text-gray-900">
-                    อัปโหลดเอกสารตรวจสอบสภาพรถ (ถ้ามี)
-                  </h2>
-                  <p className="mt-2 text-gray-600">
-                    อัปโหลดเอกสารเพื่อดึงข้อมูลการตรวจสอบสภาพ
-                  </p>
-                </div>
-
-                <DocumentUploader onComplete={handleInspectionComplete} />
-                
-                <div className="text-center">
-                  <p className="text-gray-600 mb-4">หรือข้ามขั้นตอนนี้และกำหนดค่าเอง</p>
-                  <button
-                    onClick={handleSkipInspection}
-                    className="px-6 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
-                  >
-                    ข้ามขั้นตอน Inspection
-                  </button>
-                </div>
+              <QrCodeUploader onScanComplete={handleQrScanComplete} />
+              
+              <div className="text-center">
+                <p className="text-gray-600 mb-4">หรือข้ามขั้นตอนนี้และกำหนดค่าเอง</p>
+                <button
+                  onClick={handleSkipInspection}
+                  className="px-6 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  ข้ามขั้นตอนการอัปโหลด
+                </button>
               </div>
             </div>
           )}
@@ -346,57 +334,45 @@ export default function SellPage() {
           {currentStep === "inspectionConfig" && (
             <div className="w-full max-w-4xl">
               <div className="bg-white rounded-2xl shadow-lg p-8">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">กำหนดค่าและยืนยันข้อมูล</h2>
-
-                {inspectionData && (
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">ตรวจสอบข้อมูลสภาพรถ</h2>
+                
+                {/* 👇 [6] แสดง URL ที่ได้จาก QR Code ใน Step 4 */}
+                {inspectionUrl && (
                   <div className="mb-6 p-4 bg-blue-50 rounded-lg">
-                    <h3 className="font-semibold text-blue-900 mb-2">ข้อมูลจากการตรวจสอบ:</h3>
-                    <p className="text-sm text-blue-800 whitespace-pre-wrap">{inspectionData}</p>
+                    <h3 className="font-semibold text-blue-900 mb-2">URL จาก QR Code:</h3>
+                    <p className="text-sm text-blue-800 break-all">{inspectionUrl}</p>
+                    <p className="text-sm text-blue-600 mt-2">
+                      (ในขั้นตอนถัดไป เราจะนำ URL นี้ไปดึงข้อมูลมาแสดงผลในหน้านี้)
+                    </p>
                   </div>
                 )}
 
-                <form onSubmit={handleInspectionConfigSubmit} className="space-y-6">
-                  {/* Price (Required) */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      ราคา (บาท) <span className="text-red-600">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      required
-                      value={inspectionConfigData.price || ""}
-                      onChange={(e) =>
-                        setInspectionConfigData({ ...inspectionConfigData, price: parseInt(e.target.value) })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                      placeholder="เช่น 500000"
-                    />
-                  </div>
-                  
-                  {/* Other fields can be added here if needed, to override carFormData */}
+                {!inspectionUrl && (
+                    <p className="text-gray-600 text-center mb-4">
+                        คุณข้ามขั้นตอนการอัปโหลดใบตรวจสภาพรถ
+                    </p>
+                )}
+                
+                {/* ส่วนของ Form สำหรับแก้ไขข้อมูลจะถูกเพิ่มเข้ามาทีหลัง */}
 
-                  {error && (
-                    <div className="p-4 text-red-600 bg-red-50 rounded-lg">{error}</div>
-                  )}
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-4">
-                    <button
-                      type="button"
-                      onClick={() => setCurrentStep("inspection")}
-                      className="px-6 py-3 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
-                    >
-                      ย้อนกลับ
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isSubmitting || !inspectionConfigData.price}
-                      className="flex-1 px-6 py-3 text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {isSubmitting ? "กำลังสร้างประกาศ..." : "สร้างและดำเนินการต่อ"}
-                    </button>
-                  </div>
-                </form>
+                {/* Action Buttons */}
+                <div className="flex gap-4 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep("form")}
+                    className="px-6 py-3 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+                  >
+                    ย้อนกลับ
+                  </button>
+                  <button
+                    type="submit"
+                    // disabled={isSubmitting} // จะเปิดใช้งานทีหลัง
+                    onClick={() => setCurrentStep("images")} // ไปยัง step ถัดไปชั่วคราว
+                    className="flex-1 px-6 py-3 text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                  >
+                    ดำเนินการต่อ
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -416,7 +392,7 @@ export default function SellPage() {
                       className="w-12 h-12 text-green-600"
                       fill="none"
                       stroke="currentColor"
-                      viewBox="0 0 24 24"
+                      viewBox="0 0 24"
                     >
                       <path
                         strokeLinecap="round"
