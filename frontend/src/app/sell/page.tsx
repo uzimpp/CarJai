@@ -5,29 +5,18 @@ import { useRouter } from "next/navigation";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import DocumentUploader from "@/components/features/ocr/DocumentUploader";
 import CarImageUploader from "@/components/features/ocr/CarImageUploader";
+import CarDataForm from "@/components/features/sell/CarDataForm"; // 👈 [1] Import Component ใหม่
 import { apiCall } from "@/lib/apiCall";
+import { CarFormData } from "@/lib/ocrUtils"; // 👈 [2] Import Type ที่สร้างไว้จากส่วนกลาง
 
-interface CarFormData {
-  price: number;
-  year?: number;
-  mileage?: number;
-  province?: string;
-  conditionRating?: number;
-  bodyTypeId?: number;
-  transmissionId?: number;
-  fuelTypeId?: number;
-  drivetrainId?: number;
-  seats?: number;
-  doors?: number;
-  color?: string;
-}
+// ❌ ไม่จำเป็นต้องประกาศ interface CarFormData ที่นี่แล้ว เพราะเรา import มาแล้ว
 
 type Step = "ocr" | "form" | "inspection" | "inspectionConfig" | "images" | "success";
 
 export default function SellPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading, roles, profiles } = useUserAuth();
-  
+
   const [currentStep, setCurrentStep] = useState<Step>("ocr");
   const [ocrData, setOcrData] = useState<string>("");
   const [carFormData, setCarFormData] = useState<CarFormData>({
@@ -44,19 +33,14 @@ export default function SellPage() {
   // Redirect logic for seller guard
   useEffect(() => {
     if (!isLoading) {
-      // Not authenticated → redirect to signin
       if (!isAuthenticated) {
         router.push("/signin?redirect=/sell");
         return;
       }
-
-      // Authenticated but no seller role → redirect to role selection or seller signup
       if (roles && !roles.seller) {
         router.push("/signup/role/seller");
         return;
       }
-
-      // Has seller role but incomplete profile → redirect to seller signup
       if (roles && roles.seller && profiles && !profiles.sellerComplete) {
         router.push("/signup/role/seller");
         return;
@@ -87,7 +71,14 @@ export default function SellPage() {
   };
 
   const handleSkipOcr = () => {
+    setOcrData(""); // ล้างข้อมูล OCR เดิมเมื่อกดข้าม
     setCurrentStep("form");
+  };
+
+  // 👇 [3] Handler ใหม่สำหรับรับข้อมูลจาก CarDataForm component
+  const handleCarFormSubmit = (data: CarFormData) => {
+    setCarFormData(data);
+    setCurrentStep("inspection");
   };
 
   const handleInspectionComplete = (extractedText: string) => {
@@ -96,12 +87,8 @@ export default function SellPage() {
   };
 
   const handleSkipInspection = () => {
+    setInspectionData("");
     setCurrentStep("inspectionConfig");
-  };
-
-  const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setCurrentStep("inspection");
   };
 
   const handleInspectionConfigSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -110,24 +97,21 @@ export default function SellPage() {
     setError("");
 
     try {
+      // รวมข้อมูลจากฟอร์มแรก (carFormData) และฟอร์มที่สอง (inspectionConfigData)
+      const finalCarData = {
+        ...carFormData,
+        ...inspectionConfigData,
+        status: "draft",
+      };
+
       const result = await apiCall<{
         success: boolean;
-        data?: {
-          cid: number;
-          sellerId: number;
-          price: number;
-          status: string;
-        };
+        data?: { cid: number };
         message?: string;
       }>("/api/cars", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...inspectionConfigData,
-          status: "draft",
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(finalCarData),
       });
 
       if (result.success && result.data) {
@@ -137,11 +121,7 @@ export default function SellPage() {
         setError(result.message || "เกิดข้อผิดพลาดในการสร้างประกาศขาย");
       }
     } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("เกิดข้อผิดพลาดในการสร้างประกาศขาย");
-      }
+      setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาดที่ไม่คาดคิด");
     } finally {
       setIsSubmitting(false);
     }
@@ -163,24 +143,17 @@ export default function SellPage() {
 
   const handlePublish = async () => {
     if (!createdCarId) return;
-
     setIsSubmitting(true);
     setError("");
-
     try {
-      const result = await apiCall<{
-        success: boolean;
-        message?: string;
-      }>(`/api/cars/${createdCarId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          status: "active",
-        }),
-      });
-
+      const result = await apiCall<{ success: boolean; message?: string }>(
+        `/api/cars/${createdCarId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "active" }),
+        }
+      );
       if (result.success) {
         alert("เผยแพร่ประกาศขายสำเร็จ!");
         router.push("/buy");
@@ -188,11 +161,7 @@ export default function SellPage() {
         setError(result.message || "เกิดข้อผิดพลาดในการเผยแพร่");
       }
     } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("เกิดข้อผิดพลาดในการเผยแพร่");
-      }
+      setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาดที่ไม่คาดคิด");
     } finally {
       setIsSubmitting(false);
     }
@@ -305,11 +274,11 @@ export default function SellPage() {
               <div
                 className={`flex items-center justify-center w-8 h-8 rounded-full text-sm ${
                   currentStep === "success"
-                    ? "bg-red-600 text-white"
+                    ? "bg-green-500 text-white"
                     : "bg-gray-300 text-gray-600"
                 }`}
               >
-                6
+                {currentStep === "success" ? "✓" : "6"}
               </div>
               <span className="ml-1 text-xs font-medium text-gray-700">เสร็จสิ้น</span>
             </div>
@@ -322,7 +291,6 @@ export default function SellPage() {
           {currentStep === "ocr" && (
             <div className="w-full max-w-4xl space-y-6">
               <DocumentUploader onComplete={handleOcrComplete} />
-              
               <div className="text-center">
                 <p className="text-gray-600 mb-4">หรือข้ามขั้นตอนนี้และกรอกข้อมูลเอง</p>
                 <button
@@ -335,189 +303,34 @@ export default function SellPage() {
             </div>
           )}
 
-          {/* Step 2: Car Form */}
+          {/* 👇 [4] Step 2: Car Form ถูกแทนที่ด้วย Component ใหม่ทั้งหมด */}
           {currentStep === "form" && (
-            <div className="w-full max-w-4xl">
-              <div className="bg-white rounded-2xl shadow-lg p-8">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">กรอกข้อมูลรถยนต์</h2>
-
-                {ocrData && (
-                  <div className="mb-6 p-4 bg-blue-50 rounded-lg">
-                    <h3 className="font-semibold text-blue-900 mb-2">ข้อมูลจาก OCR:</h3>
-                    <p className="text-sm text-blue-800 whitespace-pre-wrap">{ocrData}</p>
-                  </div>
-                )}
-
-                <form onSubmit={handleFormSubmit} className="space-y-6">
-                  {/* Price (Required) */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      ราคา (บาท) <span className="text-red-600">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      required
-                      value={carFormData.price || ""}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setCarFormData({ ...carFormData, price: parseInt(e.target.value) })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                      placeholder="เช่น 500000"
-                    />
-                  </div>
-
-                  {/* Year */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">ปี</label>
-                    <input
-                      type="number"
-                      value={carFormData.year || ""}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setCarFormData({ ...carFormData, year: parseInt(e.target.value) })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                      placeholder="เช่น 2020"
-                    />
-                  </div>
-
-                  {/* Mileage */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      เลขไมล์ (กม.)
-                    </label>
-                    <input
-                      type="number"
-                      value={carFormData.mileage || ""}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setCarFormData({ ...carFormData, mileage: parseInt(e.target.value) })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                      placeholder="เช่น 50000"
-                    />
-                  </div>
-
-                  {/* Province */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">จังหวัด</label>
-                    <input
-                      type="text"
-                      value={carFormData.province || ""}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setCarFormData({ ...carFormData, province: e.target.value })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                      placeholder="เช่น กรุงเทพมหานคร"
-                    />
-                  </div>
-
-                  {/* Color */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">สี</label>
-                    <input
-                      type="text"
-                      value={carFormData.color || ""}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCarFormData({ ...carFormData, color: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                      placeholder="เช่น ขาว"
-                    />
-                  </div>
-
-                  {/* Condition Rating */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      สภาพรถ (1-5)
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="5"
-                      value={carFormData.conditionRating || ""}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setCarFormData({
-                          ...carFormData,
-                          conditionRating: parseInt(e.target.value),
-                        })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                      placeholder="1 = แย่ที่สุด, 5 = ดีที่สุด"
-                    />
-                  </div>
-
-                  {/* Seats */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      จำนวนที่นั่ง
-                    </label>
-                    <input
-                      type="number"
-                      value={carFormData.seats || ""}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setCarFormData({ ...carFormData, seats: parseInt(e.target.value) })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                      placeholder="เช่น 5"
-                    />
-                  </div>
-
-                  {/* Doors */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      จำนวนประตู
-                    </label>
-                    <input
-                      type="number"
-                      value={carFormData.doors || ""}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setCarFormData({ ...carFormData, doors: parseInt(e.target.value) })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                      placeholder="เช่น 4"
-                    />
-                  </div>
-
-                  {error && (
-                    <div className="p-4 text-red-600 bg-red-50 rounded-lg">{error}</div>
-                  )}
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-4">
-                    <button
-                      type="button"
-                      onClick={() => setCurrentStep("ocr")}
-                      className="px-6 py-3 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
-                    >
-                      ย้อนกลับ
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isSubmitting || !carFormData.price}
-                      className="flex-1 px-6 py-3 text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {isSubmitting ? "กำลังสร้าง..." : "ดำเนินการต่อ"}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
+            <CarDataForm
+              ocrData={ocrData}
+              initialData={carFormData}
+              onSubmit={handleCarFormSubmit}
+              onBack={() => setCurrentStep("ocr")}
+              isSubmitting={isSubmitting}
+            />
           )}
 
           {/* Step 3: Inspection OCR */}
           {currentStep === "inspection" && (
             <div className="w-full max-w-4xl space-y-6">
-              <div className="w-full max-w-2xl p-8 space-y-6 bg-white rounded-2xl shadow-lg">
+              <div className="w-full max-w-2xl p-8 space-y-6 bg-white rounded-2xl shadow-lg mx-auto">
                 <div className="text-center">
                   <h2 className="text-3xl font-bold text-gray-900">
-                    OCR for Inspection Test
+                    อัปโหลดเอกสารตรวจสอบสภาพรถ (ถ้ามี)
                   </h2>
                   <p className="mt-2 text-gray-600">
-                    Upload inspection documents to extract information.
+                    อัปโหลดเอกสารเพื่อดึงข้อมูลการตรวจสอบสภาพ
                   </p>
                 </div>
 
                 <DocumentUploader onComplete={handleInspectionComplete} />
                 
                 <div className="text-center">
-                  <p className="text-gray-600 mb-4">หรือข้ามขั้นตอนนี้และกรอกข้อมูลเอง</p>
+                  <p className="text-gray-600 mb-4">หรือข้ามขั้นตอนนี้และกำหนดค่าเอง</p>
                   <button
                     onClick={handleSkipInspection}
                     className="px-6 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
@@ -533,7 +346,7 @@ export default function SellPage() {
           {currentStep === "inspectionConfig" && (
             <div className="w-full max-w-4xl">
               <div className="bg-white rounded-2xl shadow-lg p-8">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">กำหนดค่าผลการตรวจสอบ</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">กำหนดค่าและยืนยันข้อมูล</h2>
 
                 {inspectionData && (
                   <div className="mb-6 p-4 bg-blue-50 rounded-lg">
@@ -552,122 +365,15 @@ export default function SellPage() {
                       type="number"
                       required
                       value={inspectionConfigData.price || ""}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      onChange={(e) =>
                         setInspectionConfigData({ ...inspectionConfigData, price: parseInt(e.target.value) })
                       }
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                       placeholder="เช่น 500000"
                     />
                   </div>
-
-                  {/* Year */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">ปี</label>
-                    <input
-                      type="number"
-                      value={inspectionConfigData.year || ""}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setInspectionConfigData({ ...inspectionConfigData, year: parseInt(e.target.value) })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                      placeholder="เช่น 2020"
-                    />
-                  </div>
-
-                  {/* Mileage */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      เลขไมล์ (กม.)
-                    </label>
-                    <input
-                      type="number"
-                      value={inspectionConfigData.mileage || ""}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setInspectionConfigData({ ...inspectionConfigData, mileage: parseInt(e.target.value) })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                      placeholder="เช่น 50000"
-                    />
-                  </div>
-
-                  {/* Province */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">จังหวัด</label>
-                    <input
-                      type="text"
-                      value={inspectionConfigData.province || ""}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setInspectionConfigData({ ...inspectionConfigData, province: e.target.value })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                      placeholder="เช่น กรุงเทพมหานคร"
-                    />
-                  </div>
-
-                  {/* Color */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">สี</label>
-                    <input
-                      type="text"
-                      value={inspectionConfigData.color || ""}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInspectionConfigData({ ...inspectionConfigData, color: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                      placeholder="เช่น ขาว"
-                    />
-                  </div>
-
-                  {/* Condition Rating */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      สภาพรถ (1-5)
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="5"
-                      value={inspectionConfigData.conditionRating || ""}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setInspectionConfigData({
-                          ...inspectionConfigData,
-                          conditionRating: parseInt(e.target.value),
-                        })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                      placeholder="1 = แย่ที่สุด, 5 = ดีที่สุด"
-                    />
-                  </div>
-
-                  {/* Seats */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      จำนวนที่นั่ง
-                    </label>
-                    <input
-                      type="number"
-                      value={inspectionConfigData.seats || ""}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setInspectionConfigData({ ...inspectionConfigData, seats: parseInt(e.target.value) })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                      placeholder="เช่น 5"
-                    />
-                  </div>
-
-                  {/* Doors */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      จำนวนประตู
-                    </label>
-                    <input
-                      type="number"
-                      value={inspectionConfigData.doors || ""}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setInspectionConfigData({ ...inspectionConfigData, doors: parseInt(e.target.value) })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                      placeholder="เช่น 4"
-                    />
-                  </div>
+                  
+                  {/* Other fields can be added here if needed, to override carFormData */}
 
                   {error && (
                     <div className="p-4 text-red-600 bg-red-50 rounded-lg">{error}</div>
@@ -677,7 +383,7 @@ export default function SellPage() {
                   <div className="flex gap-4">
                     <button
                       type="button"
-                      onClick={() => setCurrentStep("form")}
+                      onClick={() => setCurrentStep("inspection")}
                       className="px-6 py-3 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
                     >
                       ย้อนกลับ
@@ -687,7 +393,7 @@ export default function SellPage() {
                       disabled={isSubmitting || !inspectionConfigData.price}
                       className="flex-1 px-6 py-3 text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                     >
-                      {isSubmitting ? "กำลังสร้าง..." : "ดำเนินการต่อ"}
+                      {isSubmitting ? "กำลังสร้างประกาศ..." : "สร้างและดำเนินการต่อ"}
                     </button>
                   </div>
                 </form>
@@ -700,7 +406,7 @@ export default function SellPage() {
             <CarImageUploader carId={createdCarId} onUploadComplete={handleImagesComplete} />
           )}
 
-          {/* Step 4: Success */}
+          {/* Step 6: Success */}
           {currentStep === "success" && (
             <div className="w-full max-w-2xl">
               <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
@@ -722,7 +428,7 @@ export default function SellPage() {
                   </div>
                   <h2 className="text-3xl font-bold text-gray-900 mb-2">สำเร็จ!</h2>
                   <p className="text-gray-600">
-                    อัปโหลดรูปภาพเรียบร้อยแล้ว ตอนนี้คุณสามารถเผยแพร่ประกาศขายได้
+                    ประกาศของคุณถูกสร้างเป็นฉบับร่างแล้ว ขั้นตอนสุดท้ายคือการเผยแพร่
                   </p>
                 </div>
 

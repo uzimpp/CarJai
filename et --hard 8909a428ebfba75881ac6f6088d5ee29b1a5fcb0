@@ -1,0 +1,83 @@
+[33mb885ff4[m Setup the project
+[33m116063f[m Further project initialization
+[33ma39ce6e[m Create LICENSE.md
+[33me322a0f[m Rename LICENSE.md to LICENSE
+[33m56502c8[m add: docker file
+[33m0a28a72[m Merge branch 'main' of https://github.com/uzimpp/CarJai
+[33m3d6efac[m add: docker file.
+[33m7cfedc3[m Update README.md
+[33m6fa7a44[m Update README.md
+[33mec1b441[m build: docker compose
+[33m128a107[m Merge branch 'main' of https://github.com/uzimpp/CarJai
+[33m909d925[m build: ci-test
+[33m821281e[m Update README.md
+[33ma6859ad[m build: CI
+[33m23c4119[m Merge branch 'main' of https://github.com/uzimpp/CarJai
+[33m66cc59c[m build: CI
+[33m6c4e730[m build: CI
+[33m4e45be9[m build: CI
+[33m6de5b8b[m build: CI
+[33m8c19842[m Update README.md
+[33m6962d8d[m Create pull_request_template.md
+[33m73d6b00[m Update README.md
+[33m3b5603d[m feat: admin db, go struct, db operation
+[33m6e80963[m feat: structure directories and construct a foundation for frontend
+[33md7f4f3f[m feat: homepage with simple search bar
+[33m84d8cd7[m[33m ([m[1;31morigin/feat/frontend-mainpages[m[33m)[m feat: add about us page
+[33mdaaa1b5[m feat: setup env, go.mod, docker config
+[33m5b3ac08[m feat: auth admin
+[33m101f84a[m test: update ci
+[33mec47a81[m fix: ci not pass
+[33m76c4ab2[m fix: ci not pass remove label from PR creation
+[33md38ca45[m fix: update github token to PAT for PR creation
+[33macd50c7[m fix: update Go version and improve module handling
+[33m0b11b08[m fix: update module path and import references
+[33m954837a[m fix: update module path case and improve dependency handling
+[33mec0d57d[m fix: update module path to match GitHub repository name exactly
+[33m882543e[m fix: add explicit dependency installation and update go.mod
+[33m4842e71[m fix: update go.mod and CI workflow for proper dependency management
+[33mc9b3826[m Delete
+[33m00102b7[m Delete backend/env.example
+[33me7c2975[m Update .gitignore
+[33m890efe8[m Update .gitignore
+[33me3712f2[m Merge branch 'feat/frontend-mainpages' into feat/fullstack-auth-admin
+[33mc901cca[m fix: fix qote errors
+[33m7312465[m feat: connect frontend with backend + some documentations
+[33m8d99e79[m merge: merge from auth-admin to develop
+[33mfb30452[m fix: readme
+[33m2e33354[m fix: env.example and improve cors functionalities
+[33m08da432[m hotfix: remove sensitive ips from codebase
+[33m76e4d48[m feat: enhance user exp (admin)
+[33m1b12e2b[m feat: improve test cases
+[33mf3c5a18[m fix: improve JWT authorization so it can be used for creating both admin and user tokens
+[33mab71d8a[m feat: improve admin dashboard
+[33m9be0812[m fix: unmatch env file
+[33m4d53f08[m feat: add logging file for debugging
+[33m28a0372[m feat: implement user login (with fews bugs when login with admin and user at the same time)
+[33mfd14715[m[33m ([m[1;31morigin/feat/fullstack-auth-admin[m[33m)[m feat: add more files for the previous commit
+[33m58d7fb0[m refactor: improve the auth structure in frontend
+[33m587be2a[m feat: implement with cookie instead of using header
+[33md0d9f68[m fix: fix the auto logout when route to opposite role
+[33mf6a0503[m feat: add more pages and uis for the whole site
+[33m7b5841a[m[33m ([m[1;31morigin/feat/fullstack-auth-all[m[33m)[m style: fix errors during run build in the front end and minor ui adjustment
+[33m9c5330b[m fix: fix ci and compose issue
+[33mdf7900b[m fix: fix ci env
+[33mf925e05[m fix: fix the pr template overwritting issue and improve the template
+[33mead5478[m feat: pull from feat/backend-uploaddoc and ensure the usage of this feature + provide a better test image
+[33ma8426a3[m fix: rename admin route from /myadmin tto /admin env.example
+[33m6a8ae2c[m hotfix: fix the env file and remove tested cookie
+[33mb0bf161[m docs: improve documentation to the latest
+[33m8909a42[m[33m ([m[1;31morigin/hotfix/fix-env[m[33m)[m fix: fix the env.example
+[33m043092f[m[33m ([m[1;31morigin/refactor/backend-frontend[m[33m, [m[1;31morigin/feat/fullstack-sell-car[m[33m)[m refactor/backend-frontend
+[33mf3756ac[m fix: ensure consistency for both admin and user
+[33m62dc6c6[m fix: fonts and login, signup handling
+[33m32da982[m style: change text to Eng instead of Th
+[33m7ddebd3[m style: improve the searchbar
+[33ma522bfa[m style: improve styling for the whole site
+[33m520a5de[m feat: improve log in with google for the frontend
+[33md1e6084[m merge: merge from feat/backend-google-auth for clean history
+[33m95fd55a[m style: adjust minor styling
+[33m99fec15[m feat: implement admin ip allowist removal and addition
+[33m7d987e2[m feat: add migrations and basic structure for frontend ready for implementation
+[33m4e2694c[m[33m ([m[1;31morigin/develop[m[33m)[m feat: implement login steps with bad ui
+[33m300d4e5[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeat/fullstack-upload-inspect-doc[m[33m, [m[1;31morigin/feat/fullstack-upload-inspect-doc[m[33m)[m implement ocr v.1
