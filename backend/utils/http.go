@@ -32,3 +32,10 @@ func WriteError(w http.ResponseWriter, statusCode int, message string) {
 
 	json.NewEncoder(w).Encode(response)
 }
+
+func WriteJSONError(w http.ResponseWriter, status int, message string) {
+	WriteJSON(w, status, map[string]interface{}{
+		"success": false,
+		"message": message,
+	})
+}

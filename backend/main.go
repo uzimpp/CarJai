@@ -46,14 +46,15 @@ func main() {
 
 // ServiceContainer holds all initialized services
 type ServiceContainer struct {
-	Admin       *services.AdminService
-	User        *services.UserService
-	Profile     *services.ProfileService
-	Car         *services.CarService
-	Maintenance *services.MaintenanceService
-	OCR         *services.OCRService
-	UserJWT     *utils.JWTManager
-	AdminJWT    *utils.JWTManager
+    Admin       *services.AdminService
+    User        *services.UserService
+    Profile     *services.ProfileService
+    Car         *services.CarService
+    Maintenance *services.MaintenanceService
+    OCR         *services.OCRService
+    Scraper     *services.ScraperService // + เพิ่มส่วนนี้
+    UserJWT     *utils.JWTManager
+    AdminJWT    *utils.JWTManager
 }
 
 // initializeServices creates and returns all service instances
@@ -99,6 +100,9 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 	// Create car service
 	carService := services.NewCarService(carRepo, carImageRepo, profileService)
 
+    // 👇 เพิ่มการสร้าง ScraperService เข้าไป
+    scraperService := services.NewScraperService()
+
 	return &ServiceContainer{
 		Admin: services.NewAdminService(
 			adminRepo,
@@ -116,6 +120,7 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 			utils.AppLogger,
 		),
 		OCR:      services.NewOCRService(appConfig.AigenAPIKey),
+		Scraper:     scraperService,
 		UserJWT:  userJWTManager,
 		AdminJWT: adminJWTManager,
 	}
@@ -146,6 +151,8 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 		routes.OCRRoutes(services.OCR, services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
 	mux.Handle("/health/",
 		routes.HealthRoutes(db, appConfig.CORSAllowedOrigins))
+    mux.Handle("/api/scrape/",
+        routes.ScrapeRoutes(services.Scraper, appConfig.CORSAllowedOrigins))
 
 	return mux
 }
