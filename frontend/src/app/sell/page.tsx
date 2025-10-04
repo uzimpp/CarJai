@@ -22,7 +22,7 @@ interface CarFormData {
   color?: string;
 }
 
-type Step = "ocr" | "form" | "images" | "success";
+type Step = "ocr" | "form" | "inspection" | "inspectionConfig" | "images" | "success";
 
 export default function SellPage() {
   const router = useRouter();
@@ -31,6 +31,10 @@ export default function SellPage() {
   const [currentStep, setCurrentStep] = useState<Step>("ocr");
   const [ocrData, setOcrData] = useState<string>("");
   const [carFormData, setCarFormData] = useState<CarFormData>({
+    price: 0,
+  });
+  const [inspectionData, setInspectionData] = useState<string>("");
+  const [inspectionConfigData, setInspectionConfigData] = useState<CarFormData>({
     price: 0,
   });
   const [createdCarId, setCreatedCarId] = useState<number | null>(null);
@@ -86,7 +90,21 @@ export default function SellPage() {
     setCurrentStep("form");
   };
 
-  const handleFormSubmit = async (e: React.FormEvent) => {
+  const handleInspectionComplete = (extractedText: string) => {
+    setInspectionData(extractedText);
+    setCurrentStep("inspectionConfig");
+  };
+
+  const handleSkipInspection = () => {
+    setCurrentStep("inspectionConfig");
+  };
+
+  const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setCurrentStep("inspection");
+  };
+
+  const handleInspectionConfigSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError("");
@@ -107,7 +125,7 @@ export default function SellPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          ...carFormData,
+          ...inspectionConfigData,
           status: "draft",
         }),
       });
@@ -137,6 +155,8 @@ export default function SellPage() {
     setCurrentStep("ocr");
     setOcrData("");
     setCarFormData({ price: 0 });
+    setInspectionData("");
+    setInspectionConfigData({ price: 0 });
     setCreatedCarId(null);
     setError("");
   };
@@ -189,45 +209,83 @@ export default function SellPage() {
 
         {/* Progress Steps */}
         <div className="mb-10">
-          <div className="flex items-center justify-center">
+          <div className="flex items-center justify-center flex-wrap gap-2">
             {/* Step 1: OCR */}
             <div className="flex items-center">
               <div
-                className={`flex items-center justify-center w-10 h-10 rounded-full ${
+                className={`flex items-center justify-center w-8 h-8 rounded-full text-sm ${
                   currentStep === "ocr"
                     ? "bg-red-600 text-white"
-                    : "bg-green-500 text-white"
+                    : currentStep === "form" || currentStep === "inspection" || currentStep === "inspectionConfig" || currentStep === "images" || currentStep === "success"
+                    ? "bg-green-500 text-white"
+                    : "bg-gray-300 text-gray-600"
                 }`}
               >
                 {currentStep === "ocr" ? "1" : "✓"}
               </div>
-              <span className="ml-2 text-sm font-medium text-gray-700">OCR</span>
+              <span className="ml-1 text-xs font-medium text-gray-700">OCR</span>
             </div>
 
-            <div className="w-16 h-1 mx-2 bg-gray-300"></div>
+            <div className="w-8 h-1 bg-gray-300"></div>
 
             {/* Step 2: Form */}
             <div className="flex items-center">
               <div
-                className={`flex items-center justify-center w-10 h-10 rounded-full ${
+                className={`flex items-center justify-center w-8 h-8 rounded-full text-sm ${
                   currentStep === "form"
+                    ? "bg-red-600 text-white"
+                    : currentStep === "inspection" || currentStep === "inspectionConfig" || currentStep === "images" || currentStep === "success"
+                    ? "bg-green-500 text-white"
+                    : "bg-gray-300 text-gray-600"
+                }`}
+              >
+                {currentStep === "form" ? "2" : (currentStep === "inspection" || currentStep === "inspectionConfig" || currentStep === "images" || currentStep === "success") ? "✓" : "2"}
+              </div>
+              <span className="ml-1 text-xs font-medium text-gray-700">ข้อมูลรถ</span>
+            </div>
+
+            <div className="w-8 h-1 bg-gray-300"></div>
+
+            {/* Step 3: Inspection */}
+            <div className="flex items-center">
+              <div
+                className={`flex items-center justify-center w-8 h-8 rounded-full text-sm ${
+                  currentStep === "inspection"
+                    ? "bg-red-600 text-white"
+                    : currentStep === "inspectionConfig" || currentStep === "images" || currentStep === "success"
+                    ? "bg-green-500 text-white"
+                    : "bg-gray-300 text-gray-600"
+                }`}
+              >
+                {currentStep === "inspection" ? "3" : (currentStep === "inspectionConfig" || currentStep === "images" || currentStep === "success") ? "✓" : "3"}
+              </div>
+              <span className="ml-1 text-xs font-medium text-gray-700">ตรวจสอบ</span>
+            </div>
+
+            <div className="w-8 h-1 bg-gray-300"></div>
+
+            {/* Step 4: Inspection Config */}
+            <div className="flex items-center">
+              <div
+                className={`flex items-center justify-center w-8 h-8 rounded-full text-sm ${
+                  currentStep === "inspectionConfig"
                     ? "bg-red-600 text-white"
                     : currentStep === "images" || currentStep === "success"
                     ? "bg-green-500 text-white"
                     : "bg-gray-300 text-gray-600"
                 }`}
               >
-                {currentStep === "images" || currentStep === "success" ? "✓" : "2"}
+                {currentStep === "inspectionConfig" ? "4" : (currentStep === "images" || currentStep === "success") ? "✓" : "4"}
               </div>
-              <span className="ml-2 text-sm font-medium text-gray-700">ข้อมูลรถ</span>
+              <span className="ml-1 text-xs font-medium text-gray-700">กำหนดค่า</span>
             </div>
 
-            <div className="w-16 h-1 mx-2 bg-gray-300"></div>
+            <div className="w-8 h-1 bg-gray-300"></div>
 
-            {/* Step 3: Images */}
+            {/* Step 5: Images */}
             <div className="flex items-center">
               <div
-                className={`flex items-center justify-center w-10 h-10 rounded-full ${
+                className={`flex items-center justify-center w-8 h-8 rounded-full text-sm ${
                   currentStep === "images"
                     ? "bg-red-600 text-white"
                     : currentStep === "success"
@@ -235,25 +293,25 @@ export default function SellPage() {
                     : "bg-gray-300 text-gray-600"
                 }`}
               >
-                {currentStep === "success" ? "✓" : "3"}
+                {currentStep === "images" ? "5" : currentStep === "success" ? "✓" : "5"}
               </div>
-              <span className="ml-2 text-sm font-medium text-gray-700">รูปภาพ</span>
+              <span className="ml-1 text-xs font-medium text-gray-700">รูปภาพ</span>
             </div>
 
-            <div className="w-16 h-1 mx-2 bg-gray-300"></div>
+            <div className="w-8 h-1 bg-gray-300"></div>
 
-            {/* Step 4: Success */}
+            {/* Step 6: Success */}
             <div className="flex items-center">
               <div
-                className={`flex items-center justify-center w-10 h-10 rounded-full ${
+                className={`flex items-center justify-center w-8 h-8 rounded-full text-sm ${
                   currentStep === "success"
                     ? "bg-red-600 text-white"
                     : "bg-gray-300 text-gray-600"
                 }`}
               >
-                4
+                6
               </div>
-              <span className="ml-2 text-sm font-medium text-gray-700">เสร็จสิ้น</span>
+              <span className="ml-1 text-xs font-medium text-gray-700">เสร็จสิ้น</span>
             </div>
           </div>
         </div>
@@ -300,7 +358,7 @@ export default function SellPage() {
                       type="number"
                       required
                       value={carFormData.price || ""}
-                      onChange={(e) =>
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                         setCarFormData({ ...carFormData, price: parseInt(e.target.value) })
                       }
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
@@ -314,7 +372,7 @@ export default function SellPage() {
                     <input
                       type="number"
                       value={carFormData.year || ""}
-                      onChange={(e) =>
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                         setCarFormData({ ...carFormData, year: parseInt(e.target.value) })
                       }
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
@@ -330,7 +388,7 @@ export default function SellPage() {
                     <input
                       type="number"
                       value={carFormData.mileage || ""}
-                      onChange={(e) =>
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                         setCarFormData({ ...carFormData, mileage: parseInt(e.target.value) })
                       }
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
@@ -344,7 +402,7 @@ export default function SellPage() {
                     <input
                       type="text"
                       value={carFormData.province || ""}
-                      onChange={(e) =>
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                         setCarFormData({ ...carFormData, province: e.target.value })
                       }
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
@@ -358,7 +416,7 @@ export default function SellPage() {
                     <input
                       type="text"
                       value={carFormData.color || ""}
-                      onChange={(e) => setCarFormData({ ...carFormData, color: e.target.value })}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCarFormData({ ...carFormData, color: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                       placeholder="เช่น ขาว"
                     />
@@ -374,7 +432,7 @@ export default function SellPage() {
                       min="1"
                       max="5"
                       value={carFormData.conditionRating || ""}
-                      onChange={(e) =>
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                         setCarFormData({
                           ...carFormData,
                           conditionRating: parseInt(e.target.value),
@@ -393,7 +451,7 @@ export default function SellPage() {
                     <input
                       type="number"
                       value={carFormData.seats || ""}
-                      onChange={(e) =>
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                         setCarFormData({ ...carFormData, seats: parseInt(e.target.value) })
                       }
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
@@ -409,7 +467,7 @@ export default function SellPage() {
                     <input
                       type="number"
                       value={carFormData.doors || ""}
-                      onChange={(e) =>
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                         setCarFormData({ ...carFormData, doors: parseInt(e.target.value) })
                       }
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
@@ -443,7 +501,201 @@ export default function SellPage() {
             </div>
           )}
 
-          {/* Step 3: Upload Images */}
+          {/* Step 3: Inspection OCR */}
+          {currentStep === "inspection" && (
+            <div className="w-full max-w-4xl space-y-6">
+              <div className="w-full max-w-2xl p-8 space-y-6 bg-white rounded-2xl shadow-lg">
+                <div className="text-center">
+                  <h2 className="text-3xl font-bold text-gray-900">
+                    OCR for Inspection Test
+                  </h2>
+                  <p className="mt-2 text-gray-600">
+                    Upload inspection documents to extract information.
+                  </p>
+                </div>
+
+                <DocumentUploader onComplete={handleInspectionComplete} />
+                
+                <div className="text-center">
+                  <p className="text-gray-600 mb-4">หรือข้ามขั้นตอนนี้และกรอกข้อมูลเอง</p>
+                  <button
+                    onClick={handleSkipInspection}
+                    className="px-6 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+                  >
+                    ข้ามขั้นตอน Inspection
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 4: Inspection Configuration */}
+          {currentStep === "inspectionConfig" && (
+            <div className="w-full max-w-4xl">
+              <div className="bg-white rounded-2xl shadow-lg p-8">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">กำหนดค่าผลการตรวจสอบ</h2>
+
+                {inspectionData && (
+                  <div className="mb-6 p-4 bg-blue-50 rounded-lg">
+                    <h3 className="font-semibold text-blue-900 mb-2">ข้อมูลจากการตรวจสอบ:</h3>
+                    <p className="text-sm text-blue-800 whitespace-pre-wrap">{inspectionData}</p>
+                  </div>
+                )}
+
+                <form onSubmit={handleInspectionConfigSubmit} className="space-y-6">
+                  {/* Price (Required) */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      ราคา (บาท) <span className="text-red-600">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      value={inspectionConfigData.price || ""}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setInspectionConfigData({ ...inspectionConfigData, price: parseInt(e.target.value) })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      placeholder="เช่น 500000"
+                    />
+                  </div>
+
+                  {/* Year */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">ปี</label>
+                    <input
+                      type="number"
+                      value={inspectionConfigData.year || ""}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setInspectionConfigData({ ...inspectionConfigData, year: parseInt(e.target.value) })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      placeholder="เช่น 2020"
+                    />
+                  </div>
+
+                  {/* Mileage */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      เลขไมล์ (กม.)
+                    </label>
+                    <input
+                      type="number"
+                      value={inspectionConfigData.mileage || ""}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setInspectionConfigData({ ...inspectionConfigData, mileage: parseInt(e.target.value) })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      placeholder="เช่น 50000"
+                    />
+                  </div>
+
+                  {/* Province */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">จังหวัด</label>
+                    <input
+                      type="text"
+                      value={inspectionConfigData.province || ""}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setInspectionConfigData({ ...inspectionConfigData, province: e.target.value })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      placeholder="เช่น กรุงเทพมหานคร"
+                    />
+                  </div>
+
+                  {/* Color */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">สี</label>
+                    <input
+                      type="text"
+                      value={inspectionConfigData.color || ""}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInspectionConfigData({ ...inspectionConfigData, color: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      placeholder="เช่น ขาว"
+                    />
+                  </div>
+
+                  {/* Condition Rating */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      สภาพรถ (1-5)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="5"
+                      value={inspectionConfigData.conditionRating || ""}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setInspectionConfigData({
+                          ...inspectionConfigData,
+                          conditionRating: parseInt(e.target.value),
+                        })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      placeholder="1 = แย่ที่สุด, 5 = ดีที่สุด"
+                    />
+                  </div>
+
+                  {/* Seats */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      จำนวนที่นั่ง
+                    </label>
+                    <input
+                      type="number"
+                      value={inspectionConfigData.seats || ""}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setInspectionConfigData({ ...inspectionConfigData, seats: parseInt(e.target.value) })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      placeholder="เช่น 5"
+                    />
+                  </div>
+
+                  {/* Doors */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      จำนวนประตู
+                    </label>
+                    <input
+                      type="number"
+                      value={inspectionConfigData.doors || ""}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setInspectionConfigData({ ...inspectionConfigData, doors: parseInt(e.target.value) })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      placeholder="เช่น 4"
+                    />
+                  </div>
+
+                  {error && (
+                    <div className="p-4 text-red-600 bg-red-50 rounded-lg">{error}</div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentStep("form")}
+                      className="px-6 py-3 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+                    >
+                      ย้อนกลับ
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting || !inspectionConfigData.price}
+                      className="flex-1 px-6 py-3 text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {isSubmitting ? "กำลังสร้าง..." : "ดำเนินการต่อ"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Step 5: Upload Images */}
           {currentStep === "images" && createdCarId && (
             <CarImageUploader carId={createdCarId} onUploadComplete={handleImagesComplete} />
           )}
