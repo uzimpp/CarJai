@@ -10,10 +10,10 @@ import (
 
 // RateLimiter represents a rate limiter
 type RateLimiter struct {
-	requests    map[string][]time.Time
-	mutex       sync.RWMutex
-	limit       int
-	window      time.Duration
+	requests      map[string][]time.Time
+	mutex         sync.RWMutex
+	limit         int
+	window        time.Duration
 	cleanupTicker *time.Ticker
 	stopCleanup   chan bool
 }
@@ -26,16 +26,16 @@ func NewRateLimiter(limit int, window time.Duration) *RateLimiter {
 		window:      window,
 		stopCleanup: make(chan bool),
 	}
-	
+
 	// Start cleanup goroutine - clean every window/2 duration
 	cleanupInterval := window / 2
 	if cleanupInterval < time.Minute {
 		cleanupInterval = time.Minute // minimum 1 minute cleanup interval
 	}
-	
+
 	rl.cleanupTicker = time.NewTicker(cleanupInterval)
 	go rl.cleanup()
-	
+
 	return rl
 }
 
@@ -43,16 +43,16 @@ func NewRateLimiter(limit int, window time.Duration) *RateLimiter {
 func (rl *RateLimiter) IsAllowed(key string) bool {
 	rl.mutex.Lock()
 	defer rl.mutex.Unlock()
-	
+
 	now := time.Now()
 	cutoff := now.Add(-rl.window)
-	
+
 	// Get existing requests for this key
 	requests, exists := rl.requests[key]
 	if !exists {
 		requests = []time.Time{}
 	}
-	
+
 	// Remove old requests outside the window
 	var validRequests []time.Time
 	for _, reqTime := range requests {
@@ -60,16 +60,16 @@ func (rl *RateLimiter) IsAllowed(key string) bool {
 			validRequests = append(validRequests, reqTime)
 		}
 	}
-	
+
 	// Check if we're under the limit
 	if len(validRequests) >= rl.limit {
 		return false
 	}
-	
+
 	// Add current request
 	validRequests = append(validRequests, now)
 	rl.requests[key] = validRequests
-	
+
 	return true
 }
 
@@ -77,15 +77,15 @@ func (rl *RateLimiter) IsAllowed(key string) bool {
 func (rl *RateLimiter) GetRemainingRequests(key string) int {
 	rl.mutex.RLock()
 	defer rl.mutex.RUnlock()
-	
+
 	now := time.Now()
 	cutoff := now.Add(-rl.window)
-	
+
 	requests, exists := rl.requests[key]
 	if !exists {
 		return rl.limit
 	}
-	
+
 	// Count valid requests
 	validCount := 0
 	for _, reqTime := range requests {
@@ -93,12 +93,12 @@ func (rl *RateLimiter) GetRemainingRequests(key string) int {
 			validCount++
 		}
 	}
-	
+
 	remaining := rl.limit - validCount
 	if remaining < 0 {
 		return 0
 	}
-	
+
 	return remaining
 }
 
@@ -119,10 +119,10 @@ func (rl *RateLimiter) cleanup() {
 func (rl *RateLimiter) cleanupExpiredEntries() {
 	rl.mutex.Lock()
 	defer rl.mutex.Unlock()
-	
+
 	now := time.Now()
 	cutoff := now.Add(-rl.window)
-	
+
 	// Clean up expired entries for all keys
 	for key, requests := range rl.requests {
 		var validRequests []time.Time
@@ -131,7 +131,7 @@ func (rl *RateLimiter) cleanupExpiredEntries() {
 				validRequests = append(validRequests, reqTime)
 			}
 		}
-		
+
 		if len(validRequests) == 0 {
 			// No valid requests, remove the key entirely
 			delete(rl.requests, key)
@@ -156,30 +156,30 @@ func RateLimitMiddleware(limiter *RateLimiter, keyFunc func(*http.Request) strin
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			key := keyFunc(r)
-			
+
 			if !limiter.IsAllowed(key) {
 				w.Header().Set("Content-Type", "application/json")
 				w.Header().Set("X-RateLimit-Limit", fmt.Sprintf("%d", limiter.limit))
 				w.Header().Set("X-RateLimit-Remaining", "0")
 				w.Header().Set("X-RateLimit-Reset", fmt.Sprintf("%d", time.Now().Add(limiter.window).Unix()))
 				w.WriteHeader(http.StatusTooManyRequests)
-				
+
 				response := map[string]interface{}{
 					"success": false,
 					"error":   "Rate limit exceeded",
 					"code":    http.StatusTooManyRequests,
 				}
-				
+
 				json.NewEncoder(w).Encode(response)
 				return
 			}
-			
+
 			// Add rate limit headers
 			remaining := limiter.GetRemainingRequests(key)
 			w.Header().Set("X-RateLimit-Limit", fmt.Sprintf("%d", limiter.limit))
 			w.Header().Set("X-RateLimit-Remaining", fmt.Sprintf("%d", remaining))
 			w.Header().Set("X-RateLimit-Reset", fmt.Sprintf("%d", time.Now().Add(limiter.window).Unix()))
-			
+
 			next.ServeHTTP(w, r)
 		}
 	}
@@ -188,7 +188,7 @@ func RateLimitMiddleware(limiter *RateLimiter, keyFunc func(*http.Request) strin
 // IPBasedRateLimit creates a rate limiter based on IP address
 func IPBasedRateLimit(limit int, window time.Duration) func(http.HandlerFunc) http.HandlerFunc {
 	limiter := NewRateLimiter(limit, window)
-	
+
 	return RateLimitMiddleware(limiter, func(r *http.Request) string {
 		// Use IP address as the key
 		ip := r.RemoteAddr
@@ -202,7 +202,7 @@ func IPBasedRateLimit(limit int, window time.Duration) func(http.HandlerFunc) ht
 	})
 }
 
-// LoginRateLimit creates a rate limiter specifically for login attempts
+// SigninRateLimit creates a rate limiter specifically for login attempts
 func LoginRateLimit() func(http.HandlerFunc) http.HandlerFunc {
 	// 5 attempts per 15 minutes per IP
 	return IPBasedRateLimit(5, 15*time.Minute)

@@ -18,9 +18,6 @@ const nextConfig: NextConfig = {
       // Production deployment
       backendUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.carjai.com";
     }
-
-    console.log("Backend URL configured:", backendUrl);
-
     return [
       {
         source: "/admin/:path*",

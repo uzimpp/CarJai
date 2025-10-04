@@ -36,10 +36,10 @@ func (h *UserAuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Basic validation
-	if req.Email == "" || req.Password == "" {
+	if req.Email == "" || req.Password == "" || req.Username == "" || req.Name == "" {
 		response := models.UserErrorResponse{
 			Success: false,
-			Error:   "Email and password are required",
+			Error:   "Email, password, username, and name are required",
 			Code:    http.StatusBadRequest,
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -60,6 +60,30 @@ func (h *UserAuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(req.Username) < 4 || len(req.Username) > 20 {
+		response := models.UserErrorResponse{
+			Success: false,
+			Error:   "Username must be between 3 and 20 characters",
+			Code:    http.StatusBadRequest,
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	if len(req.Name) < 2 || len(req.Name) > 100 {
+		response := models.UserErrorResponse{
+			Success: false,
+			Error:   "Name must be between 2 and 100 characters",
+			Code:    http.StatusBadRequest,
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
 	// Extract client context (consistent with admin)
 	clientIP := utils.ExtractClientIP(
 		r.RemoteAddr,
@@ -69,7 +93,7 @@ func (h *UserAuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 	userAgent := r.UserAgent()
 
 	// Create user
-	response, err := h.userService.Signup(req.Email, req.Password, clientIP, userAgent)
+	response, err := h.userService.Signup(req.Email, req.Password, req.Username, req.Name, clientIP, userAgent)
 	if err != nil {
 		errorResponse := models.UserErrorResponse{
 			Success: false,
@@ -96,14 +120,14 @@ func (h *UserAuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusCreated, response)
 }
 
-// Login handles user login requests
-func (h *UserAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
+// Signin handles user sign in requests
+func (h *UserAuthHandler) Signin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	var req models.UserLoginRequest
+	var req models.UserSigninRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response := models.UserErrorResponse{
 			Success: false,
@@ -117,10 +141,10 @@ func (h *UserAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Basic validation
-	if req.Email == "" || req.Password == "" {
+	if req.EmailOrUsername == "" || req.Password == "" {
 		response := models.UserErrorResponse{
 			Success: false,
-			Error:   "Email and password are required",
+			Error:   "Email/username and password are required",
 			Code:    http.StatusBadRequest,
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -137,8 +161,8 @@ func (h *UserAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	)
 	userAgent := r.UserAgent()
 
-	// Login user
-	response, err := h.userService.Login(req.Email, req.Password, clientIP, userAgent)
+	// Sign in user
+	response, err := h.userService.Signin(req.EmailOrUsername, req.Password, clientIP, userAgent)
 	if err != nil {
 		errorResponse := models.UserErrorResponse{
 			Success: false,
@@ -165,8 +189,8 @@ func (h *UserAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusOK, response)
 }
 
-// Logout handles user logout requests
-func (h *UserAuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
+// Signout handles user sign out requests
+func (h *UserAuthHandler) Signout(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -180,8 +204,8 @@ func (h *UserAuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	}
 	token := cookie.Value
 
-	// Logout user
-	response, err := h.userService.Logout(token)
+	// Sign out user
+	response, err := h.userService.Signout(token)
 	if err != nil {
 		errorResponse := models.UserErrorResponse{
 			Success: false,

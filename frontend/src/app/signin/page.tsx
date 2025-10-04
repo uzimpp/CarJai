@@ -5,16 +5,16 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import { validation } from "@/lib/profileAPI";
-import GoogleLoginButton from "@/components/auth/GoogleLoginButton";
+import GoogleSigninButton from "@/components/auth/GoogleSigninButton";
 
-function LoginForm() {
+function SigninForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login, isAuthenticated, isLoading, error, clearError } =
+  const { signin, isAuthenticated, isLoading, error, clearError } =
     useUserAuth();
 
   const [formData, setFormData] = useState({
-    email: "",
+    email_or_username: "",
     password: "",
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -32,10 +32,10 @@ function LoginForm() {
 
   // Clear errors when user starts typing
   useEffect(() => {
-    if (error && (formData.email || formData.password)) {
+    if (error && (formData.email_or_username || formData.password)) {
       clearError();
     }
-  }, [formData.email, formData.password, clearError, error]);
+  }, [formData.email_or_username, formData.password, clearError, error]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -56,10 +56,13 @@ function LoginForm() {
   const validateForm = () => {
     const errors: Record<string, string> = {};
 
-    if (!formData.email) {
-      errors.email = "Please enter your email";
-    } else if (!validation.email(formData.email)) {
-      errors.email = "Invalid email format";
+    if (!formData.email_or_username) {
+      errors.email_or_username = "Please enter your email or username";
+    } else if (
+      formData.email_or_username.includes("@") &&
+      !validation.email(formData.email_or_username)
+    ) {
+      errors.email_or_username = "Invalid email format";
     }
 
     if (!formData.password) {
@@ -79,7 +82,7 @@ function LoginForm() {
 
     setIsSubmitting(true);
     try {
-      const result = await login(formData);
+      const result = await signin(formData);
       if (result.success) {
         router.push("/buy");
       }
@@ -100,11 +103,11 @@ function LoginForm() {
   }
 
   return (
-    <div className="flex items-center justify-center px-(--space-m) max-w-[1536px] mx-auto w-full">
-      <div className="flex flex-col max-w-md w-full mx-auto">
+    <div className="flex items-center justify-center max-w-[1536px] mx-auto w-full p-(--space-s-m)">
+      <div className="flex flex-col max-w-[480px] w-full p-(--space-s-m) pt-(--space-m-l) rounded-xl mx-auto">
         {/* Header */}
-        <div className="flex text-center mb-(--space-l) w-full justify-center mx-auto">
-          <h2 className="text-5 font-bold line-height-0">Sign in</h2>
+        <div className="flex text-center mb-(--space-m-l) w-full justify-center mx-auto">
+          <h2 className="text-4 font-bold line-height-0">Sign in</h2>
         </div>
 
         {/* Redirect Message */}
@@ -126,7 +129,7 @@ function LoginForm() {
               </div>
               <div className="ml-(--space-s)">
                 <p className="text--1 text-maroon">
-                  Account already exists. Please login instead.
+                  Account already exists. Please signin instead.
                 </p>
               </div>
             </div>
@@ -139,31 +142,33 @@ function LoginForm() {
           onSubmit={handleSubmit}
         >
           <div className="flex flex-col space-y-(--space-s)">
-            {/* Email Field */}
+            {/* Email/Username Field */}
             <div>
               <label
-                htmlFor="email"
+                htmlFor="email_or_username"
                 className="block text-0 font-medium text-gray-700"
               >
-                Email
+                Email or Username
               </label>
               <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
+                id="email_or_username"
+                name="email_or_username"
+                type="text"
+                autoComplete="username"
                 autoFocus
-                value={formData.email}
+                value={formData.email_or_username}
                 onChange={handleInputChange}
                 className={`mt-1 appearance-none relative block w-full px-3 py-2 text-0 border ${
-                  formErrors.email
+                  formErrors.email_or_username
                     ? "border-red-300 focus:ring-red focus:border-red"
                     : "border-gray-300 focus:ring-maroon focus:border-maroon"
                 } placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:z-10`}
-                placeholder="Enter your email"
+                placeholder="Enter your email or username"
               />
-              {formErrors.email && (
-                <p className="mt-1 text-0 text-red-600">{formErrors.email}</p>
+              {formErrors.email_or_username && (
+                <p className="mt-1 text-0 text-red-600">
+                  {formErrors.email_or_username}
+                </p>
               )}
             </div>
 
@@ -217,7 +222,7 @@ function LoginForm() {
                 <div className="ml-3">
                   <p className="text-0 text-red-600">
                     {error.message.includes("invalid credentials")
-                      ? "Invalid email or password"
+                      ? "Invalid email/username or password"
                       : error.message}
                   </p>
                 </div>
@@ -237,7 +242,7 @@ function LoginForm() {
                 Signing in...
               </div>
             ) : (
-              "Continue"
+              "Sign in"
             )}
           </button>
         </form>
@@ -252,9 +257,9 @@ function LoginForm() {
             </div>
           </div>
 
-          {/* Google Login Button */}
+          {/* Google Signin Button */}
           <div className="">
-            <GoogleLoginButton mode="login" disabled={isSubmitting} />
+            <GoogleSigninButton mode="signin" disabled={isSubmitting} />
           </div>
         </div>
         {/* Additional Links */}
@@ -271,7 +276,7 @@ function LoginForm() {
   );
 }
 
-export default function LoginPage() {
+export default function SigninPage() {
   return (
     <Suspense
       fallback={
@@ -283,7 +288,7 @@ export default function LoginPage() {
         </div>
       }
     >
-      <LoginForm />
+      <SigninForm />
     </Suspense>
   );
 }
