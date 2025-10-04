@@ -1,42 +1,82 @@
-import { notFound } from "next/navigation";
-import { apiCall } from "@/lib/apiCall";
+"use client";
+
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import { Seller, SellerContact } from "@/constants/user";
+import { sellerAPI } from "@/lib/sellerAPI";
 
-interface SellerPageProps {
-  params: {
-    id: string;
-  };
-}
+export default function SellerPage() {
+  const params = useParams<{ id: string }>();
+  const id = params?.id;
 
-async function getSellerData(id: string) {
-  try {
-    const seller = await apiCall<{
-      success: boolean;
-      data: { seller: Seller; contacts: SellerContact[] };
-    }>(`/api/sellers/${id}`);
+  const [seller, setSeller] = useState<Seller | null>(null);
+  const [contacts, setContacts] = useState<SellerContact[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [notFoundState, setNotFoundState] = useState(false);
 
-    const contacts = await apiCall<{
-      success: boolean;
-      contacts: SellerContact[];
-    }>(`/api/sellers/${id}/contacts`);
-
-    return {
-      seller: seller.data.seller,
-      contacts: contacts.contacts,
+  useEffect(() => {
+    let mounted = true;
+    const run = async () => {
+      if (!id) return;
+      setIsLoading(true);
+      setNotFoundState(false);
+      try {
+        const sellerRes = await sellerAPI.getSeller(String(id));
+        if (!mounted) return;
+        setSeller(sellerRes.data.seller);
+        try {
+          const contactsRes = await sellerAPI.getSellerContacts(String(id));
+          if (!mounted) return;
+          setContacts(contactsRes.contacts || []);
+        } catch {
+          if (!mounted) return;
+          setContacts([]);
+        }
+      } catch {
+        if (!mounted) return;
+        setNotFoundState(true);
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
     };
-  } catch {
-    return null;
+    run();
+    return () => {
+      mounted = false;
+    };
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
   }
-}
 
-export default async function SellerPage({ params }: SellerPageProps) {
-  const data = await getSellerData(params.id);
-
-  if (!data) {
-    notFound();
+  if (notFoundState || !seller) {
+    return (
+      <div className="!pb-(--space-l) px-(--space-m) py-(--space-s) max-w-[1200px] mx-auto w-full">
+        <div className="rounded-xl border border-gray-200 bg-white p-(--space-l)">
+          <h1 className="text-2 font-bold text-gray-900 mb-(--space-s)">
+            Seller not found
+          </h1>
+          <p className="text-0 text-gray-600 mb-(--space-m)">
+            The seller you are looking for does not exist or is unavailable.
+          </p>
+          <Link
+            href="/buy"
+            className="inline-flex items-center px-(--space-m) py-(--space-2xs) text-0 font-medium rounded-lg text-white bg-maroon hover:bg-red transition-colors"
+          >
+            Go to Buy
+          </Link>
+        </div>
+      </div>
+    );
   }
-
-  const { seller, contacts } = data;
 
   const getContactIcon = (type: string) => {
     switch (type.toLowerCase()) {

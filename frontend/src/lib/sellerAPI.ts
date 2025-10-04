@@ -1,0 +1,31 @@
+import type { Seller, SellerContact } from "@/constants/user";
+
+// Public seller API - uses relative paths to flow through Next rewrites
+export const sellerAPI = {
+  async getSeller(id: string): Promise<{
+    success: boolean;
+    data: { seller: Seller; contacts: SellerContact[] };
+  }> {
+    const res = await fetch(`/api/sellers/${id}`, {
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    });
+    if (!res.ok) throw new Error("Seller not found");
+    return res.json();
+  },
+
+  async getSellerContacts(id: string): Promise<{
+    success: boolean;
+    contacts: SellerContact[];
+  }> {
+    const res = await fetch(`/api/sellers/${id}/contacts`, {
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    });
+    if (!res.ok) {
+      // Normalize to empty contacts on failure
+      return { success: false, contacts: [] };
+    }
+    return res.json();
+  },
+};
