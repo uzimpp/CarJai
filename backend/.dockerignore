@@ -36,6 +36,9 @@ main
 *.so
 *.dylib
 
+# Go vendor directory
+vendor/
+
 # Temporary files
 tmp/
 temp/

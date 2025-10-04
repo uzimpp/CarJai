@@ -49,6 +49,7 @@ type ServiceContainer struct {
 	Admin       *services.AdminService
 	User        *services.UserService
 	Profile     *services.ProfileService
+	Car         *services.CarService
 	Maintenance *services.MaintenanceService
 	OCR         *services.OCRService
 	UserJWT     *utils.JWTManager
@@ -66,6 +67,8 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 	ipWhitelistRepo := models.NewIPWhitelistRepository(database)
 	userRepo := models.NewUserRepository(database)
 	userSessionRepo := models.NewUserSessionRepository(database)
+	carRepo := models.NewCarRepository(database)
+	carImageRepo := models.NewCarImageRepository(database)
 
 	// Create JWT managers
 	userJWTManager := utils.NewJWTManager(
@@ -93,6 +96,9 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 	// Set profile service on user service (to avoid circular dependency)
 	userService.SetProfileService(profileService)
 
+	// Create car service
+	carService := services.NewCarService(carRepo, carImageRepo, profileService)
+
 	return &ServiceContainer{
 		Admin: services.NewAdminService(
 			adminRepo,
@@ -102,6 +108,7 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 		),
 		User:    userService,
 		Profile: profileService,
+		Car:     carService,
 		Maintenance: services.NewMaintenanceService(
 			adminRepo,
 			sessionRepo,
@@ -128,6 +135,10 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 		routes.ProfileRoutes(services.Profile, services.User, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/sellers/",
 		routes.PublicSellerRoutes(services.Profile, appConfig.CORSAllowedOrigins))
+	mux.Handle("/api/cars",
+		routes.CarRoutes(services.Car, services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
+	mux.Handle("/api/cars/",
+		routes.CarRoutes(services.Car, services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
 	adminPrefix := appConfig.AdminRoutePrefix
 	mux.Handle(adminPrefix+"/",
 		routes.AdminRoutes(services.Admin, services.AdminJWT, adminPrefix, appConfig.CORSAllowedOrigins, appConfig.AdminIPWhitelist))
