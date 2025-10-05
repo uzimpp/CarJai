@@ -4,7 +4,7 @@ export async function apiCall<T>(
   options: RequestInit = {}
 ): Promise<T> {
   // Always use relative URLs to go through Next.js rewrites (secure same-origin cookies)
-  const url = endpoint; // No base URL needed - rewrites handle routing
+  const url = endpoint;
 
   // Prepare headers - only set Content-Type for JSON, let browser set it for FormData
   const headers: Record<string, string> = {};
