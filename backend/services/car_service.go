@@ -201,6 +201,59 @@ func (s *CarService) GetCarsBySellerID(sellerID int) ([]models.Car, error) {
 	return s.carRepo.GetCarsBySellerID(sellerID)
 }
 
+// GetCarsBySellerIDWithImages retrieves all cars for a seller with their images
+func (s *CarService) GetCarsBySellerIDWithImages(sellerID int) ([]models.CarListingWithImages, error) {
+	cars, err := s.carRepo.GetCarsBySellerID(sellerID)
+	if err != nil {
+		return nil, err
+	}
+
+	var listings []models.CarListingWithImages
+	for _, car := range cars {
+		// Get images for this car
+		images, err := s.imageRepo.GetCarImagesMetadata(car.CID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get images for car %d: %w", car.CID, err)
+		}
+
+		// Get car details (brand/model)
+		details, err := s.detailsRepo.GetCarDetailsByCarID(car.CID)
+		var brandName, modelName *string
+		if err == nil && details != nil {
+			brandName = details.BrandName
+			modelName = details.ModelName
+		}
+
+		// Combine everything into a flat listing structure
+		listing := models.CarListingWithImages{
+			CID:             car.CID,
+			SellerID:        car.SellerID,
+			Year:            car.Year,
+			Mileage:         car.Mileage,
+			Price:           car.Price,
+			Province:        car.Province,
+			ConditionRating: car.ConditionRating,
+			BodyTypeID:      car.BodyTypeID,
+			TransmissionID:  car.TransmissionID,
+			FuelTypeID:      car.FuelTypeID,
+			DrivetrainID:    car.DrivetrainID,
+			Seats:           car.Seats,
+			Doors:           car.Doors,
+			Color:           car.Color,
+			Status:          car.Status,
+			CreatedAt:       car.CreatedAt,
+			UpdatedAt:       car.UpdatedAt,
+			BrandName:       brandName,
+			ModelName:       modelName,
+			Images:          images,
+		}
+
+		listings = append(listings, listing)
+	}
+
+	return listings, nil
+}
+
 // SearchActiveCars retrieves active car listings with search/filter support
 func (s *CarService) SearchActiveCars(req *models.SearchCarsRequest) ([]models.Car, int, error) {
 	// Set defaults
@@ -215,6 +268,72 @@ func (s *CarService) SearchActiveCars(req *models.SearchCarsRequest) ([]models.C
 	}
 
 	return s.carRepo.GetActiveCars(req)
+}
+
+// SearchActiveCarsWithImages retrieves active car listings with images and details
+func (s *CarService) SearchActiveCarsWithImages(req *models.SearchCarsRequest) ([]models.CarListingWithImages, int, error) {
+	// Set defaults
+	if req.Status == "" {
+		req.Status = "active"
+	}
+	if req.Limit <= 0 {
+		req.Limit = 20
+	}
+	if req.Offset < 0 {
+		req.Offset = 0
+	}
+
+	// Get cars from repository
+	cars, total, err := s.carRepo.GetActiveCars(req)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Enrich with images and details
+	var listings []models.CarListingWithImages
+	for _, car := range cars {
+		// Get images for this car
+		images, err := s.imageRepo.GetCarImagesMetadata(car.CID)
+		if err != nil {
+			return nil, 0, fmt.Errorf("failed to get images for car %d: %w", car.CID, err)
+		}
+
+		// Get car details (brand/model)
+		details, err := s.detailsRepo.GetCarDetailsByCarID(car.CID)
+		var brandName, modelName *string
+		if err == nil && details != nil {
+			brandName = details.BrandName
+			modelName = details.ModelName
+		}
+
+		// Combine everything into a flat listing structure
+		listing := models.CarListingWithImages{
+			CID:             car.CID,
+			SellerID:        car.SellerID,
+			Year:            car.Year,
+			Mileage:         car.Mileage,
+			Price:           car.Price,
+			Province:        car.Province,
+			ConditionRating: car.ConditionRating,
+			BodyTypeID:      car.BodyTypeID,
+			TransmissionID:  car.TransmissionID,
+			FuelTypeID:      car.FuelTypeID,
+			DrivetrainID:    car.DrivetrainID,
+			Seats:           car.Seats,
+			Doors:           car.Doors,
+			Color:           car.Color,
+			Status:          car.Status,
+			CreatedAt:       car.CreatedAt,
+			UpdatedAt:       car.UpdatedAt,
+			BrandName:       brandName,
+			ModelName:       modelName,
+			Images:          images,
+		}
+
+		listings = append(listings, listing)
+	}
+
+	return listings, total, nil
 }
 
 // UpdateCar updates a car listing

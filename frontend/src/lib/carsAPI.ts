@@ -20,6 +20,9 @@ export interface Car {
   status: string;
   createdAt: string;
   updatedAt: string;
+  brandName?: string;
+  modelName?: string;
+  images?: Array<{ id: number }>;
 }
 
 export interface SearchCarsParams {

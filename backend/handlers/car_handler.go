@@ -122,8 +122,8 @@ func (h *CarHandler) GetMyCars(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get user's cars
-	cars, err := h.carService.GetCarsBySellerID(userID)
+	// Get user's cars with images
+	listings, err := h.carService.GetCarsBySellerIDWithImages(userID)
 	if err != nil {
 		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
 			Success: false,
@@ -132,9 +132,9 @@ func (h *CarHandler) GetMyCars(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.RespondJSON(w, http.StatusOK, models.CarListResponse{
+	utils.RespondJSON(w, http.StatusOK, models.CarListingWithImagesResponse{
 		Success: true,
-		Data:    cars,
+		Data:    listings,
 	})
 }
 
@@ -208,8 +208,8 @@ func (h *CarHandler) SearchCars(w http.ResponseWriter, r *http.Request) {
 	req.Limit = limit
 	req.Offset = (page - 1) * limit
 
-	// Search cars
-	cars, total, err := h.carService.SearchActiveCars(req)
+	// Search cars with images and details
+	listings, total, err := h.carService.SearchActiveCarsWithImages(req)
 	if err != nil {
 		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
 			Success: false,
@@ -218,10 +218,10 @@ func (h *CarHandler) SearchCars(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.RespondJSON(w, http.StatusOK, models.PaginatedCarListResponse{
+	utils.RespondJSON(w, http.StatusOK, models.PaginatedCarListingResponse{
 		Success: true,
-		Data: models.PaginatedCarListData{
-			Cars:  cars,
+		Data: models.PaginatedCarListingData{
+			Cars:  listings,
 			Total: total,
 			Page:  page,
 			Limit: limit,

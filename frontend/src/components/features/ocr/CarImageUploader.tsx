@@ -6,7 +6,12 @@ import { apiCall } from "@/lib/apiCall";
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const MIN_IMAGES = 5;
 const MAX_IMAGES = 12;
-const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const ACCEPTED_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+];
 
 interface ImagePreview {
   file: File;
@@ -19,7 +24,10 @@ interface CarImageUploaderProps {
   onUploadComplete?: () => void;
 }
 
-export default function CarImageUploader({ carId, onUploadComplete }: CarImageUploaderProps) {
+export default function CarImageUploader({
+  carId,
+  onUploadComplete,
+}: CarImageUploaderProps) {
   const [images, setImages] = useState<ImagePreview[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState("");
@@ -36,20 +44,24 @@ export default function CarImageUploader({ carId, onUploadComplete }: CarImageUp
 
     // Check if adding these files would exceed max
     if (images.length + fileArray.length > MAX_IMAGES) {
-      setError(`สามารถอัปโหลดได้สูงสุด ${MAX_IMAGES} รูป (ปัจจุบันมี ${images.length} รูป)`);
+      setError(
+        `Maximum ${MAX_IMAGES} images allowed (currently have ${images.length})`
+      );
       return;
     }
 
     for (const file of fileArray) {
       // Validate file type
       if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
-        setError(`ไฟล์ ${file.name} ไม่รองรับ (รองรับเฉพาะ JPEG, PNG, WebP, GIF)`);
+        setError(
+          `File ${file.name} is not supported (only JPEG, PNG, WebP, GIF)`
+        );
         continue;
       }
 
       // Validate file size
       if (file.size > MAX_FILE_SIZE) {
-        setError(`ไฟล์ ${file.name} ใหญ่เกิน 50MB`);
+        setError(`File ${file.name} exceeds 50MB`);
         continue;
       }
 
@@ -90,13 +102,15 @@ export default function CarImageUploader({ carId, onUploadComplete }: CarImageUp
   };
 
   const removeImage = (index: number) => {
-    const newImages = images.filter((_: ImagePreview, i: number) => i !== index);
+    const newImages = images.filter(
+      (_: ImagePreview, i: number) => i !== index
+    );
     // Update order
     newImages.forEach((img: ImagePreview, i: number) => {
       img.order = i;
     });
     setImages(newImages);
-    
+
     // Revoke URL to free memory
     URL.revokeObjectURL(images[index].preview);
   };
@@ -132,9 +146,9 @@ export default function CarImageUploader({ carId, onUploadComplete }: CarImageUp
     console.log("Car ID:", carId);
     console.log("Images count:", images.length);
     console.log("MIN_IMAGES:", MIN_IMAGES);
-    
+
     if (images.length < MIN_IMAGES) {
-      const errorMsg = `กรุณาเลือกอย่างน้อย ${MIN_IMAGES} รูป (ปัจจุบันมี ${images.length} รูป)`;
+      const errorMsg = `Please select at least ${MIN_IMAGES} images (currently have ${images.length})`;
       setError(errorMsg);
       console.error(errorMsg);
       return;
@@ -144,18 +158,23 @@ export default function CarImageUploader({ carId, onUploadComplete }: CarImageUp
     setError("");
 
     const formData = new FormData();
-    
+
     // Sort by order and append to formData
     const sortedImages = [...images].sort((a, b) => a.order - b.order);
     sortedImages.forEach((img, index) => {
-      console.log(`Adding image ${index + 1}:`, img.file.name, img.file.size, "bytes");
+      console.log(
+        `Adding image ${index + 1}:`,
+        img.file.name,
+        img.file.size,
+        "bytes"
+      );
       formData.append("images", img.file);
     });
 
     try {
       const url = `/api/cars/${carId}/images`;
       console.log("Uploading to:", url);
-      
+
       const result = await apiCall<{
         success: boolean;
         data?: {
@@ -183,12 +202,12 @@ export default function CarImageUploader({ carId, onUploadComplete }: CarImageUp
         // Clear previews
         images.forEach((img) => URL.revokeObjectURL(img.preview));
         setImages([]);
-        
+
         if (onUploadComplete) {
           onUploadComplete();
         }
       } else {
-        const errorMsg = result.message || "เกิดข้อผิดพลาดในการอัปโหลด";
+        const errorMsg = result.message || "Upload error occurred";
         console.error("❌ Upload failed:", errorMsg);
         setError(errorMsg);
       }
@@ -197,7 +216,7 @@ export default function CarImageUploader({ carId, onUploadComplete }: CarImageUp
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError("เกิดข้อผิดพลาดในการอัปโหลด");
+        setError("Upload error occurred");
       }
     } finally {
       setIsUploading(false);
@@ -207,12 +226,12 @@ export default function CarImageUploader({ carId, onUploadComplete }: CarImageUp
   return (
     <div className="w-full max-w-6xl p-8 space-y-6 bg-white rounded-2xl shadow-lg">
       <div className="text-center">
-        <h2 className="text-3xl font-bold text-gray-900">อัปโหลดรูปภาพรถยนต์</h2>
+        <h2 className="text-3xl font-bold text-gray-900">Upload Car Images</h2>
         <p className="mt-2 text-gray-600">
-          อัปโหลดรูปภาพอย่างน้อย {MIN_IMAGES} รูป (สูงสุด {MAX_IMAGES} รูป)
+          Upload at least {MIN_IMAGES} images (maximum {MAX_IMAGES} images)
         </p>
         <p className="text-sm text-gray-500">
-          ปัจจุบัน: {images.length} รูป | ขนาดไฟล์สูงสุด: 50MB/รูป
+          Current: {images.length} images | Max file size: 50MB/image
         </p>
       </div>
 
@@ -237,7 +256,7 @@ export default function CarImageUploader({ carId, onUploadComplete }: CarImageUp
           accept={ACCEPTED_IMAGE_TYPES.join(",")}
           multiple
         />
-        
+
         <div className="space-y-4">
           <div className="flex justify-center">
             <svg
@@ -254,22 +273,20 @@ export default function CarImageUploader({ carId, onUploadComplete }: CarImageUp
               />
             </svg>
           </div>
-          
+
           <div>
             <p className="text-lg text-gray-700">
-              ลากและวางรูปภาพที่นี่ หรือ
+              Drag and drop images here, or
             </p>
             <button
               onClick={() => fileInputRef.current?.click()}
               className="mt-2 px-6 py-2 text-red-600 font-medium hover:text-red-800 transition-colors"
             >
-              เลือกไฟล์
+              Select Files
             </button>
           </div>
-          
-          <p className="text-sm text-gray-500">
-            รองรับ JPEG, PNG, WebP, GIF
-          </p>
+
+          <p className="text-sm text-gray-500">Supports JPEG, PNG, WebP, GIF</p>
         </div>
       </div>
 
@@ -285,30 +302,32 @@ export default function CarImageUploader({ carId, onUploadComplete }: CarImageUp
         <div>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-800">
-              รูปภาพที่เลือก ({images.length}/{MAX_IMAGES})
+              Selected Images ({images.length}/{MAX_IMAGES})
             </h3>
             {images.length < MIN_IMAGES && (
               <span className="text-sm font-medium text-orange-600 bg-orange-50 px-3 py-1 rounded-full">
-                ⚠️ ต้องการอีก {MIN_IMAGES - images.length} รูป
+                ⚠️ Need {MIN_IMAGES - images.length} more
               </span>
             )}
             {images.length >= MIN_IMAGES && (
               <span className="text-sm font-medium text-green-600 bg-green-50 px-3 py-1 rounded-full">
-                ✓ พร้อมอัปโหลด
+                ✓ Ready to upload
               </span>
             )}
           </div>
           <p className="text-sm text-gray-600 mb-4">
-            💡 ลากรูปภาพเพื่อจัดลำดับการแสดงผล (รูปแรกจะเป็นรูปหลัก)
+            💡 Drag images to reorder (first image will be the main image)
           </p>
-          
+
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {images.map((img: ImagePreview, index: number) => (
               <div
                 key={`${img.preview}-${index}`}
                 draggable
                 onDragStart={() => handleDragStart(index)}
-                onDragOver={(e: DragEvent<HTMLDivElement>) => handleDragOver(e, index)}
+                onDragOver={(e: DragEvent<HTMLDivElement>) =>
+                  handleDragOver(e, index)
+                }
                 onDragEnd={handleDragEnd}
                 className={`relative group cursor-move border-2 rounded-lg overflow-hidden transition-all ${
                   draggedIndex === index
@@ -319,17 +338,27 @@ export default function CarImageUploader({ carId, onUploadComplete }: CarImageUp
                 {/* Order Badge */}
                 <div className="absolute top-2 left-2 z-10 px-2 py-1 bg-red-600 text-white text-xs font-bold rounded">
                   {index + 1}
-                  {index === 0 && " (หลัก)"}
+                  {index === 0 && " (Main)"}
                 </div>
 
                 {/* Remove Button */}
                 <button
                   onClick={() => removeImage(index)}
                   className="absolute top-2 right-2 z-10 p-1.5 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700"
-                  title="ลบรูปนี้"
+                  title="Remove this image"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </button>
 
@@ -342,7 +371,10 @@ export default function CarImageUploader({ carId, onUploadComplete }: CarImageUp
 
                 {/* File Info */}
                 <div className="p-2 bg-gray-50">
-                  <p className="text-xs text-gray-600 truncate" title={img.file.name}>
+                  <p
+                    className="text-xs text-gray-600 truncate"
+                    title={img.file.name}
+                  >
                     {img.file.name}
                   </p>
                   <p className="text-xs text-gray-500">
@@ -361,44 +393,55 @@ export default function CarImageUploader({ carId, onUploadComplete }: CarImageUp
           onClick={handleUpload}
           disabled={images.length < MIN_IMAGES || isUploading}
           className="flex-1 px-6 py-3 text-lg font-semibold text-white bg-red-600 rounded-xl hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-          title={images.length < MIN_IMAGES ? `ต้องการอีก ${MIN_IMAGES - images.length} รูป` : "คลิกเพื่ออัปโหลด"}
+          title={
+            images.length < MIN_IMAGES
+              ? `Need ${MIN_IMAGES - images.length} more images`
+              : "Click to upload"
+          }
         >
           {isUploading ? (
             <>
               <span className="inline-block animate-spin mr-2">⏳</span>
-              กำลังอัปโหลด...
+              Uploading...
             </>
           ) : (
-            `อัปโหลด ${images.length} รูป ${images.length < MIN_IMAGES ? `(ต้องการอีก ${MIN_IMAGES - images.length})` : ""}`
+            `Upload ${images.length} image${images.length > 1 ? "s" : ""} ${
+              images.length < MIN_IMAGES
+                ? `(need ${MIN_IMAGES - images.length} more)`
+                : ""
+            }`
           )}
         </button>
 
         {images.length > 0 && (
           <button
             onClick={() => {
-              images.forEach((img: ImagePreview) => URL.revokeObjectURL(img.preview));
+              images.forEach((img: ImagePreview) =>
+                URL.revokeObjectURL(img.preview)
+              );
               setImages([]);
               setError("");
             }}
             disabled={isUploading}
             className="px-6 py-3 text-lg font-semibold text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            ล้างทั้งหมด
+            Clear All
           </button>
         )}
       </div>
 
       {/* Instructions */}
       <div className="p-4 bg-blue-50 rounded-lg">
-        <h4 className="font-semibold text-blue-900 mb-2">💡 คำแนะนำ:</h4>
+        <h4 className="font-semibold text-blue-900 mb-2">💡 Tips:</h4>
         <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-          <li>ควรอัปโหลดรูปภาพที่มีคุณภาพสูง เพื่อดึงดูดผู้ซื้อ</li>
-          <li>รูปแรกจะเป็นรูปหลักที่แสดงในหน้ารายการ</li>
-          <li>ลากรูปภาพเพื่อจัดลำดับการแสดงผล</li>
-          <li>แนะนำให้ถ่ายรูปจากหลายมุม: ด้านหน้า, ด้านหลัง, ด้านข้าง, ภายใน, แดชบอร์ด, เครื่องยนต์</li>
+          <li>Upload high-quality images to attract buyers</li>
+          <li>First image will be the main image shown in listings</li>
+          <li>Drag images to reorder display sequence</li>
+          <li>
+            Recommended angles: front, rear, sides, interior, dashboard, engine
+          </li>
         </ul>
       </div>
     </div>
   );
 }
-
