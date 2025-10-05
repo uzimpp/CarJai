@@ -48,6 +48,7 @@ func main() {
 type ServiceContainer struct {
 	Admin       *services.AdminService
 	User        *services.UserService
+	Profile     *services.ProfileService
 	Maintenance *services.MaintenanceService
 	OCR         *services.OCRService
 	UserJWT     *utils.JWTManager
@@ -79,6 +80,19 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 		appConfig.AdminJWTIssuer,
 	)
 
+	// Create profile service
+	profileService := services.NewProfileService(database)
+
+	// Create user service
+	userService := services.NewUserService(
+		userRepo,
+		userSessionRepo,
+		userJWTManager,
+	)
+
+	// Set profile service on user service (to avoid circular dependency)
+	userService.SetProfileService(profileService)
+
 	return &ServiceContainer{
 		Admin: services.NewAdminService(
 			adminRepo,
@@ -86,11 +100,8 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 			ipWhitelistRepo,
 			adminJWTManager,
 		),
-		User: services.NewUserService(
-			userRepo,
-			userSessionRepo,
-			userJWTManager,
-		),
+		User:    userService,
+		Profile: profileService,
 		Maintenance: services.NewMaintenanceService(
 			adminRepo,
 			sessionRepo,
@@ -113,6 +124,10 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 	// Mount all routes
 	mux.Handle("/api/auth/",
 		routes.UserAuthRoutes(services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
+	mux.Handle("/api/profile/",
+		routes.ProfileRoutes(services.Profile, services.User, appConfig.CORSAllowedOrigins))
+	mux.Handle("/api/sellers/",
+		routes.PublicSellerRoutes(services.Profile, appConfig.CORSAllowedOrigins))
 	adminPrefix := appConfig.AdminRoutePrefix
 	mux.Handle(adminPrefix+"/",
 		routes.AdminRoutes(services.Admin, services.AdminJWT, adminPrefix, appConfig.CORSAllowedOrigins, appConfig.AdminIPWhitelist))

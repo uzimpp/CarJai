@@ -116,5 +116,4 @@ func (s *OCRService) ExtractTextFromFile(file multipart.File, handler *multipart
 	}
 	
 	return resultBuilder.String(), nil
-	// ===================================================================
 }

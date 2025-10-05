@@ -51,6 +51,11 @@ interface AdminAuthError {
   code: number;
 }
 
+interface AdminActionResponse {
+  success: boolean;
+  message: string;
+}
+
 interface AdminLoginRequest {
   username: string;
   password: string;
@@ -65,4 +70,5 @@ export type {
   AdminAuthResponse,
   AdminAuthError,
   AdminLoginRequest,
+  AdminActionResponse,
 };

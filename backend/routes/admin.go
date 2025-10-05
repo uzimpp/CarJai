@@ -29,12 +29,13 @@ func AdminRoutes(
 	router := http.NewServeMux()
 
 	// Admin authentication routes (no auth required, but IP whitelist required)
+	// Logging middleware placed before IP restrictions to capture requests
 	router.HandleFunc(adminPrefix+"/auth/login",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
-				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
-					middleware.LoginRateLimit()(
-						middleware.LoggingMiddleware(
+				middleware.LoggingMiddleware(
+					authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
+						middleware.LoginRateLimit()(
 							adminAuthHandler.Login,
 						),
 					),
@@ -44,12 +45,13 @@ func AdminRoutes(
 	)
 
 	// Admin authentication routes (auth required)
+	// Note: Admin logging middleware placed before IP restrictions to capture all requests
 	router.HandleFunc(adminPrefix+"/auth/logout",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
-				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
-					middleware.GeneralRateLimit()(
-						middleware.AdminLoggingMiddleware(
+				middleware.AdminLoggingMiddleware(
+					authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
+						middleware.GeneralRateLimit()(
 							authMiddleware.RequireAuth(
 								authMiddleware.RequireIPWhitelist(
 									adminAuthHandler.Logout,
@@ -65,8 +67,8 @@ func AdminRoutes(
 	router.HandleFunc(adminPrefix+"/auth/me",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
-				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
-					middleware.AdminLoggingMiddleware(
+				middleware.AdminLoggingMiddleware(
+					authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
 						authMiddleware.RequireAuth(
 							authMiddleware.RequireIPWhitelist(
 								adminAuthHandler.Me,
@@ -81,8 +83,8 @@ func AdminRoutes(
 	router.HandleFunc(adminPrefix+"/auth/refresh",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
-				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
-					middleware.AdminLoggingMiddleware(
+				middleware.AdminLoggingMiddleware(
+					authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
 						authMiddleware.RequireAuth(
 							authMiddleware.RequireIPWhitelist(
 								adminAuthHandler.RefreshToken,

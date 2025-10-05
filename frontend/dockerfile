@@ -4,6 +4,10 @@ FROM node:alpine
 # Set the working directory inside the container
 WORKDIR /app
 
+# Accept build argument for Docker environment detection
+ARG DOCKER_ENV
+ENV DOCKER_ENV=$DOCKER_ENV
+
 # Copy package.json and package-lock.json (if available)
 COPY package*.json ./
 
@@ -14,9 +18,6 @@ RUN npm install
 COPY . .
 
 # Build the application for production
-# Allow compose to pass DOCKER_ENV at build-time; persist into runtime image
-ARG DOCKER_ENV=false
-ENV DOCKER_ENV=$DOCKER_ENV
 RUN npm run build
 
 # Expose the port the app runs on

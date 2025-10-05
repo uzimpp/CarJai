@@ -5,8 +5,11 @@
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT NOW()
+    password_hash VARCHAR(255),
+    username VARCHAR(20) UNIQUE,
+    name VARCHAR(100), -- display name "John Doe"
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 -- Create user_sessions table for session management

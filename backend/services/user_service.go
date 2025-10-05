@@ -13,6 +13,7 @@ type UserService struct {
 	userRepo        *models.UserRepository
 	userSessionRepo *models.UserSessionRepository
 	jwtManager      *utils.JWTManager
+	profileService  *ProfileService
 }
 
 // NewUserService creates a new user service
@@ -21,11 +22,17 @@ func NewUserService(userRepo *models.UserRepository, userSessionRepo *models.Use
 		userRepo:        userRepo,
 		userSessionRepo: userSessionRepo,
 		jwtManager:      jwtManager,
+		profileService:  nil, // Will be set later to avoid circular dependency
 	}
 }
 
+// SetProfileService sets the profile service (to avoid circular dependency)
+func (s *UserService) SetProfileService(profileService *ProfileService) {
+	s.profileService = profileService
+}
+
 // Signup creates a new user account
-func (s *UserService) Signup(email, password string) (*models.UserAuthResponse, error) {
+func (s *UserService) Signup(email, password, ipAddress, userAgent string) (*models.UserAuthResponse, error) {
 	// Check if user already exists
 	existingUser, err := s.userRepo.GetUserByEmail(email)
 	if err == nil && existingUser != nil {
@@ -62,8 +69,8 @@ func (s *UserService) Signup(email, password string) (*models.UserAuthResponse, 
 	session := &models.UserSession{
 		UserID:    user.ID,
 		Token:     token,
-		IPAddress: "127.0.0.1", // This should be passed from the handler
-		UserAgent: "CarJai-Client", // This should be passed from the handler
+		IPAddress: ipAddress,
+		UserAgent: userAgent,
 		ExpiresAt: expiresAt,
 	}
 
@@ -84,7 +91,7 @@ func (s *UserService) Signup(email, password string) (*models.UserAuthResponse, 
 }
 
 // Login authenticates a user
-func (s *UserService) Login(email, password string) (*models.UserAuthResponse, error) {
+func (s *UserService) Login(email, password, ipAddress, userAgent string) (*models.UserAuthResponse, error) {
 	// Get user by email
 	user, err := s.userRepo.GetUserByEmail(email)
 	if err != nil {
@@ -110,8 +117,8 @@ func (s *UserService) Login(email, password string) (*models.UserAuthResponse, e
 	session := &models.UserSession{
 		UserID:    user.ID,
 		Token:     token,
-		IPAddress: "127.0.0.1", // This should be passed from the handler
-		UserAgent: "CarJai-Client", // This should be passed from the handler
+		IPAddress: ipAddress,
+		UserAgent: userAgent,
 		ExpiresAt: expiresAt,
 	}
 
@@ -145,7 +152,7 @@ func (s *UserService) Logout(token string) (*models.UserLogoutResponse, error) {
 	}, nil
 }
 
-// GetCurrentUser returns the current user from JWT token
+// GetCurrentUser returns the current user from JWT token with roles and completeness
 func (s *UserService) GetCurrentUser(token string) (*models.UserMeResponse, error) {
 	// Validate token
 	claims, err := s.jwtManager.ValidateToken(token)
@@ -159,10 +166,21 @@ func (s *UserService) GetCurrentUser(token string) (*models.UserMeResponse, erro
 		return nil, fmt.Errorf("user not found: %w", err)
 	}
 
+	// Get roles and completeness if profile service is set
+	roles := models.UserRoles{Buyer: false, Seller: false}
+	profiles := models.UserProfiles{BuyerComplete: false, SellerComplete: false}
+
+	if s.profileService != nil {
+		roles, _ = s.profileService.GetRolesForUser(user.ID)
+		profiles, _ = s.profileService.GetProfilesCompletenessForUser(user.ID)
+	}
+
 	return &models.UserMeResponse{
 		Success: true,
 		Data: models.UserMeData{
-			User: user.ToPublic(),
+			User:     user.ToPublic(),
+			Roles:    roles,
+			Profiles: profiles,
 		},
 	}, nil
 }
@@ -198,7 +216,7 @@ func (s *UserService) ValidateUserSession(token string) (*models.User, error) {
 }
 
 // RefreshToken generates a new token for the user
-func (s *UserService) RefreshToken(token string) (*models.UserAuthResponse, error) {
+func (s *UserService) RefreshToken(token, ipAddress, userAgent string) (*models.UserAuthResponse, error) {
 	// Validate current token
 	claims, err := s.jwtManager.ValidateToken(token)
 	if err != nil {
@@ -230,8 +248,8 @@ func (s *UserService) RefreshToken(token string) (*models.UserAuthResponse, erro
 	session := &models.UserSession{
 		UserID:    user.ID,
 		Token:     newToken,
-		IPAddress: "127.0.0.1", // This should be passed from the handler
-		UserAgent: "CarJai-Client", // This should be passed from the handler
+		IPAddress: ipAddress,
+		UserAgent: userAgent,
 		ExpiresAt: expiresAt,
 	}
 

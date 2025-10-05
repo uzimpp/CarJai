@@ -3,12 +3,14 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useAuth } from "@/hooks/useUserAuth";
-import { validation } from "@/lib/userAuth";
+import { useUserAuth } from "@/hooks/useUserAuth";
+import { validation } from "@/lib/profileAPI";
+import GoogleLoginButton from "@/components/auth/GoogleLoginButton";
 
 export default function SignupPage() {
   const router = useRouter();
-  const { signup, isAuthenticated, isLoading, error, clearError } = useAuth();
+  const { signup, isAuthenticated, isLoading, error, clearError } =
+    useUserAuth();
 
   const [formData, setFormData] = useState({
     email: "",
@@ -18,10 +20,12 @@ export default function SignupPage() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated - check if they have roles already
   useEffect(() => {
     if (isAuthenticated && !isLoading) {
-      router.push("/buy");
+      // If user already has a role, redirect them appropriately
+      // This handles users who already completed signup coming back to this page
+      router.push("/signup/role");
     }
   }, [isAuthenticated, isLoading, router]);
 
@@ -61,21 +65,21 @@ export default function SignupPage() {
     const errors: Record<string, string> = {};
 
     if (!formData.email) {
-      errors.email = "กรุณากรอกอีเมล";
+      errors.email = "Please enter your email";
     } else if (!validation.email(formData.email)) {
-      errors.email = "รูปแบบอีเมลไม่ถูกต้อง";
+      errors.email = "Invalid email format";
     }
 
     if (!formData.password) {
-      errors.password = "กรุณากรอกรหัสผ่าน";
+      errors.password = "Please enter your password";
     } else if (!validation.password(formData.password)) {
-      errors.password = "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร";
+      errors.password = "Password must be at least 6 characters";
     }
 
     if (!formData.confirmPassword) {
-      errors.confirmPassword = "กรุณายืนยันรหัสผ่าน";
+      errors.confirmPassword = "Please confirm your password";
     } else if (formData.password !== formData.confirmPassword) {
-      errors.confirmPassword = "รหัสผ่านไม่ตรงกัน";
+      errors.confirmPassword = "Passwords do not match";
     }
 
     setFormErrors(errors);
@@ -89,10 +93,18 @@ export default function SignupPage() {
 
     setIsSubmitting(true);
     try {
-      await signup({
+      const result = await signup({
         email: formData.email,
         password: formData.password,
       });
+      if (result.success) {
+        // Account created successfully, wait a moment for state to update, then redirect
+        setTimeout(() => {
+          router.push("/signup/role");
+        }, 100);
+      } else if (result.error?.includes("already exists")) {
+        router.push("/login?message=account_exists");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -100,33 +112,36 @@ export default function SignupPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon mx-auto"></div>
-          <p className="mt-4 text-gray-600">กำลังโหลด...</p>
+          <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen  flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="flex items-center justify-center px-(--space-m) max-w-[1536px] mx-auto w-full">
+      <div className="flex flex-col max-w-md w-full">
         {/* Header */}
-        <div className="text-center">
-          <h2 className="text-4 font-bold text-maroon">สร้างบัญชี CarJai</h2>
+        <div className="text-center mb-(--space-l)">
+          <h2 className="text-5 font-bold line-height-0">Create an account</h2>
         </div>
 
         {/* Form */}
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-4">
+        <form
+          className="flex flex-col gap-y-(--space-l) w-full"
+          onSubmit={handleSubmit}
+        >
+          <div className="flex flex-col space-y-(--space-s)">
             {/* Email Field */}
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-0 font-medium text-gray-700"
               >
-                อีเมล
+                Email
               </label>
               <input
                 id="email"
@@ -135,15 +150,15 @@ export default function SignupPage() {
                 autoComplete="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
+                className={`mt-1 appearance-none relative block w-full px-3 py-2 text-0 border ${
                   formErrors.email
                     ? "border-red-300 focus:ring-red focus:border-red"
                     : "border-gray-300 focus:ring-maroon focus:border-maroon"
-                } placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:z-10 sm:text-sm`}
-                placeholder="กรอกอีเมลของคุณ"
+                } placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:z-10`}
+                placeholder="Enter your email"
               />
               {formErrors.email && (
-                <p className="mt-1 text-sm text-red-600">{formErrors.email}</p>
+                <p className="mt-1 text-0 text-red-600">{formErrors.email}</p>
               )}
             </div>
 
@@ -151,9 +166,9 @@ export default function SignupPage() {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-0 font-medium text-gray-700"
               >
-                รหัสผ่าน
+                Password
               </label>
               <input
                 id="password"
@@ -162,20 +177,20 @@ export default function SignupPage() {
                 autoComplete="new-password"
                 value={formData.password}
                 onChange={handleInputChange}
-                className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
+                className={`mt-1 appearance-none relative block w-full px-3 py-2 text-0 border ${
                   formErrors.password
                     ? "border-red-300 focus:ring-red focus:border-red"
                     : "border-gray-300 focus:ring-maroon focus:border-maroon"
-                } placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:z-10 sm:text-sm`}
-                placeholder="กรอกรหัสผ่านของคุณ"
+                } placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:z-10`}
+                placeholder="Enter your password"
               />
               {formErrors.password && (
-                <p className="mt-1 text-sm text-red-600">
+                <p className="mt-1 text-0 text-red-600">
                   {formErrors.password}
                 </p>
               )}
-              <p className="mt-1 text-xs text-gray-500">
-                รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร
+              <p className="mt-1 text--1 text-gray-500">
+                Password must be at least 6 characters
               </p>
             </div>
 
@@ -183,9 +198,9 @@ export default function SignupPage() {
             <div>
               <label
                 htmlFor="confirmPassword"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-0 font-medium text-gray-700"
               >
-                ยืนยันรหัสผ่าน
+                Confirm Password
               </label>
               <input
                 id="confirmPassword"
@@ -194,15 +209,15 @@ export default function SignupPage() {
                 autoComplete="new-password"
                 value={formData.confirmPassword}
                 onChange={handleInputChange}
-                className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
+                className={`mt-1 appearance-none relative block w-full px-3 py-2 text-0 border ${
                   formErrors.confirmPassword
                     ? "border-red-300 focus:ring-red focus:border-red"
                     : "border-gray-300 focus:ring-maroon focus:border-maroon"
-                } placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:z-10 sm:text-sm`}
-                placeholder="กรอกรหัสผ่านอีกครั้ง"
+                } placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:z-10`}
+                placeholder="Enter password again"
               />
               {formErrors.confirmPassword && (
-                <p className="mt-1 text-sm text-red-600">
+                <p className="mt-1 text-0 text-red-600">
                   {formErrors.confirmPassword}
                 </p>
               )}
@@ -211,7 +226,7 @@ export default function SignupPage() {
 
           {/* General Error */}
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-(--space-s)">
               <div className="flex">
                 <div className="flex-shrink-0">
                   <svg
@@ -227,62 +242,57 @@ export default function SignupPage() {
                   </svg>
                 </div>
                 <div className="ml-3">
-                  <p className="text-sm text-red-600">{error.message}</p>
+                  <p className="text-0 text-red-600">
+                    {error.message.includes("already exists")
+                      ? "This email already has an account. Please use a different email."
+                      : error.message}
+                  </p>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Terms and Conditions */}
-          <div className="text-xs text-gray-600">
-            <p>
-              การสมัครบัญชีถือว่าคุณยอมรับ{" "}
-              <Link
-                href="/terms"
-                className="text-maroon hover:text-red underline"
-              >
-                ข้อกำหนดการใช้งาน
-              </Link>{" "}
-              และ{" "}
-              <Link
-                href="/privacy"
-                className="text-maroon hover:text-red underline"
-              >
-                นโยบายความเป็นส่วนตัว
-              </Link>{" "}
-              ของเรา
-            </p>
-          </div>
-
           {/* Submit Button */}
-          <div>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text--1 font-medium rounded-lg text-white bg-maroon hover:bg-red focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-maroon disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isSubmitting ? (
-                <div className="flex items-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  กำลังสร้างบัญชี...
-                </div>
-              ) : (
-                "สมัครบัญชี"
-              )}
-            </button>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="group relative w-full flex justify-center py-(--space-2xs) px-(--space-s) border border-transparent text-0 font-medium rounded-lg text-white bg-black hover:bg-maroon focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-maroon disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {isSubmitting ? (
+              <div className="flex items-center">
+                <div className="animate-spin rounded-full h-(--space-s) w-(--space-s) border-b-2 border-white mr-2"></div>
+                Creating account...
+              </div>
+            ) : (
+              "Continue"
+            )}
+          </button>
+        </form>
+        <div className="">
+          {/* Divider */}
+          <div className="relative my-(--space-3xs)">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300" />
+            </div>
+            <div className="relative flex justify-center text--1">
+              <span className="px-2 bg-white text-gray-400">or</span>
+            </div>
           </div>
 
-          <div className="text-center text-gray-600 text--2">หรือ</div>
-          {/* Additional Links */}
-          <div className="text-center">
-            <Link
-              href="/login"
-              className="text--1  hover:text-gray-900 transition-colors"
-            >
-              มีบัญชีอยู่แล้ว
-            </Link>
+          {/* Google Signup Button */}
+          <div className="">
+            <GoogleLoginButton mode="signup" disabled={isSubmitting} />
           </div>
-        </form>
+        </div>
+        {/* Additional Links */}
+        <div className="text-center mt-(--space-xs)">
+          <Link
+            href="/login"
+            className="text--1 hover:text-maroon transition-colors"
+          >
+            Already have an account?
+          </Link>
+        </div>
       </div>
     </div>
   );
