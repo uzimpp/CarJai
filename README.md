@@ -10,7 +10,7 @@ It connects **sellers** (car owners, dealers, resellers) with **buyers** through
 - Buyers can browse, search, and filter cars (brand, model, year, price, province).
 - Sellers can create listings with car details, photos, and supporting documents.
 - Admins can approve/reject listings, verify documents, and ban fraudulent sellers.
-- Secure login (JWT), marketplace filters, and fraud prevention mechanisms.
+- Secure sign in (JWT), marketplace filters, and fraud prevention mechanisms.
 - Target vehicle classes: **รย.1, รย.2, รย.3**.
 
 ---

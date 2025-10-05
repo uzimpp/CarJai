@@ -33,7 +33,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       {/* ${fcSubject.variable} var(--font-fc-subject)*/}
-      <body className={`${syne.variable} antialiased`}>
+      <body className={`${syne.variable} antialiased min-h-screen flex`}>
         <ConditionalLayout>{children}</ConditionalLayout>
       </body>
     </html>
