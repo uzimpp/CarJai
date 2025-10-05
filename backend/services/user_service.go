@@ -339,3 +339,17 @@ func (s *UserService) ChangePassword(userID int, currentPassword, newPassword st
 
 	return nil
 }
+
+// IsSeller checks if a user is a seller
+func (s *UserService) IsSeller(userID int) (bool, error) {
+	if s.profileService == nil {
+		return false, fmt.Errorf("profile service not initialized")
+	}
+	
+	roles, err := s.profileService.GetRolesForUser(userID)
+	if err != nil {
+		return false, err
+	}
+	
+	return roles.Seller, nil
+}

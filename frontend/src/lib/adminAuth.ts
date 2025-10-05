@@ -1,6 +1,5 @@
 // Admin authentication utilities and API functions
 import {
-  AdminUser,
   AdminMeResponse,
   AdminIPWhitelistResponse,
   AdminAuthResponse,

@@ -27,6 +27,10 @@ const nextConfig: NextConfig = {
         source: "/api/:path*",
         destination: `${backendUrl}/api/:path*`,
       },
+      {
+        source: "/api/cars/images/:path*",
+        destination: `${backendUrl}/api/cars/images/:path*`,
+      },
     ];
   },
 };
