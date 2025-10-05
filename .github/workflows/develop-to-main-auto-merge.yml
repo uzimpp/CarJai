@@ -19,6 +19,14 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Debug - Check component files
+        run: |
+          echo "📋 Listing frontend component files..."
+          ls -la frontend/src/components/global/ || true
+          echo "---"
+          echo "📋 Checking Git tracked files..."
+          git ls-tree HEAD:frontend/src/components/global || true
+
       - name: Create .env file from env.example
         run: |
           cp env.example .env
