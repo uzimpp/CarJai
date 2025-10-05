@@ -28,6 +28,10 @@ export function useGoogleAuth(): GoogleAuthState & GoogleAuthActions {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
+      // Debug logging
+      console.log("NEXT_PUBLIC_GOOGLE_CLIENT_ID:", process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
+      console.log("Window google object:", window.google);
+      
       // Initialize Google OAuth
       if (typeof window === "undefined" || !window.google) {
         throw new Error("Google OAuth not loaded");

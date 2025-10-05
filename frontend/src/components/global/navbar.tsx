@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useEffect, useRef, useState } from "react";
-import SearchBar from "@/components/global/SearchBar";
+import SearchBar from "@/components/global/searchbar";
 
 const noSearchBarPages = ["/", "/buy"];
 

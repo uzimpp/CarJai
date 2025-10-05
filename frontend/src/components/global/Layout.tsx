@@ -1,8 +1,8 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import NavBar from "@/components/global/NavBar";
-import Footer from "@/components/global/Footer";
+import NavBar from "@/components/global/navbar";
+import Footer from "@/components/global/footer";
 
 interface ConditionalLayoutProps {
   children: React.ReactNode;

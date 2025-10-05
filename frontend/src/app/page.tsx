@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import SearchBar from "@/components/global/SearchBar";
+import SearchBar from "@/components/global/searchbar";
 
 export default function Home() {
   return (

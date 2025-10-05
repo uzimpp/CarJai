@@ -23,10 +23,18 @@ export default function GoogleLoginButton({
     const script = document.createElement("script");
     script.src = "https://accounts.google.com/gsi/client";
     script.async = true;
+    script.onload = () => {
+      console.log("Google OAuth script loaded successfully");
+    };
+    script.onerror = () => {
+      console.error("Failed to load Google OAuth script");
+    };
     document.head.appendChild(script);
 
     return () => {
-      document.head.removeChild(script);
+      if (document.head.contains(script)) {
+        document.head.removeChild(script);
+      }
     };
   }, []);
 
@@ -36,6 +44,9 @@ export default function GoogleLoginButton({
   }, [mode, clearError]);
 
   const handleGoogleLogin = async () => {
+    console.log("Google login button clicked");
+    console.log("NEXT_PUBLIC_GOOGLE_CLIENT_ID:", process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
+    
     clearError();
     const result = await googleLogin(mode);
 
