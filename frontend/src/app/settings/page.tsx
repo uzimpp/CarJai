@@ -13,6 +13,7 @@ import BuyerForm from "@/components/features/profile/BuyerForm";
 import SellerForm from "@/components/features/profile/SellerForm";
 import { FormSection } from "@/components/ui/FormSection";
 import { InlineAlert } from "@/components/ui/InlineAlert";
+import Link from "next/link";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -181,47 +182,39 @@ export default function SettingsPage() {
     <div className="min-h-screen px-(--space-m) py-(--space-xl) max-w-[1200px] mx-auto">
       {/* Header */}
       <div className="mb-(--space-xl)">
-        <h1 className="text-5 font-bold text-gray-900 mb-(--space-2xs)">
+        <h1 className="text-5 font-bold text-black mb-(--space-2xs)">
           Settings
         </h1>
-        <p className="text-0 text-gray-600">
-          Manage your account and profile settings
-        </p>
+        {/* Quick section nav (anchors) */}
+        <nav className="mb-(--space-l) flex flex-wrap gap-(--space-s) text--1 text-black">
+          <Link
+            href="#account"
+            className="hover:text-white bg-maroon/30 hover:bg-maroon px-(--space-s) py-(--space-2xs) rounded-full"
+          >
+            Account
+          </Link>
+          {profileData.buyer && (
+            <Link
+              href="#preferences"
+              className="hover:text-white bg-maroon/30 hover:bg-maroonpx-(--space-s) py-(--space-2xs) rounded-full"
+            >
+              Preferences
+            </Link>
+          )}
+          {profileData.seller && (
+            <Link
+              href="#profile"
+              className="hover:text-white bg-maroon/30 hover:bg-maroon px-(--space-s) py-(--space-2xs) rounded-full"
+            >
+              Profile
+            </Link>
+          )}
+        </nav>
       </div>
-
-      {/* Quick section nav (anchors) */}
-      <nav className="mb-(--space-l) flex flex-wrap gap-(--space-s) text--1 text-gray-600">
-        <a
-          href="#account"
-          className="hover:text-gray-900 underline-offset-2 hover:underline"
-        >
-          Account
-        </a>
-        {profileData.buyer && (
-          <a
-            href="#preferences"
-            className="hover:text-gray-900 underline-offset-2 hover:underline"
-          >
-            Preferences
-          </a>
-        )}
-        {profileData.seller && (
-          <a
-            href="#profile"
-            className="hover:text-gray-900 underline-offset-2 hover:underline"
-          >
-            Profile
-          </a>
-        )}
-      </nav>
 
       {profileData.user && (
         /* Account Section */
-        <FormSection
-          id="account"
-          title="Account"
-          description="Manage your account settings"
-        >
+        <FormSection id="account" title="Account" description="">
           <AccountForm
             initialData={{
               email: profileData.user.email,
@@ -240,7 +233,7 @@ export default function SettingsPage() {
         <FormSection
           id="preferences"
           title="Preferences"
-          description="Set your car buying preferences"
+          description="Set your car buying preferences for better matches"
         >
           {buyerSuccess && (
             <InlineAlert type="success" onDismiss={() => setBuyerSuccess(null)}>
@@ -265,7 +258,7 @@ export default function SettingsPage() {
         <FormSection
           id="profile"
           title="Selling Profile"
-          description="Manage your seller profile and contact information"
+          description="Manage your seller profile and contact information for buyer inquiries"
         >
           {sellerSuccess && (
             <InlineAlert
