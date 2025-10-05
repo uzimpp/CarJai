@@ -39,6 +39,24 @@ type UserSigninRequest struct {
 	Password        string `json:"password" validate:"required,min=6"`
 }
 
+// UserUpdateSelfRequest represents the request payload for PATCH /api/profile/self
+type UserUpdateSelfRequest struct {
+	Username *string `json:"username,omitempty" validate:"omitempty,min=3,max=20"`
+	Name     *string `json:"name,omitempty" validate:"omitempty,min=2,max=100"`
+}
+
+// ChangePasswordRequest represents the request payload for POST /api/profile/change-password
+type ChangePasswordRequest struct {
+	CurrentPassword string `json:"current_password" validate:"required"`
+	NewPassword     string `json:"new_password" validate:"required,min=6"`
+}
+
+// ChangePasswordResponse represents the response for password change
+type ChangePasswordResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+}
+
 // UserAuthResponse represents the response payload for successful authentication
 type UserAuthResponse struct {
 	Success bool         `json:"success"`

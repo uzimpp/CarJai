@@ -5,8 +5,6 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Seller, SellerContact } from "@/constants/user";
 import { sellerAPI } from "@/lib/sellerAPI";
-import SellerHero from "@/components/seller/SellerHero";
-import ContactList from "@/components/seller/ContactList";
 
 export default function SellerPage() {
   const params = useParams<{ id: string }>();
@@ -168,8 +166,27 @@ export default function SellerPage() {
   };
 
   return (
-    <div className="min-h-screen">
-      <SellerHero title={seller.displayName} subtitle={seller.about} />
+    <div className="!pb-(--space-l) px-(--space-m) py-(--space-s) max-w-[1536px] mx-auto w-full">
+      {/* Hero */}
+      <div className="bg-maroon text-white rounded-4xl">
+        <div className="max-w-[1200px] mx-auto px-(--space-m) py-(--space-xl)">
+          <div className="flex items-center gap-(--space-l)">
+            <div className="w-24 h-24 rounded-full bg-white/10 ring-4 ring-white/20 flex items-center justify-center text-2xl font-bold">
+              {seller.displayName?.[0] || "S"}
+            </div>
+            <div className="flex-1">
+              <h1 className="text-5 font-bold leading-tight">
+                {seller.displayName}
+              </h1>
+              {seller.about && (
+                <p className="text-0 text-white/90 mt-(--space-2xs)">
+                  {seller.about}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Content */}
       <div className="max-w-[1200px] mx-auto px-(--space-m) py-(--space-xl)">
@@ -192,7 +209,39 @@ export default function SellerPage() {
               <h2 className="text-2 font-bold text-gray-900 mb-(--space-m)">
                 Contact Information
               </h2>
-              <ContactList contacts={contacts} />
+              {contacts.length > 0 ? (
+                <div className="space-y-(--space-s)">
+                  {contacts.map((contact) => (
+                    <div
+                      key={contact.id}
+                      className="flex items-start p-(--space-s) rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex-shrink-0 text-maroon mt-1">
+                        {getContactIcon(contact.contactType)}
+                      </div>
+                      <div className="ml-3 flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className="text--1 font-medium text-gray-900 capitalize">
+                            {contact.contactType}
+                          </p>
+                          {contact.label && (
+                            <span className="text--2 text-gray-500 ml-2">
+                              ({contact.label})
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-0 text-gray-600 break-all mt-1">
+                          {contact.value}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text--1 text-gray-600">
+                  No contact information available
+                </p>
+              )}
 
               {seller.mapLink && (
                 <div className="mt-(--space-m)">

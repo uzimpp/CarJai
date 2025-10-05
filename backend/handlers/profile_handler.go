@@ -58,6 +58,62 @@ func (h *ProfileHandler) Profile(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusOK, response)
 }
 
+// UpdateSelf updates the authenticated user's account fields (username, name)
+func (h *ProfileHandler) UpdateSelf(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPatch {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Get authenticated user from cookie
+	cookie, err := r.Cookie("jwt")
+	if err != nil {
+		utils.WriteError(w, http.StatusUnauthorized, "Authentication required")
+		return
+	}
+
+	user, err := h.userService.ValidateUserSession(cookie.Value)
+	if err != nil {
+		utils.WriteError(w, http.StatusUnauthorized, "Invalid session")
+		return
+	}
+
+	// Parse request body
+	var req models.UserUpdateSelfRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	// Check if username is taken (if provided and different from current)
+	if req.Username != nil && *req.Username != user.Username {
+		existingUser, err := h.userService.GetUserByUsername(*req.Username)
+		if err == nil && existingUser != nil {
+			utils.WriteError(w, http.StatusBadRequest, "Username already taken")
+			return
+		}
+	}
+
+	// Update user
+	updatedUser, err := h.userService.UpdateUser(user.ID, req.Username, req.Name)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "Failed to update account")
+		return
+	}
+
+	response := models.UserAuthResponse{
+		Success: true,
+		Data: models.UserAuthData{
+			User:      updatedUser.ToPublic(),
+			Token:     cookie.Value,
+			ExpiresAt: user.CreatedAt, // placeholder; session doesn't change
+		},
+		Message: "Account updated successfully",
+	}
+
+	utils.WriteJSON(w, http.StatusOK, response)
+}
+
 // GetBuyerProfile returns the buyer profile for the authenticated user
 func (h *ProfileHandler) GetBuyerProfile(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {

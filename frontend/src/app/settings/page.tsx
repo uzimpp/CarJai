@@ -3,20 +3,27 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useUserAuth } from "@/hooks/useUserAuth";
-import { profileAPI } from "@/lib/profileAPI";
+import { profileAPI, UpdateSelfRequest } from "@/lib/profileAPI";
 import { ProfileData, BuyerRequest, SellerRequest } from "@/constants/user";
+import AccountForm, {
+  AccountFormData,
+  PasswordChangeData,
+} from "@/components/features/profile/AccountForm";
 import BuyerForm from "@/components/features/profile/BuyerForm";
 import SellerForm from "@/components/features/profile/SellerForm";
+import { FormSection } from "@/components/ui/FormSection";
+import { InlineAlert } from "@/components/ui/InlineAlert";
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { isAuthenticated, isLoading, user, roles, profiles } = useUserAuth();
+  const { isAuthenticated, isLoading } = useUserAuth();
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [showBuyerForm, setShowBuyerForm] = useState(false);
-  const [showSellerForm, setShowSellerForm] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [buyerError, setBuyerError] = useState<string | null>(null);
+  const [buyerSuccess, setBuyerSuccess] = useState<string | null>(null);
+  const [sellerError, setSellerError] = useState<string | null>(null);
+  const [sellerSuccess, setSellerSuccess] = useState<string | null>(null);
 
   // Redirect to signin if not authenticated
   useEffect(() => {
@@ -25,47 +32,48 @@ export default function SettingsPage() {
     }
   }, [isAuthenticated, isLoading, router]);
 
-  // Fetch role-specific profiles after /api/auth/me via useUserAuth
+  // Fetch aggregated profile once
   const fetchProfile = useCallback(async () => {
     if (!isAuthenticated) return;
     try {
-      setError(null);
-
-      // Build initial aggregate from /api/auth/me (hook)
-      const aggregate: ProfileData = {
-        user: user!,
-        roles: roles || { buyer: false, seller: false },
-        profiles: profiles || { buyerComplete: false, sellerComplete: false },
-      } as ProfileData;
-
-      // Conditionally fetch buyer
-      if (roles?.buyer) {
-        try {
-          const buyerRes = await profileAPI.getBuyerProfile();
-          aggregate.buyer = buyerRes.data;
-        } catch {}
-      }
-
-      // Conditionally fetch seller (and contacts)
-      if (roles?.seller) {
-        try {
-          const sellerRes = await profileAPI.getSellerProfile();
-          aggregate.seller = sellerRes.data.seller;
-          aggregate.contacts = sellerRes.data.contacts || [];
-        } catch {}
-      }
-
-      setProfileData(aggregate);
-      setShowBuyerForm(!!roles?.buyer);
-      setShowSellerForm(!!roles?.seller);
+      setFetchError(null);
+      const response = await profileAPI.getProfile();
+      setProfileData(response.data);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to fetch profile";
-      setError(message);
+      setFetchError(message);
     } finally {
       setLoadingProfile(false);
     }
-  }, [isAuthenticated, roles, profiles, user]);
+  }, [isAuthenticated]);
+
+  // Atomic update for account info only
+  const handleAccountUpdate = async (data: AccountFormData) => {
+    const updateData: UpdateSelfRequest = {};
+    if (data.username) updateData.username = data.username;
+    if (data.name) updateData.name = data.name;
+
+    const res = await profileAPI.updateSelf(updateData);
+
+    // Optimistically update local state
+    setProfileData((prev) =>
+      prev
+        ? {
+            ...prev,
+            user: res.data.user,
+          }
+        : prev
+    );
+  };
+
+  // Atomic update for password only
+  const handlePasswordChange = async (data: PasswordChangeData) => {
+    await profileAPI.changePassword({
+      current_password: data.currentPassword,
+      new_password: data.newPassword,
+    });
+  };
 
   useEffect(() => {
     fetchProfile();
@@ -73,35 +81,54 @@ export default function SettingsPage() {
 
   const handleBuyerSubmit = async (data: BuyerRequest) => {
     try {
-      setError(null);
-      setSuccessMessage(null);
-      await profileAPI.upsertBuyerProfile(data);
-      setSuccessMessage("Buyer profile updated successfully!");
-      // Refresh profile data
-      const response = await profileAPI.getProfile();
-      setProfileData(response.data);
-      setShowBuyerForm(true);
+      setBuyerError(null);
+      setBuyerSuccess(null);
+      const res = await profileAPI.upsertBuyerProfile(data);
+      setBuyerSuccess("Buyer preferences saved successfully!");
+      // Update local state immediately with response
+      setProfileData((prev) =>
+        prev
+          ? {
+              ...prev,
+              buyer: res.data,
+              profiles: {
+                ...prev.profiles,
+                buyerComplete: true,
+              },
+            }
+          : prev
+      );
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to update buyer profile";
-      setError(message);
+      setBuyerError(message);
     }
   };
 
   const handleSellerSubmit = async (data: SellerRequest) => {
     try {
-      setError(null);
-      setSuccessMessage(null);
-      await profileAPI.upsertSellerProfile(data);
-      setSuccessMessage("Seller profile updated successfully!");
-      // Refresh profile data
-      const response = await profileAPI.getProfile();
-      setProfileData(response.data);
-      setShowSellerForm(true);
+      setSellerError(null);
+      setSellerSuccess(null);
+      const res = await profileAPI.upsertSellerProfile(data);
+      setSellerSuccess("Seller settings saved successfully!");
+      // Update local state immediately with response
+      setProfileData((prev) =>
+        prev
+          ? {
+              ...prev,
+              seller: res.data.seller,
+              contacts: res.data.contacts || [],
+              profiles: {
+                ...prev.profiles,
+                sellerComplete: true,
+              },
+            }
+          : prev
+      );
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to update seller profile";
-      setError(message);
+      setSellerError(message);
     }
   };
 
@@ -134,7 +161,7 @@ export default function SettingsPage() {
             Unable to load settings
           </h1>
           <p className="text-0 text-red-700 mb-(--space-m)">
-            {error || "We couldn't load your profile. Please try again."}
+            {fetchError || "We couldn't load your profile. Please try again."}
           </p>
           <button
             onClick={() => {
@@ -162,165 +189,110 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      {/* Success/Error Messages */}
-      {successMessage && (
-        <div className="mb-(--space-m) bg-green-50 border border-green-200 rounded-lg p-(--space-s)">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg
-                className="h-5 w-5 text-green-400"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-0 text-green-700">{successMessage}</p>
-            </div>
-          </div>
-        </div>
+      {/* Quick section nav (anchors) */}
+      <nav className="mb-(--space-l) flex flex-wrap gap-(--space-s) text--1 text-gray-600">
+        <a
+          href="#account"
+          className="hover:text-gray-900 underline-offset-2 hover:underline"
+        >
+          Account
+        </a>
+        {profileData.buyer && (
+          <a
+            href="#preferences"
+            className="hover:text-gray-900 underline-offset-2 hover:underline"
+          >
+            Preferences
+          </a>
+        )}
+        {profileData.seller && (
+          <a
+            href="#profile"
+            className="hover:text-gray-900 underline-offset-2 hover:underline"
+          >
+            Profile
+          </a>
+        )}
+      </nav>
+
+      {profileData.user && (
+        /* Account Section */
+        <FormSection
+          id="account"
+          title="Account"
+          description="Manage your account settings"
+        >
+          <AccountForm
+            initialData={{
+              email: profileData.user.email,
+              username: profileData.user.username,
+              name: profileData.user.name,
+              createdAt: profileData.user.created_at,
+            }}
+            onAccountUpdate={handleAccountUpdate}
+            onPasswordChange={handlePasswordChange}
+          />
+        </FormSection>
       )}
 
-      {error && (
-        <div className="mb-(--space-m) bg-red-50 border border-red-200 rounded-lg p-(--space-s)">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg
-                className="h-5 w-5 text-red-400"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-0 text-red-600">{error}</p>
-            </div>
-          </div>
-        </div>
+      {profileData.buyer && (
+        /* Buyer Section */
+        <FormSection
+          id="preferences"
+          title="Preferences"
+          description="Set your car buying preferences"
+        >
+          {buyerSuccess && (
+            <InlineAlert type="success" onDismiss={() => setBuyerSuccess(null)}>
+              {buyerSuccess}
+            </InlineAlert>
+          )}
+          {buyerError && (
+            <InlineAlert type="error" onDismiss={() => setBuyerError(null)}>
+              {buyerError}
+            </InlineAlert>
+          )}
+          <BuyerForm
+            initialData={profileData.buyer}
+            onSubmit={handleBuyerSubmit}
+            submitLabel="Save Buyer Preferences"
+          />
+        </FormSection>
       )}
 
-      {/* Account Section */}
-      <section className="mb-(--space-xl)">
-        <h2 className="text-3 font-bold text-gray-900 mb-(--space-m)">
-          Account Information
-        </h2>
-        <div className="bg-white rounded-lg border border-gray-200 p-(--space-l)">
-          <div className="space-y-(--space-s)">
-            <div>
-              <label className="block text-0 font-medium text-gray-700">
-                Email
-              </label>
-              <p className="text-0 text-gray-900 mt-1">
-                {profileData.user.email}
-              </p>
-            </div>
-            <div>
-              <label className="block text-0 font-medium text-gray-700">
-                Account Created
-              </label>
-              <p className="text-0 text-gray-900 mt-1">
-                {new Date(profileData.user.created_at).toLocaleDateString()}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Buyer Profile Section (no role switching) */}
-      <section className="mb-(--space-xl)">
-        <div className="flex justify-between items-center mb-(--space-m)">
-          <div>
-            <h2 className="text-3 font-bold text-gray-900">Buyer Profile</h2>
-            {profileData.roles.buyer && (
-              <p className="text--1 text-gray-600 mt-1">
-                Status:{" "}
-                {profileData.profiles.buyerComplete ? (
-                  <span className="text-green-600 font-medium">Complete</span>
-                ) : (
-                  <span className="text-orange-600 font-medium">
-                    Incomplete
-                  </span>
-                )}
-              </p>
-            )}
-          </div>
-          {/* Role switching removed: no CTA to become buyer */}
-        </div>
-
-        {profileData.roles.buyer ? (
-          <div className="bg-white rounded-lg border border-gray-200 p-(--space-l)">
-            <BuyerForm
-              initialData={profileData.buyer}
-              onSubmit={handleBuyerSubmit}
-              submitLabel="Update Buyer Profile"
-            />
-          </div>
-        ) : (
-          <div className="bg-gray-50 rounded-lg border border-gray-200 p-(--space-l)">
-            <p className="text-0 text-gray-600">
-              Your account doesn&apos;t have the Buyer role.
-            </p>
-          </div>
-        )}
-      </section>
-
-      {/* Seller Profile Section */}
-      <section className="mb-(--space-xl)">
-        <div className="flex justify-between items-center mb-(--space-m)">
-          <div>
-            <h2 className="text-3 font-bold text-gray-900">Seller Profile</h2>
-            {profileData.roles.seller && (
-              <p className="text--1 text-gray-600 mt-1">
-                Status:{" "}
-                {profileData.profiles.sellerComplete ? (
-                  <span className="text-green-600 font-medium">Complete</span>
-                ) : (
-                  <span className="text-orange-600 font-medium">
-                    Incomplete
-                  </span>
-                )}
-              </p>
-            )}
-          </div>
-          {/* Role switching removed: no CTA to become seller */}
-        </div>
-
-        {profileData.roles.seller ? (
-          <div className="bg-white rounded-lg border border-gray-200 p-(--space-l)">
-            <SellerForm
-              initialData={
-                profileData.seller
-                  ? {
-                      displayName: profileData.seller.displayName,
-                      about: profileData.seller.about,
-                      mapLink: profileData.seller.mapLink,
-                      contacts: [],
-                    }
-                  : undefined
-              }
-              initialContacts={profileData.contacts || []}
-              onSubmit={handleSellerSubmit}
-              submitLabel="Update Seller Profile"
-            />
-          </div>
-        ) : (
-          <div className="bg-gray-50 rounded-lg border border-gray-200 p-(--space-l)">
-            <p className="text-0 text-gray-600">
-              Your account doesn&apos;t have the Seller role.
-            </p>
-          </div>
-        )}
-      </section>
+      {profileData.seller && (
+        /* Seller Profile Section */
+        <FormSection
+          id="profile"
+          title="Selling Profile"
+          description="Manage your seller profile and contact information"
+        >
+          {sellerSuccess && (
+            <InlineAlert
+              type="success"
+              onDismiss={() => setSellerSuccess(null)}
+            >
+              {sellerSuccess}
+            </InlineAlert>
+          )}
+          {sellerError && (
+            <InlineAlert type="error" onDismiss={() => setSellerError(null)}>
+              {sellerError}
+            </InlineAlert>
+          )}
+          <SellerForm
+            initialData={{
+              displayName: profileData.seller.displayName,
+              about: profileData.seller.about,
+              mapLink: profileData.seller.mapLink,
+              contacts: [],
+            }}
+            initialContacts={profileData.contacts || []}
+            onSubmit={handleSellerSubmit}
+            submitLabel="Save Seller Settings"
+          />
+        </FormSection>
+      )}
     </div>
   );
 }
