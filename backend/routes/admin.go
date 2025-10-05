@@ -29,14 +29,13 @@ func AdminRoutes(
 	router := http.NewServeMux()
 
 	// Admin authentication routes (no auth required, but IP whitelist required)
-	// Logging middleware placed before IP restrictions to capture requests
-	router.HandleFunc(adminPrefix+"/auth/login",
+	router.HandleFunc(adminPrefix+"/auth/signin",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
-				middleware.LoggingMiddleware(
-					authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
-						middleware.LoginRateLimit()(
-							adminAuthHandler.Login,
+				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
+					middleware.LoginRateLimit()(
+						middleware.LoggingMiddleware(
+							adminAuthHandler.Signin,
 						),
 					),
 				),
@@ -45,8 +44,7 @@ func AdminRoutes(
 	)
 
 	// Admin authentication routes (auth required)
-	// Note: Admin logging middleware placed before IP restrictions to capture all requests
-	router.HandleFunc(adminPrefix+"/auth/logout",
+	router.HandleFunc(adminPrefix+"/auth/signout",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				middleware.AdminLoggingMiddleware(
@@ -54,7 +52,7 @@ func AdminRoutes(
 						middleware.GeneralRateLimit()(
 							authMiddleware.RequireAuth(
 								authMiddleware.RequireIPWhitelist(
-									adminAuthHandler.Logout,
+									adminAuthHandler.Signout,
 								),
 							),
 						),
@@ -145,7 +143,7 @@ func AdminRoutes(
 		),
 	)
 
-	// Catch-all route for any other admin paths (like /admin/login page access)
+	// Catch-all route for any other admin paths (like /admin/signin page access)
 	router.HandleFunc(adminPrefix+"/",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(

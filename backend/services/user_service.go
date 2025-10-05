@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/uzimpp/CarJai/backend/models"
 	"github.com/uzimpp/CarJai/backend/utils"
@@ -32,11 +33,17 @@ func (s *UserService) SetProfileService(profileService *ProfileService) {
 }
 
 // Signup creates a new user account
-func (s *UserService) Signup(email, password, ipAddress, userAgent string) (*models.UserAuthResponse, error) {
-	// Check if user already exists
+func (s *UserService) Signup(email, password, username, name, ipAddress, userAgent string) (*models.UserAuthResponse, error) {
+	// Check if user already exists by email
 	existingUser, err := s.userRepo.GetUserByEmail(email)
 	if err == nil && existingUser != nil {
 		return nil, fmt.Errorf("user with email %s already exists", email)
+	}
+
+	// Check if username already exists
+	existingUserByUsername, err := s.userRepo.GetUserByUsername(username)
+	if err == nil && existingUserByUsername != nil {
+		return nil, fmt.Errorf("username %s is already taken", username)
 	}
 
 	// Hash password
@@ -48,6 +55,8 @@ func (s *UserService) Signup(email, password, ipAddress, userAgent string) (*mod
 	// Create user
 	user := &models.User{
 		Email:        email,
+		Username:     username,
+		Name:         name,
 		PasswordHash: string(hashedPassword),
 	}
 
@@ -90,10 +99,19 @@ func (s *UserService) Signup(email, password, ipAddress, userAgent string) (*mod
 	}, nil
 }
 
-// Login authenticates a user
-func (s *UserService) Login(email, password, ipAddress, userAgent string) (*models.UserAuthResponse, error) {
-	// Get user by email
-	user, err := s.userRepo.GetUserByEmail(email)
+// Signin authenticates a user
+func (s *UserService) Signin(emailOrUsername, password, ipAddress, userAgent string) (*models.UserAuthResponse, error) {
+	// Try to get user by email first, then by username
+	var user *models.User
+	var err error
+
+	// Check if input looks like an email (contains @)
+	if strings.Contains(emailOrUsername, "@") {
+		user, err = s.userRepo.GetUserByEmail(emailOrUsername)
+	} else {
+		user, err = s.userRepo.GetUserByUsername(emailOrUsername)
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("invalid credentials")
 	}
@@ -134,21 +152,21 @@ func (s *UserService) Login(email, password, ipAddress, userAgent string) (*mode
 			Token:     token,
 			ExpiresAt: expiresAt,
 		},
-		Message: "Login successful",
+		Message: "Sign in successful",
 	}, nil
 }
 
-// Logout invalidates a user session
-func (s *UserService) Logout(token string) (*models.UserLogoutResponse, error) {
+// Signout invalidates a user session
+func (s *UserService) Signout(token string) (*models.UserSignoutResponse, error) {
 	// Delete session from database
 	err := s.userSessionRepo.DeleteUserSession(token)
 	if err != nil {
-		return nil, fmt.Errorf("failed to logout: %w", err)
+		return nil, fmt.Errorf("failed to sign out: %w", err)
 	}
 
-	return &models.UserLogoutResponse{
+	return &models.UserSignoutResponse{
 		Success: true,
-		Message: "Logout successful",
+		Message: "Sign out successful",
 	}, nil
 }
 
@@ -267,4 +285,18 @@ func (s *UserService) RefreshToken(token, ipAddress, userAgent string) (*models.
 		},
 		Message: "Token refreshed successfully",
 	}, nil
+}
+
+// IsSeller checks if a user is a seller
+func (s *UserService) IsSeller(userID int) (bool, error) {
+	if s.profileService == nil {
+		return false, fmt.Errorf("profile service not initialized")
+	}
+	
+	roles, err := s.profileService.GetRolesForUser(userID)
+	if err != nil {
+		return false, err
+	}
+	
+	return roles.Seller, nil
 }

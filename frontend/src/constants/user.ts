@@ -1,6 +1,8 @@
 interface User {
   id: number;
   email: string;
+  username: string;
+  name: string;
   created_at: string;
 }
 
@@ -111,19 +113,21 @@ interface SellerResponse {
   message?: string;
 }
 
-interface LoginRequest {
-  email: string;
+interface SigninRequest {
+  email_or_username: string;
   password: string;
 }
 
 interface SignupRequest {
   email: string;
   password: string;
+  username: string;
+  name: string;
 }
 
 interface GoogleAuthRequest {
   credential: string;
-  mode: "login" | "signup";
+  mode: "signin" | "signup";
 }
 
 interface GoogleAuthResponse {
@@ -144,7 +148,7 @@ export type {
   AuthResponse,
   MeResponse,
   AuthError,
-  LoginRequest,
+  SigninRequest,
   SignupRequest,
   GoogleAuthRequest,
   GoogleAuthResponse,

@@ -31,16 +31,16 @@ func NewAdminAuthHandler(
 	}
 }
 
-// Login handles admin login
-func (h *AdminAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
+// Signin handles admin sign in
+func (h *AdminAuthHandler) Signin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
 	// Parse request body
-	var loginReq models.AdminLoginRequest
-	if err := json.NewDecoder(r.Body).Decode(&loginReq); err != nil {
+	var signinReq models.AdminSigninRequest
+	if err := json.NewDecoder(r.Body).Decode(&signinReq); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
@@ -57,24 +57,24 @@ func (h *AdminAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Prepare login request
-	loginRequest := services.LoginRequest{
-		Username:  loginReq.Username,
-		Password:  loginReq.Password,
+	// Prepare sign in request
+	signinRequest := services.SigninRequest{
+		Username:  signinReq.Username,
+		Password:  signinReq.Password,
 		IPAddress: clientIP,
 		UserAgent: r.UserAgent(),
 	}
 
-	// Attempt login
-	loginResponse, err := h.adminService.Login(loginRequest)
+	// Attempt sign in
+	signinResponse, err := h.adminService.Signin(signinRequest)
 	if err != nil {
 		utils.WriteError(w, http.StatusUnauthorized, err.Error())
 		return
 	}
 
 	// Use token created by service (already persisted with session)
-	token := loginResponse.Token
-	expiresAt := loginResponse.ExpiresAt
+	token := signinResponse.Token
+	expiresAt := signinResponse.ExpiresAt
 
 	// Set admin_jwt cookie
 	http.SetCookie(w, &http.Cookie{
@@ -88,21 +88,21 @@ func (h *AdminAuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	})
 
 	// Create response
-	response := models.AdminLoginResponse{
+	response := models.AdminSigninResponse{
 		Success: true,
 		Data: models.AdminAuthData{
-			Admin:     loginResponse.Admin,
+			Admin:     signinResponse.Admin,
 			Token:     token,
 			ExpiresAt: expiresAt,
 		},
-		Message: "Login successful",
+		Message: "Sign in successful",
 	}
 
 	utils.WriteJSON(w, http.StatusOK, response)
 }
 
-// Logout handles admin logout
-func (h *AdminAuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
+// Signout handles admin sign out
+func (h *AdminAuthHandler) Signout(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
@@ -115,9 +115,9 @@ func (h *AdminAuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Attempt logout using the cookie token
-	logoutRequest := services.LogoutRequest{Token: cookie.Value}
-	err = h.adminService.Logout(logoutRequest)
+	// Attempt sign out using the cookie token
+	signoutRequest := services.SignoutRequest{Token: cookie.Value}
+	err = h.adminService.Signout(signoutRequest)
 	if err != nil {
 		utils.WriteError(w, http.StatusUnauthorized, err.Error())
 		return
@@ -135,9 +135,9 @@ func (h *AdminAuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	})
 
 	// Create response
-	response := models.AdminLogoutResponse{
+	response := models.AdminSignoutResponse{
 		Success: true,
-		Message: "Logout successful",
+		Message: "Sign out successful",
 	}
 
 	utils.WriteJSON(w, http.StatusOK, response)

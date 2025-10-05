@@ -56,7 +56,7 @@ interface AdminActionResponse {
   message: string;
 }
 
-interface AdminLoginRequest {
+interface AdminSigninRequest {
   username: string;
   password: string;
 }
@@ -69,6 +69,6 @@ export type {
   AdminIPWhitelistResponse,
   AdminAuthResponse,
   AdminAuthError,
-  AdminLoginRequest,
+  AdminSigninRequest,
   AdminActionResponse,
 };
