@@ -6,7 +6,13 @@ import { apiCall } from "@/lib/apiCall";
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ACCEPTED_FILE_TYPES = ["image/jpeg", "image/png", "application/pdf"];
 
-export default function DocumentUploader() {
+interface DocumentUploaderProps {
+  onComplete?: (extractedText: string) => void;
+}
+
+export default function DocumentUploader({
+  onComplete,
+}: DocumentUploaderProps = {}) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [ocrResult, setOcrResult] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -62,11 +68,13 @@ export default function DocumentUploader() {
         result.data.extracted_text.trim() !== ""
       ) {
         setOcrResult(result.data.extracted_text);
+        if (onComplete) {
+          onComplete(result.data.extracted_text);
+        }
       } else {
         setError("No text found in the image.");
       }
     } catch (err) {
-      // <-- จุดที่แก้ไข Error ที่ 1
       if (err instanceof Error) {
         setError(err.message);
       } else {
@@ -77,7 +85,6 @@ export default function DocumentUploader() {
     }
   };
 
-  // *** หมายเหตุ: ให้น้องลองหาเครื่องหมาย ' (apostrophe) ในส่วน JSX ด้านล่างนี้ แล้วแก้เป็น &apos; ***
   return (
     <div className="w-full max-w-2xl p-8 space-y-6 bg-white rounded-2xl shadow-lg">
       <div className="text-center">

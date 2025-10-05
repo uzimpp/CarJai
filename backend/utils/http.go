@@ -14,6 +14,11 @@ func WriteJSON(w http.ResponseWriter, statusCode int, data interface{}) {
 	json.NewEncoder(w).Encode(data)
 }
 
+// RespondJSON is an alias for WriteJSON for consistency
+func RespondJSON(w http.ResponseWriter, statusCode int, data interface{}) {
+	WriteJSON(w, statusCode, data)
+}
+
 // WriteAdminError writes a standardized admin JSON error response.
 func WriteError(w http.ResponseWriter, statusCode int, message string) {
 	w.Header().Set("Content-Type", "application/json")
@@ -26,4 +31,11 @@ func WriteError(w http.ResponseWriter, statusCode int, message string) {
 	}
 
 	json.NewEncoder(w).Encode(response)
+}
+
+func WriteJSONError(w http.ResponseWriter, status int, message string) {
+	WriteJSON(w, status, map[string]interface{}{
+		"success": false,
+		"message": message,
+	})
 }

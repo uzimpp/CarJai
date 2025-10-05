@@ -7,7 +7,9 @@ export const mutualLogout = {
         method: "POST",
         credentials: "include",
       });
-    } catch (err) {}
+    } catch {
+      // Silently ignore errors
+    }
   },
 
   async clearUserSession(): Promise<void> {
@@ -17,6 +19,8 @@ export const mutualLogout = {
         method: "POST",
         credentials: "include",
       });
-    } catch (err) {}
+    } catch {
+      // Silently ignore errors
+    }
   },
 };
