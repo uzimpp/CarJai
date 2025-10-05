@@ -14,7 +14,7 @@ import (
 
 // CarHandler handles car-related HTTP requests
 type CarHandler struct {
-	carService *services.CarService
+	carService  *services.CarService
 	userService *services.UserService
 }
 
@@ -135,6 +135,97 @@ func (h *CarHandler) GetMyCars(w http.ResponseWriter, r *http.Request) {
 	utils.RespondJSON(w, http.StatusOK, models.CarListResponse{
 		Success: true,
 		Data:    cars,
+	})
+}
+
+// SearchCars handles GET /api/cars/search (public)
+func (h *CarHandler) SearchCars(w http.ResponseWriter, r *http.Request) {
+	// Parse query parameters
+	query := r.URL.Query()
+
+	// Build search request
+	req := &models.SearchCarsRequest{
+		Query:  query.Get("q"),
+		Status: "active",
+	}
+
+	// Parse price filters
+	if minPriceStr := query.Get("minPrice"); minPriceStr != "" {
+		if minPrice, err := strconv.Atoi(minPriceStr); err == nil {
+			req.MinPrice = &minPrice
+		}
+	}
+	if maxPriceStr := query.Get("maxPrice"); maxPriceStr != "" {
+		if maxPrice, err := strconv.Atoi(maxPriceStr); err == nil {
+			req.MaxPrice = &maxPrice
+		}
+	}
+
+	// Parse year filters
+	if minYearStr := query.Get("minYear"); minYearStr != "" {
+		if minYear, err := strconv.Atoi(minYearStr); err == nil {
+			req.MinYear = &minYear
+		}
+	}
+	if maxYearStr := query.Get("maxYear"); maxYearStr != "" {
+		if maxYear, err := strconv.Atoi(maxYearStr); err == nil {
+			req.MaxYear = &maxYear
+		}
+	}
+
+	// Parse province
+	if province := query.Get("province"); province != "" {
+		req.Province = &province
+	}
+
+	// Parse type filters
+	if bodyTypeStr := query.Get("bodyTypeId"); bodyTypeStr != "" {
+		if bodyType, err := strconv.Atoi(bodyTypeStr); err == nil {
+			req.BodyTypeID = &bodyType
+		}
+	}
+	if fuelTypeStr := query.Get("fuelTypeId"); fuelTypeStr != "" {
+		if fuelType, err := strconv.Atoi(fuelTypeStr); err == nil {
+			req.FuelTypeID = &fuelType
+		}
+	}
+
+	// Parse pagination
+	page := 1
+	if pageStr := query.Get("page"); pageStr != "" {
+		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+			page = p
+		}
+	}
+
+	limit := 20
+	if limitStr := query.Get("limit"); limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 100 {
+			limit = l
+		}
+	}
+
+	req.Limit = limit
+	req.Offset = (page - 1) * limit
+
+	// Search cars
+	cars, total, err := h.carService.SearchActiveCars(req)
+	if err != nil {
+		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
+			Success: false,
+			Error:   fmt.Sprintf("Failed to search cars: %v", err),
+		})
+		return
+	}
+
+	utils.RespondJSON(w, http.StatusOK, models.PaginatedCarListResponse{
+		Success: true,
+		Data: models.PaginatedCarListData{
+			Cars:  cars,
+			Total: total,
+			Page:  page,
+			Limit: limit,
+		},
 	})
 }
 
@@ -443,18 +534,17 @@ func (h *CarHandler) DeleteCarImage(w http.ResponseWriter, r *http.Request) {
 func extractIDFromPath(path, prefix string) (int, error) {
 	// Remove prefix
 	idStr := strings.TrimPrefix(path, prefix)
-	
+
 	// Remove anything after the ID (like /images)
 	if idx := strings.Index(idStr, "/"); idx != -1 {
 		idStr = idStr[:idx]
 	}
-	
+
 	// Parse ID
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		return 0, fmt.Errorf("invalid ID format")
 	}
-	
+
 	return id, nil
 }
-

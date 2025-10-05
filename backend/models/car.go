@@ -3,29 +3,30 @@ package models
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 )
 
 // Car represents a car listing
 type Car struct {
-	CID             int        `json:"cid" db:"cid"`
-	SellerID        int        `json:"sellerId" db:"seller_id"`
-	Year            *int       `json:"year" db:"year"`
-	Mileage         *int       `json:"mileage" db:"mileage"`
-	Price           int        `json:"price" db:"price"`
-	Province        *string    `json:"province" db:"province"`
-	ConditionRating *int       `json:"conditionRating" db:"condition_rating"`
-	BodyTypeID      *int       `json:"bodyTypeId" db:"body_type_id"`
-	TransmissionID  *int       `json:"transmissionId" db:"transmission_id"`
-	FuelTypeID      *int       `json:"fuelTypeId" db:"fuel_type_id"`
-	DrivetrainID    *int       `json:"drivetrainId" db:"drivetrain_id"`
-	Seats           *int       `json:"seats" db:"seats"`
-	Doors           *int       `json:"doors" db:"doors"`
-	Color           *string    `json:"color" db:"color"`
-	Status          string     `json:"status" db:"status"`
-	OCRApplied      bool       `json:"ocrApplied" db:"ocr_applied"`
-	CreatedAt       time.Time  `json:"createdAt" db:"created_at"`
-	UpdatedAt       time.Time  `json:"updatedAt" db:"updated_at"`
+	CID             int       `json:"cid" db:"cid"`
+	SellerID        int       `json:"sellerId" db:"seller_id"`
+	Year            *int      `json:"year" db:"year"`
+	Mileage         *int      `json:"mileage" db:"mileage"`
+	Price           int       `json:"price" db:"price"`
+	Province        *string   `json:"province" db:"province"`
+	ConditionRating *int      `json:"conditionRating" db:"condition_rating"`
+	BodyTypeID      *int      `json:"bodyTypeId" db:"body_type_id"`
+	TransmissionID  *int      `json:"transmissionId" db:"transmission_id"`
+	FuelTypeID      *int      `json:"fuelTypeId" db:"fuel_type_id"`
+	DrivetrainID    *int      `json:"drivetrainId" db:"drivetrain_id"`
+	Seats           *int      `json:"seats" db:"seats"`
+	Doors           *int      `json:"doors" db:"doors"`
+	Color           *string   `json:"color" db:"color"`
+	Status          string    `json:"status" db:"status"`
+	OCRApplied      bool      `json:"ocrApplied" db:"ocr_applied"`
+	CreatedAt       time.Time `json:"createdAt" db:"created_at"`
+	UpdatedAt       time.Time `json:"updatedAt" db:"updated_at"`
 }
 
 // CarImage represents an image stored in the database
@@ -93,6 +94,7 @@ type Drivetrain struct {
 
 // Request and Response models
 type CreateCarRequest struct {
+	// Cars table fields
 	Year            *int    `json:"year"`
 	Mileage         *int    `json:"mileage"`
 	Price           int     `json:"price" validate:"required,gt=0"`
@@ -106,6 +108,25 @@ type CreateCarRequest struct {
 	Doors           *int    `json:"doors"`
 	Color           *string `json:"color"`
 	Status          *string `json:"status" validate:"omitempty,oneof=draft active sold"`
+
+	// Car details table fields (optional - from OCR or inspection)
+	BrandName          *string `json:"brandName"`
+	ModelName          *string `json:"modelName"`
+	RegistrationNumber *string `json:"registrationNumber"`
+	ChassisNumber      *string `json:"vin"` // Frontend sends "vin" but backend stores as "chassis_number"
+	EngineNumber       *string `json:"engineNumber"`
+	VehicleType        *string `json:"bodyStyle"` // Frontend sends "bodyStyle" but backend stores as "vehicle_type"
+
+	// Inspection data fields (ignored for now - just prevent decode errors)
+	OverallResult          *string `json:"overallResult"`
+	BrakePerformance       *string `json:"brakePerformance"`
+	HandbrakePerformance   *string `json:"handbrakePerformance"`
+	EmissionValue          *string `json:"emissionValue"`
+	NoiseLevel             *string `json:"noiseLevel"`
+	BrakeResult            *string `json:"brakeResult"`
+	WheelAlignmentResult   *string `json:"wheelAlignmentResult"`
+	EmissionResult         *string `json:"emissionResult"`
+	ChassisConditionResult *string `json:"chassisConditionResult"`
 }
 
 type UpdateCarRequest struct {
@@ -125,9 +146,9 @@ type UpdateCarRequest struct {
 }
 
 type CarResponse struct {
-	Success bool    `json:"success"`
-	Data    Car     `json:"data"`
-	Message string  `json:"message,omitempty"`
+	Success bool   `json:"success"`
+	Data    Car    `json:"data"`
+	Message string `json:"message,omitempty"`
 }
 
 type CarListResponse struct {
@@ -136,10 +157,23 @@ type CarListResponse struct {
 	Message string `json:"message,omitempty"`
 }
 
+type PaginatedCarListResponse struct {
+	Success bool                 `json:"success"`
+	Data    PaginatedCarListData `json:"data"`
+	Message string               `json:"message,omitempty"`
+}
+
+type PaginatedCarListData struct {
+	Cars  []Car `json:"cars"`
+	Total int   `json:"total"`
+	Page  int   `json:"page"`
+	Limit int   `json:"limit"`
+}
+
 type CarWithImagesResponse struct {
-	Success bool               `json:"success"`
-	Data    CarWithImages      `json:"data"`
-	Message string             `json:"message,omitempty"`
+	Success bool          `json:"success"`
+	Data    CarWithImages `json:"data"`
+	Message string        `json:"message,omitempty"`
 }
 
 type CarWithImages struct {
@@ -148,15 +182,15 @@ type CarWithImages struct {
 }
 
 type ImageUploadResponse struct {
-	Success bool             `json:"success"`
-	Data    ImageUploadData  `json:"data"`
-	Message string           `json:"message,omitempty"`
+	Success bool            `json:"success"`
+	Data    ImageUploadData `json:"data"`
+	Message string          `json:"message,omitempty"`
 }
 
 type ImageUploadData struct {
-	CarID        int                `json:"carId"`
-	UploadedCount int               `json:"uploadedCount"`
-	Images       []CarImageMetadata `json:"images"`
+	CarID         int                `json:"carId"`
+	UploadedCount int                `json:"uploadedCount"`
+	Images        []CarImageMetadata `json:"images"`
 }
 
 // CarRepository handles car-related database operations
@@ -177,18 +211,18 @@ func (r *CarRepository) CreateCar(car *Car) error {
 			color, status, ocr_applied)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 		RETURNING cid, created_at, updated_at`
-	
+
 	err := r.db.DB.QueryRow(query,
 		car.SellerID, car.Year, car.Mileage, car.Price, car.Province,
 		car.ConditionRating, car.BodyTypeID, car.TransmissionID,
 		car.FuelTypeID, car.DrivetrainID, car.Seats, car.Doors,
 		car.Color, car.Status, car.OCRApplied,
 	).Scan(&car.CID, &car.CreatedAt, &car.UpdatedAt)
-	
+
 	if err != nil {
 		return fmt.Errorf("failed to create car: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -201,7 +235,7 @@ func (r *CarRepository) GetCarByID(carID int) (*Car, error) {
 			color, status, ocr_applied, created_at, updated_at
 		FROM cars
 		WHERE cid = $1`
-	
+
 	err := r.db.DB.QueryRow(query, carID).Scan(
 		&car.CID, &car.SellerID, &car.Year, &car.Mileage, &car.Price,
 		&car.Province, &car.ConditionRating, &car.BodyTypeID,
@@ -209,14 +243,14 @@ func (r *CarRepository) GetCarByID(carID int) (*Car, error) {
 		&car.Seats, &car.Doors, &car.Color, &car.Status,
 		&car.OCRApplied, &car.CreatedAt, &car.UpdatedAt,
 	)
-	
+
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("car not found")
 		}
 		return nil, fmt.Errorf("failed to get car: %w", err)
 	}
-	
+
 	return car, nil
 }
 
@@ -229,13 +263,13 @@ func (r *CarRepository) GetCarsBySellerID(sellerID int) ([]Car, error) {
 		FROM cars
 		WHERE seller_id = $1
 		ORDER BY created_at DESC`
-	
+
 	rows, err := r.db.DB.Query(query, sellerID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get cars by seller: %w", err)
 	}
 	defer rows.Close()
-	
+
 	var cars []Car
 	for rows.Next() {
 		var car Car
@@ -251,8 +285,133 @@ func (r *CarRepository) GetCarsBySellerID(sellerID int) ([]Car, error) {
 		}
 		cars = append(cars, car)
 	}
-	
+
 	return cars, nil
+}
+
+// SearchCarsRequest represents search/filter parameters
+type SearchCarsRequest struct {
+	Query      string  // Search query for brand/model/description
+	MinPrice   *int    // Minimum price filter
+	MaxPrice   *int    // Maximum price filter
+	Province   *string // Province filter
+	MinYear    *int    // Minimum year filter
+	MaxYear    *int    // Maximum year filter
+	BodyTypeID *int    // Body type filter
+	FuelTypeID *int    // Fuel type filter
+	Status     string  // Status filter (default: "active")
+	Limit      int     // Results per page (default: 20)
+	Offset     int     // Pagination offset (default: 0)
+}
+
+// GetActiveCars retrieves all active car listings with optional filters
+func (r *CarRepository) GetActiveCars(req *SearchCarsRequest) ([]Car, int, error) {
+	// Build WHERE clauses
+	whereClauses := []string{"status = $1"}
+	args := []interface{}{req.Status}
+	argCounter := 2
+
+	if req.MinPrice != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("price >= $%d", argCounter))
+		args = append(args, *req.MinPrice)
+		argCounter++
+	}
+
+	if req.MaxPrice != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("price <= $%d", argCounter))
+		args = append(args, *req.MaxPrice)
+		argCounter++
+	}
+
+	if req.Province != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("province = $%d", argCounter))
+		args = append(args, *req.Province)
+		argCounter++
+	}
+
+	if req.MinYear != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("year >= $%d", argCounter))
+		args = append(args, *req.MinYear)
+		argCounter++
+	}
+
+	if req.MaxYear != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("year <= $%d", argCounter))
+		args = append(args, *req.MaxYear)
+		argCounter++
+	}
+
+	if req.BodyTypeID != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("body_type_id = $%d", argCounter))
+		args = append(args, *req.BodyTypeID)
+		argCounter++
+	}
+
+	if req.FuelTypeID != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("fuel_type_id = $%d", argCounter))
+		args = append(args, *req.FuelTypeID)
+		argCounter++
+	}
+
+	// Text search on brand/model via car_details (if query is provided)
+	joinClause := ""
+	if req.Query != "" {
+		joinClause = "LEFT JOIN car_details cd ON cars.cid = cd.car_id"
+		whereClauses = append(whereClauses, fmt.Sprintf(
+			"(cd.brand_name ILIKE $%d OR cd.model_name ILIKE $%d OR province ILIKE $%d)",
+			argCounter, argCounter+1, argCounter+2,
+		))
+		searchPattern := "%" + req.Query + "%"
+		args = append(args, searchPattern, searchPattern, searchPattern)
+		argCounter += 3
+	}
+
+	whereSQL := strings.Join(whereClauses, " AND ")
+
+	// Count total results
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM cars %s WHERE %s", joinClause, whereSQL)
+	var total int
+	err := r.db.DB.QueryRow(countQuery, args...).Scan(&total)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to count cars: %w", err)
+	}
+
+	// Get paginated results
+	query := fmt.Sprintf(`
+		SELECT DISTINCT cars.cid, cars.seller_id, cars.year, cars.mileage, cars.price, 
+			cars.province, cars.condition_rating, cars.body_type_id, cars.transmission_id, 
+			cars.fuel_type_id, cars.drivetrain_id, cars.seats, cars.doors, cars.color, 
+			cars.status, cars.ocr_applied, cars.created_at, cars.updated_at
+		FROM cars %s
+		WHERE %s
+		ORDER BY cars.created_at DESC
+		LIMIT $%d OFFSET $%d`, joinClause, whereSQL, argCounter, argCounter+1)
+
+	args = append(args, req.Limit, req.Offset)
+
+	rows, err := r.db.DB.Query(query, args...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to get cars: %w", err)
+	}
+	defer rows.Close()
+
+	var cars []Car
+	for rows.Next() {
+		var car Car
+		err := rows.Scan(
+			&car.CID, &car.SellerID, &car.Year, &car.Mileage, &car.Price,
+			&car.Province, &car.ConditionRating, &car.BodyTypeID,
+			&car.TransmissionID, &car.FuelTypeID, &car.DrivetrainID,
+			&car.Seats, &car.Doors, &car.Color, &car.Status,
+			&car.OCRApplied, &car.CreatedAt, &car.UpdatedAt,
+		)
+		if err != nil {
+			return nil, 0, fmt.Errorf("failed to scan car: %w", err)
+		}
+		cars = append(cars, car)
+	}
+
+	return cars, total, nil
 }
 
 // UpdateCar updates a car listing
@@ -264,48 +423,48 @@ func (r *CarRepository) UpdateCar(car *Car) error {
 			fuel_type_id = $9, drivetrain_id = $10, seats = $11, doors = $12,
 			color = $13, status = $14
 		WHERE cid = $1`
-	
+
 	result, err := r.db.DB.Exec(query,
 		car.CID, car.Year, car.Mileage, car.Price, car.Province,
 		car.ConditionRating, car.BodyTypeID, car.TransmissionID,
 		car.FuelTypeID, car.DrivetrainID, car.Seats, car.Doors,
 		car.Color, car.Status,
 	)
-	
+
 	if err != nil {
 		return fmt.Errorf("failed to update car: %w", err)
 	}
-	
+
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		return fmt.Errorf("failed to get rows affected: %w", err)
 	}
-	
+
 	if rowsAffected == 0 {
 		return fmt.Errorf("car not found")
 	}
-	
+
 	return nil
 }
 
 // DeleteCar deletes a car listing
 func (r *CarRepository) DeleteCar(carID int) error {
 	query := `DELETE FROM cars WHERE cid = $1`
-	
+
 	result, err := r.db.DB.Exec(query, carID)
 	if err != nil {
 		return fmt.Errorf("failed to delete car: %w", err)
 	}
-	
+
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		return fmt.Errorf("failed to get rows affected: %w", err)
 	}
-	
+
 	if rowsAffected == 0 {
 		return fmt.Errorf("car not found")
 	}
-	
+
 	return nil
 }
 
@@ -325,15 +484,15 @@ func (r *CarImageRepository) CreateCarImage(image *CarImage) error {
 		INSERT INTO car_images (car_id, image_data, image_type, image_size, display_order)
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id, uploaded_at`
-	
+
 	err := r.db.DB.QueryRow(query,
 		image.CarID, image.ImageData, image.ImageType, image.ImageSize, image.DisplayOrder,
 	).Scan(&image.ID, &image.UploadedAt)
-	
+
 	if err != nil {
 		return fmt.Errorf("failed to create car image: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -344,19 +503,19 @@ func (r *CarImageRepository) GetCarImageByID(imageID int) (*CarImage, error) {
 		SELECT id, car_id, image_data, image_type, image_size, display_order, uploaded_at
 		FROM car_images
 		WHERE id = $1`
-	
+
 	err := r.db.DB.QueryRow(query, imageID).Scan(
 		&image.ID, &image.CarID, &image.ImageData, &image.ImageType,
 		&image.ImageSize, &image.DisplayOrder, &image.UploadedAt,
 	)
-	
+
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("image not found")
 		}
 		return nil, fmt.Errorf("failed to get image: %w", err)
 	}
-	
+
 	return image, nil
 }
 
@@ -367,13 +526,13 @@ func (r *CarImageRepository) GetCarImagesMetadata(carID int) ([]CarImageMetadata
 		FROM car_images
 		WHERE car_id = $1
 		ORDER BY display_order, uploaded_at`
-	
+
 	rows, err := r.db.DB.Query(query, carID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get car images metadata: %w", err)
 	}
 	defer rows.Close()
-	
+
 	var images []CarImageMetadata
 	for rows.Next() {
 		var img CarImageMetadata
@@ -383,7 +542,7 @@ func (r *CarImageRepository) GetCarImagesMetadata(carID int) ([]CarImageMetadata
 		}
 		images = append(images, img)
 	}
-	
+
 	return images, nil
 }
 
@@ -391,66 +550,151 @@ func (r *CarImageRepository) GetCarImagesMetadata(carID int) ([]CarImageMetadata
 func (r *CarImageRepository) CountCarImages(carID int) (int, error) {
 	var count int
 	query := `SELECT COUNT(*) FROM car_images WHERE car_id = $1`
-	
+
 	err := r.db.DB.QueryRow(query, carID).Scan(&count)
 	if err != nil {
 		return 0, fmt.Errorf("failed to count car images: %w", err)
 	}
-	
+
 	return count, nil
 }
 
 // DeleteCarImage deletes a single image
 func (r *CarImageRepository) DeleteCarImage(imageID int) error {
 	query := `DELETE FROM car_images WHERE id = $1`
-	
+
 	result, err := r.db.DB.Exec(query, imageID)
 	if err != nil {
 		return fmt.Errorf("failed to delete car image: %w", err)
 	}
-	
+
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		return fmt.Errorf("failed to get rows affected: %w", err)
 	}
-	
+
 	if rowsAffected == 0 {
 		return fmt.Errorf("image not found")
 	}
-	
+
 	return nil
 }
 
 // DeleteAllCarImages deletes all images for a car
 func (r *CarImageRepository) DeleteAllCarImages(carID int) error {
 	query := `DELETE FROM car_images WHERE car_id = $1`
-	
+
 	_, err := r.db.DB.Exec(query, carID)
 	if err != nil {
 		return fmt.Errorf("failed to delete car images: %w", err)
 	}
-	
+
 	return nil
 }
 
 // UpdateImageDisplayOrder updates the display order of an image
 func (r *CarImageRepository) UpdateImageDisplayOrder(imageID, displayOrder int) error {
 	query := `UPDATE car_images SET display_order = $2 WHERE id = $1`
-	
+
 	result, err := r.db.DB.Exec(query, imageID, displayOrder)
 	if err != nil {
 		return fmt.Errorf("failed to update display order: %w", err)
 	}
-	
+
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		return fmt.Errorf("failed to get rows affected: %w", err)
 	}
-	
+
 	if rowsAffected == 0 {
 		return fmt.Errorf("image not found")
 	}
-	
+
 	return nil
 }
 
+// CarDetailsRepository handles car details (registration data) operations
+type CarDetailsRepository struct {
+	db *Database
+}
+
+// NewCarDetailsRepository creates a new car details repository
+func NewCarDetailsRepository(db *Database) *CarDetailsRepository {
+	return &CarDetailsRepository{db: db}
+}
+
+// CreateCarDetails creates car registration details
+func (r *CarDetailsRepository) CreateCarDetails(details *CarDetails) error {
+	query := `
+		INSERT INTO car_details (car_id, brand_name, model_name, registration_number, 
+			chassis_number, engine_number, vehicle_type)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		RETURNING cdid, created_at`
+
+	err := r.db.DB.QueryRow(query,
+		details.CarID, details.BrandName, details.ModelName, details.RegistrationNumber,
+		details.ChassisNumber, details.EngineNumber, details.VehicleType,
+	).Scan(&details.CDID, &details.CreatedAt)
+
+	if err != nil {
+		return fmt.Errorf("failed to create car details: %w", err)
+	}
+
+	return nil
+}
+
+// GetCarDetailsByCarID retrieves car details by car ID
+func (r *CarDetailsRepository) GetCarDetailsByCarID(carID int) (*CarDetails, error) {
+	details := &CarDetails{}
+	query := `
+		SELECT cdid, car_id, brand_name, model_name, registration_number, issue_date,
+			chassis_number, engine_number, vehicle_type, weight, owner_name, 
+			registration_office, created_at
+		FROM car_details
+		WHERE car_id = $1`
+
+	err := r.db.DB.QueryRow(query, carID).Scan(
+		&details.CDID, &details.CarID, &details.BrandName, &details.ModelName,
+		&details.RegistrationNumber, &details.IssueDate, &details.ChassisNumber,
+		&details.EngineNumber, &details.VehicleType, &details.Weight,
+		&details.OwnerName, &details.RegistrationOffice, &details.CreatedAt,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil // No details found is OK
+		}
+		return nil, fmt.Errorf("failed to get car details: %w", err)
+	}
+
+	return details, nil
+}
+
+// UpdateCarDetails updates car registration details
+func (r *CarDetailsRepository) UpdateCarDetails(details *CarDetails) error {
+	query := `
+		UPDATE car_details SET
+			brand_name = $2, model_name = $3, registration_number = $4,
+			chassis_number = $5, engine_number = $6, vehicle_type = $7
+		WHERE car_id = $1`
+
+	result, err := r.db.DB.Exec(query,
+		details.CarID, details.BrandName, details.ModelName, details.RegistrationNumber,
+		details.ChassisNumber, details.EngineNumber, details.VehicleType,
+	)
+
+	if err != nil {
+		return fmt.Errorf("failed to update car details: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("car details not found")
+	}
+
+	return nil
+}

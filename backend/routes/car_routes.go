@@ -37,7 +37,7 @@ func CarRoutes(
 		}
 
 		path := r.URL.Path
-		
+
 		// GET /api/cars/images/{id} - Get image data (public)
 		if strings.HasPrefix(path, "/api/cars/images/") && r.Method == http.MethodGet {
 			corsMiddleware(http.HandlerFunc(handler.GetCarImage)).ServeHTTP(w, r)
@@ -52,7 +52,7 @@ func CarRoutes(
 
 		// Extract ID from path
 		idPart := strings.TrimPrefix(path, "/api/cars/")
-		
+
 		// POST /api/cars/{id}/images - Upload images (requires auth)
 		if strings.HasSuffix(path, "/images") && r.Method == http.MethodPost {
 			corsMiddleware(authMiddleware.RequireAuth(handler.UploadCarImages)).ServeHTTP(w, r)
@@ -78,6 +78,22 @@ func CarRoutes(
 		}
 
 		http.Error(w, "Not found", http.StatusNotFound)
+	})
+
+	// Public search endpoint
+	// GET /api/cars/search - Search/filter active cars (public)
+	mux.HandleFunc("/api/cars/search", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodOptions {
+			corsMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			})).ServeHTTP(w, r)
+			return
+		}
+		if r.Method == http.MethodGet {
+			corsMiddleware(http.HandlerFunc(handler.SearchCars)).ServeHTTP(w, r)
+			return
+		}
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	})
 
 	// Protected routes (require authentication)
@@ -113,4 +129,3 @@ func CarRoutes(
 
 	return mux
 }
-
