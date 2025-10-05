@@ -1,10 +1,9 @@
 // Admin authentication utilities and API functions
 import {
-  AdminUser,
   AdminMeResponse,
   AdminIPWhitelistResponse,
   AdminAuthResponse,
-  AdminLoginRequest,
+  AdminSigninRequest,
   AdminActionResponse,
 } from "@/constants/admin";
 import { apiCall } from "./apiCall";
@@ -12,16 +11,16 @@ import { apiCall } from "./apiCall";
 // Admin authentication API functions
 export const adminAuthAPI = {
   // Log in an admin
-  async login(data: AdminLoginRequest): Promise<AdminAuthResponse> {
-    return apiCall<AdminAuthResponse>("/admin/auth/login", {
+  async signin(data: AdminSigninRequest): Promise<AdminAuthResponse> {
+    return apiCall<AdminAuthResponse>("/admin/auth/signin", {
       method: "POST",
       body: JSON.stringify(data),
     });
   },
 
-  // Log out an admin
-  async logout(): Promise<{ success: boolean; message: string }> {
-    return apiCall("/admin/auth/logout", {
+  // Sign out an admin
+  async signout(): Promise<{ success: boolean; message: string }> {
+    return apiCall("/admin/auth/signout", {
       method: "POST",
     });
   },

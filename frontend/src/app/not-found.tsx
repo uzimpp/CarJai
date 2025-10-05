@@ -62,7 +62,7 @@ function NotFoundContent() {
             onClick={() => router.push("/admin/login")}
             className={`w-full ${accent.btn} text-white font-medium py-2.5 px-4 rounded-md transition`}
           >
-            Go to Admin Login
+            Go to Admin Signin
           </button>
         </div>
 

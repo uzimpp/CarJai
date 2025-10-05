@@ -5,8 +5,8 @@ A modern, responsive frontend application for CarJai built with Next.js 14, feat
 ## 🚀 Features
 
 ### Authentication & User Management
-- **🔐 Dual Authentication** - Separate login systems for users and admins
-- **👤 User Registration & Login** - Complete user account management
+- **🔐 Dual Authentication** - Separate sign in systems for users and admins
+- **👤 User Registration & Sign In** - Complete user account management
 - **🛡️ Protected Routes** - Secure route protection with authentication guards
 - **🔄 Session Management** - Automatic token refresh and session handling
 
@@ -32,9 +32,9 @@ frontend/
 │   │   ├── about-us/          # About us page
 │   │   ├── admin/             # Admin dashboard pages
 │   │   │   ├── dashboard/     # Admin dashboard
-│   │   │   └── login/         # Admin login
+│   │   │   └── signin/        # Admin sign in
 │   │   ├── buy/               # Car buying page
-│   │   ├── login/             # User login page
+│   │   ├── signin/            # User sign in page
 │   │   ├── signup/            # User registration page
 │   │   ├── verify-document/   # Document verification page
 │   │   ├── privacy/           # Privacy policy
@@ -79,7 +79,7 @@ frontend/
 ### Public Pages
 - `/` - Home page
 - `/about-us` - About us page
-- `/login` - User login
+- `/signin` - User sign in
 - `/signup` - User registration
 - `/privacy` - Privacy policy
 - `/terms` - Terms of service
@@ -89,7 +89,7 @@ frontend/
 - `/verify-document` - Document verification (requires user auth)
 
 ### Admin Pages
-- `/admin/login` - Admin login
+- `/admin/signin` - Admin sign in
 - `/admin/dashboard` - Admin dashboard (requires admin auth)
 
 ### Code Quality
