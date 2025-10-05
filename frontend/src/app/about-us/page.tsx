@@ -11,7 +11,7 @@ export default function AboutUs() {
           </h1>
           <div className="w-24 h-1 bg-gradient-to-r from-maroon to-red mx-auto mb-(--space-m)"></div>
           <p className="text-2 text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            Thailand&apos;s most trusted second-hand car marketplace, where
+            Trusted second-hand car marketplace, where
             every transaction is built on{" "}
             <span className="font-bold text-maroon">transparency</span>,
             <span className="font-bold text-maroon"> trust</span>, and
@@ -224,19 +224,6 @@ export default function AboutUs() {
               </p>
             </div>
           ))}
-        </div>
-      </section>
-
-      {/* Vision Section */}
-      <section className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-3xl p-(--space-2xl) text-white mb-(--space-2xl)">
-        <div className="text-center max-w-4xl mx-auto">
-          <h2 className="text-5 font-bold mb-(--space-m)">Our Vision</h2>
-          <blockquote className="text-3 italic mb-(--space-m) leading-relaxed">
-            &quot;To be the platform that puts the hearts of buyers and sellers
-            at the center of every transaction, creating a marketplace where
-            trust, transparency, and genuine care drive every interaction.&quot;
-          </blockquote>
-          <div className="w-24 h-1 bg-gradient-to-r from-maroon to-red mx-auto"></div>
         </div>
       </section>
 

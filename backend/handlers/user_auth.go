@@ -298,5 +298,58 @@ func (h *UserAuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusOK, response)
 }
 
+// ChangePassword handles password change requests
+func (h *UserAuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Get authenticated user from cookie
+	cookie, err := r.Cookie("jwt")
+	if err != nil {
+		utils.WriteError(w, http.StatusUnauthorized, "Authentication required")
+		return
+	}
+
+	user, err := h.userService.ValidateUserSession(cookie.Value)
+	if err != nil {
+		utils.WriteError(w, http.StatusUnauthorized, "Invalid session")
+		return
+	}
+
+	// Parse request body
+	var req models.ChangePasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	// Validate request
+	if req.CurrentPassword == "" || req.NewPassword == "" {
+		utils.WriteError(w, http.StatusBadRequest, "Current password and new password are required")
+		return
+	}
+
+	if len(req.NewPassword) < 6 {
+		utils.WriteError(w, http.StatusBadRequest, "New password must be at least 6 characters")
+		return
+	}
+
+	// Change password via service
+	err = h.userService.ChangePassword(user.ID, req.CurrentPassword, req.NewPassword)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	response := models.ChangePasswordResponse{
+		Success: true,
+		Message: "Password changed successfully",
+	}
+
+	utils.WriteJSON(w, http.StatusOK, response)
+}
+
 // getClientIP extracts the client IP address from the request
 // (removed) getClientIP: use utils.ExtractClientIP for a single, shared implementation

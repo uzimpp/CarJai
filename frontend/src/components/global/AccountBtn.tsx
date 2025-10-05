@@ -18,7 +18,6 @@ interface AccountBtnProps {
 export default function AccountBtn({
   user,
   roles,
-  profiles,
   isAuthedAdmin,
   isAuthedUser,
   adminUser,
@@ -63,12 +62,6 @@ export default function AccountBtn({
                   className="block px-4 py-2 text-sm hover:bg-maroon/30"
                 >
                   Dashboard
-                </Link>
-                <Link
-                  href="/admin/dashboard#session"
-                  className="block px-4 py-2 text-sm hover:bg-maroon/30"
-                >
-                  Sessions
                 </Link>
                 <Link
                   href="/admin/dashboard#ip"
@@ -143,74 +136,78 @@ export default function AccountBtn({
                 </div>
               </div>
 
-              {/* Role Status Badges */}
-              {(roles?.buyer || roles?.seller) && (
-                <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
-                  <div className="flex gap-2 flex-wrap">
-                    {roles?.buyer && (
-                      <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800">
-                        <svg
-                          className="w-3 h-3 mr-1"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" />
-                        </svg>
-                        Buyer{" "}
-                        {profiles?.buyerComplete && (
-                          <span className="ml-1">✓</span>
-                        )}
-                      </span>
-                    )}
-                    {roles?.seller && (
-                      <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-green-100 text-green-800">
-                        <svg
-                          className="w-3 h-3 mr-1"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M10 2a4 4 0 00-4 4v1H5a1 1 0 00-.994.89l-1 9A1 1 0 004 18h12a1 1 0 00.994-1.11l-1-9A1 1 0 0015 7h-1V6a4 4 0 00-4-4zm2 5V6a2 2 0 10-4 0v1h4zm-6 3a1 1 0 112 0 1 1 0 01-2 0zm7-1a1 1 0 100 2 1 1 0 000-2z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                        Seller{" "}
-                        {profiles?.sellerComplete && (
-                          <span className="ml-1">✓</span>
-                        )}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-
               {/* Navigation Links */}
               <div className="py-1">
-                <Link
-                  href="/settings"
-                  onClick={() => setOpen(false)}
-                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-maroon/10 hover:text-maroon transition-colors"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    className="w-5 h-5"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M7.84 1.804A1 1 0 018.82 1h2.36a1 1 0 01.98.804l.331 1.652a6.993 6.993 0 011.929 1.115l1.598-.54a1 1 0 011.186.447l1.18 2.044a1 1 0 01-.205 1.251l-1.267 1.113a7.047 7.047 0 010 2.228l1.267 1.113a1 1 0 01.206 1.25l-1.18 2.045a1 1 0 01-1.187.447l-1.598-.54a6.993 6.993 0 01-1.929 1.115l-.33 1.652a1 1 0 01-.98.804H8.82a1 1 0 01-.98-.804l-.331-1.652a6.993 6.993 0 01-1.929-1.115l-1.598.54a1 1 0 01-1.186-.447l-1.18-2.044a1 1 0 01.205-1.251l1.267-1.114a7.05 7.05 0 010-2.227L1.821 7.773a1 1 0 01-.206-1.25l1.18-2.045a1 1 0 011.187-.447l1.598.54A6.993 6.993 0 017.51 3.456l.33-1.652zM10 13a3 3 0 100-6 3 3 0 000 6z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <div className="flex-1">
-                    <div className="font-medium">Account Settings</div>
-                    <div className="text-xs text-gray-500">
-                      Manage profile & preferences
-                    </div>
+
+                {roles && !roles.buyer && !roles.seller && (
+                  <div className="px-4 py-3 bg-amber-50 border-y border-amber-200">
+                    <Link
+                      href={"/signup/role"}
+                      onClick={() => setOpen(false)}
+                      className="flex items-center gap-2 text--1 font-medium text-amber-900 hover:text-maroon"
+                    >
+                      <span>Continue where you left off</span>
+                    </Link>
                   </div>
-                </Link>
+                )}
+
+                {roles?.seller && (
+                  <Link
+                    href={`/seller/${user?.id}`}
+                    onClick={() => setOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-maroon/10 hover:text-maroon transition-colors"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      className="w-5 h-5"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 2a4 4 0 110 8 4 4 0 010-8zm-6 14a6 6 0 1112 0v1a1 1 0 01-1 1H5a1 1 0 01-1-1v-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <span className="font-medium">View Public Profile</span>
+                  </Link>
+                )}
+
+                {roles?.buyer && (
+                  <Link
+                    href="/favorites"
+                    onClick={() => setOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-maroon/10 hover:text-maroon transition-colors"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      className="w-5 h-5"
+                    >
+                      <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 18.657l-6.828-6.83a4 4 0 010-5.655z" />
+                    </svg>
+                    <span className="font-medium">Favorites</span>
+                  </Link>
+                )}
+
+                {roles?.buyer && (
+                  <Link
+                    href="/recent_views"
+                    onClick={() => setOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-maroon/10 hover:text-maroon transition-colors"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      className="w-5 h-5"
+                    >
+                      <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 18.657l-6.828-6.83a4 4 0 010-5.655z" />
+                    </svg>
+                    <span className="font-medium">Recent Views</span>
+                  </Link>
+                )}
 
                 {roles?.seller && (
                   <Link
@@ -230,6 +227,30 @@ export default function AccountBtn({
                   </Link>
                 )}
               </div>
+
+              {(roles?.buyer || roles?.seller) && (
+                <Link
+                  href="/settings"
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-maroon/10 hover:text-maroon transition-colors"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    className="w-5 h-5"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M7.84 1.804A1 1 0 018.82 1h2.36a1 1 0 01.98.804l.331 1.652a6.993 6.993 0 011.929 1.115l1.598-.54a1 1 0 011.186.447l1.18 2.044a1 1 0 01-.205 1.251l-1.267 1.113a7.047 7.047 0 010 2.228l1.267 1.113a1 1 0 01.206 1.25l-1.18 2.045a1 1 0 01-1.187.447l-1.598-.54a6.993 6.993 0 01-1.929 1.115l-.33 1.652a1 1 0 01-.98.804H8.82a1 1 0 01-.98-.804l-.331-1.652a6.993 6.993 0 01-1.929-1.115l-1.598.54a1 1 0 01-1.186-.447l-1.18-2.044a1 1 0 01.205-1.251l1.267-1.114a7.05 7.05 0 010-2.227L1.821 7.773a1 1 0 01-.206-1.25l1.18-2.045a1 1 0 011.187-.447l1.598.54A6.993 6.993 0 017.51 3.456l.33-1.652zM10 13a3 3 0 100-6 3 3 0 000 6z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <div className="flex-1">
+                    <div className="font-medium">Account Settings</div>
+                  </div>
+                </Link>
+              )}
 
               {/* Sign Out */}
               <div className="border-t border-gray-100">
@@ -267,13 +288,13 @@ export default function AccountBtn({
         <div className="flex items-center gap-x-(--space-2xs)">
           <Link
             href="/signin"
-            className="text-0 font-medium text-gray-700 hover:text-maroon transition-colors px-(--space-s) py-(--space-2xs)"
+            className="text-0 font-medium text-gray-700 hover:text-maroon border border-gray-300 rounded-full transition-colors px-(--space-s) py-(--space-3xs-2xs)"
           >
             Sign In
           </Link>
           <Link
             href="/signup"
-            className="flex items-center justify-center text-white text-0 font-medium py-(--space-2xs) px-(--space-m) bg-maroon rounded-full hover:bg-red transition-colors shadow-sm"
+            className="flex items-center justify-center text-white text-0 font-medium py-(--space-3xs-2xs) px-(--space-m) bg-maroon rounded-full hover:bg-red transition-colors shadow-sm"
           >
             Sign Up
           </Link>
