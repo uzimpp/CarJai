@@ -4,33 +4,6 @@ import SearchBar from "@/components/global/SearchBar";
 import Cta from "@/components/global/Cta";
 
 export default function Home() {
-  const featuredCars = [
-    {
-      name: "Mercedes-Benz AMG",
-      category: "Performance",
-      image: "/assets/cars/benz_amg.png",
-      price: "฿8,500,000",
-    },
-    {
-      name: "Porsche 911",
-      category: "Sports Car",
-      image: "/assets/cars/porche.png",
-      price: "฿12,900,000",
-    },
-    {
-      name: "Honda Civic",
-      category: "Compact",
-      image: "/assets/cars/Honda Civic EG Hatch Transparent.png",
-      price: "฿850,000",
-    },
-    {
-      name: "Toyota Alphard",
-      category: "Family Van",
-      image: "/assets/cars/alphard.jpg",
-      price: "฿4,200,000",
-    },
-  ];
-
   const categories = [
     {
       title: "City & Compact",
@@ -132,7 +105,9 @@ export default function Home() {
               href={`/buy?category=${encodeURIComponent(cat.title)}`}
               className="group relative shadow-lg rounded-tr-5xl rounded-2xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
             >
-              <div className={`w-full h-full flex flex-col justify-center p-(--space-m-xl) gap-y-(--space-l) inset-0 bg-gradient-to-br rounded-tr-xl rounded-xl ${cat.gradient}`}>
+              <div
+                className={`w-full h-full flex flex-col justify-center p-(--space-m-xl) gap-y-(--space-l) inset-0 bg-gradient-to-br rounded-tr-xl rounded-xl ${cat.gradient}`}
+              >
                 <div>
                   <h3 className="text-3 font-bold text-white mb-2 line-height-12">
                     {cat.title}
