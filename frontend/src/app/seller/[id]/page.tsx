@@ -1,42 +1,82 @@
-import { notFound } from "next/navigation";
-import { apiCall } from "@/lib/apiCall";
+"use client";
+
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import { Seller, SellerContact } from "@/constants/user";
+import { sellerAPI } from "@/lib/sellerAPI";
 
-interface SellerPageProps {
-  params: {
-    id: string;
-  };
-}
+export default function SellerPage() {
+  const params = useParams<{ id: string }>();
+  const id = params?.id;
 
-async function getSellerData(id: string) {
-  try {
-    const seller = await apiCall<{
-      success: boolean;
-      data: { seller: Seller; contacts: SellerContact[] };
-    }>(`/api/sellers/${id}`);
+  const [seller, setSeller] = useState<Seller | null>(null);
+  const [contacts, setContacts] = useState<SellerContact[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [notFoundState, setNotFoundState] = useState(false);
 
-    const contacts = await apiCall<{
-      success: boolean;
-      contacts: SellerContact[];
-    }>(`/api/sellers/${id}/contacts`);
-
-    return {
-      seller: seller.data.seller,
-      contacts: contacts.contacts,
+  useEffect(() => {
+    let mounted = true;
+    const run = async () => {
+      if (!id) return;
+      setIsLoading(true);
+      setNotFoundState(false);
+      try {
+        const sellerRes = await sellerAPI.getSeller(String(id));
+        if (!mounted) return;
+        setSeller(sellerRes.data.seller);
+        try {
+          const contactsRes = await sellerAPI.getSellerContacts(String(id));
+          if (!mounted) return;
+          setContacts(contactsRes.contacts || []);
+        } catch {
+          if (!mounted) return;
+          setContacts([]);
+        }
+      } catch {
+        if (!mounted) return;
+        setNotFoundState(true);
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
     };
-  } catch {
-    return null;
+    run();
+    return () => {
+      mounted = false;
+    };
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
   }
-}
 
-export default async function SellerPage({ params }: SellerPageProps) {
-  const data = await getSellerData(params.id);
-
-  if (!data) {
-    notFound();
+  if (notFoundState || !seller) {
+    return (
+      <div className="!pb-(--space-l) px-(--space-m) py-(--space-s) max-w-[1200px] mx-auto w-full">
+        <div className="rounded-xl border border-gray-200 bg-white p-(--space-l)">
+          <h1 className="text-2 font-bold text-gray-900 mb-(--space-s)">
+            Seller not found
+          </h1>
+          <p className="text-0 text-gray-600 mb-(--space-m)">
+            The seller you are looking for does not exist or is unavailable.
+          </p>
+          <Link
+            href="/buy"
+            className="inline-flex items-center px-(--space-m) py-(--space-2xs) text-0 font-medium rounded-lg text-white bg-maroon hover:bg-red transition-colors"
+          >
+            Go to Buy
+          </Link>
+        </div>
+      </div>
+    );
   }
-
-  const { seller, contacts } = data;
 
   const getContactIcon = (type: string) => {
     switch (type.toLowerCase()) {
@@ -126,110 +166,115 @@ export default async function SellerPage({ params }: SellerPageProps) {
   };
 
   return (
-    <div className="min-h-screen px-(--space-m) py-(--space-xl) max-w-[1200px] mx-auto">
-      {/* Header */}
-      <div className="mb-(--space-xl)">
-        <h1 className="text-5 font-bold text-gray-900 mb-(--space-2xs)">
-          {seller.displayName}
-        </h1>
-        {seller.about && (
-          <p className="text-1 text-gray-600 mt-(--space-s)">{seller.about}</p>
-        )}
-      </div>
-
-      <div className="grid md:grid-cols-3 gap-(--space-l)">
-        {/* Main Content */}
-        <div className="md:col-span-2">
-          <div className="bg-white rounded-lg border border-gray-200 p-(--space-l)">
-            <h2 className="text-2 font-bold text-gray-900 mb-(--space-m)">
-              About This Dealership
-            </h2>
-            <p className="text-0 text-gray-600">
-              {seller.about || "No additional information provided."}
-            </p>
-
-            {seller.mapLink && (
-              <div className="mt-(--space-m)">
-                <a
-                  href={seller.mapLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center text-0 text-maroon hover:text-maroon-dark font-medium"
-                >
-                  <svg
-                    className="w-5 h-5 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
-                  </svg>
-                  View on Map
-                </a>
-              </div>
-            )}
-          </div>
-
-          {/* Cars section - placeholder for future implementation */}
-          <div className="mt-(--space-l) bg-white rounded-lg border border-gray-200 p-(--space-l)">
-            <h2 className="text-2 font-bold text-gray-900 mb-(--space-m)">
-              Available Cars
-            </h2>
-            <p className="text-0 text-gray-600">Car listings coming soon...</p>
+    <div className="!pb-(--space-l) px-(--space-m) py-(--space-s) max-w-[1536px] mx-auto w-full">
+      {/* Hero */}
+      <div className="bg-maroon text-white rounded-4xl">
+        <div className="max-w-[1200px] mx-auto px-(--space-m) py-(--space-xl)">
+          <div className="flex items-center gap-(--space-l)">
+            <div className="w-24 h-24 rounded-full bg-white/10 ring-4 ring-white/20 flex items-center justify-center text-2xl font-bold">
+              {seller.displayName?.[0] || "S"}
+            </div>
+            <div className="flex-1">
+              <h1 className="text-5 font-bold leading-tight">
+                {seller.displayName}
+              </h1>
+              {seller.about && (
+                <p className="text-0 text-white/90 mt-(--space-2xs)">
+                  {seller.about}
+                </p>
+              )}
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Sidebar - Contact Information */}
-        <div className="md:col-span-1">
-          <div className="bg-white rounded-lg border border-gray-200 p-(--space-l) sticky top-(--space-l)">
-            <h2 className="text-2 font-bold text-gray-900 mb-(--space-m)">
-              Contact Information
-            </h2>
-
-            {contacts.length > 0 ? (
-              <div className="space-y-(--space-s)">
-                {contacts.map((contact) => (
-                  <div
-                    key={contact.id}
-                    className="flex items-start p-(--space-s) rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex-shrink-0 text-maroon mt-1">
-                      {getContactIcon(contact.contactType)}
-                    </div>
-                    <div className="ml-3 flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <p className="text--1 font-medium text-gray-900 capitalize">
-                          {contact.contactType}
-                        </p>
-                        {contact.label && (
-                          <span className="text--2 text-gray-500 ml-2">
-                            ({contact.label})
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-0 text-gray-600 break-all mt-1">
-                        {contact.value}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text--1 text-gray-600">
-                No contact information available
+      {/* Content */}
+      <div className="max-w-[1200px] mx-auto px-(--space-m) py-(--space-xl)">
+        <div className="grid md:grid-cols-3 gap-(--space-l)">
+          {/* Main */}
+          <div className="md:col-span-2">
+            <div className="bg-white rounded-lg border border-gray-200 p-(--space-l)">
+              <h2 className="text-2 font-bold text-gray-900 mb-(--space-m)">
+                Cars from {seller.displayName}
+              </h2>
+              <p className="text-0 text-gray-600">
+                Car listings coming soon...
               </p>
-            )}
+            </div>
+          </div>
+
+          {/* Sidebar */}
+          <div className="md:col-span-1">
+            <div className="bg-white rounded-lg border border-gray-200 p-(--space-l) sticky top-(--space-l)">
+              <h2 className="text-2 font-bold text-gray-900 mb-(--space-m)">
+                Contact Information
+              </h2>
+              {contacts.length > 0 ? (
+                <div className="space-y-(--space-s)">
+                  {contacts.map((contact) => (
+                    <div
+                      key={contact.id}
+                      className="flex items-start p-(--space-s) rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex-shrink-0 text-maroon mt-1">
+                        {getContactIcon(contact.contactType)}
+                      </div>
+                      <div className="ml-3 flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className="text--1 font-medium text-gray-900 capitalize">
+                            {contact.contactType}
+                          </p>
+                          {contact.label && (
+                            <span className="text--2 text-gray-500 ml-2">
+                              ({contact.label})
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-0 text-gray-600 break-all mt-1">
+                          {contact.value}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text--1 text-gray-600">
+                  No contact information available
+                </p>
+              )}
+
+              {seller.mapLink && (
+                <div className="mt-(--space-m)">
+                  <a
+                    href={seller.mapLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center text-0 text-maroon hover:text-maroon-dark font-medium"
+                  >
+                    <svg
+                      className="w-5 h-5 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                    </svg>
+                    View on Map
+                  </a>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

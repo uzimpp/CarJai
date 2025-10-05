@@ -21,19 +21,28 @@ func ProfileRoutes(
 	// Create router
 	router := http.NewServeMux()
 
-	// Profile routes (all require authentication)
-	router.HandleFunc("/api/profile",
+	// Profile routes (GET/PATCH) - handles /api/profile/self
+	router.HandleFunc("/api/profile/self",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				middleware.GeneralRateLimit()(
 					middleware.LoggingMiddleware(
-						profileHandler.Profile,
+						func(w http.ResponseWriter, r *http.Request) {
+							if r.Method == http.MethodGet {
+								profileHandler.Profile(w, r)
+							} else if r.Method == http.MethodPatch {
+								profileHandler.UpdateSelf(w, r)
+							} else {
+								http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+							}
+						},
 					),
 				),
 			),
 		),
 	)
 
+	// Buyer profile routes (GET/PUT) - handles /api/profile/buyer
 	router.HandleFunc("/api/profile/buyer",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
@@ -54,6 +63,7 @@ func ProfileRoutes(
 		),
 	)
 
+	// Seller profile routes (GET/PUT) - handles /api/profile/seller
 	router.HandleFunc("/api/profile/seller",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
