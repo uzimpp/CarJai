@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -445,6 +446,71 @@ func (r *UserRepository) ValidateUserCredentials(email, password string) (*User,
 
 	// Password validation will be handled by bcrypt in the service layer
 	return user, nil
+}
+
+// UpdateUser updates user fields (username, name)
+func (r *UserRepository) UpdateUser(userID int, username, name *string) (*User, error) {
+	// Build dynamic query based on which fields are provided
+	query := "UPDATE users SET "
+	args := []interface{}{}
+	argNum := 1
+	updates := []string{}
+
+	if username != nil {
+		updates = append(updates, fmt.Sprintf("username = $%d", argNum))
+		args = append(args, *username)
+		argNum++
+	}
+
+	if name != nil {
+		updates = append(updates, fmt.Sprintf("name = $%d", argNum))
+		args = append(args, *name)
+		argNum++
+	}
+
+	if len(updates) == 0 {
+		// No fields to update
+		return r.GetUserByID(userID)
+	}
+
+	query += strings.Join(updates, ", ")
+	query += fmt.Sprintf(" WHERE id = $%d RETURNING id, email, username, name, password_hash, created_at", argNum)
+	args = append(args, userID)
+
+	user := &User{}
+	err := r.db.DB.QueryRow(query, args...).Scan(
+		&user.ID, &user.Email, &user.Username, &user.Name, &user.PasswordHash, &user.CreatedAt,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("user not found")
+		}
+		return nil, fmt.Errorf("failed to update user: %w", err)
+	}
+
+	return user, nil
+}
+
+// UpdatePassword updates a user's password
+func (r *UserRepository) UpdatePassword(userID int, passwordHash string) error {
+	query := `UPDATE users SET password_hash = $1 WHERE id = $2`
+
+	result, err := r.db.DB.Exec(query, passwordHash, userID)
+	if err != nil {
+		return fmt.Errorf("failed to update password: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("user not found")
+	}
+
+	return nil
 }
 
 // UserSessionRepository handles user session-related database operations

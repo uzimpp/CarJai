@@ -286,3 +286,56 @@ func (s *UserService) RefreshToken(token, ipAddress, userAgent string) (*models.
 		Message: "Token refreshed successfully",
 	}, nil
 }
+
+// UpdateUser updates user fields (username, name)
+func (s *UserService) UpdateUser(userID int, username, name *string) (*models.User, error) {
+	// Check if username is already taken (if provided)
+	if username != nil {
+		existingUser, err := s.userRepo.GetUserByUsername(*username)
+		if err == nil && existingUser != nil && existingUser.ID != userID {
+			return nil, fmt.Errorf("username %s is already taken", *username)
+		}
+	}
+
+	// Update user in database
+	updatedUser, err := s.userRepo.UpdateUser(userID, username, name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update user: %w", err)
+	}
+
+	return updatedUser, nil
+}
+
+// GetUserByUsername retrieves a user by username
+func (s *UserService) GetUserByUsername(username string) (*models.User, error) {
+	return s.userRepo.GetUserByUsername(username)
+}
+
+// ChangePassword changes a user's password
+func (s *UserService) ChangePassword(userID int, currentPassword, newPassword string) error {
+	// Get user to verify current password
+	user, err := s.userRepo.GetUserByID(userID)
+	if err != nil {
+		return fmt.Errorf("user not found: %w", err)
+	}
+
+	// Verify current password
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(currentPassword))
+	if err != nil {
+		return fmt.Errorf("current password is incorrect")
+	}
+
+	// Hash new password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	// Update password in database
+	err = s.userRepo.UpdatePassword(userID, string(hashedPassword))
+	if err != nil {
+		return fmt.Errorf("failed to update password: %w", err)
+	}
+
+	return nil
+}
