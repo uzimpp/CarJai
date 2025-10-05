@@ -21,7 +21,7 @@ func PublicSellerRoutes(
 	// Create router
 	router := http.NewServeMux()
 
-	// Public seller routes (no authentication required)
+	// Public seller information routes (GET)
 	router.HandleFunc("/api/sellers/",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
