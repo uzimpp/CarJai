@@ -1,9 +1,11 @@
 // Authentication utilities and API functions
 import {
-  User,
   AuthResponse,
   LoginRequest,
   SignupRequest,
+  GoogleAuthRequest,
+  GoogleAuthResponse,
+  MeResponse,
 } from "@/constants/user";
 import { apiCall } from "./apiCall";
 
@@ -32,8 +34,8 @@ export const authAPI = {
     });
   },
 
-  // Get current user
-  async getCurrentUser(): Promise<{ success: boolean; data: { user: User } }> {
+  // Get current user with roles and profiles
+  async getCurrentUser(): Promise<MeResponse> {
     return apiCall("/api/auth/me", {
       method: "GET",
     });
@@ -45,16 +47,12 @@ export const authAPI = {
       method: "POST",
     });
   },
-};
 
-// Validation helpers (kept for forms)
-export const validation = {
-  email: (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  },
-
-  password: (password: string): boolean => {
-    return password.length >= 6;
+  // Google OAuth authentication
+  async googleAuth(data: GoogleAuthRequest): Promise<GoogleAuthResponse> {
+    return apiCall<GoogleAuthResponse>("/api/auth/google", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
   },
 };

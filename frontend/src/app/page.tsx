@@ -1,18 +1,16 @@
 import Image from "next/image";
 import Link from "next/link";
-import SearchBar from "@/components/global/searchbar";
+import SearchBar from "@/components/global/SearchBar";
 
 export default function Home() {
   return (
-    <div className="px-(--space-m) py-(--space-s) max-w-[1536px] mx-auto w-full">
+    <div className="px-(--space-m) max-w-[1536px] mx-auto w-full">
       {/* Hero */}
-      <section className="relative rounded-4xl shadow-[var(--shadow-lg)] bg-gradient-to-r from-maroon to-maroon px-(--space-l) py-(--space-2xl-3xl)">
-        <div className="relative z-10 flex flex-col items-center text-center gap-y-(--space-s) pb-(--space-xl)">
-          <h1 className="text-landing-font-size letter-spacing-6 bold text-white">
-            ค้นหารถโดนใจได้ที่คาร์ใจ
-          </h1>
-          <div className="w-full max-w-[800px]">
-            <SearchBar className="mx-auto" placeholder="รถใช้ในเมือง" />
+      <section className="relative rounded-4xl shadow-[var(--shadow-lg)] bg-gradient-to-r from-maroon to-maroon px-(--space-xl) py-(--space-2xl-3xl)">
+        <div className="relative z-10 flex flex-col items-center text-center gap-y-(--space-s) pb-(--space-xl) my-(--space-xs)">
+          <h1 className="text-6 bold text-white">Looking for a dream car?</h1>
+          <div className="w-full max-w-[768px]">
+            <SearchBar className="mx-auto" placeholder="City car" />
           </div>
         </div>
         {/* Decorative cars overlay layer (does not affect layout) */}
@@ -43,10 +41,10 @@ export default function Home() {
       {/* Quick filters */}
       <section className="mt-(--space-l) flex flex-wrap gap-(--space-s)">
         {[
-          { label: "รถคันเล็ก", q: "eco" },
-          { label: "สำหรับครอบครัว", q: "family" },
-          { label: "สมรรถนะสูง", q: "sport" },
-          { label: "ประหยัดน้ำมัน", q: "hybrid" },
+          { label: "Compact Cars", q: "eco" },
+          { label: "Family Cars", q: "family" },
+          { label: "Performance Cars", q: "sport" },
+          { label: "Fuel Efficient", q: "hybrid" },
         ].map((c) => (
           <Link
             key={c.q}
@@ -62,16 +60,16 @@ export default function Home() {
       <section className="mt-(--space-xl) grid grid-cols-1 sm:grid-cols-3 gap-(--space-m)">
         {[
           {
-            title: "รถหลากหลาย",
-            desc: "ครอบคลุมทุกสไตล์ ตั้งแต่รถใช้งานในเมืองจนถึงสปอร์ต",
+            title: "Wide Selection",
+            desc: "Covering all styles, from city cars to sports vehicles",
           },
           {
-            title: "วางขายง่ายรวดเร็ว",
-            desc: "ประกาศขายได้ในไม่กี่ขั้นตอน พร้อมเครื่องมือช่วยตั้งราคา",
+            title: "Easy & Fast Selling",
+            desc: "List your car for sale in just a few steps with pricing tools",
           },
           {
-            title: "ปลอดภัย โปร่งใส",
-            desc: "ระบบยืนยันตัวตนและประวัติการใช้งาน สบายใจทั้งผู้ซื้อผู้ขาย",
+            title: "Safe & Transparent",
+            desc: "Identity verification and usage history system for peace of mind for both buyers and sellers",
           },
         ].map((f) => (
           <div

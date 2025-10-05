@@ -7,9 +7,7 @@ export const mutualLogout = {
         method: "POST",
         credentials: "include",
       });
-      console.log("🧹 Cleared admin session (cookie-based)");
     } catch (err) {
-      console.log("ℹ️ Error clearing admin session:", err);
     }
   },
 
@@ -20,9 +18,7 @@ export const mutualLogout = {
         method: "POST",
         credentials: "include",
       });
-      console.log("🧹 Cleared user session (cookie-based)");
     } catch (err) {
-      console.log("ℹ️ Error clearing user session:", err);
     }
   },
 };

@@ -5,6 +5,7 @@ import {
   AdminIPWhitelistResponse,
   AdminAuthResponse,
   AdminLoginRequest,
+  AdminActionResponse,
 } from "@/constants/admin";
 import { apiCall } from "./apiCall";
 
@@ -38,40 +39,23 @@ export const adminAuthAPI = {
       method: "GET",
     });
   },
-};
 
-// Pure cookie-based authentication - no localStorage needed!
-// All authentication state comes from backend cookies
-export const adminAuthStorage = {
-  // Cookie-based auth doesn't need client-side token storage
-  getToken(): string | null {
-    return "cookie-based"; // Placeholder - actual auth via HTTP-only cookies
+  // Add IP to whitelist
+  async addIP(
+    ip_address: string,
+    description: string
+  ): Promise<AdminActionResponse> {
+    return apiCall<AdminActionResponse>("/admin/ip-whitelist/add", {
+      method: "POST",
+      body: JSON.stringify({ ip_address, description }),
+    });
   },
 
-  setToken(): void {
-    // Tokens are set by backend via Set-Cookie header
-    // No client-side storage needed
-  },
-
-  removeToken(): void {
-    // Tokens are cleared by backend via Set-Cookie header
-    // No client-side storage needed
-  },
-
-  // No localStorage - always fetch fresh from backend
-  getAdmin(): AdminUser | null {
-    return null; // Always fetch from backend
-  },
-
-  setAdmin(): void {
-    // No localStorage - UI state managed by React hooks
-  },
-
-  removeAdmin(): void {
-    // No localStorage - UI state managed by React hooks
-  },
-
-  clear(): void {
-    // No localStorage to clear - pure cookie-based
+  // Remove IP from whitelist (backend expects DELETE with ?ip= query)
+  async removeIP(ip_address: string): Promise<AdminActionResponse> {
+    const qs = `?ip=${encodeURIComponent(ip_address)}`;
+    return apiCall<AdminActionResponse>(`/admin/ip-whitelist/remove${qs}`, {
+      method: "DELETE",
+    });
   },
 };
