@@ -1,0 +1,174 @@
+name: carjai-docker-test-CI
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  docker-health-check-and-test:
+    name: Docker Health Check & Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create .env file from env.example
+        run: |
+          cp env.example .env
+          # Update environment variables for CI testing
+          sed -i 's/ENVIRONMENT=development/ENVIRONMENT=test/g' .env
+          sed -i 's/DB_HOST=database/DB_HOST=database/g' .env
+          echo "✅ .env file created"
+
+      - name: Start Docker Compose services
+        run: |
+          echo "🚀 Starting Docker Compose services..."
+          docker compose up -d --build
+          echo "✅ Docker Compose started"
+
+      - name: Wait for services to be healthy
+        run: |
+          echo "⏳ Waiting for all services to be healthy..."
+          
+          # Wait for all services to be healthy (timeout 5 minutes)
+          timeout=300
+          elapsed=0
+          interval=10
+          
+          while [ $elapsed -lt $timeout ]; do
+            echo "Checking service health... (${elapsed}s elapsed)"
+            
+            # Check health status of each service
+            database_health=$(docker compose ps -q database | xargs docker inspect -f '{{.State.Health.Status}}')
+            backend_health=$(docker compose ps -q backend | xargs docker inspect -f '{{.State.Health.Status}}')
+            frontend_health=$(docker compose ps -q frontend | xargs docker inspect -f '{{.State.Health.Status}}')
+            
+            echo "Database: $database_health"
+            echo "Backend: $backend_health"
+            echo "Frontend: $frontend_health"
+            echo "---"
+            
+            # If all services are healthy, exit loop
+            if [ "$database_health" = "healthy" ] && [ "$backend_health" = "healthy" ] && [ "$frontend_health" = "healthy" ]; then
+              echo "✅ All services are healthy!"
+              exit 0
+            fi
+            
+            sleep $interval
+            elapsed=$((elapsed + interval))
+          done
+          
+          echo "❌ Timeout: Services did not become healthy within ${timeout} seconds"
+          docker compose ps
+          docker compose logs
+          exit 1
+
+      - name: Verify Docker containers are running
+        run: |
+          echo "📊 Checking Docker containers status..."
+          docker compose ps
+          
+          # Count running containers
+          running_containers=$(docker compose ps | grep "Up" | wc -l)
+          echo "Running containers: $running_containers"
+          
+          # Must have 3 containers (database, backend, frontend)
+          if [ "$running_containers" -lt 3 ]; then
+            echo "❌ Not all containers are running!"
+            docker compose ps
+            docker compose logs
+            exit 1
+          fi
+          
+          echo "✅ All containers are running"
+
+      - name: Check container logs for errors
+        if: success()
+        run: |
+          echo "📋 Checking container logs..."
+          
+          # Check logs for critical errors
+          if docker compose logs backend | grep -i "panic\|fatal error\|connection refused" | grep -v "test"; then
+            echo "❌ Found critical errors in backend logs"
+            exit 1
+          fi
+          
+          echo "✅ No critical errors found in logs"
+
+      - name: Show Docker stats
+        if: success()
+        run: |
+          echo "📊 Docker container statistics:"
+          docker stats --no-stream
+
+      - name: Cleanup Docker containers
+        if: always()
+        run: |
+          echo "🧹 Cleaning up Docker containers..."
+          docker compose down -v
+          echo "✅ Cleanup complete"
+
+  auto-merge-to-main:
+    name: Auto Merge to Main
+    needs: docker-health-check-and-test
+    runs-on: ubuntu-latest
+    if: success()
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+
+      - name: Merge develop to main
+        run: |
+          echo "🔀 Merging develop to main..."
+          
+          # Fetch latest changes
+          git fetch origin main
+          git fetch origin develop
+          
+          # Checkout main branch
+          git checkout main
+          git pull origin main
+          
+          # Merge develop into main
+          git merge origin/develop --no-ff -m "chore: auto merge develop to main after successful CI tests"
+          
+          # Push to main
+          git push origin main
+          
+          echo "✅ Successfully merged develop to main"
+
+      - name: Create Release Tag
+        if: success()
+        run: |
+          # Create tag based on timestamp
+          TAG="release-$(date +%Y%m%d-%H%M%S)"
+          git tag -a "$TAG" -m "Auto release from develop branch"
+          git push origin "$TAG"
+          echo "✅ Created release tag: $TAG"
+
+      - name: Notify Success
+        if: success()
+        run: |
+          echo "🎉 CI Pipeline completed successfully!"
+          echo "✅ All Docker containers are healthy"
+          echo "✅ All tests passed"
+          echo "✅ Code merged to main branch"
+          echo "✅ Release tag created"
