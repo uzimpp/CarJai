@@ -47,9 +47,9 @@ func AdminRoutes(
 	router.HandleFunc(adminPrefix+"/auth/signout",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
-				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
-					middleware.GeneralRateLimit()(
-						middleware.AdminLoggingMiddleware(
+				middleware.AdminLoggingMiddleware(
+					authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
+						middleware.GeneralRateLimit()(
 							authMiddleware.RequireAuth(
 								authMiddleware.RequireIPWhitelist(
 									adminAuthHandler.Signout,
@@ -65,8 +65,8 @@ func AdminRoutes(
 	router.HandleFunc(adminPrefix+"/auth/me",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
-				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
-					middleware.AdminLoggingMiddleware(
+				middleware.AdminLoggingMiddleware(
+					authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
 						authMiddleware.RequireAuth(
 							authMiddleware.RequireIPWhitelist(
 								adminAuthHandler.Me,
@@ -81,8 +81,8 @@ func AdminRoutes(
 	router.HandleFunc(adminPrefix+"/auth/refresh",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
-				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
-					middleware.AdminLoggingMiddleware(
+				middleware.AdminLoggingMiddleware(
+					authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
 						authMiddleware.RequireAuth(
 							authMiddleware.RequireIPWhitelist(
 								adminAuthHandler.RefreshToken,
