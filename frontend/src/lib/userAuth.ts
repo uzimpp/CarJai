@@ -1,7 +1,7 @@
 // Authentication utilities and API functions
 import {
   AuthResponse,
-  LoginRequest,
+  SigninRequest,
   SignupRequest,
   GoogleAuthRequest,
   GoogleAuthResponse,
@@ -20,16 +20,16 @@ export const authAPI = {
   },
 
   // Log in a user
-  async login(data: LoginRequest): Promise<AuthResponse> {
-    return apiCall<AuthResponse>("/api/auth/login", {
+  async signin(data: SigninRequest): Promise<AuthResponse> {
+    return apiCall<AuthResponse>("/api/auth/signin", {
       method: "POST",
       body: JSON.stringify(data),
     });
   },
 
-  // Log out a user
-  async logout(): Promise<{ success: boolean; message: string }> {
-    return apiCall("/api/auth/logout", {
+  // Sign out a user
+  async signout(): Promise<{ success: boolean; message: string }> {
+    return apiCall("/api/auth/signout", {
       method: "POST",
     });
   },
