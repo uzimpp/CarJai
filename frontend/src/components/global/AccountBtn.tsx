@@ -214,7 +214,7 @@ export default function AccountBtn({
 
                 {roles?.seller && (
                   <Link
-                    href="/sell"
+                    href="/listings"
                     onClick={() => setOpen(false)}
                     className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-maroon/10 hover:text-maroon transition-colors"
                   >

@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { carsAPI, type Car } from "@/lib/carsAPI";
 
 function BuyPageContent() {
@@ -123,8 +124,20 @@ function BuyPageContent() {
                 className="group bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden hover:-translate-y-1"
               >
                 {/* Car Image */}
-                <div className="relative w-full aspect-[4/3] bg-gray-100 flex items-center justify-center">
-                  {/* TODO: Fetch actual car images when available */}
+                <div className="relative w-full aspect-[4/3] bg-gradient-to-br from-gray-100 to-gray-200">
+                  {car.images && car.images.length > 0 ? (
+                    <Image
+                      src={`/api/cars/images/${car.images[0].id}`}
+                      alt={`${car.brandName || "Car"} ${car.modelName || ""}`}
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full">
+                      <span className="text-6xl">🚗</span>
+                    </div>
+                  )}
                   {car.conditionRating && (
                     <div className="absolute top-(--space-2xs) right-(--space-2xs) bg-white/90 backdrop-blur-sm px-(--space-2xs) py-(--space-3xs) rounded-lg">
                       <div className="flex items-center gap-(--space-3xs)">
@@ -141,7 +154,8 @@ function BuyPageContent() {
                 <div className="p-(--space-s)">
                   {/* Title */}
                   <h3 className="text-1 font-bold text-gray-900 mb-(--space-3xs) line-clamp-1">
-                    {car.year || "N/A"} Car
+                    {car.brandName || "Unknown"} {car.modelName || "Car"}{" "}
+                    {car.year && `(${car.year})`}
                   </h3>
 
                   {/* Price */}

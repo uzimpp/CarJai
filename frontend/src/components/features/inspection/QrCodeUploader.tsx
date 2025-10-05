@@ -2,14 +2,16 @@
 
 "use client";
 
-import { useState, useRef, ChangeEvent } from 'react';
-import jsQR from 'jsqr';
+import { useState, useRef, ChangeEvent } from "react";
+import jsQR from "jsqr";
 
 interface QrCodeUploaderProps {
   onScanComplete: (url: string) => void;
 }
 
-export default function QrCodeUploader({ onScanComplete }: QrCodeUploaderProps) {
+export default function QrCodeUploader({
+  onScanComplete,
+}: QrCodeUploaderProps) {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -34,9 +36,9 @@ export default function QrCodeUploader({ onScanComplete }: QrCodeUploaderProps) 
 
   const scanQrCode = (imageUrl: string) => {
     const canvas = canvasRef.current;
-    const context = canvas?.getContext('2d', { willReadFrequently: true });
+    const context = canvas?.getContext("2d", { willReadFrequently: true });
     if (!canvas || !context) {
-      setError("ไม่สามารถเตรียม Canvas สำหรับสแกนได้");
+      setError("Cannot prepare canvas for scanning");
       setIsLoading(false);
       return;
     }
@@ -52,10 +54,10 @@ export default function QrCodeUploader({ onScanComplete }: QrCodeUploaderProps) 
       const code = jsQR(imageData.data, imageData.width, imageData.height);
 
       if (code) {
-        console.log("พบ QR Code -> URL:", code.data);
+        console.log("QR Code found -> URL:", code.data);
         onScanComplete(code.data);
       } else {
-        setError("ไม่พบ QR Code ในรูปภาพนี้ กรุณาลองใหม่อีกครั้ง");
+        setError("No QR Code found in this image. Please try again");
         setIsLoading(false);
         setImageSrc(null); // Clear preview on failure
         if (fileInputRef.current) {
@@ -64,9 +66,9 @@ export default function QrCodeUploader({ onScanComplete }: QrCodeUploaderProps) 
       }
     };
     image.onerror = () => {
-        setError("ไม่สามารถโหลดไฟล์รูปภาพได้");
-        setIsLoading(false);
-    }
+      setError("Unable to load image file");
+      setIsLoading(false);
+    };
   };
 
   const handleUploadClick = () => {
@@ -77,20 +79,26 @@ export default function QrCodeUploader({ onScanComplete }: QrCodeUploaderProps) 
     <div className="w-full max-w-2xl p-8 space-y-6 bg-white rounded-2xl shadow-lg mx-auto">
       <div className="text-center">
         <h2 className="text-3xl font-bold text-gray-900">
-          อัปโหลดใบตรวจสภาพรถ
+          Upload Inspection Report
         </h2>
         <p className="mt-2 text-gray-600">
-          กรุณาอัปโหลดรูปภาพใบตรวจสภาพรถยนต์ที่มี QR Code
+          Please upload an image of the vehicle inspection report with QR Code
         </p>
       </div>
 
       {/* Hidden canvas for processing */}
-      <canvas ref={canvasRef} style={{ display: 'none' }} />
+      <canvas ref={canvasRef} style={{ display: "none" }} />
 
       {imageSrc && (
         <div className="mt-4 border border-gray-200 rounded-lg p-2">
-            <p className="text-center text-sm mb-2 text-gray-500">ตัวอย่างรูปภาพที่อัปโหลด:</p>
-            <img src={imageSrc} alt="Preview" className="max-w-full max-h-64 mx-auto rounded-md" />
+          <p className="text-center text-sm mb-2 text-gray-500">
+            Uploaded Image Preview:
+          </p>
+          <img
+            src={imageSrc}
+            alt="Preview"
+            className="max-w-full max-h-64 mx-auto rounded-md"
+          />
         </div>
       )}
 
@@ -114,7 +122,7 @@ export default function QrCodeUploader({ onScanComplete }: QrCodeUploaderProps) 
           disabled={isLoading}
           className="w-full px-6 py-4 text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-wait transition-colors text-lg font-semibold"
         >
-          {isLoading ? 'กำลังสแกน QR Code...' : 'เลือกรูปภาพ'}
+          {isLoading ? "Scanning QR Code..." : "Select Image"}
         </button>
       </div>
     </div>

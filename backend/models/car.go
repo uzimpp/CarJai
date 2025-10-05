@@ -170,6 +170,19 @@ type PaginatedCarListData struct {
 	Limit int   `json:"limit"`
 }
 
+type PaginatedCarListingResponse struct {
+	Success bool                    `json:"success"`
+	Data    PaginatedCarListingData `json:"data"`
+	Message string                  `json:"message,omitempty"`
+}
+
+type PaginatedCarListingData struct {
+	Cars  []CarListingWithImages `json:"cars"`
+	Total int                    `json:"total"`
+	Page  int                    `json:"page"`
+	Limit int                    `json:"limit"`
+}
+
 type CarWithImagesResponse struct {
 	Success bool          `json:"success"`
 	Data    CarWithImages `json:"data"`
@@ -179,6 +192,41 @@ type CarWithImagesResponse struct {
 type CarWithImages struct {
 	Car    Car                `json:"car"`
 	Images []CarImageMetadata `json:"images"`
+}
+
+type CarListingWithImages struct {
+	CID             int                `json:"cid"`
+	SellerID        int                `json:"sellerId"`
+	Year            *int               `json:"year"`
+	Mileage         *int               `json:"mileage"`
+	Price           int                `json:"price"`
+	Province        *string            `json:"province"`
+	ConditionRating *int               `json:"conditionRating"`
+	BodyTypeID      *int               `json:"bodyTypeId"`
+	TransmissionID  *int               `json:"transmissionId"`
+	FuelTypeID      *int               `json:"fuelTypeId"`
+	DrivetrainID    *int               `json:"drivetrainId"`
+	Seats           *int               `json:"seats"`
+	Doors           *int               `json:"doors"`
+	Color           *string            `json:"color"`
+	Status          string             `json:"status"`
+	CreatedAt       time.Time          `json:"createdAt"`
+	UpdatedAt       time.Time          `json:"updatedAt"`
+	BrandName       *string            `json:"brandName"`
+	ModelName       *string            `json:"modelName"`
+	Images          []CarImageMetadata `json:"images"`
+}
+
+type CarWithImagesListResponse struct {
+	Success bool            `json:"success"`
+	Data    []CarWithImages `json:"data"`
+	Message string          `json:"message,omitempty"`
+}
+
+type CarListingWithImagesResponse struct {
+	Success bool                   `json:"success"`
+	Data    []CarListingWithImages `json:"data"`
+	Message string                 `json:"message,omitempty"`
 }
 
 type ImageUploadResponse struct {

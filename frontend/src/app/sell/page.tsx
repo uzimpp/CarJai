@@ -126,10 +126,10 @@ export default function SellPage() {
               setCurrentStep("details");
             }, 1500);
           } else {
-            setError(result.message || "ไม่สามารถดึงข้อมูลใบตรวจสภาพได้");
+            setError(result.message || "Unable to retrieve inspection data");
           }
         } catch {
-          setError("เกิดข้อผิดพลาดในการเชื่อมต่อกับ Backend Scraper");
+          setError("Error connecting to Backend Scraper");
         } finally {
           setIsScraping(false);
         }
@@ -143,8 +143,8 @@ export default function SellPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">กำลังโหลด...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
     );
@@ -201,7 +201,7 @@ export default function SellPage() {
     e.preventDefault();
 
     if (!price || parseFloat(price) <= 0) {
-      setError("กรุณากรอกราคาขาย");
+      setError("Please enter a selling price");
       return;
     }
 
@@ -298,7 +298,7 @@ export default function SellPage() {
       });
 
       if (!result.success || !result.data) {
-        throw new Error(result.message || "เกิดข้อผิดพลาดในการสร้างประกาศขาย");
+        throw new Error(result.message || "Error creating car listing");
       }
 
       const carId = result.data.cid;
@@ -321,7 +321,7 @@ export default function SellPage() {
     } catch (err) {
       console.error("Submit error:", err);
       setError(
-        err instanceof Error ? err.message : "เกิดข้อผิดพลาดที่ไม่คาดคิด"
+        err instanceof Error ? err.message : "An unexpected error occurred"
       );
     } finally {
       setIsSubmitting(false);
@@ -344,14 +344,14 @@ export default function SellPage() {
       );
 
       if (result.success) {
-        alert("เผยแพร่ประกาศขายสำเร็จ!");
+        alert("Listing published successfully!");
         router.push("/buy");
       } else {
-        setError(result.message || "เกิดข้อผิดพลาดในการเผยแพร่");
+        setError(result.message || "Error publishing listing");
       }
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "เกิดข้อผิดพลาดที่ไม่คาดคิด"
+        err instanceof Error ? err.message : "An unexpected error occurred"
       );
     } finally {
       setIsSubmitting(false);
@@ -376,24 +376,26 @@ export default function SellPage() {
   // ============================================================================
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-12">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-white to-gray-50 p-(--space-s-m)">
+      <div className="max-w-[1200px] mx-auto">
         {/* Header */}
-        <div className="text-center mb-10">
-          <h1 className="text-4xl font-bold text-gray-900 mb-3">ขายรถยนต์</h1>
-          <p className="text-lg text-gray-600">
-            เพียง 4 ขั้นตอนง่ายๆ ประกาศขายของคุณพร้อมใช้งาน
+        <div className="text-center mb-(--space-xl)">
+          <h1 className="text-5 bold text-gray-900 mb-(--space-xs) line-height-11">
+            Sell Your Car
+          </h1>
+          <p className="text-1 text-gray-600 line-height-12">
+            Just 4 simple steps and your listing is ready to go
           </p>
         </div>
 
         {/* Progress Bar */}
-        <div className="mb-12">
-          <div className="flex items-center justify-between max-w-3xl mx-auto">
+        <div className="mb-(--space-xl)">
+          <div className="flex items-center justify-between max-w-4xl mx-auto">
             {[
-              { id: "registration", label: "สมุดทะเบียน", num: 1 },
-              { id: "inspection", label: "ใบตรวจสภาพ", num: 2 },
-              { id: "details", label: "รายละเอียด", num: 3 },
-              { id: "review", label: "ตรวจสอบ", num: 4 },
+              { id: "registration", label: "Registration", num: 1 },
+              { id: "inspection", label: "Inspection", num: 2 },
+              { id: "details", label: "Details", num: 3 },
+              { id: "review", label: "Review", num: 4 },
             ].map((step, index) => {
               const isActive = currentStep === step.id;
               const isCompleted =
@@ -412,12 +414,12 @@ export default function SellPage() {
                   <div className="flex flex-col items-center flex-1">
                     <div
                       className={`
-                        w-12 h-12 rounded-full flex items-center justify-center text-lg font-semibold transition-all
+                        w-14 h-14 rounded-full flex items-center justify-center text-1 bold transition-all duration-300
                         ${
                           isActive
-                            ? "bg-red-600 text-white ring-4 ring-red-100 scale-110"
+                            ? "bg-maroon text-white ring-4 ring-maroon/20 scale-110 shadow-lg"
                             : isCompleted
-                            ? "bg-green-500 text-white"
+                            ? "bg-green-600 text-white shadow-md"
                             : "bg-gray-200 text-gray-500"
                         }
                       `}
@@ -425,8 +427,8 @@ export default function SellPage() {
                       {isCompleted ? "✓" : step.num}
                     </div>
                     <span
-                      className={`mt-2 text-sm font-medium ${
-                        isActive ? "text-red-600" : "text-gray-600"
+                      className={`mt-(--space-xs) text-0 medium ${
+                        isActive ? "text-maroon" : "text-gray-600"
                       }`}
                     >
                       {step.label}
@@ -434,8 +436,8 @@ export default function SellPage() {
                   </div>
                   {index < 3 && (
                     <div
-                      className={`h-1 flex-1 mx-2 ${
-                        isCompleted ? "bg-green-500" : "bg-gray-200"
+                      className={`h-1.5 flex-1 mx-(--space-xs) rounded-full transition-all duration-300 ${
+                        isCompleted ? "bg-green-600" : "bg-gray-200"
                       }`}
                     />
                   )}
@@ -449,21 +451,27 @@ export default function SellPage() {
         <div className="flex justify-center">
           {/* STEP 1: Registration Book */}
           {currentStep === "registration" && (
-            <div className="w-full max-w-3xl">
-              <div className="bg-white rounded-2xl shadow-xl p-8">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  📄 อัปโหลดสมุดทะเบียนรถ
-                </h2>
-                <p className="text-gray-600 mb-6">
-                  ระบบจะดึงข้อมูลรถยนต์จากสมุดทะเบียนโดยอัตโนมัติ
-                </p>
+            <div className="w-full max-w-4xl mx-auto">
+              <div className="bg-white rounded-4xl shadow-[var(--shadow-lg)] p-(--space-xl)">
+                <div className="text-center mb-(--space-l)">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-maroon to-red rounded-3xl mb-(--space-s) shadow-lg">
+                    <span className="text-3xl">📄</span>
+                  </div>
+                  <h2 className="text-3 bold text-gray-900 mb-(--space-2xs) line-height-11">
+                    Upload Registration Book
+                  </h2>
+                  <p className="text-0 text-gray-600 line-height-12">
+                    The system will automatically extract car details from your
+                    registration document
+                  </p>
+                </div>
                 <DocumentUploader onComplete={handleOcrComplete} />
-                <div className="mt-6 text-center">
+                <div className="mt-(--space-l) text-center">
                   <button
                     onClick={handleSkipOcr}
-                    className="text-gray-600 hover:text-red-600 transition-colors underline"
+                    className="text-gray-600 hover:text-maroon transition-colors underline text-0 medium"
                   >
-                    ข้ามขั้นตอนนี้
+                    Skip this step →
                   </button>
                 </div>
               </div>
@@ -472,49 +480,56 @@ export default function SellPage() {
 
           {/* STEP 2: Inspection QR Code */}
           {currentStep === "inspection" && (
-            <div className="w-full max-w-3xl">
-              <div className="bg-white rounded-2xl shadow-xl p-8">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  ✅ สแกน QR Code ใบตรวจสภาพ
-                </h2>
-                <p className="text-gray-600 mb-6">
-                  {isScraping
-                    ? "กำลังดึงข้อมูลใบตรวจสภาพ..."
-                    : "อัปโหลดรูป QR Code จากใบตรวจสภาพรถ"}
-                </p>
+            <div className="w-full max-w-4xl mx-auto">
+              <div className="bg-white rounded-4xl shadow-[var(--shadow-lg)] p-(--space-xl)">
+                <div className="text-center mb-(--space-l)">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-green-600 to-green-700 rounded-3xl mb-(--space-s) shadow-lg">
+                    <span className="text-3xl">✅</span>
+                  </div>
+                  <h2 className="text-3 bold text-gray-900 mb-(--space-2xs) line-height-11">
+                    Scan Inspection QR Code
+                  </h2>
+                  <p className="text-0 text-gray-600 line-height-12">
+                    {isScraping
+                      ? "Retrieving inspection data..."
+                      : "Upload the QR code image from your vehicle inspection report"}
+                  </p>
+                </div>
 
                 {isScraping ? (
-                  <div className="text-center py-12">
-                    <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-red-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600 font-medium">
-                      กำลังประมวลผล...
+                  <div className="text-center py-(--space-2xl)">
+                    <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-maroon mx-auto"></div>
+                    <p className="mt-(--space-m) text-gray-600 medium text-1">
+                      Processing...
                     </p>
                   </div>
                 ) : inspectionData ? (
-                  <div className="text-center py-12">
-                    <div className="text-green-500 text-6xl mb-4">✓</div>
-                    <p className="text-xl font-semibold text-gray-900">
-                      ดึงข้อมูลสำเร็จ!
+                  <div className="text-center py-(--space-2xl)">
+                    <div className="text-green-600 text-6xl mb-(--space-m)">
+                      ✓
+                    </div>
+                    <p className="text-2 bold text-gray-900 mb-(--space-xs)">
+                      Data Retrieved Successfully!
                     </p>
-                    <p className="text-gray-600 mt-2">
-                      กำลังไปยังขั้นตอนถัดไป...
+                    <p className="text-0 text-gray-600">
+                      Proceeding to next step...
                     </p>
                   </div>
                 ) : (
                   <>
                     <QrCodeUploader onScanComplete={handleQrScanComplete} />
-                    <div className="mt-6 flex gap-4">
+                    <div className="mt-(--space-l) flex gap-(--space-s)">
                       <button
                         onClick={() => setCurrentStep("registration")}
-                        className="flex-1 px-6 py-3 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+                        className="flex-1 px-(--space-m) py-(--space-s) text-gray-700 bg-gray-100 rounded-2xl hover:bg-gray-200 transition-all medium"
                       >
-                        ← ย้อนกลับ
+                        ← Back
                       </button>
                       <button
                         onClick={handleSkipInspection}
-                        className="flex-1 px-6 py-3 text-red-600 border-2 border-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                        className="flex-1 px-(--space-m) py-(--space-s) text-maroon border-2 border-maroon rounded-2xl hover:bg-maroon/5 transition-all medium"
                       >
-                        ข้ามขั้นตอนนี้ →
+                        Skip this step →
                       </button>
                     </div>
                   </>
@@ -525,84 +540,100 @@ export default function SellPage() {
 
           {/* STEP 3: Details */}
           {currentStep === "details" && (
-            <div className="w-full max-w-4xl">
-              <div className="bg-white rounded-2xl shadow-xl p-8">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  💰 กำหนดราคาและรายละเอียด
-                </h2>
-                <p className="text-gray-600 mb-8">
-                  กรอกข้อมูลสำคัญที่จำเป็นสำหรับการขาย
-                </p>
+            <div className="w-full max-w-4xl mx-auto">
+              <div className="bg-white rounded-4xl shadow-[var(--shadow-lg)] p-(--space-xl)">
+                <div className="text-center mb-(--space-l)">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-maroon to-red rounded-3xl mb-(--space-s) shadow-lg">
+                    <span className="text-3xl">💰</span>
+                  </div>
+                  <h2 className="text-3 bold text-gray-900 mb-(--space-2xs) line-height-11">
+                    Set Price & Details
+                  </h2>
+                  <p className="text-0 text-gray-600 line-height-12">
+                    Fill in the essential information for your listing
+                  </p>
+                </div>
 
-                <form onSubmit={handleDetailsSubmit} className="space-y-8">
+                <form
+                  onSubmit={handleDetailsSubmit}
+                  className="space-y-(--space-l)"
+                >
                   <div>
-                    <label className="block text-lg font-semibold text-gray-900 mb-3">
-                      ราคาขาย (บาท) <span className="text-red-600">*</span>
+                    <label className="block text-1 bold text-gray-900 mb-(--space-s)">
+                      Selling Price (THB) <span className="text-red">*</span>
                     </label>
-                    <input
-                      type="number"
-                      value={price}
-                      onChange={(e) => setPrice(e.target.value)}
-                      placeholder="เช่น 500000"
-                      required
-                      min="1"
-                      className="w-full px-6 py-4 text-lg border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-red-100 focus:border-red-500 transition-all"
-                    />
+                    <div className="relative">
+                      <input
+                        type="number"
+                        value={price}
+                        onChange={(e) => setPrice(e.target.value)}
+                        placeholder="e.g. 500000"
+                        required
+                        min="1"
+                        className="w-full px-(--space-m) py-(--space-s) text-1 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-maroon/20 focus:border-maroon transition-all"
+                      />
+                      <span className="absolute right-(--space-m) top-1/2 -translate-y-1/2 text-gray-400 text-0">
+                        ฿
+                      </span>
+                    </div>
                   </div>
 
                   <div>
-                    <label className="block text-lg font-semibold text-gray-900 mb-3">
-                      รายละเอียดเพิ่มเติม (ถ้ามี)
+                    <label className="block text-1 bold text-gray-900 mb-(--space-s)">
+                      Additional Details (Optional)
                     </label>
                     <textarea
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
-                      placeholder="เช่น รถสภาพดี ไม่เคยเกิดอุบัติเหตุ..."
+                      placeholder="e.g. Well maintained, never been in an accident..."
                       rows={4}
-                      className="w-full px-6 py-4 text-lg border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-red-100 focus:border-red-500 transition-all"
+                      className="w-full px-(--space-m) py-(--space-s) text-0 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-maroon/20 focus:border-maroon transition-all resize-none"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-lg font-semibold text-gray-900 mb-3">
-                      รูปภาพรถยนต์ (5-12 รูป)
+                    <label className="block text-1 bold text-gray-900 mb-(--space-s)">
+                      Car Images (5-12 photos)
                     </label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={(e) => {
-                        const files = Array.from(e.target.files || []);
-                        setImages(files);
-                      }}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl"
-                    />
+                    <div className="border-2 border-dashed border-gray-300 rounded-2xl p-(--space-m) hover:border-maroon transition-all">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files || []);
+                          setImages(files);
+                        }}
+                        className="w-full text-0"
+                      />
+                    </div>
                     {images.length > 0 && (
-                      <p className="mt-2 text-sm text-gray-600">
-                        เลือกแล้ว {images.length} รูป
+                      <p className="mt-(--space-xs) text--1 text-green-600 medium">
+                        ✓ {images.length} image{images.length > 1 ? "s" : ""}{" "}
+                        selected
                       </p>
                     )}
                   </div>
 
                   {error && (
-                    <div className="p-4 bg-red-50 border-2 border-red-200 rounded-xl text-red-700">
+                    <div className="p-(--space-m) bg-red-50 border-2 border-red-200 rounded-2xl text-red-700 text-0">
                       {error}
                     </div>
                   )}
 
-                  <div className="flex gap-4 pt-4">
+                  <div className="flex gap-(--space-s) pt-(--space-m)">
                     <button
                       type="button"
                       onClick={() => setCurrentStep("inspection")}
-                      className="px-8 py-4 text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 transition-all font-semibold"
+                      className="px-(--space-l) py-(--space-s) text-gray-700 bg-gray-100 rounded-2xl hover:bg-gray-200 transition-all medium"
                     >
-                      ← ย้อนกลับ
+                      ← Back
                     </button>
                     <button
                       type="submit"
-                      className="flex-1 px-8 py-4 text-white bg-red-600 rounded-xl hover:bg-red-700 transition-all font-semibold text-lg shadow-lg"
+                      className="flex-1 px-(--space-l) py-(--space-s) text-white bg-gradient-to-r from-maroon to-red rounded-2xl hover:shadow-lg transition-all bold text-1 shadow-md"
                     >
-                      ถัดไป: ตรวจสอบข้อมูล →
+                      Next: Review Data →
                     </button>
                   </div>
                 </form>
@@ -612,51 +643,67 @@ export default function SellPage() {
 
           {/* STEP 4: Review & Edit */}
           {currentStep === "review" && (
-            <div className="w-full max-w-5xl">
-              <div className="bg-white rounded-2xl shadow-xl p-8">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  📋 ตรวจสอบและแก้ไขข้อมูล
-                </h2>
-                <p className="text-gray-600 mb-8">
-                  ตรวจสอบความถูกต้อง คุณสามารถแก้ไขข้อมูลได้ก่อนส่ง
-                </p>
+            <div className="w-full max-w-5xl mx-auto">
+              <div className="bg-white rounded-4xl shadow-[var(--shadow-lg)] p-(--space-xl)">
+                <div className="text-center mb-(--space-l)">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-700 rounded-3xl mb-(--space-s) shadow-lg">
+                    <span className="text-3xl">📋</span>
+                  </div>
+                  <h2 className="text-3 bold text-gray-900 mb-(--space-2xs) line-height-11">
+                    Review & Edit Information
+                  </h2>
+                  <p className="text-0 text-gray-600 line-height-12">
+                    Verify accuracy - you can edit any information before
+                    submitting
+                  </p>
+                </div>
 
-                <div className="space-y-6">
+                <div className="space-y-(--space-m)">
                   {/* Price Highlight */}
-                  <div className="bg-gradient-to-r from-red-50 to-orange-50 p-6 rounded-xl border-2 border-red-200">
-                    <p className="text-sm text-gray-600 mb-2">ราคาขาย</p>
-                    <input
-                      type="number"
-                      value={editableData.price}
-                      onChange={(e) =>
-                        handleEditChange("price", parseFloat(e.target.value))
-                      }
-                      className="text-3xl font-bold text-red-600 bg-transparent border-b-2 border-red-300 focus:border-red-600 outline-none w-full"
-                    />
+                  <div className="bg-gradient-to-r from-maroon/10 to-red/10 p-(--space-l) rounded-3xl border-2 border-maroon/20">
+                    <p className="text-0 text-gray-600 mb-(--space-xs)">
+                      Selling Price
+                    </p>
+                    <div className="flex items-baseline gap-(--space-xs)">
+                      <span className="text-1 text-maroon bold">฿</span>
+                      <input
+                        type="number"
+                        value={editableData.price}
+                        onChange={(e) =>
+                          handleEditChange("price", parseFloat(e.target.value))
+                        }
+                        className="text-4 bold text-maroon bg-transparent border-b-2 border-maroon/30 focus:border-maroon outline-none flex-1"
+                      />
+                    </div>
                   </div>
 
                   {/* Car Registration Details - EDITABLE */}
-                  <div className="border-2 border-gray-200 rounded-xl p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      📄 ข้อมูลจากสมุดทะเบียน
-                      <span className="ml-2 text-sm font-normal text-gray-500">
-                        (แก้ไขได้)
+                  <div className="border-2 border-gray-200 rounded-3xl p-(--space-l)">
+                    <h3 className="text-1 bold text-gray-900 mb-(--space-m) flex items-center">
+                      <span className="mr-(--space-xs)">📄</span>
+                      Registration Details
+                      <span className="ml-(--space-xs) text--1 regular text-gray-500">
+                        (Editable)
                       </span>
                     </h3>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-(--space-s)">
                       {[
-                        { key: "brandName", label: "ยี่ห้อ" },
-                        { key: "modelName", label: "รุ่น" },
-                        { key: "year", label: "ปี", type: "number" },
-                        { key: "registrationNumber", label: "เลขทะเบียน" },
-                        { key: "province", label: "จังหวัด" },
-                        { key: "vin", label: "VIN/เลขตัวถัง" },
-                        { key: "engineNumber", label: "เลขเครื่องยนต์" },
-                        { key: "bodyStyle", label: "ลักษณะรถ" },
-                        { key: "color", label: "สี" },
-                        { key: "mileage", label: "เลขไมล์", type: "number" },
-                        { key: "seats", label: "ที่นั่ง", type: "number" },
-                        { key: "doors", label: "ประตู", type: "number" },
+                        { key: "brandName", label: "Brand" },
+                        { key: "modelName", label: "Model" },
+                        { key: "year", label: "Year", type: "number" },
+                        { key: "registrationNumber", label: "License Plate" },
+                        { key: "province", label: "Province" },
+                        { key: "vin", label: "VIN/Chassis Number" },
+                        { key: "engineNumber", label: "Engine Number" },
+                        { key: "bodyStyle", label: "Body Style" },
+                        { key: "color", label: "Color" },
+                        {
+                          key: "mileage",
+                          label: "Mileage (km)",
+                          type: "number",
+                        },
+                        { key: "seats", label: "Seats", type: "number" },
+                        { key: "doors", label: "Doors", type: "number" },
                       ].map((field) => {
                         const value = editableData[field.key as keyof CarData];
                         if (!value && value !== 0) return null;
@@ -664,9 +711,9 @@ export default function SellPage() {
                         return (
                           <div
                             key={field.key}
-                            className="bg-gray-50 p-4 rounded-lg"
+                            className="bg-gray-50 p-(--space-s) rounded-2xl"
                           >
-                            <label className="block text-xs text-gray-500 mb-1">
+                            <label className="block text--1 text-gray-500 mb-(--space-3xs)">
                               {field.label}
                             </label>
                             <input
@@ -680,7 +727,7 @@ export default function SellPage() {
                                     : e.target.value
                                 )
                               }
-                              className="w-full font-medium text-gray-900 bg-white border border-gray-200 rounded px-3 py-2 focus:border-red-500 focus:ring-2 focus:ring-red-100"
+                              className="w-full medium text-gray-900 bg-white border border-gray-200 rounded-xl px-(--space-s) py-(--space-xs) focus:border-maroon focus:ring-2 focus:ring-maroon/20 transition-all"
                             />
                           </div>
                         );
@@ -691,56 +738,57 @@ export default function SellPage() {
                   {/* Inspection Results - COLLAPSIBLE */}
                   {(editableData.overallResult ||
                     editableData.brakePerformance) && (
-                    <div className="border-2 border-gray-200 rounded-xl p-6">
+                    <div className="border-2 border-gray-200 rounded-3xl p-(--space-l)">
                       <button
                         onClick={() =>
                           setShowInspectionDetails(!showInspectionDetails)
                         }
                         className="w-full flex items-center justify-between text-left"
                       >
-                        <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                          ✅ ผลการตรวจสภาพ
-                          <span className="ml-3 px-3 py-1 text-sm bg-green-100 text-green-700 rounded-full">
+                        <h3 className="text-1 bold text-gray-900 flex items-center">
+                          <span className="mr-(--space-xs)">✅</span>
+                          Inspection Results
+                          <span className="ml-(--space-s) px-(--space-s) py-(--space-3xs) text--1 bg-green-100 text-green-700 rounded-full medium">
                             {editableData.overallResult || "N/A"}
                           </span>
                         </h3>
-                        <span className="text-2xl text-gray-400">
+                        <span className="text-2 text-gray-400">
                           {showInspectionDetails ? "−" : "+"}
                         </span>
                       </button>
 
                       {showInspectionDetails && (
-                        <div className="mt-4 pt-4 border-t grid grid-cols-2 gap-4">
+                        <div className="mt-(--space-m) pt-(--space-m) border-t grid grid-cols-1 sm:grid-cols-2 gap-(--space-s)">
                           {[
                             {
                               key: "brakePerformance",
-                              label: "ประสิทธิภาพเบรก",
+                              label: "Brake Performance",
                               unit: "%",
                             },
                             {
                               key: "handbrakePerformance",
-                              label: "ประสิทธิภาพเบรกมือ",
+                              label: "Handbrake Performance",
                               unit: "%",
                             },
                             {
                               key: "emissionValue",
-                              label: "ค่าไอเสีย CO",
+                              label: "CO Emission Value",
                               unit: "%",
                             },
                             {
                               key: "noiseLevel",
-                              label: "ระดับเสียง",
+                              label: "Noise Level",
                               unit: "dB",
                             },
-                            { key: "brakeResult", label: "ผลเบรก" },
+                            { key: "brakeResult", label: "Brake Result" },
                             {
                               key: "wheelAlignmentResult",
-                              label: "ผลศูนย์ล้อ",
+                              label: "Wheel Alignment",
                             },
-                            { key: "emissionResult", label: "ผลมลพิษ" },
+                            { key: "emissionResult", label: "Emission Result" },
                             {
                               key: "chassisConditionResult",
-                              label: "สภาพตัวถัง",
+                              label: "Chassis Condition",
                             },
                           ].map((field) => {
                             const value =
@@ -750,12 +798,12 @@ export default function SellPage() {
                             return (
                               <div
                                 key={field.key}
-                                className="bg-gray-50 p-3 rounded-lg"
+                                className="bg-gradient-to-br from-gray-50 to-gray-100 p-(--space-s) rounded-2xl"
                               >
-                                <p className="text-xs text-gray-500 mb-1">
+                                <p className="text--1 text-gray-500 mb-(--space-3xs)">
                                   {field.label}
                                 </p>
-                                <p className="font-medium text-gray-900">
+                                <p className="medium text-gray-900">
                                   {value} {field.unit || ""}
                                 </p>
                               </div>
@@ -768,35 +816,40 @@ export default function SellPage() {
 
                   {/* Images */}
                   {images.length > 0 && (
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <p className="text-sm text-gray-600 mb-2">รูปภาพ</p>
-                      <p className="font-medium">{images.length} รูป</p>
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-(--space-m) rounded-2xl border border-blue-200">
+                      <p className="text-0 text-blue-900 mb-(--space-xs) medium">
+                        📸 Car Images
+                      </p>
+                      <p className="text-1 bold text-blue-900">
+                        {images.length} image{images.length > 1 ? "s" : ""}{" "}
+                        uploaded
+                      </p>
                     </div>
                   )}
                 </div>
 
                 {error && (
-                  <div className="mt-6 p-4 bg-red-50 border-2 border-red-200 rounded-xl text-red-700">
+                  <div className="mt-(--space-m) p-(--space-m) bg-red-50 border-2 border-red-200 rounded-2xl text-red-700 text-0">
                     {error}
                   </div>
                 )}
 
-                <div className="flex gap-4 mt-8">
+                <div className="flex gap-(--space-s) mt-(--space-xl)">
                   <button
                     onClick={() => setCurrentStep("details")}
                     disabled={isSubmitting}
-                    className="px-8 py-4 text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 transition-all font-semibold disabled:opacity-50"
+                    className="px-(--space-l) py-(--space-s) text-gray-700 bg-gray-100 rounded-2xl hover:bg-gray-200 transition-all medium disabled:opacity-50"
                   >
-                    ← แก้ไข
+                    ← Edit
                   </button>
                   <button
                     onClick={handleFinalSubmit}
                     disabled={isSubmitting}
-                    className="flex-1 px-8 py-4 text-white bg-green-600 rounded-xl hover:bg-green-700 transition-all font-semibold text-lg shadow-lg disabled:opacity-50"
+                    className="flex-1 px-(--space-l) py-(--space-s) text-white bg-gradient-to-r from-green-600 to-green-700 rounded-2xl hover:shadow-lg transition-all bold text-1 shadow-md disabled:opacity-50"
                   >
                     {isSubmitting
-                      ? "กำลังสร้างประกาศ..."
-                      : "✓ ยืนยันและสร้างประกาศ"}
+                      ? "Creating listing..."
+                      : "✓ Confirm & Create Listing"}
                   </button>
                 </div>
               </div>
@@ -805,47 +858,47 @@ export default function SellPage() {
 
           {/* SUCCESS */}
           {currentStep === "success" && (
-            <div className="w-full max-w-2xl">
-              <div className="bg-white rounded-2xl shadow-xl p-12 text-center">
-                <div className="text-green-500 text-7xl mb-6">✓</div>
-                <h2 className="text-3xl font-bold text-gray-900 mb-3">
-                  สร้างประกาศสำเร็จ!
+            <div className="w-full max-w-2xl mx-auto">
+              <div className="bg-white rounded-4xl shadow-[var(--shadow-lg)] p-(--space-2xl) text-center">
+                <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-green-500 to-green-600 rounded-full mb-(--space-l) shadow-xl">
+                  <span className="text-6xl text-white">✓</span>
+                </div>
+                <h2 className="text-4 bold text-gray-900 mb-(--space-s) line-height-11">
+                  Listing Created Successfully!
                 </h2>
-                <p className="text-lg text-gray-600 mb-8">
-                  ประกาศของคุณถูกบันทึกแล้ว คุณสามารถเผยแพร่ได้ทันที
+                <p className="text-1 text-gray-600 mb-(--space-xl) line-height-12">
+                  Your listing has been saved. You can publish it right away
                 </p>
 
                 {error && (
-                  <div className="mb-6 p-4 bg-red-50 border-2 border-red-200 rounded-xl text-red-700">
+                  <div className="mb-(--space-m) p-(--space-m) bg-red-50 border-2 border-red-200 rounded-2xl text-red-700 text-0">
                     {error}
                   </div>
                 )}
 
-                <div className="space-y-4">
+                <div className="space-y-(--space-s)">
                   <button
                     onClick={handlePublish}
                     disabled={isSubmitting}
-                    className="w-full px-8 py-4 text-white bg-green-600 rounded-xl hover:bg-green-700 transition-all font-semibold text-lg shadow-lg disabled:opacity-50"
+                    className="w-full px-(--space-xl) py-(--space-m) text-white bg-gradient-to-r from-green-600 to-green-700 rounded-3xl hover:shadow-xl transition-all bold text-1 shadow-lg disabled:opacity-50"
                   >
-                    {isSubmitting
-                      ? "กำลังเผยแพร่..."
-                      : "🚀 เผยแพร่ประกาศตอนนี้"}
+                    {isSubmitting ? "Publishing..." : "🚀 Publish Listing Now"}
+                  </button>
+
+                  <button
+                    onClick={() => router.push("/listings")}
+                    disabled={isSubmitting}
+                    className="w-full px-(--space-xl) py-(--space-m) text-maroon border-2 border-maroon rounded-3xl hover:bg-maroon/5 transition-all medium disabled:opacity-50"
+                  >
+                    View My Listings
                   </button>
 
                   <button
                     onClick={handleStartNew}
                     disabled={isSubmitting}
-                    className="w-full px-8 py-4 text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-all font-semibold disabled:opacity-50"
+                    className="w-full px-(--space-xl) py-(--space-m) text-gray-700 bg-gray-100 rounded-3xl hover:bg-gray-200 transition-all medium disabled:opacity-50"
                   >
-                    + เพิ่มประกาศใหม่
-                  </button>
-
-                  <button
-                    onClick={() => router.push("/buy")}
-                    disabled={isSubmitting}
-                    className="w-full px-8 py-4 text-red-600 border-2 border-red-600 rounded-xl hover:bg-red-50 transition-all font-semibold disabled:opacity-50"
-                  >
-                    ดูประกาศทั้งหมด
+                    + Add Another Listing
                   </button>
                 </div>
               </div>
