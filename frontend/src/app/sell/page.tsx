@@ -8,12 +8,50 @@ import CarImageUploader from "@/components/features/ocr/CarImageUploader";
 import CarDataForm from "@/components/features/sell/CarDataForm";
 import QrCodeUploader from "@/components/features/inspection/QrCodeUploader";
 import { apiCall } from "@/lib/apiCall";
-import { CarFormData } from "@/lib/ocrUtils";
 // --- [ เพิ่มเข้ามาใหม่ ] ---
 import { InspectionData } from "@/types/inspection";
 import InspectionDataForm from "@/components/features/inspection/InspectionDataForm";
-import { mapInspectionDataToForm } from "@/lib/inspectionUtils";
+import { CarFormData, mapInspectionDataToForm } from "@/lib/inspectionUtils";
 // ---
+
+const formSections = [
+  {
+    title: "ข้อมูลการขายและสภาพรถ",
+    fields: [
+      { name: "price", label: "ราคา (บาท)", type: "number", required: true },
+      { name: "mileage", label: "เลขไมล์ (กม.)", type: "number" },
+      { name: "conditionRating", label: "สภาพรถ (1-5)", type: "number", min: 1, max: 5 },
+    ],
+  },
+  {
+    title: "ข้อมูลจำเพาะรถยนต์",
+    fields: [
+      { name: "registrationNumber", label: "เลขทะเบียน", type: "text" },
+      { name: "province", label: "จังหวัด", type: "text" },
+      { name: "vin", label: "เลขตัวถัง (VIN)", type: "text" },
+      { name: "engineNumber", label: "หมายเลขเครื่องยนต์", type: "text" },
+      { name: "year", label: "ปี", type: "number" },
+      { name: "color", label: "สี", type: "text" },
+      { name: "bodyStyle", label: "ลักษณะรถ", type: "text" },
+      { name: "seats", label: "จำนวนที่นั่ง", type: "number" },
+      { name: "doors", label: "จำนวนประตู", type: "number" },
+    ],
+  },
+  {
+    title: "ผลการตรวจสภาพ",
+    fields: [
+      { name: "overallResult", label: "ผลการตรวจโดยรวม", type: "text" },
+      { name: "brakeResult", label: "ผลการทดสอบเบรก", type: "text" },
+      { name: "emissionResult", label: "ผลการปล่อยมลพิษ", type: "text" },
+      { name: "chassisConditionResult", label: "สภาพตัวถังและโครงรถ", type: "text" },
+      { name: "brakePerformance", label: "ประสิทธิภาพห้ามล้อ (%)", type: "text" },
+      { name: "handbrakePerformance", label: "ประสิทธิภาพห้ามล้อมือ (%)", type: "text" },
+      { name: "emissionValue", label: "ค่าไอเสีย (% CO/HC)", type: "text" },
+      { name: "noiseLevel", label: "ค่าเครื่องวัดเสียง (dBA)", type: "text" },
+    ],
+  },
+];
+
 
 type Step = "ocr" | "form" | "inspection" | "inspectionConfig" | "images" | "success";
 
@@ -113,6 +151,14 @@ export default function SellPage() {
   if (!isAuthenticated || !roles?.seller || !profiles?.sellerComplete) {
     return null;
   }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type } = e.target;
+    setInspectionConfigData(prev => ({
+        ...prev,
+        [name]: type === 'number' ? (value === '' ? undefined : parseInt(value, 10)) : value,
+    }));
+  };
 
   const handleOcrComplete = (extractedText: string) => {
     setOcrData(extractedText);
@@ -385,38 +431,57 @@ export default function SellPage() {
           {currentStep === "inspectionConfig" && (
             <div className="w-full max-w-4xl">
               <div className="bg-white rounded-2xl shadow-lg p-8">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">กำหนดค่าผลการตรวจสอบ</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">ตรวจสอบและยืนยันข้อมูลรถยนต์</h2>
                 
-                {isScraping && (
+                {isScraping && ( 
                   <div className="text-center p-8">
-                      {/* ... Loading Spinner ... */}
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-red-600 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">กำลังดึงข้อมูลใบตรวจสภาพ...</p>
                   </div>
-                )}
+                 )}
 
-                {!isScraping && inspectionData  && (
-                  <div className="mb-6 p-4 bg-blue-50 rounded-lg">
-                    <h3 className="font-semibold text-blue-900 mb-2">ข้อมูลดิบจากการตรวจสอบ (สำหรับ Debug):</h3>
-                    <pre className="text-sm text-blue-800 whitespace-pre-wrap">{JSON.stringify(inspectionData , null, 2)}</pre>
-                  </div>
+                {!isScraping && (
+                  <form onSubmit={handleInspectionConfigSubmit} className="space-y-8">
+                    {/* วนลูปสร้าง Section ของฟอร์ม */}
+                    {formSections.map((section) => (
+                      <section key={section.title}>
+                        <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-6">{section.title}</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {/* วนลูปสร้าง Input field ในแต่ละ Section */}
+                          {section.fields.map((field) => (
+                            <div key={field.name}>
+                              <label className="block text-sm font-medium text-gray-700">
+                                {field.label}
+                                {field.required && <span className="text-red-600">*</span>}
+                              </label>
+                              <input
+                                type={field.type}
+                                name={field.name}
+                                value={(inspectionConfigData[field.name as keyof CarFormData] as string | number) || ""}
+                                onChange={handleInputChange}
+                                required={field.required}
+                                min={field.min}
+                                max={field.max}
+                                className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    ))}
+
+                    {error && <div className="p-4 text-red-600 bg-red-50 rounded-lg">{error}</div>}
+
+                    <div className="flex gap-4 pt-4 border-t mt-6">
+                      <button type="button" onClick={() => setCurrentStep("inspection")} className="px-6 py-3 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300">
+                        ย้อนกลับ
+                      </button>
+                      <button type="submit" disabled={isSubmitting || isScraping} className="flex-1 px-6 py-3 text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:bg-gray-400">
+                        {isSubmitting ? "กำลังสร้างประกาศ..." : "ยืนยันและดำเนินการต่อ"}
+                      </button>
+                    </div>
+                  </form>
                 )}
-                
-                <form onSubmit={handleInspectionConfigSubmit} className="space-y-6">
-                   {/* ... ฟอร์มทั้งหมด ... */}
-                   {/* ตัวอย่าง Input ที่ตอนนี้จะแสดงข้อมูลรวม */}
-                   <div>
-                     <label className="block text-sm font-medium text-gray-700 mb-2">จังหวัด</label>
-                     <input type="text" value={inspectionConfigData.province || ""} onChange={(e) => setInspectionConfigData({ ...inspectionConfigData, province: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-                   </div>
-                   {/* ... Inputs อื่นๆ ... */}
-                  <div className="flex gap-4">
-                    <button type="button" onClick={() => setCurrentStep("inspection")} className="px-6 py-3 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300">
-                      ย้อนกลับ
-                    </button>
-                    <button type="submit" disabled={isSubmitting || isScraping} className="flex-1 px-6 py-3 text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:bg-gray-400">
-                      {isSubmitting ? "กำลังสร้าง..." : "ดำเนินการต่อ"}
-                    </button>
-                  </div>
-                </form>
               </div>
             </div>
           )}
