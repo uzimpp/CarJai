@@ -8,6 +8,8 @@ import (
 type User struct {
 	ID           int       `json:"id" db:"id"`
 	Email        string    `json:"email" db:"email"`
+	Username     string    `json:"username" db:"username"`
+	Name         string    `json:"name" db:"name"`
 	PasswordHash string    `json:"-" db:"password_hash"`
 	CreatedAt    time.Time `json:"created_at" db:"created_at"`
 }
@@ -27,12 +29,32 @@ type UserSession struct {
 type UserSignupRequest struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required,min=6"`
+	Username string `json:"username" validate:"required,min=3,max=20"`
+	Name     string `json:"name" validate:"required,min=2,max=100"`
 }
 
-// UserLoginRequest represents the request payload for user login
-type UserLoginRequest struct {
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required,min=6"`
+// UserSigninRequest represents the request payload for user sign in
+type UserSigninRequest struct {
+	EmailOrUsername string `json:"email_or_username" validate:"required"`
+	Password        string `json:"password" validate:"required,min=6"`
+}
+
+// UserUpdateSelfRequest represents the request payload for PATCH /api/profile/self
+type UserUpdateSelfRequest struct {
+	Username *string `json:"username,omitempty" validate:"omitempty,min=3,max=20"`
+	Name     *string `json:"name,omitempty" validate:"omitempty,min=2,max=100"`
+}
+
+// ChangePasswordRequest represents the request payload for POST /api/profile/change-password
+type ChangePasswordRequest struct {
+	CurrentPassword string `json:"current_password" validate:"required"`
+	NewPassword     string `json:"new_password" validate:"required,min=6"`
+}
+
+// ChangePasswordResponse represents the response for password change
+type ChangePasswordResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
 }
 
 // GoogleAuthRequest represents the request payload for Google OAuth authentication
@@ -48,7 +70,7 @@ type UserAuthResponse struct {
 	Message string       `json:"message,omitempty"`
 }
 
-// UserAuthData contains the authentication data returned after login/signup
+// UserAuthData contains the authentication data returned after signin/signup
 type UserAuthData struct {
 	User      UserPublic `json:"user"`
 	Token     string     `json:"token"`
@@ -59,6 +81,8 @@ type UserAuthData struct {
 type UserPublic struct {
 	ID        int       `json:"id"`
 	Email     string    `json:"email"`
+	Username  string    `json:"username"`
+	Name      string    `json:"name"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
@@ -87,8 +111,8 @@ type UserProfiles struct {
 	SellerComplete bool `json:"sellerComplete"`
 }
 
-// UserLogoutResponse represents the response payload for user logout
-type UserLogoutResponse struct {
+// UserSignoutResponse represents the response payload for user sign out
+type UserSignoutResponse struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
 }
@@ -105,6 +129,8 @@ func (u *User) ToPublic() UserPublic {
 	return UserPublic{
 		ID:        u.ID,
 		Email:     u.Email,
+		Username:  u.Username,
+		Name:      u.Name,
 		CreatedAt: u.CreatedAt,
 	}
 }

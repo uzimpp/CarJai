@@ -10,7 +10,7 @@ type Admin struct {
 	Username     string     `json:"username" db:"username"`
 	PasswordHash string     `json:"-" db:"password_hash"`
 	Name         string     `json:"name" db:"name"`
-	LastLoginAt  *time.Time `json:"last_login_at" db:"last_login_at"`
+	LastSigninAt *time.Time `json:"last_signin_at" db:"last_login_at"`
 	CreatedAt    time.Time  `json:"created_at" db:"created_at"`
 }
 
@@ -34,20 +34,20 @@ type AdminIPWhitelist struct {
 	CreatedAt   time.Time `json:"created_at" db:"created_at"`
 }
 
-// AdminLoginRequest represents the request payload for admin login
-type AdminLoginRequest struct {
+// AdminSigninRequest represents the request payload for admin sign in
+type AdminSigninRequest struct {
 	Username string `json:"username" validate:"required,min=3,max=100"`
 	Password string `json:"password" validate:"required,min=6"`
 }
 
-// AdminLoginResponse represents the response payload for successful admin login
-type AdminLoginResponse struct {
-	Success   bool        `json:"success"`
-	Data      AdminAuthData `json:"data"`
-	Message   string      `json:"message,omitempty"`
+// AdminSigninResponse represents the response payload for successful admin sign in
+type AdminSigninResponse struct {
+	Success bool          `json:"success"`
+	Data    AdminAuthData `json:"data"`
+	Message string        `json:"message,omitempty"`
 }
 
-// AdminAuthData contains the authentication data returned after login
+// AdminAuthData contains the authentication data returned after sign in
 type AdminAuthData struct {
 	Admin     AdminPublic `json:"admin"`
 	Token     string      `json:"token"`
@@ -56,33 +56,33 @@ type AdminAuthData struct {
 
 // AdminPublic represents admin data that can be safely returned to client
 type AdminPublic struct {
-	ID          int        `json:"id"`
-	Username    string     `json:"username"`
-	Name        string     `json:"name"`
-	LastLoginAt *time.Time `json:"last_login_at"`
-	CreatedAt   time.Time  `json:"created_at"`
+	ID           int        `json:"id"`
+	Username     string     `json:"username"`
+	Name         string     `json:"name"`
+	LastSigninAt *time.Time `json:"last_signin_at"`
+	CreatedAt    time.Time  `json:"created_at"`
 }
 
-// AdminLogoutRequest represents the request payload for admin logout
-type AdminLogoutRequest struct {
+// AdminSignoutRequest represents the request payload for admin sign out
+type AdminSignoutRequest struct {
 	Token string `json:"token" validate:"required"`
 }
 
-// AdminLogoutResponse represents the response payload for admin logout
-type AdminLogoutResponse struct {
+// AdminSignoutResponse represents the response payload for admin sign out
+type AdminSignoutResponse struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
 }
 
 // AdminMeResponse represents the response payload for GET /admin/auth/me
 type AdminMeResponse struct {
-	Success bool           `json:"success"`
-	Data    AdminMeData    `json:"data"`
+	Success bool        `json:"success"`
+	Data    AdminMeData `json:"data"`
 }
 
 // AdminMeData contains the current admin session information
 type AdminMeData struct {
-	Admin   AdminPublic    `json:"admin"`
+	Admin   AdminPublic        `json:"admin"`
 	Session AdminSessionPublic `json:"session"`
 }
 
@@ -102,9 +102,9 @@ type AdminIPWhitelistRequest struct {
 
 // AdminIPWhitelistResponse represents the response payload for IP whitelist operations
 type AdminIPWhitelistResponse struct {
-	Success bool                `json:"success"`
-	Data    []AdminIPWhitelist  `json:"data,omitempty"`
-	Message string              `json:"message,omitempty"`
+	Success bool               `json:"success"`
+	Data    []AdminIPWhitelist `json:"data,omitempty"`
+	Message string             `json:"message,omitempty"`
 }
 
 // AdminErrorResponse represents error response structure
@@ -117,11 +117,11 @@ type AdminErrorResponse struct {
 // ToPublic converts Admin to AdminPublic (removes sensitive data)
 func (a *Admin) ToPublic() AdminPublic {
 	return AdminPublic{
-		ID:          a.ID,
-		Username:    a.Username,
-		Name:        a.Name,
-		LastLoginAt: a.LastLoginAt,
-		CreatedAt:   a.CreatedAt,
+		ID:           a.ID,
+		Username:     a.Username,
+		Name:         a.Name,
+		LastSigninAt: a.LastSigninAt,
+		CreatedAt:    a.CreatedAt,
 	}
 }
 

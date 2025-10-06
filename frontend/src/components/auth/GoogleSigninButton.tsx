@@ -4,18 +4,18 @@ import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-interface GoogleLoginButtonProps {
-  mode?: "login" | "signup";
+interface GoogleSigninButtonProps {
+  mode?: "signin" | "signup";
   className?: string;
   disabled?: boolean;
 }
 
-export default function GoogleLoginButton({
-  mode = "login",
+export default function GoogleSigninButton({
+  mode = "signin",
   className = "",
   disabled = false,
-}: GoogleLoginButtonProps) {
-  const { googleLogin, isLoading, clearError } = useGoogleAuth();
+}: GoogleSigninButtonProps) {
+  const { googleSignin, isLoading, clearError } = useGoogleAuth();
   const router = useRouter();
 
   // Load Google OAuth script
@@ -43,12 +43,11 @@ export default function GoogleLoginButton({
     return () => clearError();
   }, [mode, clearError]);
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleSignin = async () => {
     console.log("Google login button clicked");
     console.log("NEXT_PUBLIC_GOOGLE_CLIENT_ID:", process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
-    
     clearError();
-    const result = await googleLogin(mode);
+    const result = await googleSignin(mode);
 
     // Handle navigation after successful auth
     if (result.success) {
@@ -62,7 +61,7 @@ export default function GoogleLoginButton({
   return (
     <button
       type="button"
-      onClick={handleGoogleLogin}
+      onClick={handleGoogleSignin}
       disabled={disabled || isLoading}
       className={`
         relative w-full flex justify-center items-center gap-x-3 

@@ -21,7 +21,7 @@ const (
 
 // LogEntry represents a log entry
 type LogEntry struct {
-	Timestamp time.Time              `json:"timestamp"`
+	Timestamp string                 `json:"timestamp"`
 	Level     string                 `json:"level"`
 	Message   string                 `json:"message"`
 	Fields    map[string]interface{} `json:"fields,omitempty"`
@@ -29,6 +29,13 @@ type LogEntry struct {
 	AdminID   string                 `json:"admin_id,omitempty"`
 	IPAddress string                 `json:"ip_address,omitempty"`
 	UserAgent string                 `json:"user_agent,omitempty"`
+	// Enhanced fields for HTTP request logging
+	Duration    string `json:"duration,omitempty"`
+	Method      string `json:"method,omitempty"`
+	Path        string `json:"path,omitempty"`
+	Status      int    `json:"status,omitempty"`
+	RequestSize int64  `json:"request_size,omitempty"`
+	ResponseSize int64 `json:"response_size,omitempty"`
 }
 
 // Logger represents a structured logger
@@ -97,7 +104,7 @@ func (l *Logger) log(level LogLevel, message string) {
 	}
 
 	entry := LogEntry{
-		Timestamp: time.Now(),
+		Timestamp: time.Now().Format("2006-01-02 15:04:05"),
 		Level:     levelNames[level],
 		Message:   message,
 		Fields:    l.fields,
@@ -174,8 +181,8 @@ func (l *Logger) LogSecurityEvent(eventType, description string, details map[str
 	l.WithFields(fields).Warn(fmt.Sprintf("Security event: %s - %s", eventType, description))
 }
 
-// LogFailedLogin logs a failed login attempt
-func (l *Logger) LogFailedLogin(username, ipAddress, userAgent, reason string) {
+// LogFailedSignin logs a failed login attempt
+func (l *Logger) LogFailedSignin(username, ipAddress, userAgent, reason string) {
 	fields := map[string]interface{}{
 		"username":   username,
 		"ip_address": ipAddress,
@@ -186,8 +193,8 @@ func (l *Logger) LogFailedLogin(username, ipAddress, userAgent, reason string) {
 	l.WithFields(fields).Warn("Failed login attempt")
 }
 
-// LogSuccessfulLogin logs a successful login
-func (l *Logger) LogSuccessfulLogin(adminID int, username, ipAddress, userAgent string) {
+// LogSuccessfulSignin logs a successful login
+func (l *Logger) LogSuccessfulSignin(adminID int, username, ipAddress, userAgent string) {
 	fields := map[string]interface{}{
 		"admin_id":   adminID,
 		"username":   username,
@@ -208,6 +215,70 @@ func (l *Logger) LogIPWhitelistChange(adminID int, action, ipAddress, descriptio
 	}
 
 	l.WithFields(fields).Info(fmt.Sprintf("IP whitelist %s: %s", action, ipAddress))
+}
+
+// LogHTTPRequest logs HTTP requests with comprehensive information
+func (l *Logger) LogHTTPRequest(method, path, ipAddress, userAgent string, status int, duration time.Duration, requestSize, responseSize int64, responseData interface{}) {
+	entry := LogEntry{
+		Timestamp:    time.Now().Format("2006-01-02 15:04:05"),
+		Level:        "INFO",
+		Message:      "HTTP Request",
+		IPAddress:    ipAddress,
+		UserAgent:    userAgent,
+		Duration:     duration.String(),
+		Method:       method,
+		Path:         path,
+		Status:       status,
+		RequestSize:  requestSize,
+		ResponseSize: responseSize,
+		Fields: map[string]interface{}{
+			"response_data": responseData,
+		},
+	}
+
+	jsonData, err := json.Marshal(entry)
+	if err != nil {
+		log.Printf("Error marshaling log entry: %v", err)
+		return
+	}
+
+	fmt.Println(string(jsonData))
+}
+
+// LogHTTPRequestWithContext logs HTTP requests with additional context
+func (l *Logger) LogHTTPRequestWithContext(method, path, ipAddress, userAgent string, status int, duration time.Duration, requestSize, responseSize int64, responseData interface{}, context map[string]interface{}) {
+	entry := LogEntry{
+		Timestamp:    time.Now().Format("2006-01-02 15:04:05"),
+		Level:        "INFO",
+		Message:      "HTTP Request",
+		IPAddress:    ipAddress,
+		UserAgent:    userAgent,
+		Duration:     duration.String(),
+		Method:       method,
+		Path:         path,
+		Status:       status,
+		RequestSize:  requestSize,
+		ResponseSize: responseSize,
+		Fields:       make(map[string]interface{}),
+	}
+
+	// Add response data
+	if responseData != nil {
+		entry.Fields["response_data"] = responseData
+	}
+
+	// Add additional context
+	for key, value := range context {
+		entry.Fields[key] = value
+	}
+
+	jsonData, err := json.Marshal(entry)
+	if err != nil {
+		log.Printf("Error marshaling log entry: %v", err)
+		return
+	}
+
+	fmt.Println(string(jsonData))
 }
 
 // Global logger instance

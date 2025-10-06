@@ -28,14 +28,14 @@ func AdminRoutes(
 	// Create router
 	router := http.NewServeMux()
 
-	// Admin authentication routes (no auth required, but IP whitelist required)
-	router.HandleFunc(adminPrefix+"/auth/login",
+	// Admin authentication routes (POST)
+	router.HandleFunc(adminPrefix+"/auth/signin",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
 					middleware.LoginRateLimit()(
 						middleware.LoggingMiddleware(
-							adminAuthHandler.Login,
+							adminAuthHandler.Signin,
 						),
 					),
 				),
@@ -43,16 +43,16 @@ func AdminRoutes(
 		),
 	)
 
-	// Admin authentication routes (auth required)
-	router.HandleFunc(adminPrefix+"/auth/logout",
+	// Admin authentication routes (POST)
+	router.HandleFunc(adminPrefix+"/auth/signout",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
-				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
-					middleware.GeneralRateLimit()(
-						middleware.AdminLoggingMiddleware(
+				middleware.AdminLoggingMiddleware(
+					authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
+						middleware.GeneralRateLimit()(
 							authMiddleware.RequireAuth(
 								authMiddleware.RequireIPWhitelist(
-									adminAuthHandler.Logout,
+									adminAuthHandler.Signout,
 								),
 							),
 						),
@@ -62,11 +62,12 @@ func AdminRoutes(
 		),
 	)
 
+	// Admin authentication routes (GET)
 	router.HandleFunc(adminPrefix+"/auth/me",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
-				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
-					middleware.AdminLoggingMiddleware(
+				middleware.AdminLoggingMiddleware(
+					authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
 						authMiddleware.RequireAuth(
 							authMiddleware.RequireIPWhitelist(
 								adminAuthHandler.Me,
@@ -78,11 +79,12 @@ func AdminRoutes(
 		),
 	)
 
+	// Admin authentication routes (POST)
 	router.HandleFunc(adminPrefix+"/auth/refresh",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
-				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
-					middleware.AdminLoggingMiddleware(
+				middleware.AdminLoggingMiddleware(
+					authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
 						authMiddleware.RequireAuth(
 							authMiddleware.RequireIPWhitelist(
 								adminAuthHandler.RefreshToken,
@@ -94,7 +96,7 @@ func AdminRoutes(
 		),
 	)
 
-	// Admin IP whitelist management routes
+	// Admin IP whitelist management routes (GET)
 	router.HandleFunc(adminPrefix+"/ip-whitelist",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
@@ -111,6 +113,7 @@ func AdminRoutes(
 		),
 	)
 
+	// Admin IP whitelist management routes (POST)
 	router.HandleFunc(adminPrefix+"/ip-whitelist/add",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
@@ -127,6 +130,7 @@ func AdminRoutes(
 		),
 	)
 
+	// Admin IP whitelist management routes (DELETE)
 	router.HandleFunc(adminPrefix+"/ip-whitelist/remove",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
@@ -143,13 +147,12 @@ func AdminRoutes(
 		),
 	)
 
-	// Catch-all route for any other admin paths (like /admin/login page access)
+	// Route for any other admin paths (GET)
 	router.HandleFunc(adminPrefix+"/",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
 					func(w http.ResponseWriter, r *http.Request) {
-						// This handles any unmatched admin routes
 						// Return 404 for unmatched API routes, but allow frontend routing
 						if r.URL.Path != "/" {
 							http.NotFound(w, r)

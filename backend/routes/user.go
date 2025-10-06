@@ -24,7 +24,7 @@ func UserAuthRoutes(
 	// Create router
 	router := http.NewServeMux()
 
-	// User authentication routes (no auth required)
+	// User authentication routes (POST)
 	router.HandleFunc("/api/auth/signup",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
@@ -37,12 +37,13 @@ func UserAuthRoutes(
 		),
 	)
 
-	router.HandleFunc("/api/auth/login",
+	// User authentication routes (POST)
+	router.HandleFunc("/api/auth/signin",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				middleware.LoginRateLimit()(
 					middleware.LoggingMiddleware(
-						userAuthHandler.Login,
+						userAuthHandler.Signin,
 					),
 				),
 			),
@@ -61,19 +62,20 @@ func UserAuthRoutes(
 		),
 	)
 
-	// User authentication routes (auth required)
-	router.HandleFunc("/api/auth/logout",
+	// User authentication routes (POST)
+	router.HandleFunc("/api/auth/signout",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				middleware.GeneralRateLimit()(
 					middleware.LoggingMiddleware(
-						userAuthHandler.Logout,
+						userAuthHandler.Signout,
 					),
 				),
 			),
 		),
 	)
 
+	// User authentication routes (GET)
 	router.HandleFunc("/api/auth/me",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
@@ -86,12 +88,26 @@ func UserAuthRoutes(
 		),
 	)
 
+	// User authentication routes (POST)
 	router.HandleFunc("/api/auth/refresh",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				middleware.GeneralRateLimit()(
 					middleware.LoggingMiddleware(
 						userAuthHandler.RefreshToken,
+					),
+				),
+			),
+		),
+	)
+
+	// Change password (POST)
+	router.HandleFunc("/api/auth/change-password",
+		middleware.CORSMiddleware(allowedOrigins)(
+			middleware.SecurityHeadersMiddleware(
+				middleware.GeneralRateLimit()(
+					middleware.LoggingMiddleware(
+						userAuthHandler.ChangePassword,
 					),
 				),
 			),

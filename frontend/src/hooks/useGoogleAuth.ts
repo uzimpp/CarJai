@@ -10,7 +10,7 @@ interface GoogleAuthState {
 }
 
 interface GoogleAuthActions {
-  googleLogin: (mode: "login" | "signup") => Promise<{ success: boolean }>;
+  googleSignin: (mode: "signin" | "signup") => Promise<{ success: boolean }>;
   clearError: () => void;
 }
 
@@ -24,7 +24,7 @@ export function useGoogleAuth(): GoogleAuthState & GoogleAuthActions {
     setState((prev) => ({ ...prev, error: null }));
   }, []);
 
-  const googleLogin = useCallback(async (mode: "login" | "signup") => {
+  const googleSignin = useCallback(async (mode: "signin" | "signup") => {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
@@ -100,7 +100,7 @@ export function useGoogleAuth(): GoogleAuthState & GoogleAuthActions {
 
   return {
     ...state,
-    googleLogin,
+    googleSignin,
     clearError,
   };
 }
