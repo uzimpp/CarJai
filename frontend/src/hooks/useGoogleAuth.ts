@@ -14,6 +14,24 @@ interface GoogleAuthActions {
   clearError: () => void;
 }
 
+/**
+ * Dynamically load Google Identity Services script
+ */
+function loadGoogleScript(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (typeof window === "undefined") return reject("Not in browser");
+    if (window.google) return resolve(); // already loaded
+
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject("Failed to load Google script");
+    document.body.appendChild(script);
+  });
+}
+
 export function useGoogleAuth(): GoogleAuthState & GoogleAuthActions {
   const [state, setState] = useState<GoogleAuthState>({
     isLoading: false,
@@ -28,9 +46,7 @@ export function useGoogleAuth(): GoogleAuthState & GoogleAuthActions {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      if (typeof window === "undefined" || !window.google) {
-        throw new Error("Google OAuth not loaded");
-      }
+      await loadGoogleScript(); // ensure script is loaded
 
       // Wrap the callback in a Promise
       const result = await new Promise<{ success: boolean }>((resolve) => {
@@ -38,7 +54,7 @@ export function useGoogleAuth(): GoogleAuthState & GoogleAuthActions {
           client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
           callback: async (response: { credential: string }) => {
             try {
-              const idToken = response.credential; // ✅ This is the JWT
+              const idToken = response.credential;
 
               if (!idToken) {
                 throw new Error("No ID token returned from Google");
@@ -47,7 +63,7 @@ export function useGoogleAuth(): GoogleAuthState & GoogleAuthActions {
               // Optional: clear existing admin sessions
               await mutualLogout.clearAdminSession();
 
-              // Send JWT to your backend
+              // Send JWT to backend
               const authResult = await authAPI.googleAuth({
                 credential: idToken,
                 mode,
