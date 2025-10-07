@@ -26,10 +26,10 @@ func UserAuthRoutes(
 
 	// User authentication routes (POST)
 	router.HandleFunc("/api/auth/signup",
+	middleware.LoggingMiddleware(
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				middleware.GeneralRateLimit()(
-					middleware.LoggingMiddleware(
 						userAuthHandler.Signup,
 					),
 				),
@@ -39,10 +39,10 @@ func UserAuthRoutes(
 
 	// User authentication routes (POST)
 	router.HandleFunc("/api/auth/signin",
+	middleware.LoggingMiddleware(
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				middleware.LoginRateLimit()(
-					middleware.LoggingMiddleware(
 						userAuthHandler.Signin,
 					),
 				),
@@ -51,10 +51,10 @@ func UserAuthRoutes(
 	)
 
 	router.HandleFunc("/api/auth/google",
-		middleware.CORSMiddleware(allowedOrigins)(
-			middleware.SecurityHeadersMiddleware(
-				middleware.LoginRateLimit()(
-					middleware.LoggingMiddleware(
+		middleware.LoggingMiddleware(
+			middleware.CORSMiddleware(allowedOrigins)(
+				middleware.SecurityHeadersMiddleware(
+					middleware.LoginRateLimit()(
 						userAuthHandler.GoogleAuth,
 					),
 				),
@@ -64,10 +64,10 @@ func UserAuthRoutes(
 
 	// User authentication routes (POST)
 	router.HandleFunc("/api/auth/signout",
+	middleware.LoggingMiddleware(
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				middleware.GeneralRateLimit()(
-					middleware.LoggingMiddleware(
 						userAuthHandler.Signout,
 					),
 				),
@@ -77,10 +77,10 @@ func UserAuthRoutes(
 
 	// User authentication routes (GET)
 	router.HandleFunc("/api/auth/me",
+	middleware.LoggingMiddleware(
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				middleware.GeneralRateLimit()(
-					middleware.LoggingMiddleware(
 						userAuthHandler.Me,
 					),
 				),
@@ -90,10 +90,10 @@ func UserAuthRoutes(
 
 	// User authentication routes (POST)
 	router.HandleFunc("/api/auth/refresh",
+	middleware.LoggingMiddleware(
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				middleware.GeneralRateLimit()(
-					middleware.LoggingMiddleware(
 						userAuthHandler.RefreshToken,
 					),
 				),
@@ -103,10 +103,10 @@ func UserAuthRoutes(
 
 	// Change password (POST)
 	router.HandleFunc("/api/auth/change-password",
+	middleware.LoggingMiddleware(
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				middleware.GeneralRateLimit()(
-					middleware.LoggingMiddleware(
 						userAuthHandler.ChangePassword,
 					),
 				),

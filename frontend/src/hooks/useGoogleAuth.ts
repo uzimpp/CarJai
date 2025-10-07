@@ -28,41 +28,32 @@ export function useGoogleAuth(): GoogleAuthState & GoogleAuthActions {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      // Debug logging
-      console.log("NEXT_PUBLIC_GOOGLE_CLIENT_ID:", process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
-      console.log("Window google object:", window.google);
-      
-      // Initialize Google OAuth
       if (typeof window === "undefined" || !window.google) {
         throw new Error("Google OAuth not loaded");
       }
 
-      // Wrap the token client callback into a promise to resolve on completion
+      // Wrap the callback in a Promise
       const result = await new Promise<{ success: boolean }>((resolve) => {
-        const client = window.google!.accounts.oauth2.initTokenClient({
+        window.google!.accounts.id.initialize({
           client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
-          scope: "openid profile email",
-          callback: async (response: {
-            access_token?: string;
-            error?: string;
-          }) => {
+          callback: async (response: { credential: string }) => {
             try {
-              if (response.error) {
-                throw new Error(response.error);
+              const idToken = response.credential; // ✅ This is the JWT
+
+              if (!idToken) {
+                throw new Error("No ID token returned from Google");
               }
 
-              // Clear any existing admin sessions
+              // Optional: clear existing admin sessions
               await mutualLogout.clearAdminSession();
 
-              // Send the credential to your backend
+              // Send JWT to your backend
               const authResult = await authAPI.googleAuth({
-                credential: response.access_token as string,
+                credential: idToken,
                 mode,
               });
 
-              if (!authResult.success) {
-                throw new Error("Authentication failed");
-              }
+              if (!authResult.success) throw new Error("Authentication failed");
 
               setState((prev) => ({ ...prev, isLoading: false }));
               resolve({ success: true });
@@ -80,8 +71,8 @@ export function useGoogleAuth(): GoogleAuthState & GoogleAuthActions {
           },
         });
 
-        // Request the token (this opens Google's UX flow)
-        client.requestAccessToken();
+        // Show the Google One Tap / button prompt
+        window.google!.accounts.id.prompt();
       });
 
       return result;
@@ -110,17 +101,12 @@ declare global {
   interface Window {
     google?: {
       accounts: {
-        oauth2: {
-          initTokenClient: (config: {
+        id: {
+          initialize: (config: {
             client_id: string;
-            scope: string;
-            callback: (response: {
-              access_token?: string;
-              error?: string;
-            }) => void;
-          }) => {
-            requestAccessToken: () => void;
-          };
+            callback: (response: { credential: string }) => void;
+          }) => void;
+          prompt: () => void;
         };
       };
     };

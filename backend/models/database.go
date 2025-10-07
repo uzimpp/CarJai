@@ -22,6 +22,16 @@ type AdminRepository struct {
 	db *Database
 }
 
+type AuthProvider struct {
+	ID             int
+	UserID         int
+	Provider       string
+	ProviderUserID string
+	Email          string
+	ProfilePicture string
+	CreatedAt      time.Time
+}
+
 // NewAdminRepository creates a new admin repository
 func NewAdminRepository(db *Database) *AdminRepository {
 	return &AdminRepository{db: db}
@@ -446,6 +456,51 @@ func (r *UserRepository) ValidateUserCredentials(email, password string) (*User,
 
 	// Password validation will be handled by bcrypt in the service layer
 	return user, nil
+}
+
+func (r *UserRepository) GetAuthProvider(provider, providerUserID string) (*AuthProvider, error) {
+	auth := &AuthProvider{}
+
+	query := `
+		SELECT id, user_id, provider, provider_user_id, email, profile_picture, created_at
+		FROM auth_providers
+		WHERE provider = $1 AND provider_user_id = $2
+	`
+
+	err := r.db.DB.QueryRow(query, provider, providerUserID).Scan(
+		&auth.ID, &auth.UserID, &auth.Provider, &auth.ProviderUserID, &auth.Email, &auth.ProfilePicture, &auth.CreatedAt,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil // not found is not an error
+		}
+		return nil, fmt.Errorf("failed to get auth provider: %w", err)
+	}
+
+	return auth, nil
+}
+
+func (r *UserRepository) CreateAuthProvider(auth *AuthProvider) error {
+	query := `
+		INSERT INTO auth_providers (user_id, provider, provider_user_id, email, profile_picture)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id, created_at
+	`
+
+	err := r.db.DB.QueryRow(query,
+		auth.UserID,
+		auth.Provider,
+		auth.ProviderUserID,
+		auth.Email,
+		auth.ProfilePicture,
+	).Scan(&auth.ID, &auth.CreatedAt)
+
+	if err != nil {
+		return fmt.Errorf("failed to create auth provider: %w", err)
+	}
+
+	return nil
 }
 
 // UpdateUser updates user fields (username, name)

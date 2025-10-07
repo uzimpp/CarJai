@@ -2,14 +2,18 @@ package services
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/uzimpp/CarJai/backend/models"
 	"github.com/uzimpp/CarJai/backend/utils"
 	"golang.org/x/crypto/bcrypt"
-	"google.golang.org/api/oauth2/v2"
-	"google.golang.org/api/option"
+
+	// "google.golang.org/api/oauth2/v2"
+	// "google.golang.org/api/option"
+	"google.golang.org/api/idtoken"
 )
 
 // UserService handles user-related business logic
@@ -290,73 +294,131 @@ func (s *UserService) RefreshToken(token, ipAddress, userAgent string) (*models.
 	}, nil
 }
 
+type GoogleUserInfo struct {
+	Email     string
+	Sub       string // corresponds to "Id" in oauth2.Userinfo
+	Name      string // full name
+	GivenName string // first/given name
+}
+
 // GoogleAuth handles Google OAuth authentication
-func (s *UserService) GoogleAuth(credential, mode, ipAddress, userAgent, clientID string) (*models.UserAuthResponse, error) {
+func (s *UserService) GoogleAuth(
+	credential, mode, ipAddress, userAgent, clientID string,
+) (*models.UserAuthResponse, error) {
+
 	// Verify Google ID token
-	userInfo, err := s.verifyGoogleToken(credential, clientID)
+	gUser, err := s.verifyGoogleToken(credential, clientID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to verify Google token: %w", err)
 	}
 
-	// Check if user exists
-	existingUser, err := s.userRepo.GetUserByEmail(userInfo.Email)
-	
-	if mode == "signup" {
-		// For signup mode, user should not exist
-		if err == nil && existingUser != nil {
-			return nil, fmt.Errorf("user with email %s already exists", userInfo.Email)
-		}
-		
-		// Create new user
-		user := &models.User{
-			Email:        userInfo.Email,
-			PasswordHash: "", // No password for Google OAuth users
-		}
-
-		err = s.userRepo.CreateUser(user)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create user: %w", err)
-		}
-
-		return s.createAuthResponse(user, ipAddress, userAgent, utils.AuthGoogle)
-	} else {
-		// For login mode, user should exist
-		if err != nil || existingUser == nil {
-			return nil, fmt.Errorf("user with email %s not found", userInfo.Email)
-		}
-
-		return s.createAuthResponse(existingUser, ipAddress, userAgent, utils.AuthGoogle)
+	// Check if this Google account is already linked
+	authProvider, err := s.userRepo.GetAuthProvider("google", gUser.Sub)
+	if err != nil && err != sql.ErrNoRows {
+		return nil, fmt.Errorf("failed to check auth provider: %w", err)
 	}
+
+	if authProvider != nil {
+		// Existing Google login → fetch user and issue JWT
+		user, err := s.userRepo.GetUserByID(authProvider.UserID)
+		if err != nil {
+			return nil, fmt.Errorf("user not found for existing auth provider")
+		}
+		return s.createAuthResponse(user, ipAddress, userAgent, utils.AuthGoogle)
+	}
+
+	// New Google user
+	if mode == "signin" {
+		// User tried to signin but account doesn’t exist
+		return nil, fmt.Errorf("user with email %s not found", gUser.Email)
+	}
+
+	// Generate username safely
+	username := generateUsername(gUser.GivenName, gUser.Sub, func(u string) bool {
+		existing, _ := s.userRepo.GetUserByUsername(u)
+		return existing != nil
+	})
+
+	// Create new user
+	newUser := &models.User{
+		Email:    gUser.Email,
+		Username: username,
+		Name:     gUser.Name,
+	}
+
+	if err := s.userRepo.CreateUser(newUser); err != nil {
+		return nil, fmt.Errorf("failed to create new user: %w", err)
+	}
+
+	// Create AuthProvider entry
+	authProviderEntry := &models.AuthProvider{
+		UserID:         newUser.ID,
+		Provider:       "google",
+		ProviderUserID: gUser.Sub,
+		Email:          gUser.Email,
+	}
+
+	if err := s.userRepo.CreateAuthProvider(authProviderEntry); err != nil {
+		return nil, fmt.Errorf("failed to create auth provider: %w", err)
+	}
+
+	// Issue JWT and return auth response
+	return s.createAuthResponse(newUser, ipAddress, userAgent, utils.AuthGoogle)
 }
 
 // verifyGoogleToken verifies the Google ID token and returns user info
-func (s *UserService) verifyGoogleToken(idToken, clientID string) (*oauth2.Userinfo, error) {
+func (s *UserService) verifyGoogleToken(idToken, clientID string) (*GoogleUserInfo, error) {
 	ctx := context.Background()
-	
-	// Create OAuth2 service
-	oauth2Service, err := oauth2.NewService(ctx, option.WithoutAuthentication())
+
+	payload, err := idtoken.Validate(ctx, idToken, clientID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create OAuth2 service: %w", err)
+		return nil, fmt.Errorf("failed to verify ID token: %w", err)
 	}
 
-	// Verify the token
-	tokenInfo, err := oauth2Service.Tokeninfo().IdToken(idToken).Do()
-	if err != nil {
-		return nil, fmt.Errorf("failed to verify token: %w", err)
+	email, _ := payload.Claims["email"].(string)
+	sub, _ := payload.Claims["sub"].(string)
+	givenName, _ := payload.Claims["given_name"].(string)
+	fullName, _ := payload.Claims["name"].(string)
+
+	return &GoogleUserInfo{
+		Email:     email,
+		Sub:       sub,
+		GivenName: givenName,
+		Name:      fullName,
+	}, nil
+}
+
+// Helper: Generate unique username from given name + sub
+var usernameCleaner = regexp.MustCompile(`[^a-z0-9]+`) // only lowercase letters & digits
+
+func generateUsername(givenName, sub string, exists func(username string) bool) string {
+	cleaned := strings.ToLower(strings.TrimSpace(givenName))
+	cleaned = usernameCleaner.ReplaceAllString(cleaned, "")
+	if cleaned == "" {
+		cleaned = "user"
 	}
 
-	// Verify audience (client ID)
-	if tokenInfo.Audience != clientID {
-		return nil, fmt.Errorf("invalid token audience")
+	username := cleaned
+	if !exists(username) {
+		return username
 	}
 
-	// Create userinfo from token info
-	userInfo := &oauth2.Userinfo{
-		Email: tokenInfo.Email,
-		Id:    tokenInfo.UserId,
+	// Append last 8 chars of sub
+	suffix := sub
+	if len(sub) > 8 {
+		suffix = sub[len(sub)-8:]
+	}
+	username = fmt.Sprintf("%s_%s", cleaned, suffix)
+
+	// Still exists? append numbers
+	i := 1
+	candidate := username
+	for exists(candidate) {
+		candidate = fmt.Sprintf("%s%d", username, i)
+		i++
 	}
 
-	return userInfo, nil
+	return candidate
 }
 
 // createAuthResponse creates a standardized auth response
@@ -453,11 +515,11 @@ func (s *UserService) IsSeller(userID int) (bool, error) {
 	if s.profileService == nil {
 		return false, fmt.Errorf("profile service not initialized")
 	}
-	
+
 	roles, err := s.profileService.GetRolesForUser(userID)
 	if err != nil {
 		return false, err
 	}
-	
+
 	return roles.Seller, nil
 }
