@@ -1,3 +1,4 @@
+-- Sellers
 CREATE TABLE sellers (
     id INTEGER PRIMARY KEY REFERENCES users (id) ON DELETE CASCADE,
     display_name VARCHAR(50) NOT NULL,
@@ -8,6 +9,7 @@ CREATE TABLE sellers (
     CONSTRAINT chk_about_length CHECK (length(about) <= 200)
 );
 
+-- Seller contacts
 CREATE TABLE seller_contacts (
     id SERIAL PRIMARY KEY,
     seller_id INTEGER NOT NULL REFERENCES sellers (id) ON DELETE CASCADE,
@@ -20,3 +22,8 @@ CREATE TABLE seller_contacts (
         value
     )
 );
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_sellers_display_name_ci ON sellers (lower(display_name));
+
+CREATE INDEX IF NOT EXISTS idx_seller_contacts_seller_id ON seller_contacts (seller_id);

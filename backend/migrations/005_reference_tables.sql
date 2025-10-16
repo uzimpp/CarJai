@@ -1,31 +1,39 @@
--- Reference tables for car specifications
+-- Reference tables
+-- Body types
 CREATE TABLE body_types (
     id SERIAL PRIMARY KEY,
     name VARCHAR(50) NOT NULL UNIQUE,
-    created_at TIMESTAMP DEFAULT NOW()
 );
 
+-- Transmissions
 CREATE TABLE transmissions (
     id SERIAL PRIMARY KEY,
     name VARCHAR(50) NOT NULL UNIQUE,
-    created_at TIMESTAMP DEFAULT NOW()
 );
 
+-- Fuel types
 CREATE TABLE fuel_types (
     id SERIAL PRIMARY KEY,
     name VARCHAR(50) NOT NULL UNIQUE,
-    created_at TIMESTAMP DEFAULT NOW()
 );
 
+-- Drivetrains
 CREATE TABLE drivetrains (
     id SERIAL PRIMARY KEY,
     name VARCHAR(50) NOT NULL UNIQUE,
-    created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Insert default values for body types
-INSERT INTO body_types (name) VALUES
-    ('Sedan'),
+-- Car colors
+CREATE TABLE color (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL UNIQUE,
+    color_code VARCHAR(50) NOT NULL UNIQUE -- HEX
+);
+
+-- Seed: body types
+INSERT INTO
+    body_types (name)
+VALUES ('Sedan'),
     ('SUV'),
     ('Hatchback'),
     ('Pickup Truck'),
@@ -35,26 +43,28 @@ INSERT INTO body_types (name) VALUES
     ('Wagon'),
     ('MPV');
 
--- Insert default values for transmissions
-INSERT INTO transmissions (name) VALUES
-    ('Manual'),
+-- Seed: transmissions
+INSERT INTO
+    transmissions (name)
+VALUES ('Manual'),
     ('Automatic'),
     ('CVT'),
     ('DCT');
 
--- Insert default values for fuel types
-INSERT INTO fuel_types (name) VALUES
-    ('Gasoline'),
+-- Seed: fuel types
+INSERT INTO
+    fuel_types (name)
+VALUES ('Gasoline'),
     ('Diesel'),
     ('Hybrid'),
     ('Electric'),
     ('LPG'),
     ('NGV');
 
--- Insert default values for drivetrains
-INSERT INTO drivetrains (name) VALUES
-    ('FWD'),
+-- Seed: drivetrains
+INSERT INTO
+    drivetrains (name)
+VALUES ('FWD'),
     ('RWD'),
     ('AWD'),
     ('4WD');
-

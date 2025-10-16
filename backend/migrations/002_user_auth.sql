@@ -1,7 +1,6 @@
--- User Authentication Schema for CarJai
--- This file contains the database schema for user authentication system
+-- User authentication schema
 
--- Create users table
+-- Users
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
@@ -12,7 +11,7 @@ CREATE TABLE users (
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- Create user_sessions table for session management
+-- User sessions
 CREATE TABLE user_sessions (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users (id) ON DELETE CASCADE,
@@ -23,17 +22,16 @@ CREATE TABLE user_sessions (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Create indexes for performance optimization
+-- Indexes
 CREATE INDEX idx_user_sessions_token ON user_sessions (token);
 
 CREATE INDEX idx_user_sessions_user_id ON user_sessions (user_id);
 
 CREATE INDEX idx_user_sessions_expires_at ON user_sessions (expires_at);
 
--- Create index for cleanup of expired sessions
-CREATE INDEX idx_user_sessions_cleanup ON user_sessions (expires_at);
+--
 
--- Create function to cleanup expired user sessions
+-- Expired session cleanup function
 CREATE OR REPLACE FUNCTION cleanup_expired_user_sessions()
 RETURNS INTEGER AS $$
 DECLARE
@@ -45,7 +43,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Create trigger to automatically cleanup expired sessions on insert
+-- Cleanup trigger (on insert)
 CREATE OR REPLACE FUNCTION trigger_cleanup_expired_user_sessions()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -80,3 +78,6 @@ COMMENT ON COLUMN user_sessions.ip_address IS 'IP address from which session was
 COMMENT ON COLUMN user_sessions.user_agent IS 'User agent string from login request';
 
 COMMENT ON COLUMN user_sessions.expires_at IS 'Session expiration timestamp';
+
+-- Common sort/filter on users by creation time
+CREATE INDEX IF NOT EXISTS idx_users_created_at ON users (created_at);
