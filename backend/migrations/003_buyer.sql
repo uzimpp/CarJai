@@ -28,6 +28,7 @@ CREATE TABLE recent_views (
     last_viewed_at timestamptz NOT NULL DEFAULT now(),
     PRIMARY KEY (user_id, car_id)
 );
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_buyers_province ON buyers (province);
 

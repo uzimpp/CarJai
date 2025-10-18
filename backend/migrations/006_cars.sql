@@ -43,6 +43,7 @@ CREATE TABLE car_color (
         ) <= 3
     ) DEFERRABLE INITIALLY DEFERRED
 );
+
 -- Car images (stored as BYTEA)
 CREATE TABLE car_images (
     id SERIAL PRIMARY KEY,

@@ -60,7 +60,7 @@ func (h *UserAuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(req.Username) < 4 || len(req.Username) > 20 {
+	if len(req.Username) < 3 || len(req.Username) > 20 {
 		response := models.UserErrorResponse{
 			Success: false,
 			Error:   "Username must be between 3 and 20 characters",
