@@ -1,7 +1,7 @@
 -- Inspection results (summary)
 -- Summary results parsed from QR codes
 
-CREATE TABLE inspection_results (
+CREATE TABLE car_inspection_results (
     irid SERIAL PRIMARY KEY,
     car_id INTEGER NOT NULL REFERENCES cars (cid) ON DELETE CASCADE,
     inspected_at TIMESTAMP,
@@ -30,9 +30,9 @@ CREATE TABLE inspection_results (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 -- Indexes
-CREATE INDEX idx_inspection_results_car_id ON inspection_results (car_id);
+CREATE INDEX idx_inspection_results_car_id ON car_inspection_results (car_id);
 
-CREATE INDEX idx_inspection_results_inspected_at ON inspection_results (inspected_at);
+CREATE INDEX idx_inspection_results_inspected_at ON car_inspection_results (inspected_at);
 
-CREATE TRIGGER update_inspection_results_updated_at BEFORE UPDATE ON inspection_results
+CREATE TRIGGER update_inspection_results_updated_at BEFORE UPDATE ON car_inspection_results
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

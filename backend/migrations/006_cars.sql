@@ -4,29 +4,31 @@ CREATE TABLE cars (
     seller_id INTEGER NOT NULL REFERENCES sellers (id) ON DELETE CASCADE,
     body_type_id INTEGER REFERENCES body_types (id), -- Must Enter by Seller
     transmission_id INTEGER REFERENCES transmissions (id), -- Must Enter by Seller
-    fuel_type_id INTEGER REFERENCES fuel_types (id), -- Must Enter by Seller
     drivetrain_id INTEGER REFERENCES drivetrains (id), -- Must Enter by Seller
-    color_id INTEGER REFERENCES car_color_map (id),
-    brand_name VARCHAR(20),
-    chassis_number VARCHAR(30) UNIQUE NOT NULL -- VIN (Vehicle Identification Number)
-    year INTEGER,
-    mileage INTEGER, -- Must Enter by Seller
+    -- fuel_type  -- Must Enter by Seller
+    brand_name VARCHAR(100),
     model_name VARCHAR(100), -- Must Enter by Seller (e.g., Civic, Corolla, D-Max)
     submodel_name VARCHAR(100), -- Must Enter by Seller (e.g., EL, Sport, Hi-Lander)
-    engine_cc INT,
-    seats INTEGER, 
-    doors INTEGER, 
+    chassis_number VARCHAR(30) UNIQUE NOT NULL, -- VIN (Vehicle Identification Number)
+    year INTEGER,
+    mileage INTEGER, -- Must Enter by Seller
+    engine_cc INTEGER,
+    seats INTEGER,
+    doors INTEGER,
     status VARCHAR(20) DEFAULT 'draft' CHECK (
         status IN (
             'draft',
             'active',
             'sold',
-            'deleted'
+            'deleted' -- Soft delete
         )
     ), -- Must Enter by Seller
     condition_rating INTEGER CHECK (
         condition_rating BETWEEN 1 AND 5
     ),
+    prefix VARCHAR(10) NOT NULL,
+    number VARCHAR(10) NOT NULL,
+    province_id INT NOT NULL REFERENCES provinces (id) ON DELETE RESTRICT,
     description TEXT, -- Must Enter by Seller
     price INTEGER NOT NULL, -- Must Enter by Seller
     book_uploaded BOOLEAN DEFAULT FALSE,
@@ -35,21 +37,14 @@ CREATE TABLE cars (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE TABLE car_color_map (
-    car_id INT NOT NULL REFERENCES cars (cid) ON DELETE CASCADE,
-    color_id INT NOT NULL REFERENCES color (id) ON DELETE RESTRICT,
+-- Car colors (many-to-many with position)
+CREATE TABLE car_colors (
+    car_id INTEGER NOT NULL REFERENCES cars (cid) ON DELETE CASCADE,
+    color_id INTEGER NOT NULL REFERENCES colors (id) ON DELETE RESTRICT,
     PRIMARY KEY (car_id, color_id),
-    CONSTRAINT chk_max_3_colors_per_car CHECK (
-        (
-            SELECT COUNT(*)
-            FROM car_color_map AS cc
-            WHERE
-                cc.car_id = car_color_map.car_id
-        ) <= 3
-    ) DEFERRABLE INITIALLY DEFERRED
 );
 
-CREATE TABLE car_fuel_map (
+CREATE TABLE car_fuel (
     car_id INT NOT NULL REFERENCES cars (cid) ON DELETE CASCADE,
     fuel_type_id INT NOT NULL REFERENCES fuel_types (id) ON DELETE RESTRICT,
     PRIMARY KEY (car_id, fuel_type_id),
