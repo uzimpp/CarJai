@@ -17,14 +17,14 @@ CREATE TABLE buyers (
 
 CREATE TABLE favourites (
     user_id INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-    car_id INTEGER NOT NULL REFERENCES cars (cid) ON DELETE CASCADE,
+    car_id INTEGER NOT NULL REFERENCES cars (id) ON DELETE CASCADE,
     created_at timestamptz DEFAULT now(),
     PRIMARY KEY (user_id, car_id)
 );
 
 CREATE TABLE recent_views (
     user_id INT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-    car_id INT NOT NULL REFERENCES cars (cid) ON DELETE CASCADE,
+    car_id INT NOT NULL REFERENCES cars (id) ON DELETE CASCADE,
     last_viewed_at timestamptz NOT NULL DEFAULT now(),
     PRIMARY KEY (user_id, car_id)
 );
