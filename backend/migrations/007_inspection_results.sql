@@ -6,23 +6,26 @@ CREATE TABLE inspection_results (
     car_id INTEGER NOT NULL REFERENCES cars (cid) ON DELETE CASCADE,
     inspected_at TIMESTAMP,
     station VARCHAR(200),
-    brake_result VARCHAR(50), -- Brake test result (pass/fail)
-    handbrake_result VARCHAR(50), -- Handbrake result (pass/fail)
-    alignment_result VARCHAR(50), -- Wheel alignment result (pass/fail)
-    noise_result VARCHAR(50), -- Noise level result (pass/fail)
-    emission_result VARCHAR(50), -- Emissions result (pass/fail)
-    horn_result VARCHAR(50), -- Horn result (pass/fail)
-    speedometer_result VARCHAR(50), -- Speedometer result (pass/fail)
-    high_low_beam_result VARCHAR(50), -- High/low beam lights result (pass/fail)
-    signal_lights_result VARCHAR(50), -- Turn/plate/brake signal lights result (pass/fail)
-    other_lights_result VARCHAR(50), -- License plate/other lights result (pass/fail)
-    difference_result VARCHAR(50), -- Brake force difference result (pass/fail)
-    brake_performance VARCHAR(50), -- Braking performance (%)
-    handbrake_performance VARCHAR(50), -- Handbrake performance (%)
-    emission_co VARCHAR(50), -- Exhaust CO/HC values (%)
-    noise_level VARCHAR(50), -- Noise level (dBA)
-    wheel_alignment VARCHAR(50), -- Wheel alignment
-    chassis_condition VARCHAR(50), -- Chassis and body condition
+    overall_pass BOOLEAN,
+    brake_result BOOLEAN, -- Brake test (pass/fail)
+    handbrake_result BOOLEAN, -- Handbrake (pass/fail)
+    alignment_result BOOLEAN, -- Wheel alignment (pass/fail)
+    noise_result BOOLEAN, -- Noise level (pass/fail)
+    emission_result BOOLEAN, -- Emissions (pass/fail)
+    horn_result BOOLEAN, -- Horn (pass/fail)
+    speedometer_result BOOLEAN, -- Speedometer (pass/fail)
+    high_low_beam_result BOOLEAN, -- High/low beams (pass/fail)
+    signal_lights_result BOOLEAN, -- Turn/plate/brake lights (pass/fail)
+    other_lights_result BOOLEAN, -- License plate/other lights (pass/fail)
+    windshield_result BOOLEAN, -- Windshields/windows (pass/fail)
+    steering_result BOOLEAN, -- Steering system (pass/fail)
+    wheels_tires_result BOOLEAN, -- Wheels and tires (pass/fail)
+    fuel_tank_result BOOLEAN, -- Fuel tank and lines (pass/fail)
+    chassis_result BOOLEAN, -- Undercarriage (pass/fail)
+    body_result BOOLEAN, -- Body and frame (pass/fail)
+    doors_floor_result BOOLEAN, -- Doors and floor (pass/fail)
+    seatbelt_result BOOLEAN, -- Seatbelts (pass/fail)
+    wiper_result BOOLEAN, -- Wipers (pass/fail)
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
