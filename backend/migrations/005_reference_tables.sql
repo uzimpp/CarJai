@@ -9,7 +9,7 @@ CREATE TABLE body_types (
 -- Transmissions
 CREATE TABLE transmissions (
     id SERIAL PRIMARY KEY,
-    code TEXT NOT NULL UNIQUE, -- MANUAL, AT, CVT, ECVT, DCT, AMT, SINGLE_SPEED
+    code TEXT NOT NULL UNIQUE, -- MANUAL, AUTOMATIC
     name_th VARCHAR(50) NOT NULL,
     name_en VARCHAR(50) NOT NULL
 );
