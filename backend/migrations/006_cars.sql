@@ -9,7 +9,7 @@ CREATE TABLE cars (
     brand_name VARCHAR(100),
     model_name VARCHAR(100), -- Must Enter by Seller (e.g., Civic, Corolla, D-Max)
     submodel_name VARCHAR(100), -- Must Enter by Seller (e.g., EL, Sport, Hi-Lander)
-    chassis_number VARCHAR(30) UNIQUE NOT NULL, -- VIN (Vehicle Identification Number)
+    chassis_number VARCHAR(30) UNIQUE NOT NULL, -- VIN (Vehicle Identification Number) เลขถังรถ,เลขตัวรถ
     year INTEGER,
     mileage INTEGER, -- Must Enter by Seller
     engine_cc INTEGER,
@@ -29,8 +29,10 @@ CREATE TABLE cars (
     prefix VARCHAR(10) NOT NULL,
     number VARCHAR(10) NOT NULL,
     province_id INT NOT NULL REFERENCES provinces (id) ON DELETE RESTRICT,
-    description TEXT, -- Must Enter by Seller
+    description VARCHAR(200), -- Must Enter by Seller
     price INTEGER NOT NULL, -- Must Enter by Seller
+    is_flooded BOOLEAN DEFAULT FALSE,
+    is_heavily_damaged BOOLEAN DEFAULT FALSE,
     book_uploaded BOOLEAN DEFAULT FALSE,
     inspection_uploaded BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT NOW(),
@@ -44,13 +46,14 @@ CREATE TABLE car_colors (
     PRIMARY KEY (car_id, color_id)
 );
 
+-- Car fuel (many-to-many with fuel type) Must Enter by Seller
 CREATE TABLE car_fuel (
     car_id INTEGER NOT NULL REFERENCES cars (id) ON DELETE CASCADE,
     fuel_type_code VARCHAR(20) NOT NULL REFERENCES fuel_types (code) ON DELETE RESTRICT,
     PRIMARY KEY (car_id, fuel_type_code)
 );
 
--- Car images (stored as BYTEA)
+-- Car images (stored as BYTEA) Must Enter by Seller
 CREATE TABLE car_images (
     id SERIAL PRIMARY KEY,
     car_id INTEGER NOT NULL REFERENCES cars (id) ON DELETE CASCADE,
@@ -62,6 +65,7 @@ CREATE TABLE car_images (
     CONSTRAINT chk_image_size CHECK (image_size <= 52428800) -- 50MB in bytes
 );
 
+-- Car inspection results (Web scrape)
 CREATE TABLE car_inspection_results (
     id SERIAL PRIMARY KEY,
     car_id INTEGER NOT NULL REFERENCES cars (id) ON DELETE CASCADE,

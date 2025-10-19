@@ -50,44 +50,44 @@ erDiagram
 
     body_types {
         int id PK ""
-        text code UK "PICKUP, SUV, CITYCAR, etc."
-        varchar name_th "ชื่อไทย (max 50)"
-        varchar name_en "ชื่ออังกฤษ (max 50)"
+        varchar code UK "PICKUP, SUV, CITYCAR, etc. (max 20)"
+        varchar name_th "ชื่อไทย (max 100)"
+        varchar name_en "ชื่ออังกฤษ (max 100)"
     }
 
     transmissions {
         int id PK ""
-        text code UK "MANUAL, AT"
-        varchar name_th "ชื่อไทย (max 50)"
-        varchar name_en "ชื่ออังกฤษ (max 50)"
+        varchar code UK "MANUAL, AT (max 10)"
+        varchar name_th "ชื่อไทย (max 100)"
+        varchar name_en "ชื่ออังกฤษ (max 100)"
     }
 
     fuel_types {
-        text code PK "GASOLINE, DIESEL, LPG, CNG, HYBRID, ELECTRIC"
-        text label_th "ชื่อไทย"
-        text label_en "ชื่ออังกฤษ"
+        varchar code PK "GASOLINE, DIESEL, LPG, CNG, HYBRID, ELECTRIC (max 20)"
+        varchar label_th "ชื่อไทย (max 100)"
+        varchar label_en "ชื่ออังกฤษ (max 100)"
     }
 
     drivetrains {
         int id PK ""
-        text code UK "FWD, RWD, AWD, 4WD"
-        varchar name_th "ชื่อไทย (max 50)"
-        varchar name_en "ชื่ออังกฤษ (max 50)"
+        varchar code UK "FWD, RWD, AWD, 4WD (max 10)"
+        varchar name_th "ชื่อไทย (max 100)"
+        varchar name_en "ชื่ออังกฤษ (max 100)"
     }
 
     colors {
         int id PK ""
-        text code UK "RED, GRAY, BLUE, etc."
-        text label_th "ชื่อไทย"
-        text label_en "ชื่ออังกฤษ"
+        varchar code UK "RED, GRAY, BLUE, etc. (max 20)"
+        varchar label_th "ชื่อไทย (max 100)"
+        varchar label_en "ชื่ออังกฤษ (max 100)"
     }
 
     provinces {
         int id PK ""
-        varchar name_th "ชื่อไทย (max 30)"
-        varchar name_en "ชื่ออังกฤษ (max 30)"
-        varchar region_th "ภาค (max 20)"
-        varchar region_en "Region (max 20)"
+        varchar name_th "ชื่อไทย (max 50)"
+        varchar name_en "ชื่ออังกฤษ (max 50)"
+        varchar region_th "ภาค (max 30)"
+        varchar region_en "Region (max 30)"
     }
 
     cars {
@@ -99,17 +99,19 @@ erDiagram
         varchar brand_name "ยี่ห้อรถ (max 100)"
         varchar model_name "รุ่นรถ (max 100)"
         varchar submodel_name "รุ่นย่อย (max 100)"
-        varchar chassis_number UK "เลขตัวถัง (max 30, unique)"
+        varchar chassis_number UK "เลขตัวถัง (max 30, unique, not null)"
         int year "ปี"
         int mileage "เลขไมล์"
         int engine_cc "ขนาดเครื่องยนต์ (ซีซี)"
         int seats "จำนวนที่นั่ง"
         int doors "จำนวนประตู"
-        varchar prefix "เลขทะเบียนส่วนหน้า (max 10)"
-        varchar number "เลขทะเบียนส่วนหลัง (max 10)"
-        int province_id FK "ref: provinces.id"
-        text description "รายละเอียด"
-        int price "ราคา (THB)"
+        varchar prefix "เลขทะเบียนส่วนหน้า (max 10, not null)"
+        varchar number "เลขทะเบียนส่วนหลัง (max 10, not null)"
+        int province_id FK "ref: provinces.id (not null)"
+        varchar description "รายละเอียด (max 200)"
+        int price "ราคา (THB, not null)"
+        boolean is_flooded "เคยน้ำท่วม"
+        boolean is_heavily_damaged "ความเสียหายหนัก"
         boolean book_uploaded "อัปโหลดเล่มแล้ว"
         boolean inspection_uploaded "อัปโหลดใบตรวจแล้ว"
         varchar status "draft/active/sold/deleted - default: 'draft'"
@@ -125,7 +127,7 @@ erDiagram
 
     car_fuel {
         int car_id PK "ref: cars.id ON DELETE CASCADE"
-        varchar fuel_type_code PK "ref: fuel_types.code ON DELETE RESTRICT"ฟ
+        varchar fuel_type_code PK "ref: fuel_types.code ON DELETE RESTRICT"
     }
 
     car_images {

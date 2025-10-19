@@ -9,24 +9,33 @@ import (
 
 // Car represents a car listing
 type Car struct {
-	CID             int       `json:"cid" db:"cid"`
-	SellerID        int       `json:"sellerId" db:"seller_id"`
-	Year            *int      `json:"year" db:"year"`
-	Mileage         *int      `json:"mileage" db:"mileage"`
-	Price           int       `json:"price" db:"price"`
-	Province        *string   `json:"province" db:"province"`
-	ConditionRating *int      `json:"conditionRating" db:"condition_rating"`
-	BodyTypeID      *int      `json:"bodyTypeId" db:"body_type_id"`
-	TransmissionID  *int      `json:"transmissionId" db:"transmission_id"`
-	FuelTypeID      *int      `json:"fuelTypeId" db:"fuel_type_id"`
-	DrivetrainID    *int      `json:"drivetrainId" db:"drivetrain_id"`
-	Seats           *int      `json:"seats" db:"seats"`
-	Doors           *int      `json:"doors" db:"doors"`
-	Color           *string   `json:"color" db:"color"`
-	Status          string    `json:"status" db:"status"`
-	OCRApplied      bool      `json:"ocrApplied" db:"ocr_applied"`
-	CreatedAt       time.Time `json:"createdAt" db:"created_at"`
-	UpdatedAt       time.Time `json:"updatedAt" db:"updated_at"`
+	ID                 int       `json:"id" db:"id"`
+	SellerID           int       `json:"sellerId" db:"seller_id"`
+	BodyTypeID         *int      `json:"bodyTypeId" db:"body_type_id"`
+	TransmissionID     *int      `json:"transmissionId" db:"transmission_id"`
+	DrivetrainID       *int      `json:"drivetrainId" db:"drivetrain_id"`
+	BrandName          *string   `json:"brandName" db:"brand_name"`
+	ModelName          *string   `json:"modelName" db:"model_name"`
+	SubmodelName       *string   `json:"submodelName" db:"submodel_name"`
+	ChassisNumber      string    `json:"chassisNumber" db:"chassis_number"`
+	Year               *int      `json:"year" db:"year"`
+	Mileage            *int      `json:"mileage" db:"mileage"`
+	EngineCC           *int      `json:"engineCc" db:"engine_cc"`
+	Seats              *int      `json:"seats" db:"seats"`
+	Doors              *int      `json:"doors" db:"doors"`
+	Prefix             string    `json:"prefix" db:"prefix"`
+	Number             string    `json:"number" db:"number"`
+	ProvinceID         int       `json:"provinceId" db:"province_id"`
+	Description        *string   `json:"description" db:"description"`
+	Price              int       `json:"price" db:"price"`
+	IsFlooded          bool      `json:"isFlooded" db:"is_flooded"`
+	IsHeavilyDamaged   bool      `json:"isHeavilyDamaged" db:"is_heavily_damaged"`
+	BookUploaded       bool      `json:"bookUploaded" db:"book_uploaded"`
+	InspectionUploaded bool      `json:"inspectionUploaded" db:"inspection_uploaded"`
+	Status             string    `json:"status" db:"status"`
+	ConditionRating    *int      `json:"conditionRating" db:"condition_rating"`
+	CreatedAt          time.Time `json:"createdAt" db:"created_at"`
+	UpdatedAt          time.Time `json:"updatedAt" db:"updated_at"`
 }
 
 // CarImage represents an image stored in the database
@@ -95,54 +104,55 @@ type Drivetrain struct {
 // Request and Response models
 type CreateCarRequest struct {
 	// Cars table fields
-	Year            *int    `json:"year"`
-	Mileage         *int    `json:"mileage"`
-	Price           int     `json:"price" validate:"required,gt=0"`
-	Province        *string `json:"province"`
-	ConditionRating *int    `json:"conditionRating" validate:"omitempty,gte=1,lte=5"`
-	BodyTypeID      *int    `json:"bodyTypeId"`
-	TransmissionID  *int    `json:"transmissionId"`
-	FuelTypeID      *int    `json:"fuelTypeId"`
-	DrivetrainID    *int    `json:"drivetrainId"`
-	Seats           *int    `json:"seats"`
-	Doors           *int    `json:"doors"`
-	Color           *string `json:"color"`
-	Status          *string `json:"status" validate:"omitempty,oneof=draft active sold"`
-
-	// Car details table fields (optional - from OCR or inspection)
+	BodyTypeID         *int    `json:"bodyTypeId"`
+	TransmissionID     *int    `json:"transmissionId"`
+	DrivetrainID       *int    `json:"drivetrainId"`
 	BrandName          *string `json:"brandName"`
 	ModelName          *string `json:"modelName"`
-	RegistrationNumber *string `json:"registrationNumber"`
-	ChassisNumber      *string `json:"vin"` // Frontend sends "vin" but backend stores as "chassis_number"
-	EngineNumber       *string `json:"engineNumber"`
-	VehicleType        *string `json:"bodyStyle"` // Frontend sends "bodyStyle" but backend stores as "vehicle_type"
-
-	// Inspection data fields (ignored for now - just prevent decode errors)
-	OverallResult          *string `json:"overallResult"`
-	BrakePerformance       *string `json:"brakePerformance"`
-	HandbrakePerformance   *string `json:"handbrakePerformance"`
-	EmissionValue          *string `json:"emissionValue"`
-	NoiseLevel             *string `json:"noiseLevel"`
-	BrakeResult            *string `json:"brakeResult"`
-	WheelAlignmentResult   *string `json:"wheelAlignmentResult"`
-	EmissionResult         *string `json:"emissionResult"`
-	ChassisConditionResult *string `json:"chassisConditionResult"`
+	SubmodelName       *string `json:"submodelName"`
+	ChassisNumber      string  `json:"chassisNumber" validate:"required"`
+	Year               *int    `json:"year"`
+	Mileage            *int    `json:"mileage"`
+	EngineCC           *int    `json:"engineCc"`
+	Seats              *int    `json:"seats"`
+	Doors              *int    `json:"doors"`
+	Prefix             string  `json:"prefix" validate:"required"`
+	Number             string  `json:"number" validate:"required"`
+	ProvinceID         int     `json:"provinceId" validate:"required"`
+	Description        *string `json:"description"`
+	Price              int     `json:"price" validate:"required,gt=0"`
+	IsFlooded          bool    `json:"isFlooded"`
+	IsHeavilyDamaged   bool    `json:"isHeavilyDamaged"`
+	BookUploaded       bool    `json:"bookUploaded"`
+	InspectionUploaded bool    `json:"inspectionUploaded"`
+	ConditionRating    *int    `json:"conditionRating" validate:"omitempty,gte=1,lte=5"`
+	Status             *string `json:"status" validate:"omitempty,oneof=draft active sold deleted"`
 }
 
 type UpdateCarRequest struct {
-	Year            *int    `json:"year"`
-	Mileage         *int    `json:"mileage"`
-	Price           *int    `json:"price" validate:"omitempty,gt=0"`
-	Province        *string `json:"province"`
-	ConditionRating *int    `json:"conditionRating" validate:"omitempty,gte=1,lte=5"`
-	BodyTypeID      *int    `json:"bodyTypeId"`
-	TransmissionID  *int    `json:"transmissionId"`
-	FuelTypeID      *int    `json:"fuelTypeId"`
-	DrivetrainID    *int    `json:"drivetrainId"`
-	Seats           *int    `json:"seats"`
-	Doors           *int    `json:"doors"`
-	Color           *string `json:"color"`
-	Status          *string `json:"status" validate:"omitempty,oneof=draft active sold"`
+	BodyTypeID         *int    `json:"bodyTypeId"`
+	TransmissionID     *int    `json:"transmissionId"`
+	DrivetrainID       *int    `json:"drivetrainId"`
+	BrandName          *string `json:"brandName"`
+	ModelName          *string `json:"modelName"`
+	SubmodelName       *string `json:"submodelName"`
+	ChassisNumber      *string `json:"chassisNumber"`
+	Year               *int    `json:"year"`
+	Mileage            *int    `json:"mileage"`
+	EngineCC           *int    `json:"engineCc"`
+	Seats              *int    `json:"seats"`
+	Doors              *int    `json:"doors"`
+	Prefix             *string `json:"prefix"`
+	Number             *string `json:"number"`
+	ProvinceID         *int    `json:"provinceId"`
+	Description        *string `json:"description"`
+	Price              *int    `json:"price" validate:"omitempty,gt=0"`
+	IsFlooded          *bool   `json:"isFlooded"`
+	IsHeavilyDamaged   *bool   `json:"isHeavilyDamaged"`
+	BookUploaded       *bool   `json:"bookUploaded"`
+	InspectionUploaded *bool   `json:"inspectionUploaded"`
+	ConditionRating    *int    `json:"conditionRating" validate:"omitempty,gte=1,lte=5"`
+	Status             *string `json:"status" validate:"omitempty,oneof=draft active sold deleted"`
 }
 
 type CarResponse struct {
@@ -195,25 +205,24 @@ type CarWithImages struct {
 }
 
 type CarListingWithImages struct {
-	CID             int                `json:"cid"`
+	ID              int                `json:"id"`
 	SellerID        int                `json:"sellerId"`
 	Year            *int               `json:"year"`
 	Mileage         *int               `json:"mileage"`
 	Price           int                `json:"price"`
-	Province        *string            `json:"province"`
+	ProvinceID      int                `json:"provinceId"`
 	ConditionRating *int               `json:"conditionRating"`
 	BodyTypeID      *int               `json:"bodyTypeId"`
 	TransmissionID  *int               `json:"transmissionId"`
-	FuelTypeID      *int               `json:"fuelTypeId"`
 	DrivetrainID    *int               `json:"drivetrainId"`
 	Seats           *int               `json:"seats"`
 	Doors           *int               `json:"doors"`
-	Color           *string            `json:"color"`
 	Status          string             `json:"status"`
 	CreatedAt       time.Time          `json:"createdAt"`
 	UpdatedAt       time.Time          `json:"updatedAt"`
 	BrandName       *string            `json:"brandName"`
 	ModelName       *string            `json:"modelName"`
+	SubmodelName    *string            `json:"submodelName"`
 	Images          []CarImageMetadata `json:"images"`
 }
 
@@ -254,18 +263,31 @@ func NewCarRepository(db *Database) *CarRepository {
 // CreateCar creates a new car listing
 func (r *CarRepository) CreateCar(car *Car) error {
 	query := `
-		INSERT INTO cars (seller_id, year, mileage, price, province, condition_rating,
-			body_type_id, transmission_id, fuel_type_id, drivetrain_id, seats, doors, 
-			color, status, ocr_applied)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-		RETURNING cid, created_at, updated_at`
+		INSERT INTO cars (
+			seller_id, body_type_id, transmission_id, drivetrain_id,
+			brand_name, model_name, submodel_name, chassis_number,
+			year, mileage, engine_cc, seats, doors,
+			prefix, number, province_id, description, price,
+			is_flooded, is_heavily_damaged, book_uploaded, inspection_uploaded,
+			status, condition_rating
+		) VALUES (
+			$1, $2, $3, $4,
+			$5, $6, $7, $8,
+			$9, $10, $11, $12, $13,
+			$14, $15, $16, $17, $18,
+			$19, $20, $21, $22,
+			$23, $24
+		)
+		RETURNING id, created_at, updated_at`
 
 	err := r.db.DB.QueryRow(query,
-		car.SellerID, car.Year, car.Mileage, car.Price, car.Province,
-		car.ConditionRating, car.BodyTypeID, car.TransmissionID,
-		car.FuelTypeID, car.DrivetrainID, car.Seats, car.Doors,
-		car.Color, car.Status, car.OCRApplied,
-	).Scan(&car.CID, &car.CreatedAt, &car.UpdatedAt)
+		car.SellerID, car.BodyTypeID, car.TransmissionID, car.DrivetrainID,
+		car.BrandName, car.ModelName, car.SubmodelName, car.ChassisNumber,
+		car.Year, car.Mileage, car.EngineCC, car.Seats, car.Doors,
+		car.Prefix, car.Number, car.ProvinceID, car.Description, car.Price,
+		car.IsFlooded, car.IsHeavilyDamaged, car.BookUploaded, car.InspectionUploaded,
+		car.Status, car.ConditionRating,
+	).Scan(&car.ID, &car.CreatedAt, &car.UpdatedAt)
 
 	if err != nil {
 		return fmt.Errorf("failed to create car: %w", err)
@@ -278,18 +300,22 @@ func (r *CarRepository) CreateCar(car *Car) error {
 func (r *CarRepository) GetCarByID(carID int) (*Car, error) {
 	car := &Car{}
 	query := `
-		SELECT cid, seller_id, year, mileage, price, province, condition_rating,
-			body_type_id, transmission_id, fuel_type_id, drivetrain_id, seats, doors,
-			color, status, ocr_applied, created_at, updated_at
+		SELECT id, seller_id, body_type_id, transmission_id, drivetrain_id,
+			brand_name, model_name, submodel_name, chassis_number,
+			year, mileage, engine_cc, seats, doors,
+			prefix, number, province_id, description, price,
+			is_flooded, is_heavily_damaged, book_uploaded, inspection_uploaded,
+			status, condition_rating, created_at, updated_at
 		FROM cars
-		WHERE cid = $1`
+		WHERE id = $1`
 
 	err := r.db.DB.QueryRow(query, carID).Scan(
-		&car.CID, &car.SellerID, &car.Year, &car.Mileage, &car.Price,
-		&car.Province, &car.ConditionRating, &car.BodyTypeID,
-		&car.TransmissionID, &car.FuelTypeID, &car.DrivetrainID,
-		&car.Seats, &car.Doors, &car.Color, &car.Status,
-		&car.OCRApplied, &car.CreatedAt, &car.UpdatedAt,
+		&car.ID, &car.SellerID, &car.BodyTypeID, &car.TransmissionID, &car.DrivetrainID,
+		&car.BrandName, &car.ModelName, &car.SubmodelName, &car.ChassisNumber,
+		&car.Year, &car.Mileage, &car.EngineCC, &car.Seats, &car.Doors,
+		&car.Prefix, &car.Number, &car.ProvinceID, &car.Description, &car.Price,
+		&car.IsFlooded, &car.IsHeavilyDamaged, &car.BookUploaded, &car.InspectionUploaded,
+		&car.Status, &car.ConditionRating, &car.CreatedAt, &car.UpdatedAt,
 	)
 
 	if err != nil {
@@ -305,9 +331,12 @@ func (r *CarRepository) GetCarByID(carID int) (*Car, error) {
 // GetCarsBySellerID retrieves all cars for a seller
 func (r *CarRepository) GetCarsBySellerID(sellerID int) ([]Car, error) {
 	query := `
-		SELECT cid, seller_id, year, mileage, price, province, condition_rating,
-			body_type_id, transmission_id, fuel_type_id, drivetrain_id, seats, doors,
-			color, status, ocr_applied, created_at, updated_at
+		SELECT id, seller_id, body_type_id, transmission_id, drivetrain_id,
+			brand_name, model_name, submodel_name, chassis_number,
+			year, mileage, engine_cc, seats, doors,
+			prefix, number, province_id, description, price,
+			is_flooded, is_heavily_damaged, book_uploaded, inspection_uploaded,
+			status, condition_rating, created_at, updated_at
 		FROM cars
 		WHERE seller_id = $1
 		ORDER BY created_at DESC`
@@ -322,11 +351,12 @@ func (r *CarRepository) GetCarsBySellerID(sellerID int) ([]Car, error) {
 	for rows.Next() {
 		var car Car
 		err := rows.Scan(
-			&car.CID, &car.SellerID, &car.Year, &car.Mileage, &car.Price,
-			&car.Province, &car.ConditionRating, &car.BodyTypeID,
-			&car.TransmissionID, &car.FuelTypeID, &car.DrivetrainID,
-			&car.Seats, &car.Doors, &car.Color, &car.Status,
-			&car.OCRApplied, &car.CreatedAt, &car.UpdatedAt,
+			&car.ID, &car.SellerID, &car.BodyTypeID, &car.TransmissionID, &car.DrivetrainID,
+			&car.BrandName, &car.ModelName, &car.SubmodelName, &car.ChassisNumber,
+			&car.Year, &car.Mileage, &car.EngineCC, &car.Seats, &car.Doors,
+			&car.Prefix, &car.Number, &car.ProvinceID, &car.Description, &car.Price,
+			&car.IsFlooded, &car.IsHeavilyDamaged, &car.BookUploaded, &car.InspectionUploaded,
+			&car.Status, &car.ConditionRating, &car.CreatedAt, &car.UpdatedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan car: %w", err)
@@ -339,17 +369,16 @@ func (r *CarRepository) GetCarsBySellerID(sellerID int) ([]Car, error) {
 
 // SearchCarsRequest represents search/filter parameters
 type SearchCarsRequest struct {
-	Query      string  // Search query for brand/model/description
-	MinPrice   *int    // Minimum price filter
-	MaxPrice   *int    // Maximum price filter
-	Province   *string // Province filter
-	MinYear    *int    // Minimum year filter
-	MaxYear    *int    // Maximum year filter
-	BodyTypeID *int    // Body type filter
-	FuelTypeID *int    // Fuel type filter
-	Status     string  // Status filter (default: "active")
-	Limit      int     // Results per page (default: 20)
-	Offset     int     // Pagination offset (default: 0)
+	Query      string // Search query for brand/model/description
+	MinPrice   *int   // Minimum price filter
+	MaxPrice   *int   // Maximum price filter
+	ProvinceID *int   // Province filter
+	MinYear    *int   // Minimum year filter
+	MaxYear    *int   // Maximum year filter
+	BodyTypeID *int   // Body type filter
+	Status     string // Status filter (default: "active")
+	Limit      int    // Results per page (default: 20)
+	Offset     int    // Pagination offset (default: 0)
 }
 
 // GetActiveCars retrieves all active car listings with optional filters
@@ -371,9 +400,9 @@ func (r *CarRepository) GetActiveCars(req *SearchCarsRequest) ([]Car, int, error
 		argCounter++
 	}
 
-	if req.Province != nil {
-		whereClauses = append(whereClauses, fmt.Sprintf("province = $%d", argCounter))
-		args = append(args, *req.Province)
+	if req.ProvinceID != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("province_id = $%d", argCounter))
+		args = append(args, *req.ProvinceID)
 		argCounter++
 	}
 
@@ -395,18 +424,11 @@ func (r *CarRepository) GetActiveCars(req *SearchCarsRequest) ([]Car, int, error
 		argCounter++
 	}
 
-	if req.FuelTypeID != nil {
-		whereClauses = append(whereClauses, fmt.Sprintf("fuel_type_id = $%d", argCounter))
-		args = append(args, *req.FuelTypeID)
-		argCounter++
-	}
-
-	// Text search on brand/model via car_details (if query is provided)
+	// Text search on brand/model/description in cars
 	joinClause := ""
 	if req.Query != "" {
-		joinClause = "LEFT JOIN car_details cd ON cars.cid = cd.car_id"
 		whereClauses = append(whereClauses, fmt.Sprintf(
-			"(cd.brand_name ILIKE $%d OR cd.model_name ILIKE $%d OR province ILIKE $%d)",
+			"(brand_name ILIKE $%d OR model_name ILIKE $%d OR description ILIKE $%d)",
 			argCounter, argCounter+1, argCounter+2,
 		))
 		searchPattern := "%" + req.Query + "%"
@@ -426,10 +448,12 @@ func (r *CarRepository) GetActiveCars(req *SearchCarsRequest) ([]Car, int, error
 
 	// Get paginated results
 	query := fmt.Sprintf(`
-		SELECT DISTINCT cars.cid, cars.seller_id, cars.year, cars.mileage, cars.price, 
-			cars.province, cars.condition_rating, cars.body_type_id, cars.transmission_id, 
-			cars.fuel_type_id, cars.drivetrain_id, cars.seats, cars.doors, cars.color, 
-			cars.status, cars.ocr_applied, cars.created_at, cars.updated_at
+		SELECT cars.id, cars.seller_id, cars.body_type_id, cars.transmission_id, cars.drivetrain_id,
+			cars.brand_name, cars.model_name, cars.submodel_name, cars.chassis_number,
+			cars.year, cars.mileage, cars.engine_cc, cars.seats, cars.doors,
+			cars.prefix, cars.number, cars.province_id, cars.description, cars.price,
+			cars.is_flooded, cars.is_heavily_damaged, cars.book_uploaded, cars.inspection_uploaded,
+			cars.status, cars.condition_rating, cars.created_at, cars.updated_at
 		FROM cars %s
 		WHERE %s
 		ORDER BY cars.created_at DESC
@@ -447,11 +471,12 @@ func (r *CarRepository) GetActiveCars(req *SearchCarsRequest) ([]Car, int, error
 	for rows.Next() {
 		var car Car
 		err := rows.Scan(
-			&car.CID, &car.SellerID, &car.Year, &car.Mileage, &car.Price,
-			&car.Province, &car.ConditionRating, &car.BodyTypeID,
-			&car.TransmissionID, &car.FuelTypeID, &car.DrivetrainID,
-			&car.Seats, &car.Doors, &car.Color, &car.Status,
-			&car.OCRApplied, &car.CreatedAt, &car.UpdatedAt,
+			&car.ID, &car.SellerID, &car.BodyTypeID, &car.TransmissionID, &car.DrivetrainID,
+			&car.BrandName, &car.ModelName, &car.SubmodelName, &car.ChassisNumber,
+			&car.Year, &car.Mileage, &car.EngineCC, &car.Seats, &car.Doors,
+			&car.Prefix, &car.Number, &car.ProvinceID, &car.Description, &car.Price,
+			&car.IsFlooded, &car.IsHeavilyDamaged, &car.BookUploaded, &car.InspectionUploaded,
+			&car.Status, &car.ConditionRating, &car.CreatedAt, &car.UpdatedAt,
 		)
 		if err != nil {
 			return nil, 0, fmt.Errorf("failed to scan car: %w", err)
@@ -465,18 +490,22 @@ func (r *CarRepository) GetActiveCars(req *SearchCarsRequest) ([]Car, int, error
 // UpdateCar updates a car listing
 func (r *CarRepository) UpdateCar(car *Car) error {
 	query := `
-		UPDATE cars SET
-			year = $2, mileage = $3, price = $4, province = $5,
-			condition_rating = $6, body_type_id = $7, transmission_id = $8,
-			fuel_type_id = $9, drivetrain_id = $10, seats = $11, doors = $12,
-			color = $13, status = $14
-		WHERE cid = $1`
+    	UPDATE cars SET
+    		body_type_id = $2, transmission_id = $3, drivetrain_id = $4,
+    		brand_name = $5, model_name = $6, submodel_name = $7, chassis_number = $8,
+    		year = $9, mileage = $10, engine_cc = $11, seats = $12, doors = $13,
+    		prefix = $14, number = $15, province_id = $16, description = $17, price = $18,
+    		is_flooded = $19, is_heavily_damaged = $20, book_uploaded = $21, inspection_uploaded = $22,
+    		status = $23, condition_rating = $24
+    	WHERE id = $1`
 
 	result, err := r.db.DB.Exec(query,
-		car.CID, car.Year, car.Mileage, car.Price, car.Province,
-		car.ConditionRating, car.BodyTypeID, car.TransmissionID,
-		car.FuelTypeID, car.DrivetrainID, car.Seats, car.Doors,
-		car.Color, car.Status,
+		car.ID, car.BodyTypeID, car.TransmissionID, car.DrivetrainID,
+		car.BrandName, car.ModelName, car.SubmodelName, car.ChassisNumber,
+		car.Year, car.Mileage, car.EngineCC, car.Seats, car.Doors,
+		car.Prefix, car.Number, car.ProvinceID, car.Description, car.Price,
+		car.IsFlooded, car.IsHeavilyDamaged, car.BookUploaded, car.InspectionUploaded,
+		car.Status, car.ConditionRating,
 	)
 
 	if err != nil {
@@ -497,7 +526,7 @@ func (r *CarRepository) UpdateCar(car *Car) error {
 
 // DeleteCar deletes a car listing
 func (r *CarRepository) DeleteCar(carID int) error {
-	query := `DELETE FROM cars WHERE cid = $1`
+	query := `DELETE FROM cars WHERE id = $1`
 
 	result, err := r.db.DB.Exec(query, carID)
 	if err != nil {
