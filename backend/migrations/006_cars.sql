@@ -6,15 +6,15 @@ CREATE TABLE cars (
     transmission_id INTEGER REFERENCES transmissions (id), -- Must Enter by Seller
     drivetrain_id INTEGER REFERENCES drivetrains (id), -- Must Enter by Seller
     -- fuel_type  -- Must Enter by Seller
-    brand_name VARCHAR(100),
+    brand_name VARCHAR(100), -- Book Uploaded
     model_name VARCHAR(100), -- Must Enter by Seller (e.g., Civic, Corolla, D-Max)
     submodel_name VARCHAR(100), -- Must Enter by Seller (e.g., EL, Sport, Hi-Lander)
     chassis_number VARCHAR(30) UNIQUE NOT NULL, -- VIN (Vehicle Identification Number) เลขถังรถ,เลขตัวรถ
-    year INTEGER,
+    year INTEGER, -- Book Uploaded
     mileage INTEGER, -- Must Enter by Seller
-    engine_cc INTEGER,
-    seats INTEGER,
-    doors INTEGER,
+    engine_cc INTEGER, -- Book Uploaded
+    seats INTEGER, -- Book Uploaded
+    doors INTEGER, -- Book Uploaded
     status VARCHAR(20) DEFAULT 'draft' CHECK (
         status IN (
             'draft',
@@ -25,35 +25,42 @@ CREATE TABLE cars (
     ), -- Must Enter by Seller
     condition_rating INTEGER CHECK (
         condition_rating BETWEEN 1 AND 5
-    ),
-    prefix VARCHAR(10) NOT NULL,
-    number VARCHAR(10) NOT NULL,
-    province_id INT NOT NULL REFERENCES provinces (id) ON DELETE RESTRICT,
+    ), -- Must Enter by Seller
+    prefix VARCHAR(10), -- Nullable for drafts; required at publish
+    number VARCHAR(10), -- Nullable for drafts; required at publish
+    province_id INT REFERENCES provinces (id) ON DELETE RESTRICT, -- Nullable for drafts; required at publish
     description VARCHAR(200), -- Must Enter by Seller
-    price INTEGER NOT NULL, -- Must Enter by Seller
-    is_flooded BOOLEAN DEFAULT FALSE,
-    is_heavily_damaged BOOLEAN DEFAULT FALSE,
+    price INTEGER, -- Nullable for drafts; required at publish
+    is_flooded BOOLEAN DEFAULT FALSE, -- Must Enter by Seller
+    is_heavily_damaged BOOLEAN DEFAULT FALSE, -- Must Enter by Seller
     book_uploaded BOOLEAN DEFAULT FALSE,
     inspection_uploaded BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Car colors (many-to-many with position)
+-- Car colors (many-to-many with position for ordered colors)
+-- Inspection Uploaded
 CREATE TABLE car_colors (
     car_id INTEGER NOT NULL REFERENCES cars (id) ON DELETE CASCADE,
     color_id INTEGER NOT NULL REFERENCES colors (id) ON DELETE RESTRICT,
+    position SMALLINT NOT NULL DEFAULT 0, -- Order: 0=primary, 1=secondary, 2=tertiary
     PRIMARY KEY (car_id, color_id)
 );
 
--- Car fuel (many-to-many with fuel type) Must Enter by Seller
+-- Index for ordered color queries
+CREATE INDEX idx_car_colors_position ON car_colors (car_id, position);
+
+-- Car fuel (many-to-many with fuel type)
+-- Must Enter by Seller
 CREATE TABLE car_fuel (
     car_id INTEGER NOT NULL REFERENCES cars (id) ON DELETE CASCADE,
     fuel_type_code VARCHAR(20) NOT NULL REFERENCES fuel_types (code) ON DELETE RESTRICT,
     PRIMARY KEY (car_id, fuel_type_code)
 );
 
--- Car images (stored as BYTEA) Must Enter by Seller
+-- Car images (stored as BYTEA)
+-- Must Enter by Seller
 CREATE TABLE car_images (
     id SERIAL PRIMARY KEY,
     car_id INTEGER NOT NULL REFERENCES cars (id) ON DELETE CASCADE,
@@ -66,6 +73,7 @@ CREATE TABLE car_images (
 );
 
 -- Car inspection results (Web scrape)
+-- Inspection Uploaded
 CREATE TABLE car_inspection_results (
     id SERIAL PRIMARY KEY,
     car_id INTEGER NOT NULL REFERENCES cars (id) ON DELETE CASCADE,

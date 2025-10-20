@@ -23,11 +23,11 @@ type Car struct {
 	EngineCC           *int      `json:"engineCc" db:"engine_cc"`
 	Seats              *int      `json:"seats" db:"seats"`
 	Doors              *int      `json:"doors" db:"doors"`
-	Prefix             string    `json:"prefix" db:"prefix"`
-	Number             string    `json:"number" db:"number"`
-	ProvinceID         int       `json:"provinceId" db:"province_id"`
+	Prefix             *string   `json:"prefix" db:"prefix"`          // Nullable for drafts
+	Number             *string   `json:"number" db:"number"`          // Nullable for drafts
+	ProvinceID         *int      `json:"provinceId" db:"province_id"` // Nullable for drafts
 	Description        *string   `json:"description" db:"description"`
-	Price              int       `json:"price" db:"price"`
+	Price              *int      `json:"price" db:"price"` // Nullable for drafts
 	IsFlooded          bool      `json:"isFlooded" db:"is_flooded"`
 	IsHeavilyDamaged   bool      `json:"isHeavilyDamaged" db:"is_heavily_damaged"`
 	BookUploaded       bool      `json:"bookUploaded" db:"book_uploaded"`
@@ -116,11 +116,11 @@ type CreateCarRequest struct {
 	EngineCC           *int    `json:"engineCc"`
 	Seats              *int    `json:"seats"`
 	Doors              *int    `json:"doors"`
-	Prefix             string  `json:"prefix" validate:"required"`
-	Number             string  `json:"number" validate:"required"`
-	ProvinceID         int     `json:"provinceId" validate:"required"`
+	Prefix             *string `json:"prefix"`     // Nullable for drafts
+	Number             *string `json:"number"`     // Nullable for drafts
+	ProvinceID         *int    `json:"provinceId"` // Nullable for drafts
 	Description        *string `json:"description"`
-	Price              int     `json:"price" validate:"required,gt=0"`
+	Price              *int    `json:"price"` // Nullable for drafts
 	IsFlooded          bool    `json:"isFlooded"`
 	IsHeavilyDamaged   bool    `json:"isHeavilyDamaged"`
 	BookUploaded       bool    `json:"bookUploaded"`
@@ -136,7 +136,7 @@ type UpdateCarRequest struct {
 	BrandName          *string `json:"brandName"`
 	ModelName          *string `json:"modelName"`
 	SubmodelName       *string `json:"submodelName"`
-	ChassisNumber      *string `json:"chassisNumber"`
+	ChassisNumber      *string `json:"chassisNumber"` // Should not be updated normally
 	Year               *int    `json:"year"`
 	Mileage            *int    `json:"mileage"`
 	EngineCC           *int    `json:"engineCc"`
@@ -153,6 +153,47 @@ type UpdateCarRequest struct {
 	InspectionUploaded *bool   `json:"inspectionUploaded"`
 	ConditionRating    *int    `json:"conditionRating" validate:"omitempty,gte=1,lte=5"`
 	Status             *string `json:"status" validate:"omitempty,oneof=draft active sold deleted"`
+
+	// Unified edit fields for auto-save (not persisted directly on cars unless mapped)
+	FuelCodes   []string         `json:"fuelCodes,omitempty"`
+	BookDetails *BookEditDetails `json:"bookDetails,omitempty"`
+}
+
+// BookEditDetails are editable text fields from the registration book (Thai kept as-is)
+type BookEditDetails struct {
+	RegistrationNumber *string `json:"registrationNumber,omitempty"`
+	BrandName          *string `json:"brandName,omitempty"`
+	ModelName          *string `json:"modelName,omitempty"`
+	EngineNumber       *string `json:"engineNumber,omitempty"`
+	VehicleType        *string `json:"vehicleType,omitempty"`
+}
+
+// StepState models readiness of a step with issues
+type StepState struct {
+	Ready  bool     `json:"ready"`
+	Issues []string `json:"issues"`
+}
+
+// StepStatus aggregates step states for PATCH response
+type StepStatus struct {
+	Step2 StepState `json:"step2"`
+	Step3 StepState `json:"step3"`
+}
+
+// ReorderImagesRequest for PUT /api/cars/{id}/images/order
+type ReorderImagesRequest struct {
+	ImageIDs []int `json:"imageIds" validate:"required,min=5,max=12"` // 5-12 images in order
+}
+
+// UploadInspectionRequest for POST /api/cars/{id}/inspection
+type UploadInspectionRequest struct {
+	URL *string `json:"url"` // Either URL or file upload
+}
+
+// ReviewResponse for GET /api/cars/{id}/review
+type ReviewResponse struct {
+	Ready  bool     `json:"ready"`
+	Issues []string `json:"issues"`
 }
 
 type CarResponse struct {
@@ -209,8 +250,8 @@ type CarListingWithImages struct {
 	SellerID        int                `json:"sellerId"`
 	Year            *int               `json:"year"`
 	Mileage         *int               `json:"mileage"`
-	Price           int                `json:"price"`
-	ProvinceID      int                `json:"provinceId"`
+	Price           *int               `json:"price"`      // Nullable for drafts
+	ProvinceID      *int               `json:"provinceId"` // Nullable for drafts
 	ConditionRating *int               `json:"conditionRating"`
 	BodyTypeID      *int               `json:"bodyTypeId"`
 	TransmissionID  *int               `json:"transmissionId"`
@@ -260,7 +301,7 @@ func NewCarRepository(db *Database) *CarRepository {
 	return &CarRepository{db: db}
 }
 
-// CreateCar creates a new car listing
+// CreateCar creates a new car listing (allows nullable fields for drafts)
 func (r *CarRepository) CreateCar(car *Car) error {
 	query := `
 		INSERT INTO cars (
@@ -690,6 +731,34 @@ func (r *CarImageRepository) UpdateImageDisplayOrder(imageID, displayOrder int) 
 	return nil
 }
 
+// ReorderImages updates display_order for multiple images in one transaction
+func (r *CarImageRepository) ReorderImages(imageIDs []int) error {
+	// Start transaction
+	tx, err := r.db.DB.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	// Update each image with its new position
+	for i, imageID := range imageIDs {
+		_, err = tx.Exec(
+			"UPDATE car_images SET display_order = $1 WHERE id = $2",
+			i, imageID,
+		)
+		if err != nil {
+			return fmt.Errorf("failed to update image %d: %w", imageID, err)
+		}
+	}
+
+	// Commit transaction
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
 // CarDetailsRepository handles car details (registration data) operations
 type CarDetailsRepository struct {
 	db *Database
@@ -774,4 +843,173 @@ func (r *CarDetailsRepository) UpdateCarDetails(details *CarDetails) error {
 	}
 
 	return nil
+}
+
+// CarFuelRepository handles car_fuel operations
+type CarFuelRepository struct {
+	db *Database
+}
+
+// NewCarFuelRepository creates a new car fuel repository
+func NewCarFuelRepository(db *Database) *CarFuelRepository {
+	return &CarFuelRepository{db: db}
+}
+
+// SetCarFuels replaces all fuels for a car
+func (r *CarFuelRepository) SetCarFuels(carID int, fuelCodes []string) error {
+	// Start transaction
+	tx, err := r.db.DB.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	// Delete existing fuels
+	_, err = tx.Exec("DELETE FROM car_fuel WHERE car_id = $1", carID)
+	if err != nil {
+		return fmt.Errorf("failed to delete existing fuels: %w", err)
+	}
+
+	// Insert new fuels
+	for _, fuelCode := range fuelCodes {
+		_, err = tx.Exec(
+			"INSERT INTO car_fuel (car_id, fuel_type_code) VALUES ($1, $2)",
+			carID, fuelCode,
+		)
+		if err != nil {
+			return fmt.Errorf("failed to insert fuel %s: %w", fuelCode, err)
+		}
+	}
+
+	// Commit transaction
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
+// GetCarFuels retrieves all fuel codes for a car
+func (r *CarFuelRepository) GetCarFuels(carID int) ([]string, error) {
+	query := `
+		SELECT fuel_type_code 
+		FROM car_fuel 
+		WHERE car_id = $1 
+		ORDER BY fuel_type_code`
+
+	rows, err := r.db.DB.Query(query, carID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get car fuels: %w", err)
+	}
+	defer rows.Close()
+
+	var fuelCodes []string
+	for rows.Next() {
+		var fuelCode string
+		if err := rows.Scan(&fuelCode); err != nil {
+			return nil, fmt.Errorf("failed to scan fuel: %w", err)
+		}
+		fuelCodes = append(fuelCodes, fuelCode)
+	}
+
+	return fuelCodes, nil
+}
+
+// CarColor represents a car-color mapping with position
+type CarColor struct {
+	CarID    int `json:"carId" db:"car_id"`
+	ColorID  int `json:"colorId" db:"color_id"`
+	Position int `json:"position" db:"position"`
+}
+
+// CarColorRepository handles car_colors operations
+type CarColorRepository struct {
+	db *Database
+}
+
+// NewCarColorRepository creates a new car color repository
+func NewCarColorRepository(db *Database) *CarColorRepository {
+	return &CarColorRepository{db: db}
+}
+
+// SetCarColors replaces all colors for a car with ordered list
+func (r *CarColorRepository) SetCarColors(carID int, colorIDs []int) error {
+	// Start transaction
+	tx, err := r.db.DB.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	// Delete existing colors
+	if _, err = tx.Exec("DELETE FROM car_colors WHERE car_id = $1", carID); err != nil {
+		return fmt.Errorf("failed to delete existing colors: %w", err)
+	}
+
+	// Insert new colors with positions
+	for i, colorID := range colorIDs {
+		if _, err = tx.Exec(
+			"INSERT INTO car_colors (car_id, color_id, position) VALUES ($1, $2, $3)",
+			carID, colorID, i,
+		); err != nil {
+			return fmt.Errorf("failed to insert color at position %d: %w", i, err)
+		}
+	}
+
+	// Commit
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+	return nil
+}
+
+// GetCarColors retrieves all color IDs for a car in order
+func (r *CarColorRepository) GetCarColors(carID int) ([]int, error) {
+	query := `
+        SELECT color_id 
+        FROM car_colors 
+        WHERE car_id = $1 
+        ORDER BY position`
+	rows, err := r.db.DB.Query(query, carID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get car colors: %w", err)
+	}
+	defer rows.Close()
+	var ids []int
+	for rows.Next() {
+		var id int
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("failed to scan color id: %w", err)
+		}
+		ids = append(ids, id)
+	}
+	return ids, nil
+}
+
+// LookupColorIDsByLabels attempts to find up to 3 color IDs by Thai or English labels (ILIKE)
+func (r *CarColorRepository) LookupColorIDsByLabels(labels []string) ([]int, error) {
+	if len(labels) == 0 {
+		return []int{}, nil
+	}
+	args := []interface{}{}
+	wheres := []string{}
+	for i, label := range labels {
+		args = append(args, "%"+label+"%")
+		wheres = append(wheres, fmt.Sprintf("(label_th ILIKE $%d OR label_en ILIKE $%d)", i+1, i+1))
+	}
+	query := "SELECT id FROM colors WHERE " + strings.Join(wheres, " OR ") + " LIMIT 3"
+	rows, err := r.db.DB.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to lookup colors by labels: %w", err)
+	}
+	defer rows.Close()
+	var ids []int
+	for rows.Next() {
+		var id int
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("failed to scan color id: %w", err)
+		}
+		ids = append(ids, id)
+	}
+	return ids, nil
 }

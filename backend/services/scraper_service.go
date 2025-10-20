@@ -14,10 +14,10 @@ import (
 
 // ... (NewScraperService ยังคงเหมือนเดิม) ...
 type ScraperService struct{}
+
 func NewScraperService() *ScraperService {
 	return &ScraperService{}
 }
-
 
 // ScrapeInspectionData performs web scraping using a headless browser.
 func (s *ScraperService) ScrapeInspectionData(url string) (map[string]string, error) {
@@ -36,11 +36,10 @@ func (s *ScraperService) ScrapeInspectionData(url string) (map[string]string, er
 	// สร้าง Tab ใหม่ใน Browser (จาก Allocator Context)
 	taskCtx, cancel := chromedp.NewContext(allocCtx, chromedp.WithLogf(log.Printf))
 	defer cancel()
-    
-    // ตั้งค่า Timeout ของ task
-    taskCtx, cancel = context.WithTimeout(taskCtx, 30*time.Second)
-    defer cancel()
 
+	// ตั้งค่า Timeout ของ task
+	taskCtx, cancel = context.WithTimeout(taskCtx, 30*time.Second)
+	defer cancel()
 
 	var htmlContent string
 	err := chromedp.Run(taskCtx,
@@ -75,4 +74,54 @@ func (s *ScraperService) ScrapeInspectionData(url string) (map[string]string, er
 	}
 
 	return data, nil
+}
+
+// ExtractChassisFromInspection extracts chassis/VIN from scraped key-value map
+func (s *ScraperService) ExtractChassisFromInspection(kv map[string]string) string {
+	// Common Thai keys for chassis; expand as necessary
+	keys := []string{"เลขตัวถัง", "เลขตัวรถ", "เลขถังรถ", "VIN", "Chassis"}
+	for _, k := range keys {
+		if v, ok := kv[k]; ok {
+			return strings.TrimSpace(v)
+		}
+	}
+	// Fallback: scan for possible VIN-like values (alphanumeric length >= 8)
+	for _, v := range kv {
+		vv := strings.TrimSpace(v)
+		if len(vv) >= 8 {
+			return vv
+		}
+	}
+	return ""
+}
+
+// ExtractColorsFromInspection extracts up to 3 color labels (Thai/English) in order of importance
+func (s *ScraperService) ExtractColorsFromInspection(kv map[string]string) []string {
+	// Try common keys
+	keys := []string{"สีรถ", "สี", "Color", "Colours"}
+	for _, k := range keys {
+		if v, ok := kv[k]; ok {
+			v = strings.TrimSpace(v)
+			if v == "" {
+				continue
+			}
+			// Split by comma/space if multiple colors are provided
+			parts := strings.FieldsFunc(v, func(r rune) bool { return r == ',' || r == '/' || r == '|' })
+			out := []string{}
+			for _, p := range parts {
+				p = strings.TrimSpace(p)
+				if p == "" {
+					continue
+				}
+				out = append(out, p)
+				if len(out) == 3 {
+					break
+				}
+			}
+			if len(out) > 0 {
+				return out
+			}
+		}
+	}
+	return []string{}
 }
