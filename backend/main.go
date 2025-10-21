@@ -50,6 +50,7 @@ type ServiceContainer struct {
 	User        *services.UserService
 	Profile     *services.ProfileService
 	Car         *services.CarService
+	Favourite   *services.FavouriteService
 	Maintenance *services.MaintenanceService
 	OCR         *services.OCRService
 	Scraper     *services.ScraperService // + เพิ่มส่วนนี้
@@ -72,6 +73,7 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 	carImageRepo := models.NewCarImageRepository(database)
 	carDetailsRepo := models.NewCarDetailsRepository(database)
 	inspectionRepo := models.NewInspectionRepository(database)
+	favouriteRepo := models.NewFavouriteRepository(database)
 
 	// Create JWT managers
 	userJWTManager := utils.NewJWTManager(
@@ -102,6 +104,9 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 	// Create car service
 	carService := services.NewCarService(carRepo, carImageRepo, carDetailsRepo, inspectionRepo, profileService)
 
+	// Create favourites service
+	favouriteService := services.NewFavouriteService(favouriteRepo, carService)
+
 	// 👇 เพิ่มการสร้าง ScraperService เข้าไป
 	scraperService := services.NewScraperService()
 
@@ -112,9 +117,10 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 			ipWhitelistRepo,
 			adminJWTManager,
 		),
-		User:    userService,
-		Profile: profileService,
-		Car:     carService,
+		User:      userService,
+		Profile:   profileService,
+		Car:       carService,
+		Favourite: favouriteService,
 		Maintenance: services.NewMaintenanceService(
 			adminRepo,
 			sessionRepo,
@@ -146,6 +152,10 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 		routes.CarRoutes(services.Car, services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/cars/",
 		routes.CarRoutes(services.Car, services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
+	mux.Handle("/api/favorites",
+		routes.FavouritesRoutes(services.Favourite, services.User, appConfig.CORSAllowedOrigins))
+	mux.Handle("/api/favorites/",
+		routes.FavouritesRoutes(services.Favourite, services.User, appConfig.CORSAllowedOrigins))
 	adminPrefix := appConfig.AdminRoutePrefix
 	mux.Handle(adminPrefix+"/",
 		routes.AdminRoutes(services.Admin, services.AdminJWT, adminPrefix, appConfig.CORSAllowedOrigins, appConfig.AdminIPWhitelist))
