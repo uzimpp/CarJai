@@ -2,10 +2,10 @@
 CREATE TABLE cars (
     id SERIAL PRIMARY KEY,
     seller_id INTEGER NOT NULL REFERENCES sellers (id) ON DELETE CASCADE,
-    body_type_id INTEGER REFERENCES body_types (id), -- Must Enter by Seller
-    transmission_id INTEGER REFERENCES transmissions (id), -- Must Enter by Seller
-    drivetrain_id INTEGER REFERENCES drivetrains (id), -- Must Enter by Seller
-    -- fuel_type  -- Must Enter by Seller
+    body_type_code VARCHAR(20) REFERENCES body_types (code), -- Must Enter by Seller
+    transmission_code VARCHAR(10) REFERENCES transmissions (code), -- Must Enter by Seller
+    drivetrain_code VARCHAR(10) REFERENCES drivetrains (code), -- Must Enter by Seller
+    -- fuel types stored in car_fuel junction table
     brand_name VARCHAR(100), -- Book Uploaded
     model_name VARCHAR(100), -- Must Enter by Seller (e.g., Civic, Corolla, D-Max)
     submodel_name VARCHAR(100), -- Must Enter by Seller (e.g., EL, Sport, Hi-Lander)

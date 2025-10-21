@@ -483,6 +483,72 @@ func (h *CarHandler) DeleteCar(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// DiscardCar handles POST /api/cars/{id}/discard (alias for deleting a draft; owner-only)
+func (h *CarHandler) DiscardCar(w http.ResponseWriter, r *http.Request) {
+	// Enforce POST
+	if r.Method != http.MethodPost {
+		utils.RespondJSON(w, http.StatusMethodNotAllowed, models.UserErrorResponse{
+			Success: false,
+			Error:   "Method not allowed",
+		})
+		return
+	}
+
+	// Get user from context
+	userID, ok := r.Context().Value("userID").(int)
+	if !ok {
+		utils.RespondJSON(w, http.StatusUnauthorized, models.UserErrorResponse{
+			Success: false,
+			Error:   "Unauthorized",
+		})
+		return
+	}
+
+	// Extract car ID
+	carID, err := extractIDFromPath(r.URL.Path, "/api/cars/")
+	if err != nil {
+		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
+			Success: false,
+			Error:   "Invalid car ID",
+		})
+		return
+	}
+
+	// Check if user is admin
+	isAdmin := false
+	if adminID, ok := r.Context().Value("admin_id").(int); ok && adminID > 0 {
+		isAdmin = true
+	}
+
+	// Delete via service (owner-only, drafts)
+	if err := h.carService.DeleteCar(carID, userID, isAdmin); err != nil {
+		if strings.Contains(err.Error(), "unauthorized") {
+			utils.RespondJSON(w, http.StatusForbidden, models.UserErrorResponse{
+				Success: false,
+				Error:   err.Error(),
+			})
+			return
+		}
+		if strings.Contains(err.Error(), "not found") {
+			utils.RespondJSON(w, http.StatusNotFound, models.UserErrorResponse{
+				Success: false,
+				Error:   "Car not found",
+			})
+			return
+		}
+		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
+			Success: false,
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{
+		"success": true,
+		"message": "Draft discarded",
+	})
+}
+
 // UploadCarImages handles POST /api/cars/{id}/images
 func (h *CarHandler) UploadCarImages(w http.ResponseWriter, r *http.Request) {
 	// Check method
@@ -1101,12 +1167,13 @@ func (h *CarHandler) UploadInspection(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Attach inspection to car (validates chassis match)
-	err = h.carService.AttachInspection(carID, userID, inspectionData, h.scraperService)
+	result, err := h.carService.AttachInspection(carID, userID, inspectionData, h.scraperService)
 	if err != nil {
-		if strings.Contains(err.Error(), "mismatch") {
+		// Check for validation errors (BOOK_REQUIRED)
+		if validationErr, ok := err.(*services.ValidationError); ok {
 			utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
 				Success: false,
-				Error:   err.Error(),
+				Error:   validationErr.Message,
 			})
 			return
 		}
@@ -1124,11 +1191,14 @@ func (h *CarHandler) UploadInspection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{
-		"success": true,
-		"message": "Vehicle inspection attached successfully",
-		"data": map[string]interface{}{
-			"inspectionData": inspectionData,
+	// Return success with chassis match status
+	utils.RespondJSON(w, http.StatusOK, models.InspectionUploadResponse{
+		Message: "Vehicle inspection attached successfully",
+		Data: models.InspectionUploadData{
+			ChassisMatch:      result.ChassisMatch,
+			BookChassis:       result.BookChassis,
+			InspectionChassis: result.InspectionChassis,
+			InspectionData:    inspectionData,
 		},
 	})
 }

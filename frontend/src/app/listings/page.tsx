@@ -3,24 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUserAuth } from "@/hooks/useUserAuth";
-import { apiCall } from "@/lib/apiCall";
+import { apiCall } from "@/lib/ApiCall";
 import Image from "next/image";
 import Link from "next/link";
-
-interface CarListing {
-  cid: number;
-  brandName?: string;
-  modelName?: string;
-  year?: number;
-  price: number;
-  mileage?: number;
-  status: string;
-  province?: string;
-  color?: string;
-  images?: Array<{ id: number }>;
-  createdAt?: string;
-  updatedAt?: string;
-}
+import CarListing from "@/types/Car";
 
 export default function MyListingsPage() {
   const router = useRouter();
@@ -95,7 +81,7 @@ export default function MyListingsPage() {
         // Update the listing in state
         setListings((prev) =>
           prev.map((listing) =>
-            listing.cid === carId ? { ...listing, status: "active" } : listing
+            listing.id === carId ? { ...listing, status: "active" } : listing
           )
         );
         alert("Listing published successfully!");
@@ -123,7 +109,7 @@ export default function MyListingsPage() {
       if (result.success) {
         setListings((prev) =>
           prev.map((listing) =>
-            listing.cid === carId ? { ...listing, status: "draft" } : listing
+            listing.id === carId ? { ...listing, status: "draft" } : listing
           )
         );
         alert("Listing unpublished successfully!");
@@ -149,7 +135,7 @@ export default function MyListingsPage() {
       );
 
       if (result.success) {
-        setListings((prev) => prev.filter((listing) => listing.cid !== carId));
+        setListings((prev) => prev.filter((listing) => listing.id !== carId));
         alert("Listing deleted successfully!");
       } else {
         alert(result.message || "Failed to delete listing");
@@ -329,7 +315,7 @@ export default function MyListingsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-(--space-l)">
             {filteredListings.map((listing) => (
               <div
-                key={listing.cid}
+                key={listing.id}
                 className="bg-white rounded-4xl shadow-[var(--shadow-lg)] overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
               >
                 {/* Image */}
@@ -390,10 +376,10 @@ export default function MyListingsPage() {
                         </span>
                       </div>
                     )}
-                    {listing.province && (
+                    {listing.provinceId && (
                       <div className="flex items-center gap-(--space-xs) text--1 text-gray-600">
                         <span>📍</span>
-                        <span>{listing.province}</span>
+                        <span>Province #{listing.provinceId}</span>
                       </div>
                     )}
                   </div>
@@ -402,27 +388,27 @@ export default function MyListingsPage() {
                   <div className="flex gap-(--space-xs) pt-(--space-s) border-t border-gray-100">
                     {listing.status === "draft" ? (
                       <button
-                        onClick={() => handlePublish(listing.cid)}
+                        onClick={() => handlePublish(listing.id)}
                         className="flex-1 px-(--space-s) py-(--space-xs) text-white bg-gradient-to-r from-green-600 to-green-700 rounded-xl hover:shadow-md transition-all medium text--1"
                       >
                         Publish
                       </button>
                     ) : (
                       <button
-                        onClick={() => handleUnpublish(listing.cid)}
+                        onClick={() => handleUnpublish(listing.id)}
                         className="flex-1 px-(--space-s) py-(--space-xs) text-orange-700 bg-orange-100 rounded-xl hover:bg-orange-200 transition-all medium text--1"
                       >
                         Unpublish
                       </button>
                     )}
                     <Link
-                      href={`/car/${listing.cid}`}
+                      href={`/car/${listing.id}`}
                       className="flex-1 px-(--space-s) py-(--space-xs) text-blue-700 bg-blue-100 rounded-xl hover:bg-blue-200 transition-all medium text--1 text-center"
                     >
                       View
                     </Link>
                     <button
-                      onClick={() => handleDelete(listing.cid)}
+                      onClick={() => handleDelete(listing.id)}
                       className="px-(--space-s) py-(--space-xs) text-red-700 bg-red-100 rounded-xl hover:bg-red-200 transition-all medium text--1"
                     >
                       Delete

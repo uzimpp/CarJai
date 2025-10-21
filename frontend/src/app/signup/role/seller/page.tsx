@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import { profileAPI } from "@/lib/profileAPI";
-import { SellerRequest } from "@/constants/user";
-import SellerForm from "@/components/features/profile/SellerForm";
+import { SellerRequest } from "@/types/user";
+import SellerForm from "@/components/profile/SellerForm";
 
 export default function SellerProfilePage() {
   const router = useRouter();

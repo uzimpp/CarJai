@@ -1,59 +1,10 @@
 // Cars API utilities - following the codebase pattern
-import { apiCall } from "./apiCall";
+import { apiCall } from "@/lib/ApiCall";
+import type Car from "@/types/Car";
+import type { SearchCarsParams } from "@/types/search";
+import type { PaginatedCarsResponse, CarFormData } from "@/types/Car";
 
-// Type definitions
-export interface Car {
-  cid: number;
-  sellerId: number;
-  year?: number;
-  mileage?: number;
-  price: number;
-  province?: string;
-  conditionRating?: number;
-  bodyTypeId?: number;
-  transmissionId?: number;
-  fuelTypeId?: number;
-  drivetrainId?: number;
-  seats?: number;
-  doors?: number;
-  color?: string;
-  status: string;
-  createdAt: string;
-  updatedAt: string;
-  brandName?: string;
-  modelName?: string;
-  images?: Array<{ id: number }>;
-}
-
-export interface SearchCarsParams {
-  q?: string;
-  page?: number;
-  limit?: number;
-  minPrice?: number;
-  maxPrice?: number;
-  minYear?: number;
-  maxYear?: number;
-  province?: string;
-  bodyTypeId?: number;
-  fuelTypeId?: number;
-}
-
-export interface PaginatedCarsResponse {
-  success: boolean;
-  data: {
-    cars: Car[];
-    total: number;
-    page: number;
-    limit: number;
-  };
-  message?: string;
-}
-
-export interface CarResponse {
-  success: boolean;
-  data: Car;
-  message?: string;
-}
+// Type definitions now sourced from types/Car
 
 // Cars API functions
 export const carsAPI = {
@@ -72,7 +23,8 @@ export const carsAPI = {
       searchParams.append("minYear", params.minYear.toString());
     if (params.maxYear)
       searchParams.append("maxYear", params.maxYear.toString());
-    if (params.province) searchParams.append("province", params.province);
+    if (params.provinceId)
+      searchParams.append("provinceId", params.provinceId.toString());
     if (params.bodyTypeId)
       searchParams.append("bodyTypeId", params.bodyTypeId.toString());
     if (params.fuelTypeId)
@@ -87,10 +39,15 @@ export const carsAPI = {
   },
 
   // Get single car details
-  async getById(carId: number): Promise<CarResponse> {
-    return apiCall<CarResponse>(`/api/cars/${carId}`, {
-      method: "GET",
-    });
+  async getById(
+    carId: number
+  ): Promise<{ success: boolean; data: Car; message?: string }> {
+    return apiCall<{ success: boolean; data: Car; message?: string }>(
+      `/api/cars/${carId}`,
+      {
+        method: "GET",
+      }
+    );
   },
 
   // Get current user's cars
@@ -100,11 +57,17 @@ export const carsAPI = {
     });
   },
 
-  // Create a new car listing
-  async create(carData: unknown): Promise<CarResponse> {
-    return apiCall<CarResponse>("/api/cars", {
+  // Create a new car listing (empty draft)
+  async create(
+    carData: Partial<CarFormData> = {}
+  ): Promise<{ success: boolean; data: { id: number }; message?: string }> {
+    return apiCall<{
+      success: boolean;
+      data: { id: number };
+      message?: string;
+    }>("/api/cars", {
       method: "POST",
-      body: JSON.stringify(carData),
+      body: JSON.stringify({ chassisNumber: "", ...carData }),
     });
   },
 
@@ -123,6 +86,123 @@ export const carsAPI = {
   async delete(carId: number): Promise<{ success: boolean; message: string }> {
     return apiCall(`/api/cars/${carId}`, {
       method: "DELETE",
+    });
+  },
+
+  // Upload vehicle registration book
+  async uploadBook(file: File): Promise<{
+    success: boolean;
+    data: {
+      carId: number;
+      chassisNumber: string;
+      extracted: Record<string, unknown>;
+      rawFields: Record<string, unknown>;
+    };
+    message?: string;
+  }> {
+    const formData = new FormData();
+    formData.append("file", file);
+    return apiCall("/api/cars/book", {
+      method: "POST",
+      body: formData,
+    });
+  },
+
+  // Upload vehicle inspection (via URL)
+  async uploadInspection(
+    carId: number,
+    url: string
+  ): Promise<{
+    success: boolean;
+    data: {
+      chassisMatch: boolean;
+      bookChassis: string;
+      inspectionChassis: string;
+      inspectionData: Record<string, string>;
+    };
+    message?: string;
+  }> {
+    return apiCall(`/api/cars/${carId}/inspection`, {
+      method: "POST",
+      body: JSON.stringify({ url }),
+    });
+  },
+
+  // Autosave draft (PATCH /draft)
+  async autosaveDraft(
+    carId: number,
+    data: Partial<CarFormData>
+  ): Promise<{
+    success: boolean;
+    stepStatus?: {
+      step2: { ready: boolean; issues: string[] };
+      step3: { ready: boolean; issues: string[] };
+    };
+    message?: string;
+  }> {
+    return apiCall(`/api/cars/${carId}/draft`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Upload car images
+  async uploadImages(
+    carId: number,
+    files: File[]
+  ): Promise<{
+    success: boolean;
+    data: {
+      carId: number;
+      uploadedCount: number;
+      images: Array<{ id: number; displayOrder: number }>;
+    };
+    message?: string;
+  }> {
+    const formData = new FormData();
+    files.forEach((file) => formData.append("images", file));
+    return apiCall(`/api/cars/${carId}/images`, {
+      method: "POST",
+      body: formData,
+    });
+  },
+
+  // Reorder car images
+  async reorderImages(
+    carId: number,
+    imageIds: number[]
+  ): Promise<{ success: boolean; message: string }> {
+    return apiCall(`/api/cars/${carId}/images/order`, {
+      method: "PUT",
+      body: JSON.stringify({ imageIds }),
+    });
+  },
+
+  // Review car for publish readiness
+  async reviewCar(carId: number): Promise<{
+    success: boolean;
+    data: { ready: boolean; issues: string[] };
+  }> {
+    return apiCall(`/api/cars/${carId}/review`);
+  },
+
+  // Update car status (draft → active)
+  async updateStatus(
+    carId: number,
+    status: string
+  ): Promise<{ success: boolean; message: string }> {
+    return apiCall(`/api/cars/${carId}/status`, {
+      method: "PUT",
+      body: JSON.stringify({ status }),
+    });
+  },
+
+  // Discard draft
+  async discardDraft(
+    carId: number
+  ): Promise<{ success: boolean; message: string }> {
+    return apiCall(`/api/cars/${carId}/discard`, {
+      method: "POST",
     });
   },
 };

@@ -5,8 +5,8 @@ import {
   AdminAuthResponse,
   AdminSigninRequest,
   AdminActionResponse,
-} from "@/constants/admin";
-import { apiCall } from "./apiCall";
+} from "@/types/admin";
+import { apiCall } from "@/lib/ApiCall";
 
 // Admin authentication API functions
 export const adminAuthAPI = {

@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { authAPI } from "@/lib/userAuth";
-import { mutualLogout } from "@/lib/mutualLogout";
+import { mutualLogout } from "../lib/mutualLogout";
 
 interface GoogleAuthState {
   isLoading: boolean;

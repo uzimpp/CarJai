@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { Seller, SellerContact } from "@/constants/user";
+import { Seller, SellerContact } from "@/types/user";
 import { sellerAPI } from "@/lib/sellerAPI";
 
 export default function SellerPage() {

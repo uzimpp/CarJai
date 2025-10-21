@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { apiCall } from "@/lib/apiCall";
+import { apiCall } from "@/lib/ApiCall";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ACCEPTED_FILE_TYPES = ["image/jpeg", "image/png", "application/pdf"];

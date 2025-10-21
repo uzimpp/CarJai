@@ -70,11 +70,9 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 	userSessionRepo := models.NewUserSessionRepository(database)
 	carRepo := models.NewCarRepository(database)
 	carImageRepo := models.NewCarImageRepository(database)
-	carDetailsRepo := models.NewCarDetailsRepository(database)
 	inspectionRepo := models.NewInspectionRepository(database)
 	carColorRepo := models.NewCarColorRepository(database)
 	carFuelRepo := models.NewCarFuelRepository(database)
-
 	// Create JWT managers
 	userJWTManager := utils.NewJWTManager(
 		appConfig.UserJWTSecret,
@@ -105,11 +103,9 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 	carService := services.NewCarService(
 		carRepo,
 		carImageRepo,
-		carDetailsRepo,
 		inspectionRepo,
 		carColorRepo,
 		carFuelRepo,
-		profileService,
 	)
 
 	// Create scraper service

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { BuyerRequest } from "@/constants/user";
+import { BuyerRequest } from "@/types/user";
 
 interface BuyerFormProps {
   initialData?: BuyerRequest;

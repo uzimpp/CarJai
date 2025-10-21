@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
-import type { User, UserRoles, UserProfiles } from "@/constants/user";
-import type { AdminUser } from "@/constants/admin";
+import type { User, UserRoles, UserProfiles } from "@/types/user";
+import type { AdminUser } from "@/types/admin";
 
 interface AccountBtnProps {
   user: User | null;
@@ -138,7 +138,6 @@ export default function AccountBtn({
 
               {/* Navigation Links */}
               <div className="py-1">
-
                 {roles && !roles.buyer && !roles.seller && (
                   <div className="px-4 py-3 bg-amber-50 border-y border-amber-200">
                     <Link

@@ -4,7 +4,9 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { carsAPI, type Car } from "@/lib/carsAPI";
+import { carsAPI } from "@/lib/carsAPI";
+import type Car from "@/types/Car";
+import PriceFormatting from "@/lib/PriceFormatting";
 
 function BuyPageContent() {
   const searchParams = useSearchParams();
@@ -48,14 +50,6 @@ function BuyPageContent() {
   };
 
   const totalPages = Math.ceil(total / limit);
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("th-TH", {
-      style: "currency",
-      currency: "THB",
-      minimumFractionDigits: 0,
-    }).format(price);
-  };
 
   return (
     <div className="pb-(--space-l) px-(--space-m) py-(--space-s) max-w-[1536px] mx-auto w-full">
@@ -119,8 +113,8 @@ function BuyPageContent() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-(--space-m)">
             {cars.map((car) => (
               <Link
-                key={car.cid}
-                href={`/cars/${car.cid}`}
+                key={car.id}
+                href={`/cars/${car.id}`}
                 className="group bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden hover:-translate-y-1"
               >
                 {/* Car Image */}
@@ -160,7 +154,7 @@ function BuyPageContent() {
 
                   {/* Price */}
                   <p className="text-2 font-bold text-maroon mb-(--space-2xs)">
-                    {formatPrice(car.price)}
+                    {PriceFormatting(car.price)}
                   </p>
 
                   {/* Details */}
@@ -174,10 +168,10 @@ function BuyPageContent() {
                         </span>
                       </div>
                     )}
-                    {car.province && (
+                    {car.provinceId && (
                       <div className="flex items-center gap-(--space-3xs) text--1 text-gray-600">
                         <span>📍</span>
-                        <span>{car.province}</span>
+                        <span>Province #{car.provinceId}</span>
                       </div>
                     )}
                     {car.seats && (

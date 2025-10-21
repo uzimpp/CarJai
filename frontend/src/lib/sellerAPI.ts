@@ -1,4 +1,4 @@
-import type { Seller, SellerContact } from "@/constants/user";
+import type { Seller, SellerContact } from "@/types/user";
 
 // Public seller API - uses relative paths to flow through Next rewrites
 export const sellerAPI = {

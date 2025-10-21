@@ -64,6 +64,12 @@ func (s *ScraperService) ScrapeInspectionData(url string) (map[string]string, er
 		value, exists := sel.Find("input.form-control").Attr("value")
 		value = strings.TrimSpace(value)
 
+		// DLT website stores chassis in lowercase but displays as uppercase via CSS
+		// Convert to uppercase to match what users see
+		if key == "เลขตัวถังรถ" || key == "VIN/Engine Number" {
+			value = strings.ToUpper(value)
+		}
+
 		if key != "" && exists {
 			data[key] = value
 		}
@@ -79,17 +85,10 @@ func (s *ScraperService) ScrapeInspectionData(url string) (map[string]string, er
 // ExtractChassisFromInspection extracts chassis/VIN from scraped key-value map
 func (s *ScraperService) ExtractChassisFromInspection(kv map[string]string) string {
 	// Common Thai keys for chassis; expand as necessary
-	keys := []string{"เลขตัวถัง", "เลขตัวรถ", "เลขถังรถ", "VIN", "Chassis"}
+	keys := []string{"เลขตัวถังรถ", "เลขตัวรถ", "เลขถังรถ"}
 	for _, k := range keys {
 		if v, ok := kv[k]; ok {
 			return strings.TrimSpace(v)
-		}
-	}
-	// Fallback: scan for possible VIN-like values (alphanumeric length >= 8)
-	for _, v := range kv {
-		vv := strings.TrimSpace(v)
-		if len(vv) >= 8 {
-			return vv
 		}
 	}
 	return ""

@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from "react";
 import { CarFormData } from "@/lib/ocrUtils";
-import { InspectionData } from "@/types/inspection";
+import { InspectionData } from "@/types/Car";
 import { mapInspectionDataToForm } from "@/lib/inspectionUtils";
 
 interface InspectionDataFormProps {

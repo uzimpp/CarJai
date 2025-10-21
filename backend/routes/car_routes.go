@@ -164,6 +164,12 @@ func handleCarRoutes(
 		return
 	}
 
+	// /api/cars/{id}/discard - Discard draft (authenticated; alias for delete)
+	if strings.HasSuffix(path, "/discard") {
+		authMiddleware.RequireAuth(handler.DiscardCar)(w, r)
+		return
+	}
+
 	// General car CRUD: /api/cars/{id}
 	idPart := strings.TrimPrefix(path, "/api/cars/")
 	if !strings.Contains(idPart, "/") || idPart == "" {

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, DragEvent } from "react";
-import { apiCall } from "@/lib/apiCall";
+import { apiCall } from "@/lib/ApiCall";
+import Image from "next/image";
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const MIN_IMAGES = 5;
@@ -363,11 +364,15 @@ export default function CarImageUploader({
                 </button>
 
                 {/* Image Preview */}
-                <img
-                  src={img.preview}
-                  alt={`Preview ${index + 1}`}
-                  className="w-full h-48 object-cover"
-                />
+                <div className="flex justify-center w-full">
+                  <Image
+                    src={img.preview}
+                    alt={`Preview ${index + 1}`}
+                    className="w-full object-contain"
+                    width={500}
+                    height={500}
+                  />
+                </div>
 
                 {/* File Info */}
                 <div className="p-2 bg-gray-50">

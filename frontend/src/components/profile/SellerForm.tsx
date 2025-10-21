@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { SellerRequest, SellerContactRequest } from "@/constants/user";
+import { SellerRequest, SellerContactRequest } from "@/types/user";
 
 interface SellerFormProps {
   initialData?: SellerRequest;

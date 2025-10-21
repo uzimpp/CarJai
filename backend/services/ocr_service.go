@@ -50,6 +50,37 @@ type BookFields struct {
 	OwnerName          *string `json:"ownerName"`
 }
 
+// ToMap converts BookFields to a map for JSON response
+func (bf *BookFields) ToMap() map[string]interface{} {
+	m := make(map[string]interface{})
+	m["chassisNumber"] = bf.ChassisNumber
+	if bf.BrandName != nil {
+		m["brandName"] = *bf.BrandName
+	}
+	if bf.ModelName != nil {
+		m["modelName"] = *bf.ModelName
+	}
+	if bf.Year != nil {
+		m["year"] = *bf.Year
+	}
+	if bf.EngineCC != nil {
+		m["engineCc"] = *bf.EngineCC
+	}
+	if bf.Seats != nil {
+		m["seats"] = *bf.Seats
+	}
+	if bf.RegistrationNumber != "" {
+		m["registrationNumber"] = bf.RegistrationNumber
+	}
+	if bf.Province != nil {
+		m["province"] = *bf.Province
+	}
+	if bf.OwnerName != nil {
+		m["ownerName"] = *bf.OwnerName
+	}
+	return m
+}
+
 type OCRService struct {
 	apiKey string
 	client *http.Client

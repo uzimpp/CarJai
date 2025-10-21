@@ -1,15 +1,13 @@
--- Body types
+-- Body types (code as primary key for simplicity and consistency)
 CREATE TABLE body_types (
-    id SERIAL PRIMARY KEY,
-    code VARCHAR(20) NOT NULL UNIQUE, -- e.g., PICKUP, SUV, CITYCAR, etc.
+    code VARCHAR(20) PRIMARY KEY, -- e.g., PICKUP, SUV, CITYCAR, etc.
     name_th VARCHAR(100) NOT NULL,
     name_en VARCHAR(100) NOT NULL
 );
 
--- Transmissions
+-- Transmissions (code as primary key)
 CREATE TABLE transmissions (
-    id SERIAL PRIMARY KEY,
-    code VARCHAR(10) NOT NULL UNIQUE, -- MANUAL, AT
+    code VARCHAR(10) PRIMARY KEY, -- MANUAL, AT
     name_th VARCHAR(100) NOT NULL,
     name_en VARCHAR(100) NOT NULL
 );
@@ -21,10 +19,9 @@ CREATE TABLE fuel_types (
     label_en VARCHAR(100) NOT NULL
 );
 
--- Drivetrains
+-- Drivetrains (code as primary key)
 CREATE TABLE drivetrains (
-    id SERIAL PRIMARY KEY,
-    code VARCHAR(10) NOT NULL UNIQUE, -- FWD, RWD, AWD, 4WD
+    code VARCHAR(10) PRIMARY KEY, -- FWD, RWD, AWD, 4WD
     name_th VARCHAR(100) NOT NULL,
     name_en VARCHAR(100) NOT NULL
 );
@@ -45,36 +42,24 @@ CREATE TABLE provinces (
     region_en VARCHAR(30)
 );
 
--- Suggested seeds
+-- Suggested seeds (simplified without id)
 INSERT INTO
     body_types (code, name_th, name_en)
-VALUES (
-        'PICKUP', --Pickup Truck
-        'กระบะ',
-        'Pickup'
-    ),
+VALUES ('PICKUP', 'กระบะ', 'Pickup'),
+    ('VAN', 'รถตู้', 'Van'),
     (
-        'VAN', -- Van
-        'รถตู้',
-        'Van'
-    ),
-    (
-        'CITYCAR', -- City Car
+        'CITYCAR',
         'รถเล็ก / รถในเมือง',
         'City Car'
     ),
     (
-        'DAILY', -- Sedan, Hatchback, etc.
+        'DAILY',
         'รถใช้งานประจำวัน',
         'Daily Use'
     ),
+    ('SUV', 'รถอเนกประสงค์', 'SUV'),
     (
-        'SUV', -- SUV, Crossover, , PPV
-        'รถอเนกประสงค์',
-        'SUV'
-    ),
-    (
-        'SPORTLUX', -- Coupe, Convertible, Sport, Luxury Sedan, Muscle Car, Super Car, etc.
+        'SPORTLUX',
         'รถสปอร์ต / หรู',
         'Sport / Luxury'
     );

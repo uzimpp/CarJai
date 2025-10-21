@@ -5,8 +5,10 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"time"
 
 	"github.com/uzimpp/CarJai/backend/models"
+	"github.com/uzimpp/CarJai/backend/utils"
 )
 
 const (
@@ -14,6 +16,16 @@ const (
 	MaxImagesPerCar = 12
 	MinImagesPerCar = 5 // Minimum 5 images required to publish
 )
+
+// ValidationError represents a validation error with a specific code
+type ValidationError struct {
+	Code    string
+	Message string
+}
+
+func (e *ValidationError) Error() string {
+	return e.Message
+}
 
 var AllowedImageTypes = map[string]bool{
 	"image/jpeg": true,
@@ -27,35 +39,29 @@ var AllowedImageTypes = map[string]bool{
 type CarService struct {
 	carRepo        *models.CarRepository
 	imageRepo      *models.CarImageRepository
-	detailsRepo    *models.CarDetailsRepository
 	inspectionRepo *models.InspectionRepository
 	colorRepo      *models.CarColorRepository
 	fuelRepo       *models.CarFuelRepository
-	profileRepo    *ProfileService
 }
 
 // NewCarService creates a new car service
 func NewCarService(
 	carRepo *models.CarRepository,
 	imageRepo *models.CarImageRepository,
-	detailsRepo *models.CarDetailsRepository,
 	inspectionRepo *models.InspectionRepository,
 	colorRepo *models.CarColorRepository,
 	fuelRepo *models.CarFuelRepository,
-	profileService *ProfileService,
 ) *CarService {
 	return &CarService{
 		carRepo:        carRepo,
 		imageRepo:      imageRepo,
-		detailsRepo:    detailsRepo,
 		inspectionRepo: inspectionRepo,
 		colorRepo:      colorRepo,
 		fuelRepo:       fuelRepo,
-		profileRepo:    profileService,
 	}
 }
 
-// CreateCar creates a new car listing (simplified for drafts)
+// CreateCar creates a new car listing (simplified for drafts; allows empty chassis for ephemeral drafts)
 func (s *CarService) CreateCar(sellerID int, req *models.CreateCarRequest) (*models.Car, error) {
 	// Set default status if not provided
 	status := "draft"
@@ -68,17 +74,23 @@ func (s *CarService) CreateCar(sellerID int, req *models.CreateCarRequest) (*mod
 		}
 	}
 
+	// Allow empty chassisNumber for initial ephemeral drafts (will be set on book upload)
+	chassisNumber := req.ChassisNumber
+	if chassisNumber == "" {
+		chassisNumber = fmt.Sprintf("DRAFT-%d-%d", sellerID, time.Now().Unix())
+	}
+
 	car := &models.Car{
 		SellerID:           sellerID,
-		ChassisNumber:      req.ChassisNumber,
+		ChassisNumber:      chassisNumber,
 		Year:               req.Year,
 		Mileage:            req.Mileage,
 		Price:              req.Price,
 		ProvinceID:         req.ProvinceID,
 		ConditionRating:    req.ConditionRating,
-		BodyTypeID:         req.BodyTypeID,
-		TransmissionID:     req.TransmissionID,
-		DrivetrainID:       req.DrivetrainID,
+		BodyTypeCode:       req.BodyTypeCode,
+		TransmissionCode:   req.TransmissionCode,
+		DrivetrainCode:     req.DrivetrainCode,
 		BrandName:          req.BrandName,
 		ModelName:          req.ModelName,
 		SubmodelName:       req.SubmodelName,
@@ -130,25 +142,25 @@ func (s *CarService) GetCarsBySellerIDWithImages(sellerID int) ([]models.CarList
 
 		// Combine everything into a flat listing structure
 		listing := models.CarListingWithImages{
-			ID:              car.ID,
-			SellerID:        car.SellerID,
-			Year:            car.Year,
-			Mileage:         car.Mileage,
-			Price:           car.Price,
-			ProvinceID:      car.ProvinceID,
-			ConditionRating: car.ConditionRating,
-			BodyTypeID:      car.BodyTypeID,
-			TransmissionID:  car.TransmissionID,
-			DrivetrainID:    car.DrivetrainID,
-			Seats:           car.Seats,
-			Doors:           car.Doors,
-			BrandName:       car.BrandName,
-			ModelName:       car.ModelName,
-			SubmodelName:    car.SubmodelName,
-			Status:          car.Status,
-			CreatedAt:       car.CreatedAt,
-			UpdatedAt:       car.UpdatedAt,
-			Images:          images,
+			ID:               car.ID,
+			SellerID:         car.SellerID,
+			Year:             car.Year,
+			Mileage:          car.Mileage,
+			Price:            car.Price,
+			ProvinceID:       car.ProvinceID,
+			ConditionRating:  car.ConditionRating,
+			BodyTypeCode:     car.BodyTypeCode,
+			TransmissionCode: car.TransmissionCode,
+			DrivetrainCode:   car.DrivetrainCode,
+			Seats:            car.Seats,
+			Doors:            car.Doors,
+			BrandName:        car.BrandName,
+			ModelName:        car.ModelName,
+			SubmodelName:     car.SubmodelName,
+			Status:           car.Status,
+			CreatedAt:        car.CreatedAt,
+			UpdatedAt:        car.UpdatedAt,
+			Images:           images,
 		}
 
 		listings = append(listings, listing)
@@ -203,25 +215,25 @@ func (s *CarService) SearchActiveCarsWithImages(req *models.SearchCarsRequest) (
 
 		// Combine everything into a flat listing structure
 		listing := models.CarListingWithImages{
-			ID:              car.ID,
-			SellerID:        car.SellerID,
-			Year:            car.Year,
-			Mileage:         car.Mileage,
-			Price:           car.Price,
-			ProvinceID:      car.ProvinceID,
-			ConditionRating: car.ConditionRating,
-			BodyTypeID:      car.BodyTypeID,
-			TransmissionID:  car.TransmissionID,
-			DrivetrainID:    car.DrivetrainID,
-			Seats:           car.Seats,
-			Doors:           car.Doors,
-			BrandName:       car.BrandName,
-			ModelName:       car.ModelName,
-			SubmodelName:    car.SubmodelName,
-			Status:          car.Status,
-			CreatedAt:       car.CreatedAt,
-			UpdatedAt:       car.UpdatedAt,
-			Images:          images,
+			ID:               car.ID,
+			SellerID:         car.SellerID,
+			Year:             car.Year,
+			Mileage:          car.Mileage,
+			Price:            car.Price,
+			ProvinceID:       car.ProvinceID,
+			ConditionRating:  car.ConditionRating,
+			BodyTypeCode:     car.BodyTypeCode,
+			TransmissionCode: car.TransmissionCode,
+			DrivetrainCode:   car.DrivetrainCode,
+			Seats:            car.Seats,
+			Doors:            car.Doors,
+			BrandName:        car.BrandName,
+			ModelName:        car.ModelName,
+			SubmodelName:     car.SubmodelName,
+			Status:           car.Status,
+			CreatedAt:        car.CreatedAt,
+			UpdatedAt:        car.UpdatedAt,
+			Images:           images,
 		}
 
 		listings = append(listings, listing)
@@ -294,6 +306,12 @@ func (s *CarService) AutoSaveDraft(carID, userID int, req *models.UpdateCarReque
 		return fmt.Errorf("cannot modify chassis number via draft endpoint")
 	}
 
+	// Map text fields to IDs if provided
+	if err := s.mapTextFieldsToIDs(req, car); err != nil {
+		// Log error but don't fail - autosave is lenient
+		// In production, you might want to return issues in stepStatus
+	}
+
 	// Validate step-2 access (still enforce document upload requirement)
 	if err := s.validateStep2Access(car, req); err != nil {
 		return err
@@ -307,52 +325,57 @@ func (s *CarService) AutoSaveDraft(carID, userID int, req *models.UpdateCarReque
 	// Apply updates to car basic fields
 	s.applyCarUpdates(car, req)
 
-	// Replace fuels if provided
+	// Replace fuels if provided (from either FuelCodes or FuelLabels)
 	if req.FuelCodes != nil {
 		if err := s.fuelRepo.SetCarFuels(carID, req.FuelCodes); err != nil {
 			return err
 		}
-	}
-
-	// Upsert book details if provided
-	if req.BookDetails != nil {
-		details, err := s.detailsRepo.GetCarDetailsByCarID(carID)
-		if err != nil {
-			return err
-		}
-		if details == nil {
-			details = &models.CarDetails{CarID: carID}
-		}
-		if req.BookDetails.BrandName != nil {
-			details.BrandName = req.BookDetails.BrandName
-			car.BrandName = req.BookDetails.BrandName
-		}
-		if req.BookDetails.ModelName != nil {
-			details.ModelName = req.BookDetails.ModelName
-			car.ModelName = req.BookDetails.ModelName
-		}
-		if req.BookDetails.RegistrationNumber != nil {
-			details.RegistrationNumber = req.BookDetails.RegistrationNumber
-		}
-		if req.BookDetails.EngineNumber != nil {
-			details.EngineNumber = req.BookDetails.EngineNumber
-		}
-		if req.BookDetails.VehicleType != nil {
-			details.VehicleType = req.BookDetails.VehicleType
-		}
-
-		if details.CDID == 0 {
-			if err := s.detailsRepo.CreateCarDetails(details); err != nil {
-				return err
-			}
-		} else {
-			if err := s.detailsRepo.UpdateCarDetails(details); err != nil {
+	} else if req.FuelLabels != nil {
+		// Map fuel labels to codes
+		codes, err := s.carRepo.LookupFuelCodesByLabels(req.FuelLabels)
+		if err == nil && len(codes) > 0 {
+			if err := s.fuelRepo.SetCarFuels(carID, codes); err != nil {
 				return err
 			}
 		}
 	}
 
 	return s.carRepo.UpdateCar(car)
+}
+
+// mapTextFieldsToIDs maps text field inputs to their corresponding code fields
+func (s *CarService) mapTextFieldsToIDs(req *models.UpdateCarRequest, car *models.Car) error {
+	// Map province name to ID (provinces still use IDs, not codes)
+	if req.ProvinceNameTh != nil && *req.ProvinceNameTh != "" {
+		if id, err := s.carRepo.LookupProvinceByName(*req.ProvinceNameTh); err == nil && id != nil {
+			req.ProvinceID = id
+		}
+	}
+
+	// Map body type name to code
+	if req.BodyTypeName != nil && *req.BodyTypeName != "" {
+		if code, err := s.carRepo.LookupBodyTypeByName(*req.BodyTypeName); err == nil && code != nil {
+			req.BodyTypeCode = code
+		}
+	}
+
+	// Map transmission name to code
+	if req.TransmissionName != nil && *req.TransmissionName != "" {
+		if code, err := s.carRepo.LookupTransmissionByName(*req.TransmissionName); err == nil && code != nil {
+			req.TransmissionCode = code
+		}
+	}
+
+	// Map drivetrain name to code
+	if req.DrivetrainName != nil && *req.DrivetrainName != "" {
+		if code, err := s.carRepo.LookupDrivetrainByName(*req.DrivetrainName); err == nil && code != nil {
+			req.DrivetrainCode = code
+		}
+	}
+
+	// Fuel labels are handled separately in AutoSaveDraft
+
+	return nil
 }
 
 // ComputeStep2Status evaluates readiness of Step 2 (specifications)
@@ -362,13 +385,13 @@ func (s *CarService) ComputeStep2Status(carID int) (bool, []string) {
 	if err != nil {
 		return false, []string{fmt.Sprintf("Failed to get car: %v", err)}
 	}
-	if car.BodyTypeID == nil {
+	if car.BodyTypeCode == nil || *car.BodyTypeCode == "" {
 		issues = append(issues, "Body type required")
 	}
-	if car.TransmissionID == nil {
+	if car.TransmissionCode == nil || *car.TransmissionCode == "" {
 		issues = append(issues, "Transmission required")
 	}
-	if car.DrivetrainID == nil {
+	if car.DrivetrainCode == nil || *car.DrivetrainCode == "" {
 		issues = append(issues, "Drivetrain required")
 	}
 	if car.ModelName == nil || *car.ModelName == "" {
@@ -438,7 +461,7 @@ func (s *CarService) validateStep2Access(car *models.Car, req *models.UpdateCarR
 	// Step-2 fields: body_type, transmission, drivetrain, model/submodel, mileage, year, price, description, condition_rating, seats/doors, flooded/damaged
 	if !canEditStep2 {
 		// Prevent editing step-2 fields if documents not uploaded
-		if req.BodyTypeID != nil || req.TransmissionID != nil || req.DrivetrainID != nil ||
+		if req.BodyTypeCode != nil || req.TransmissionCode != nil || req.DrivetrainCode != nil ||
 			req.ModelName != nil || req.SubmodelName != nil || req.Mileage != nil ||
 			req.Year != nil || req.Price != nil || req.Description != nil ||
 			req.ConditionRating != nil || req.Seats != nil || req.Doors != nil ||
@@ -474,14 +497,14 @@ func (s *CarService) applyCarUpdates(car *models.Car, req *models.UpdateCarReque
 	if req.ConditionRating != nil {
 		car.ConditionRating = req.ConditionRating
 	}
-	if req.BodyTypeID != nil {
-		car.BodyTypeID = req.BodyTypeID
+	if req.BodyTypeCode != nil {
+		car.BodyTypeCode = req.BodyTypeCode
 	}
-	if req.TransmissionID != nil {
-		car.TransmissionID = req.TransmissionID
+	if req.TransmissionCode != nil {
+		car.TransmissionCode = req.TransmissionCode
 	}
-	if req.DrivetrainID != nil {
-		car.DrivetrainID = req.DrivetrainID
+	if req.DrivetrainCode != nil {
+		car.DrivetrainCode = req.DrivetrainCode
 	}
 	if req.Seats != nil {
 		car.Seats = req.Seats
@@ -619,11 +642,6 @@ func (s *CarService) UploadCarImages(carID, userID int, files []*multipart.FileH
 	return uploadedImages, nil
 }
 
-// GetCarImagesMetadata retrieves all image metadata for a car
-func (s *CarService) GetCarImagesMetadata(carID int) ([]models.CarImageMetadata, error) {
-	return s.imageRepo.GetCarImagesMetadata(carID)
-}
-
 // GetCarImage retrieves a single image with data
 func (s *CarService) GetCarImage(imageID int) (*models.CarImage, error) {
 	return s.imageRepo.GetCarImageByID(imageID)
@@ -669,27 +687,7 @@ func (s *CarService) GetCarWithImages(carID int) (*models.CarWithImages, error) 
 	}, nil
 }
 
-// UpdateImageDisplayOrder updates the display order of an image
-func (s *CarService) UpdateImageDisplayOrder(imageID, displayOrder, userID int, isAdmin bool) error {
-	// Get the image to find the car
-	image, err := s.imageRepo.GetCarImageByID(imageID)
-	if err != nil {
-		return err
-	}
-
-	// Get the car to check ownership
-	car, err := s.carRepo.GetCarByID(image.CarID)
-	if err != nil {
-		return err
-	}
-
-	// Check authorization - only owner or admin can update
-	if !isAdmin && car.SellerID != userID {
-		return fmt.Errorf("unauthorized: you can only update your own car images")
-	}
-
-	return s.imageRepo.UpdateImageDisplayOrder(imageID, displayOrder)
-}
+// (Removed unused UpdateImageDisplayOrder; bulk reorder endpoint is used instead)
 
 // ReorderImagesBulk reorders all images for a car in one transaction
 func (s *CarService) ReorderImagesBulk(carID int, imageIDs []int, userID int, isAdmin bool) error {
@@ -778,13 +776,13 @@ func (s *CarService) ValidatePublish(carID int) (bool, []string) {
 	}
 
 	// Step 2: Check vehicle specifications
-	if car.BodyTypeID == nil {
+	if car.BodyTypeCode == nil || *car.BodyTypeCode == "" {
 		issues = append(issues, "Body type is required")
 	}
-	if car.TransmissionID == nil {
+	if car.TransmissionCode == nil || *car.TransmissionCode == "" {
 		issues = append(issues, "Transmission is required")
 	}
-	if car.DrivetrainID == nil {
+	if car.DrivetrainCode == nil || *car.DrivetrainCode == "" {
 		issues = append(issues, "Drivetrain is required")
 	}
 	if car.ModelName == nil || *car.ModelName == "" {
@@ -886,28 +884,43 @@ func (s *CarService) CreateCarFromBook(sellerID int, bookFields *BookFields) (*m
 	return car, nil
 }
 
+// InspectionAttachResult contains the result of attaching inspection data
+type InspectionAttachResult struct {
+	ChassisMatch      bool
+	BookChassis       string
+	InspectionChassis string
+}
+
 // AttachInspection attaches inspection data to a car and validates chassis match
-func (s *CarService) AttachInspection(carID int, sellerID int, inspectionData map[string]string, scraperService *ScraperService) error {
+func (s *CarService) AttachInspection(carID int, sellerID int, inspectionData map[string]string, scraperService *ScraperService) (*InspectionAttachResult, error) {
 	// Get the car to check ownership and chassis
 	car, err := s.carRepo.GetCarByID(carID)
 	if err != nil {
-		return fmt.Errorf("failed to get car: %w", err)
+		return nil, fmt.Errorf("failed to get car: %w", err)
 	}
 
 	// Check ownership
 	if car.SellerID != sellerID {
-		return fmt.Errorf("unauthorized: you can only attach inspection to your own cars")
+		return nil, fmt.Errorf("unauthorized: you can only attach inspection to your own cars")
+	}
+
+	// Check if book has been uploaded
+	if !car.BookUploaded {
+		return nil, &ValidationError{Code: "BOOK_REQUIRED", Message: "Vehicle registration book must be uploaded before inspection"}
 	}
 
 	// Extract chassis from inspection data (requires helper in scraperService or a known key)
 	inspectionChassis := scraperService.ExtractChassisFromInspection(inspectionData)
 	if inspectionChassis == "" {
-		return fmt.Errorf("chassis number not found in inspection document")
+		return nil, fmt.Errorf("chassis number not found in inspection document")
 	}
-	// Validate chassis match
-	if inspectionChassis != car.ChassisNumber {
-		return fmt.Errorf("chassis number mismatch: registration book has '%s' but inspection has '%s'", car.ChassisNumber, inspectionChassis)
-	}
+
+	// Normalize both chassis numbers for comparison
+	normalizedBookChassis := utils.NormalizeChassis(car.ChassisNumber)
+	normalizedInspectionChassis := utils.NormalizeChassis(inspectionChassis)
+
+	// Check if they match
+	chassisMatch := normalizedBookChassis == normalizedInspectionChassis
 
 	// Create inspection result (storing minimal data for now)
 	inspection := &models.InspectionResult{
@@ -919,7 +932,7 @@ func (s *CarService) AttachInspection(carID int, sellerID int, inspectionData ma
 
 	err = s.inspectionRepo.CreateInspectionResult(inspection)
 	if err != nil {
-		return fmt.Errorf("failed to create inspection: %w", err)
+		return nil, fmt.Errorf("failed to create inspection: %w", err)
 	}
 
 	// Derive colors from inspectionData (if present) and save ordered 1–3
@@ -931,7 +944,7 @@ func (s *CarService) AttachInspection(carID int, sellerID int, inspectionData ma
 		// NOTE: We keep this resilient; absence of colors is allowed but will block publish
 		if ids, err := s.colorRepo.LookupColorIDsByLabels(colorLabels); err == nil && len(ids) > 0 {
 			if err := s.colorRepo.SetCarColors(carID, ids); err != nil {
-				return fmt.Errorf("failed to set colors: %w", err)
+				return nil, fmt.Errorf("failed to set colors: %w", err)
 			}
 		}
 	}
@@ -940,8 +953,13 @@ func (s *CarService) AttachInspection(carID int, sellerID int, inspectionData ma
 	inspectionUploaded := true
 	updateReq := &models.UpdateCarRequest{InspectionUploaded: &inspectionUploaded}
 	if err := s.UpdateCar(carID, sellerID, updateReq, false); err != nil {
-		return fmt.Errorf("failed to update car: %w", err)
+		return nil, fmt.Errorf("failed to update car: %w", err)
 	}
 
-	return nil
+	// Return the result with chassis match status
+	return &InspectionAttachResult{
+		ChassisMatch:      chassisMatch,
+		BookChassis:       normalizedBookChassis,
+		InspectionChassis: normalizedInspectionChassis,
+	}, nil
 }
