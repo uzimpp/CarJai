@@ -380,20 +380,26 @@ func (s *CarService) UploadInspectionToDraft(carID int, sellerID int, inspection
 		return nil, "", nil, "", fmt.Errorf("failed to create inspection: %w", err)
 	}
 
-
 	currentCar.Mileage = inspectionFields.Mileage
 	currentCar.ChassisNumber = &normalizedChassis
 	// Update license plate if available (prefix, number, province)
-	currentCar.Prefix = &inspectionFields.LicensePlate.Prefix
-	currentCar.Number = &inspectionFields.LicensePlate.Number
-	provinceID := utils.TranslateProvinceToID(inspectionFields.LicensePlate.ProvinceTh)
-	if provinceID > 0 {
-		currentCar.ProvinceID = &provinceID
+	if inspectionFields.LicensePlate != nil {
+		currentCar.Prefix = &inspectionFields.LicensePlate.Prefix
+		currentCar.Number = &inspectionFields.LicensePlate.Number
+		provinceID := utils.TranslateProvinceToID(inspectionFields.LicensePlate.ProvinceTh)
+		if provinceID > 0 {
+			currentCar.ProvinceID = &provinceID
+		}
 	}
 
 	// Update colors if available (up to 3 ordered colors)
 	if err := s.colorRepo.SetCarColors(carID, inspectionFields.Colors); err != nil {
 		return nil, "", nil, "", fmt.Errorf("failed to set colors: %w", err)
+	}
+
+	// Persist authoritative fields to database
+	if err := s.carRepo.UpdateCar(currentCar); err != nil {
+		return nil, "", nil, "", fmt.Errorf("failed to save inspection fields: %w", err)
 	}
 
 	// Return the result with match status
@@ -445,4 +451,3 @@ func (inspFields *InspectionFields) ToMap() map[string]interface{} {
 	result["wiperResult"] = utils.DisplayBool(*inspFields.WiperResult)
 	return result
 }
-

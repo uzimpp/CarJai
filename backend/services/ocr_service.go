@@ -212,6 +212,11 @@ func (s *CarService) UploadBookToDraft(carID int, sellerID int, bookFields *Book
 	currentCar.EngineCC = bookFields.EngineCC // Already rounded in OCR service
 	currentCar.Seats = bookFields.Seats
 
+	// Persist helper fields to database
+	if err := s.carRepo.UpdateCar(currentCar); err != nil {
+		return nil, "", nil, "", fmt.Errorf("failed to save OCR fields: %w", err)
+	}
+
 	return currentCar, "stay", nil, "", nil
 }
 
