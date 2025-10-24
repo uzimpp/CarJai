@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, usePathname } from "next/navigation";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import { carsAPI } from "@/lib/carsAPI";
 import { debounce } from "@/utils/debounce";
@@ -15,12 +15,15 @@ import type { Step } from "@/types/Selling";
 export default function SellWithIdPage() {
   const router = useRouter();
   const params = useParams();
+  const pathname = usePathname();
   const carId = parseInt(params.id as string);
   const { isAuthenticated, isLoading, roles, profiles } = useUserAuth();
 
   // Progress tracking
   const [hasProgress, setHasProgress] = useState(false);
   const hasProgressRef = useRef(false);
+  const initializedPathRef = useRef(false);
+  const suppressAutoDiscardRef = useRef(false);
 
   // Step management
   const [currentStep, setCurrentStep] = useState<Step>("documents");
@@ -47,6 +50,35 @@ export default function SellWithIdPage() {
     hasProgressRef.current = hasProgress;
   }, [hasProgress]);
 
+  // Validate car exists on mount
+  useEffect(() => {
+    const validateCarExists = async () => {
+      if (!carId || isNaN(carId)) {
+        setError("Invalid car ID");
+        suppressAutoDiscardRef.current = true; // Don't discard invalid IDs
+        router.push("/sell");
+        return;
+      }
+
+      try {
+        const result = await carsAPI.getById(carId);
+        if (!result.success) {
+          setError("Car not found. Please start a new draft.");
+          suppressAutoDiscardRef.current = true; // Don't discard non-existent cars
+          setTimeout(() => router.push("/sell"), 2000);
+        }
+      } catch (err) {
+        setError("Car not found. Redirecting...");
+        suppressAutoDiscardRef.current = true; // Don't discard non-existent cars
+        setTimeout(() => router.push("/sell"), 2000);
+      }
+    };
+
+    if (!isLoading && isAuthenticated) {
+      validateCarExists();
+    }
+  }, [carId, isAuthenticated, isLoading, router]);
+
   // Auth guard - redirect if not seller
   useEffect(() => {
     if (!isLoading) {
@@ -65,11 +97,19 @@ export default function SellWithIdPage() {
     }
   }, [isAuthenticated, isLoading, roles, profiles, router]);
 
-  // Auto-discard on leave if no progress
+  // Auto-discard on real page leave (not React remount) if no progress
   useEffect(() => {
+    const shouldDiscard = () => {
+      return (
+        !hasProgressRef.current &&
+        carId &&
+        !isNaN(carId) &&
+        !suppressAutoDiscardRef.current
+      );
+    };
+
     const handleBeforeUnload = () => {
-      if (!hasProgressRef.current && carId) {
-        // Use sendBeacon for background request
+      if (shouldDiscard()) {
         const blob = new Blob([JSON.stringify({})], {
           type: "application/json",
         });
@@ -80,23 +120,66 @@ export default function SellWithIdPage() {
       }
     };
 
-    const handleRouteChange = () => {
-      if (!hasProgressRef.current && carId) {
-        // Sync request on route change
-        carsAPI.discardDraft(carId).catch(() => {
-          // Ignore errors - cleanup will handle it
+    const handlePageHide = () => {
+      if (shouldDiscard()) {
+        const blob = new Blob([JSON.stringify({})], {
+          type: "application/json",
         });
+        navigator.sendBeacon(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/cars/${carId}/discard`,
+          blob
+        );
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden" && shouldDiscard()) {
+        const blob = new Blob([JSON.stringify({})], {
+          type: "application/json",
+        });
+        navigator.sendBeacon(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/cars/${carId}/discard`,
+          blob
+        );
       }
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);
-    // Note: Next.js router events would go here for SPA navigation
+    window.addEventListener("pagehide", handlePageHide);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
-      handleRouteChange();
+      window.removeEventListener("pagehide", handlePageHide);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      // IMPORTANT: No discard here - cleanup runs on every React remount in dev
     };
   }, [carId]);
+
+  // Auto-discard when navigating away from this draft page (client-side routing)
+  useEffect(() => {
+    // Skip on first mount to avoid false positive from Strict Mode
+    if (!initializedPathRef.current) {
+      initializedPathRef.current = true;
+      return;
+    }
+
+    // Check if we're still on this draft's page
+    const stillOnThisDraft = pathname && pathname.startsWith(`/sell/${carId}`);
+
+    // If navigating away and no progress, discard
+    if (
+      !stillOnThisDraft &&
+      carId &&
+      !isNaN(carId) &&
+      !hasProgressRef.current &&
+      !suppressAutoDiscardRef.current
+    ) {
+      carsAPI.discardDraft(carId).catch(() => {
+        // Ignore errors - backend cleanup will handle orphans
+      });
+    }
+  }, [pathname, carId]);
 
   // Handle book upload (Step 1)
   const handleBookUpload = async (file: File) => {
@@ -237,6 +320,7 @@ export default function SellWithIdPage() {
 
     setError("");
     setIsSubmitting(true);
+    suppressAutoDiscardRef.current = true; // Don't auto-discard on successful publish
 
     try {
       const result = await carsAPI.updateStatus(carId, "active");
@@ -249,9 +333,11 @@ export default function SellWithIdPage() {
         }, 2000);
       } else {
         setError(result.message || "Failed to publish");
+        suppressAutoDiscardRef.current = false; // Re-enable on failure
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Publish failed");
+      suppressAutoDiscardRef.current = false; // Re-enable on error
     } finally {
       setIsSubmitting(false);
     }
@@ -269,6 +355,7 @@ export default function SellWithIdPage() {
 
     setError("");
     setIsSubmitting(true);
+    suppressAutoDiscardRef.current = true; // Prevent auto-discard during redirect
 
     try {
       await carsAPI.discardDraft(carId);
@@ -276,6 +363,7 @@ export default function SellWithIdPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to discard");
       setIsSubmitting(false);
+      suppressAutoDiscardRef.current = false; // Re-enable auto-discard on error
     }
   };
 

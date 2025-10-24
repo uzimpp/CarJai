@@ -64,9 +64,11 @@ export interface InspectionData {
 // Form data type with text fields for user input (frontend → backend)
 export interface CarFormData {
   // Text fields for user input
+  colors?: string[];
   prefix?: string;
   number?: string;
-  provinceNameTh?: string;
+  provinceTh?: string;
+  licensePlate?: string;
   bodyTypeName?: string;
   transmissionName?: string;
   drivetrainName?: string;

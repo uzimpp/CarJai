@@ -9,7 +9,7 @@ CREATE TABLE cars (
     brand_name VARCHAR(100), -- Book Uploaded
     model_name VARCHAR(100), -- Must Enter by Seller (e.g., Civic, Corolla, D-Max)
     submodel_name VARCHAR(100), -- Must Enter by Seller (e.g., EL, Sport, Hi-Lander)
-    chassis_number VARCHAR(30) UNIQUE NOT NULL, -- VIN (Vehicle Identification Number) เลขถังรถ,เลขตัวรถ
+    chassis_number VARCHAR(30), -- VIN (Vehicle Identification Number) เลขถังรถ,เลขตัวรถ
     year INTEGER, -- Book Uploaded
     mileage INTEGER, -- Must Enter by Seller
     engine_cc INTEGER, -- Book Uploaded
@@ -33,10 +33,15 @@ CREATE TABLE cars (
     price INTEGER, -- Nullable for drafts; required at publish
     is_flooded BOOLEAN DEFAULT FALSE, -- Must Enter by Seller
     is_heavily_damaged BOOLEAN DEFAULT FALSE, -- Must Enter by Seller
-    book_uploaded BOOLEAN DEFAULT FALSE,
-    inspection_uploaded BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
+    updated_at TIMESTAMP DEFAULT NOW(),
+    CONSTRAINT check_chassis_for_active CHECK (
+        status = 'draft'
+        OR (
+            status IN ('active', 'sold', 'deleted')
+            AND chassis_number IS NOT NULL
+        )
+    )
 );
 
 -- Car colors (many-to-many with position for ordered colors)
@@ -106,6 +111,10 @@ CREATE TABLE car_inspection_results (
 CREATE INDEX idx_cars_seller_id ON cars (seller_id);
 
 CREATE INDEX idx_cars_status ON cars (status);
+
+CREATE UNIQUE INDEX idx_cars_chassis_unique ON cars (chassis_number)
+WHERE
+    chassis_number IS NOT NULL;
 
 CREATE INDEX idx_cars_price ON cars (price);
 

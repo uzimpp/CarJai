@@ -5,6 +5,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/uzimpp/CarJai/backend/models"
@@ -251,6 +252,11 @@ func (s *CarService) UpdateCar(carID, userID int, req *models.UpdateCarRequest, 
 		}
 	}
 
+	// Prevent changing chassis number via general update
+	if req.ChassisNumber != nil {
+		return fmt.Errorf("cannot modify chassis number via update endpoint")
+	}
+
 	// Validate mileage is non-decreasing
 	if err := s.validateMileage(car, req.Mileage); err != nil {
 		return err
@@ -278,12 +284,6 @@ func (s *CarService) AutoSaveDraft(carID, userID int, req *models.UpdateCarReque
 	// Forbid editing read-only fields (colors come from inspection; status via dedicated endpoint)
 	if req.Status != nil {
 		return fmt.Errorf("cannot change status via draft endpoint; use PUT /api/cars/{id}/status instead")
-	}
-	if req.InspectionUploaded != nil {
-		return fmt.Errorf("cannot modify inspection_uploaded flag via draft endpoint")
-	}
-	if req.BookUploaded != nil {
-		return fmt.Errorf("cannot modify book_uploaded flag via draft endpoint")
 	}
 	if req.ChassisNumber != nil {
 		return fmt.Errorf("cannot modify chassis number via draft endpoint")
@@ -439,18 +439,14 @@ func (s *CarService) checkCarOwnership(car *models.Car, userID int, isAdmin bool
 
 // validateStep2Access checks if step-2 fields can be edited
 func (s *CarService) validateStep2Access(car *models.Car, req *models.UpdateCarRequest) error {
-	canEditStep2 := s.CanEditStep2(car)
-
 	// Step-2 fields: body_type, transmission, drivetrain, model/submodel, mileage, year, price, description, condition_rating, seats/doors, flooded/damaged
-	if !canEditStep2 {
-		// Prevent editing step-2 fields if documents not uploaded
-		if req.BodyTypeCode != nil || req.TransmissionCode != nil || req.DrivetrainCode != nil ||
-			req.ModelName != nil || req.SubmodelName != nil || req.Mileage != nil ||
-			req.Year != nil || req.Price != nil || req.Description != nil ||
-			req.ConditionRating != nil || req.Seats != nil || req.Doors != nil ||
-			req.IsFlooded != nil || req.IsHeavilyDamaged != nil {
-			return fmt.Errorf("cannot edit car details until both vehicle book and inspection are uploaded")
-		}
+	// Prevent editing step-2 fields if documents not uploaded
+	if req.BodyTypeCode != nil || req.TransmissionCode != nil || req.DrivetrainCode != nil ||
+		req.ModelName != nil || req.SubmodelName != nil || req.Mileage != nil ||
+		req.Year != nil || req.Price != nil || req.Description != nil ||
+		req.ConditionRating != nil || req.Seats != nil || req.Doors != nil ||
+		req.IsFlooded != nil || req.IsHeavilyDamaged != nil {
+		return fmt.Errorf("cannot edit car details until both vehicle book and inspection are uploaded")
 	}
 	return nil
 }
@@ -518,12 +514,6 @@ func (s *CarService) applyCarUpdates(car *models.Car, req *models.UpdateCarReque
 	}
 	if req.Status != nil {
 		car.Status = *req.Status
-	}
-	if req.BookUploaded != nil {
-		car.BookUploaded = *req.BookUploaded
-	}
-	if req.InspectionUploaded != nil {
-		car.InspectionUploaded = *req.InspectionUploaded
 	}
 }
 
@@ -628,6 +618,62 @@ func (s *CarService) UploadCarImages(carID, userID int, files []*multipart.FileH
 // GetCarImage retrieves a single image with data
 func (s *CarService) GetCarImage(imageID int) (*models.CarImage, error) {
 	return s.imageRepo.GetCarImageByID(imageID)
+}
+
+// hasNonEmptyString returns true if the pointer is non-nil and trimmed value is not empty
+func hasNonEmptyString(p *string) bool {
+	return p != nil && strings.TrimSpace(*p) != ""
+}
+
+// hasPositiveInt returns true if the pointer is non-nil and > 0
+func hasPositiveInt(p *int) bool {
+	return p != nil && *p > 0
+}
+
+// hasProgress determines whether a draft has meaningful progress
+// Used to decide whether a draft is ephemeral when resolving duplicates
+func (s *CarService) hasProgress(car *models.Car) bool {
+	if car == nil {
+		return false
+	}
+
+	// Textual/spec fields
+	if hasNonEmptyString(car.BrandName) || hasNonEmptyString(car.ModelName) || hasNonEmptyString(car.SubmodelName) ||
+		hasNonEmptyString(car.Description) || hasNonEmptyString(car.BodyTypeCode) || hasNonEmptyString(car.TransmissionCode) ||
+		hasNonEmptyString(car.DrivetrainCode) {
+		return true
+	}
+
+	// Numeric fields
+	if hasPositiveInt(car.Year) || hasPositiveInt(car.Mileage) || hasPositiveInt(car.EngineCC) || hasPositiveInt(car.Seats) ||
+		hasPositiveInt(car.Doors) || hasPositiveInt(car.Price) || hasPositiveInt(car.ConditionRating) {
+		return true
+	}
+
+	// Province selection
+	if car.ProvinceID != nil {
+		return true
+	}
+
+	// Any uploaded images
+	if cnt, err := s.imageRepo.CountCarImages(car.ID); err == nil && cnt > 0 {
+		return true
+	}
+
+	// Any fuels/colors selected
+	if codes, err := s.fuelRepo.GetCarFuels(car.ID); err == nil && len(codes) > 0 {
+		return true
+	}
+	if colors, err := s.colorRepo.GetCarColors(car.ID); err == nil && len(colors) > 0 {
+		return true
+	}
+
+	// Any inspection exists
+	if insp, _ := s.inspectionRepo.GetInspectionByCarID(car.ID); insp != nil {
+		return true
+	}
+
+	return false
 }
 
 // DeleteCarImage deletes a single image
@@ -751,11 +797,8 @@ func (s *CarService) ValidatePublish(carID int) (bool, []string) {
 	}
 
 	// Step 1: Check document uploads
-	if !car.BookUploaded {
-		issues = append(issues, "Vehicle registration book must be uploaded")
-	}
-	if !car.InspectionUploaded {
-		issues = append(issues, "Vehicle inspection document must be uploaded")
+	if car.ChassisNumber == nil || *car.ChassisNumber == "" {
+		issues = append(issues, "Chassis number is required (upload vehicle registration book)")
 	}
 
 	// Step 2: Check vehicle specifications
@@ -832,18 +875,14 @@ func (s *CarService) ValidatePublish(carID int) (bool, []string) {
 	return len(issues) == 0, issues
 }
 
-// CanEditStep2 checks if step 2 fields can be edited (both documents must be uploaded)
-func (s *CarService) CanEditStep2(car *models.Car) bool {
-	return car.BookUploaded && car.InspectionUploaded
-}
-
 // GetColorLabelsByCodes retrieves display labels for color codes
 func (s *CarService) GetColorLabelsByCodes(codes []string, lang string) ([]string, error) {
-    if lang == "" {
-        lang = "en"
-    }
-    return s.colorRepo.LookupColorLabelsByCodes(codes, lang)
+	if lang == "" {
+		lang = "en"
+	}
+	return s.colorRepo.LookupColorLabelsByCodes(codes, lang)
 }
+
 type TranslatedCarDisplay struct {
 	// Core fields (unchanged)
 	ID        int       `json:"id"`
@@ -868,7 +907,7 @@ type TranslatedCarDisplay struct {
 	ModelName          *string `json:"modelName"`
 	SubmodelName       *string `json:"submodelName"`
 	Description        *string `json:"description"`
-	ChassisNumber      string  `json:"chassisNumber"`
+	ChassisNumber      *string `json:"chassisNumber"`
 	LicensePlate       string  `json:"licensePlate"` // Constructed: "กข 5177 กรุงเทพมหานคร"
 	Seats              *int    `json:"seats"`
 	Doors              *int    `json:"doors"`
@@ -890,27 +929,25 @@ func (s *CarService) TranslateCarForDisplay(car *models.Car, lang string) (*Tran
 
 	display := &TranslatedCarDisplay{
 		// Copy unchanged fields
-		ID:                 car.ID,
-		SellerID:           car.SellerID,
-		Year:               car.Year,
-		Mileage:            car.Mileage,
-		Price:              car.Price,
-		Status:             car.Status,
-		CreatedAt:          car.CreatedAt,
-		UpdatedAt:          car.UpdatedAt,
-		BrandName:          car.BrandName,
-		ModelName:          car.ModelName,
-		SubmodelName:       car.SubmodelName,
-		Description:        car.Description,
-		ChassisNumber:      car.ChassisNumber,
-		Seats:              car.Seats,
-		Doors:              car.Doors,
-		EngineCC:           car.EngineCC,
-		ConditionRating:    car.ConditionRating,
-		IsFlooded:          car.IsFlooded,
-		IsHeavilyDamaged:   car.IsHeavilyDamaged,
-		BookUploaded:       car.BookUploaded,
-		InspectionUploaded: car.InspectionUploaded,
+		ID:               car.ID,
+		SellerID:         car.SellerID,
+		Year:             car.Year,
+		Mileage:          car.Mileage,
+		Price:            car.Price,
+		Status:           car.Status,
+		CreatedAt:        car.CreatedAt,
+		UpdatedAt:        car.UpdatedAt,
+		BrandName:        car.BrandName,
+		ModelName:        car.ModelName,
+		SubmodelName:     car.SubmodelName,
+		Description:      car.Description,
+		ChassisNumber:    car.ChassisNumber,
+		Seats:            car.Seats,
+		Doors:            car.Doors,
+		EngineCC:         car.EngineCC,
+		ConditionRating:  car.ConditionRating,
+		IsFlooded:        car.IsFlooded,
+		IsHeavilyDamaged: car.IsHeavilyDamaged,
 	}
 
 	// Construct license plate for display (combine prefix + number + province name)

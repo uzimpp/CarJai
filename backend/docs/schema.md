@@ -111,8 +111,6 @@ erDiagram
         int price "ราคา (THB, not null)"
         boolean is_flooded "เคยน้ำท่วม"
         boolean is_heavily_damaged "ความเสียหายหนัก"
-        boolean book_uploaded "อัปโหลดเล่มแล้ว"
-        boolean inspection_uploaded "อัปโหลดใบตรวจแล้ว"
         varchar status "draft/active/sold/deleted - default: 'draft'"
         int condition_rating "คะแนนสภาพ 1-5"
         timestamp created_at "default: now()"

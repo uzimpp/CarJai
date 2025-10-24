@@ -32,16 +32,19 @@ export default function Step1DocumentsForm({
   const [error, setError] = useState("");
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
 
-  // Check if chassis numbers match
-  const chassisNumbersMatch =
-    bookData?.chassisNumber &&
-    inspectionData?.chassisNumber &&
-    bookData.chassisNumber === inspectionData.chassisNumber;
+  // Inspection is authoritative for chassis and license plate
+  const inspectionAuthoritative = Boolean(inspectionData?.chassisNumber);
 
+  // Continue condition: if inspection exists -> allow; else require both documents matching
+  const bothDocumentsUploaded =
+    Boolean(bookData?.chassisNumber) && Boolean(inspectionData?.chassisNumber);
+  const chassisNumbersMatch = inspectionAuthoritative
+    ? true
+    : Boolean(bookData?.chassisNumber) &&
+      bookData?.chassisNumber === inspectionData?.chassisNumber;
   const canContinue =
-    bookData !== null &&
-    inspectionData !== null &&
-    chassisNumbersMatch &&
+    (inspectionAuthoritative ||
+      (bothDocumentsUploaded && chassisNumbersMatch)) &&
     !isSubmitting;
 
   const handleBookFileChange = async (
@@ -119,7 +122,7 @@ export default function Step1DocumentsForm({
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Inspection Report (QR image)
+                Inspection Report
               </label>
               <QrCodeUploader onScanComplete={handleQrScanComplete} />
             </div>
@@ -162,6 +165,7 @@ export default function Step1DocumentsForm({
                   onBookDataChange({ brandName: e.target.value })
                 }
                 placeholder="e.g., Toyota"
+                required
               />
               <TextField
                 label="Model Name"
@@ -179,6 +183,7 @@ export default function Step1DocumentsForm({
                   onBookDataChange({ submodelName: e.target.value })
                 }
                 placeholder="e.g., RS, Hybrid, Sport"
+                required
               />
               <TextField
                 label="Year"
@@ -190,14 +195,21 @@ export default function Step1DocumentsForm({
                   })
                 }
                 placeholder="e.g., 2004"
+                required
+              />
+              <TextField
+                label="License Plate"
+                value={inspectionData?.licensePlate || ""}
+                onChange={() => {}}
+                placeholder="e.g., 3กบ2399"
+                disabled
               />
               <TextField
                 label="Chassis Number"
-                value={bookData?.chassisNumber || ""}
-                onChange={(e) =>
-                  onBookDataChange({ chassisNumber: e.target.value })
-                }
+                value={inspectionData?.chassisNumber || ""}
+                onChange={() => {}}
                 placeholder="e.g., MGRxxxxxxxxxxx"
+                disabled
               />
               <TextField
                 label="Engine CC"
@@ -209,6 +221,7 @@ export default function Step1DocumentsForm({
                   })
                 }
                 placeholder="e.g., 900"
+                required
               />
               <TextField
                 label="Seats"
@@ -220,6 +233,7 @@ export default function Step1DocumentsForm({
                   })
                 }
                 placeholder="e.g., 5"
+                required
               />
               <TextField
                 label="Doors"
@@ -231,11 +245,12 @@ export default function Step1DocumentsForm({
                   })
                 }
                 placeholder="e.g., 5"
+                required
               />
               <TextField
-                label="Mileage (km) *"
+                label="Mileage (km)"
                 type="number"
-                value={inspectionData?.mileage?.toString() || ""}
+                value={inspectionData?.mileage.toString() || ""}
                 onChange={(e) =>
                   onBookDataChange({
                     mileage: parseInt(e.target.value) || undefined,
@@ -243,7 +258,6 @@ export default function Step1DocumentsForm({
                 }
                 placeholder="e.g., 50000"
                 helper="This will be the most recent mileage value for your listing"
-                required
               />
               <TextField
                 label="Inspection Station"
@@ -370,8 +384,8 @@ export default function Step1DocumentsForm({
         </div>
       </FormSection>
 
-      {/* Chassis Number Validation */}
-      {bookData && inspectionData && (
+      {/* Chassis Number Validation (only when inspection not yet authoritative) */}
+      {bookData && inspectionData && !inspectionAuthoritative && (
         <div className="mt-4">
           {chassisNumbersMatch ? (
             <InlineAlert type="success">
@@ -384,14 +398,11 @@ export default function Step1DocumentsForm({
               <br />
               Book: {bookData?.chassisNumber || "(not found)"}
               <br />
-              Inspection: {inspectionData["เลขตัวถังรถ"] || "(not found)"}
+              Inspection: {inspectionData?.chassisNumber || "(not found)"}
             </InlineAlert>
           )}
         </div>
       )}
-
-      {/* Error Display */}
-      {error && <InlineAlert type="error">{error}</InlineAlert>}
 
       {/* Continue Button */}
       <div className="flex justify-end pt-6 border-t">

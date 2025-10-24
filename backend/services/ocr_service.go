@@ -207,65 +207,10 @@ func (s *CarService) UploadBookToDraft(carID int, sellerID int, bookFields *Book
 		return nil, "", nil, "", fmt.Errorf("can only upload book to draft cars")
 	}
 
-	// Normalize chassis number
-	normalizedChassis := utils.NormalizeChassis(bookFields.ChassisNumber)
-
-	// Look for existing cars with this chassis
-	existingCars, err := s.carRepo.FindCarsByChassisNumber(normalizedChassis)
-	if err != nil {
-		return nil, "", nil, "", fmt.Errorf("failed to check for duplicates: %w", err)
-	}
-
-	// Filter out the current car
-	var otherCars []models.Car
-	for _, car := range existingCars {
-		if car.ID != carID {
-			otherCars = append(otherCars, car)
-		}
-	}
-
-	// Check for conflicts
-	if len(otherCars) > 0 {
-		for _, car := range otherCars {
-			// Check status and ownership for specific error codes
-			if car.SellerID == sellerID {
-				// Same seller owns another car with this chassis
-				switch car.Status {
-				case "draft":
-					// Check if current car is ephemeral
-					if !car.BookUploaded && !car.InspectionUploaded {
-						// Delete current ephemeral draft and redirect to existing
-						if err := s.carRepo.DeleteCar(carID); err != nil {
-							return nil, "", nil, "", fmt.Errorf("failed to delete ephemeral draft: %w", err)
-						}
-						return &car, "redirect", &car.ID, ErrCodeCarDuplicateOwnDraftRedirect, nil
-					} else {
-						// Current car has progress, return conflict
-						return nil, "", &car.ID, ErrCodeCarMultipleDrafts, fmt.Errorf("you have an existing draft for this vehicle. Please finish or discard it first")
-					}
-				case "active":
-					return nil, "", nil, ErrCodeCarDuplicateOwnActive, fmt.Errorf("you already have an active listing for this vehicle")
-				case "sold":
-					return nil, "", nil, ErrCodeCarDuplicateOwnSold, fmt.Errorf("you have already sold this vehicle")
-				case "deleted":
-					return nil, "", nil, ErrCodeCarDuplicateOwnDeleted, fmt.Errorf("this vehicle was previously deleted from your listings")
-				}
-			} else {
-				// Different seller owns this chassis
-				if car.Status != "deleted" {
-					return nil, "", nil, ErrCodeCarDuplicateOtherOwned, fmt.Errorf("this vehicle is already listed by another seller")
-				}
-			}
-		}
-	}
-
-	// No conflicts, attach book to current draft
-	currentCar.ChassisNumber = normalizedChassis
 	currentCar.BrandName = bookFields.BrandName
 	currentCar.Year = bookFields.Year
 	currentCar.EngineCC = bookFields.EngineCC // Already rounded in OCR service
 	currentCar.Seats = bookFields.Seats
-	currentCar.BookUploaded = true
 
 	return currentCar, "stay", nil, "", nil
 }
