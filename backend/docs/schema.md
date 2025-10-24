@@ -76,8 +76,7 @@ erDiagram
     }
 
     colors {
-        int id PK ""
-        varchar code UK "RED, GRAY, BLUE, etc. (max 20)"
+        varchar code PK UK "RED, GRAY, BLUE, etc. (max 20)"
         varchar label_th "ชื่อไทย (max 100)"
         varchar label_en "ชื่ออังกฤษ (max 100)"
     }
@@ -122,7 +121,7 @@ erDiagram
 
     car_colors {
         int car_id PK "ref: cars.id ON DELETE CASCADE"
-        int color_id PK "ref: colors.id ON DELETE RESTRICT"
+        string color_code PK "ref: colors.code ON DELETE RESTRICT"
     }
 
     car_fuel {
@@ -143,7 +142,6 @@ erDiagram
     car_inspection_results {
         int id PK ""
         int car_id FK "ref: cars.id ON DELETE CASCADE"
-        timestamp inspected_at "เวลาตรวจ"
         varchar station "ศูนย์ตรวจ (max 200)"
         boolean overall_pass "ผ่านทั้งหมด"
         boolean brake_result "ผลเบรค"

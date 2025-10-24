@@ -4,21 +4,13 @@ import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import { carsAPI } from "@/lib/carsAPI";
-// Note: Using inline forms for now - components need API updates
+import { debounce } from "@/utils/debounce";
+import Step1DocumentsForm from "@/components/car/Step1DocumentsForm";
+import Step2DetailsForm from "@/components/car/Step2DetailsForm";
+import Step3PricingForm from "@/components/car/Step3PricingForm";
+import Step4ReviewForm from "@/components/car/Step4ReviewForm";
 import type { CarFormData } from "@/types/Car";
 import type { Step } from "@/types/Selling";
-
-// Debounce utility
-function debounce<TArgs extends unknown[]>(
-  func: (...args: TArgs) => void | Promise<void>,
-  wait: number
-): (...args: TArgs) => void {
-  let timeout: NodeJS.Timeout | null = null;
-  return function (...args: TArgs) {
-    if (timeout) clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-}
 
 export default function SellWithIdPage() {
   const router = useRouter();
@@ -31,27 +23,20 @@ export default function SellWithIdPage() {
   const hasProgressRef = useRef(false);
 
   // Step management
-  const [currentStep, setCurrentStep] = useState<Step>("registration");
+  const [currentStep, setCurrentStep] = useState<Step>("documents");
 
   // Form data
   const [formData, setFormData] = useState<Partial<CarFormData>>({});
-  const [extractedBookData, setExtractedBookData] = useState<
-    Record<string, unknown>
-  >({});
+  const [bookData, setBookData] = useState<Partial<CarFormData> | null>(null);
   const [inspectionData, setInspectionData] = useState<Record<
     string,
     string
   > | null>(null);
-  const [chassisMatch, setChassisMatch] = useState<boolean>(false);
-  const [normalizedChassis, setNormalizedChassis] = useState<{
-    book: string;
-    inspection: string;
-  } | null>(null);
+  const [imagesUploaded, setImagesUploaded] = useState(false);
 
   // UI state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [isScraping, setIsScraping] = useState(false);
   const [reviewResult, setReviewResult] = useState<{
     ready: boolean;
     issues: string[];
@@ -116,55 +101,61 @@ export default function SellWithIdPage() {
   // Handle book upload (Step 1)
   const handleBookUpload = async (file: File) => {
     setError("");
-    setIsSubmitting(true);
 
     try {
-      const result = await carsAPI.uploadBook(file);
+      const result = await carsAPI.uploadBook(carId, file);
 
       if (result.success) {
-        setExtractedBookData(result.data.extracted);
+        // Handle server-side duplicate resolution
+        if (result.action === "redirect" && result.redirectToCarId) {
+          // Redirect to the existing draft that matches this chassis
+          router.replace(`/sell/${result.redirectToCarId}`);
+          return;
+        }
+
+        const extracted = result.data as Partial<CarFormData>;
+        extracted.chassisNumber = result.data.chassisNumber;
+        // Registration number may be provided as a single combined string
+        const extractedObj = result.data as Record<string, unknown>;
+        const regValue = extractedObj?.["registrationNumber"];
+        if (typeof regValue === "string") {
+          extracted.registrationNumber = regValue;
+        }
+        setBookData(extracted);
         setHasProgress(true);
-        setCurrentStep("inspection");
       } else {
-        setError(
+        throw new Error(
           result.message || "Failed to upload vehicle registration book"
         );
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed");
-    } finally {
-      setIsSubmitting(false);
+      // Surface meaningful error
+      const message =
+        err instanceof Error ? err.message : "Failed to upload book";
+      setError(message);
+      throw err;
     }
   };
 
-  // Handle inspection QR/URL (Step 2)
-  const handleInspectionUrl = async (url: string) => {
+  // Handle inspection QR/URL (Step 1)
+  const handleInspectionUpload = async (url: string) => {
     setError("");
-    setIsScraping(true);
 
     try {
       const result = await carsAPI.uploadInspection(carId, url);
 
       if (result.success) {
-        setInspectionData(result.data.inspectionData);
-        setChassisMatch(result.data.chassisMatch);
-        setNormalizedChassis({
-          book: result.data.bookChassis,
-          inspection: result.data.inspectionChassis,
-        });
+        setInspectionData(result.data as Record<string, string>);
         setHasProgress(true);
-        // Don't automatically advance - let user review chassis match status
       } else {
-        setError(result.message || "Failed to upload inspection");
+        throw new Error(result.message || "Failed to upload inspection");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Inspection upload failed");
-    } finally {
-      setIsScraping(false);
+      throw err;
     }
   };
 
-  // Autosave draft with debounce (Step 3)
+  // Autosave draft with debounce (Steps 2 & 3)
   const debouncedAutoSave = useMemo(
     () =>
       debounce(async (data: Partial<CarFormData>) => {
@@ -182,7 +173,12 @@ export default function SellWithIdPage() {
 
   // Trigger autosave when form data changes
   useEffect(() => {
-    if (currentStep === "details" && Object.keys(formData).length > 0) {
+    if (
+      (currentStep === "specs" ||
+        currentStep === "pricing" ||
+        currentStep === "review") &&
+      Object.keys(formData).length > 0
+    ) {
       debouncedAutoSave(formData);
     }
   }, [formData, currentStep, debouncedAutoSave]);
@@ -193,12 +189,20 @@ export default function SellWithIdPage() {
     setHasProgress(true);
   }, []);
 
-  // Handle images changed
-  const handleImagesChanged = useCallback((count: number) => {
-    if (count > 0) {
-      setHasProgress(true);
-    }
+  // Handle book data changes
+  const handleBookDataChange = useCallback((updates: Partial<CarFormData>) => {
+    setBookData((prev) => ({ ...prev, ...updates }));
+    setHasProgress(true);
   }, []);
+
+  // Handle inspection data changes
+  const handleInspectionDataChange = useCallback(
+    (updates: Record<string, string>) => {
+      setInspectionData(updates);
+      setHasProgress(true);
+    },
+    []
+  );
 
   // Handle review (Step 4)
   const handleReview = async () => {
@@ -285,7 +289,7 @@ export default function SellWithIdPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         {/* Header with discard button */}
         <div className="flex justify-between items-center mb-8">
@@ -302,49 +306,42 @@ export default function SellWithIdPage() {
         {/* Progress indicator */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
-            {(
-              ["registration", "inspection", "details", "review"] as Step[]
-            ).map((step, index) => (
-              <div key={step} className="flex items-center">
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
-                    currentStep === step
-                      ? "bg-maroon text-white"
-                      : index <
-                        [
-                          "registration",
-                          "inspection",
-                          "details",
-                          "review",
-                        ].indexOf(currentStep)
-                      ? "bg-green-500 text-white"
-                      : "bg-gray-300 text-gray-600"
-                  }`}
-                >
-                  {index + 1}
-                </div>
-                {index < 3 && (
-                  <div
-                    className={`w-16 h-1 ${
-                      index <
-                      [
-                        "registration",
-                        "inspection",
-                        "details",
-                        "review",
-                      ].indexOf(currentStep)
-                        ? "bg-green-500"
-                        : "bg-gray-300"
-                    }`}
-                  />
-                )}
-              </div>
-            ))}
+            {(["documents", "specs", "pricing", "review"] as Step[]).map(
+              (step, index) => {
+                const stepOrder = ["documents", "specs", "pricing", "review"];
+                const currentStepIndex = stepOrder.indexOf(currentStep);
+                const isCompleted = index < currentStepIndex;
+                const isCurrent = currentStep === step;
+
+                return (
+                  <div key={step} className="flex items-center">
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
+                        isCurrent
+                          ? "bg-maroon text-white"
+                          : isCompleted
+                          ? "bg-green-500 text-white"
+                          : "bg-gray-300 text-gray-600"
+                      }`}
+                    >
+                      {index + 1}
+                    </div>
+                    {index < 3 && (
+                      <div
+                        className={`w-16 h-1 ${
+                          isCompleted ? "bg-green-500" : "bg-gray-300"
+                        }`}
+                      />
+                    )}
+                  </div>
+                );
+              }
+            )}
           </div>
           <div className="flex justify-between mt-2 text-sm text-gray-600">
-            <span>Book</span>
-            <span>Inspection</span>
-            <span>Details</span>
+            <span>Documents</span>
+            <span>Specs</span>
+            <span>Pricing</span>
             <span>Review</span>
           </div>
         </div>
@@ -358,343 +355,92 @@ export default function SellWithIdPage() {
 
         {/* Step content */}
         <div className="bg-white shadow-md rounded-lg p-6">
-          {currentStep === "registration" && (
+          {currentStep === "documents" && (
             <div>
-              <h2 className="text-2xl font-semibold mb-4">
-                Step 1: Upload Vehicle Registration Book
+              <h2 className="text-2xl font-semibold mb-6">
+                Step 1: Upload Documents
               </h2>
               <p className="text-gray-600 mb-6">
-                Upload a clear photo or scan of your vehicle registration book.
-                We&apos;ll extract the details automatically.
+                Upload your vehicle registration book and inspection report. The
+                chassis numbers must match to continue.
               </p>
-              <div>
-                <input
-                  type="file"
-                  accept="image/*,application/pdf"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleBookUpload(file);
-                  }}
-                  disabled={isSubmitting}
-                  className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none disabled:opacity-50"
-                />
-              </div>
-              {extractedBookData &&
-                Object.keys(extractedBookData).length > 0 && (
-                  <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-md">
-                    <p className="text-green-800 text-sm font-medium">
-                      ✓ Book uploaded successfully
-                    </p>
-                  </div>
-                )}
+              <Step1DocumentsForm
+                onBookUpload={handleBookUpload}
+                onInspectionUpload={handleInspectionUpload}
+                bookData={bookData}
+                inspectionData={inspectionData}
+                onBookDataChange={handleBookDataChange}
+                onContinue={() => setCurrentStep("specs")}
+                isSubmitting={isSubmitting}
+              />
             </div>
           )}
 
-          {currentStep === "inspection" && (
+          {currentStep === "specs" && (
             <div>
-              <h2 className="text-2xl font-semibold mb-4">
-                Step 2: Upload Vehicle Inspection
+              <h2 className="text-2xl font-semibold mb-6">
+                Step 2: Vehicle Specifications
               </h2>
               <p className="text-gray-600 mb-6">
-                Enter the inspection URL or QR code from your vehicle inspection
-                station.
+                Select the specifications for your vehicle including body type,
+                transmission, drivetrain, fuel type, and model details.
               </p>
-              <div>
-                <input
-                  type="text"
-                  placeholder="Enter inspection URL"
-                  onBlur={(e) => {
-                    const url = e.target.value.trim();
-                    if (url) handleInspectionUrl(url);
-                  }}
-                  disabled={isScraping}
-                  className="block w-full px-4 py-2 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-maroon focus:border-maroon disabled:opacity-50"
-                />
-                {isScraping && (
-                  <p className="mt-2 text-sm text-gray-600">
-                    Retrieving inspection data...
-                  </p>
-                )}
-              </div>
-              {inspectionData && (
-                <div className="mt-4 space-y-4">
-                  <div className="p-4 bg-green-50 border border-green-200 rounded-md">
-                    <p className="text-green-800 text-sm font-medium">
-                      ✓ Inspection data retrieved successfully
-                    </p>
-                  </div>
-
-                  {/* Display chassis numbers and match status */}
-                  {normalizedChassis && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Book Chassis Number
-                        </label>
-                        <input
-                          type="text"
-                          value={normalizedChassis.book}
-                          disabled
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-700 uppercase"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Inspection Chassis Number
-                        </label>
-                        <input
-                          type="text"
-                          value={normalizedChassis.inspection}
-                          disabled
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-700 uppercase"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Chassis match status */}
-                  {chassisMatch ? (
-                    <div className="p-4 bg-green-50 border border-green-200 rounded-md">
-                      <p className="text-green-800 text-sm font-medium">
-                        ✓ Chassis numbers match! You can continue to the next
-                        step.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
-                      <p className="text-yellow-800 text-sm font-medium">
-                        ⚠ Chassis numbers do not match. Please verify your
-                        documents.
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Continue button */}
-                  {chassisMatch && (
-                    <button
-                      onClick={() => setCurrentStep("details")}
-                      className="w-full py-2 bg-maroon text-white rounded-md hover:bg-maroon-dark transition-colors"
-                    >
-                      Continue to Details
-                    </button>
-                  )}
-                </div>
-              )}
+              <Step2DetailsForm
+                formData={formData}
+                onChange={handleFormChange}
+                onContinue={() => setCurrentStep("pricing")}
+                onBack={() => setCurrentStep("documents")}
+                isSubmitting={isSubmitting}
+              />
             </div>
           )}
 
-          {currentStep === "details" && (
+          {currentStep === "pricing" && (
             <div>
-              <h2 className="text-2xl font-semibold mb-4">
-                Step 3: Add Vehicle Details & Images
+              <h2 className="text-2xl font-semibold mb-6">
+                Step 3: Pricing, Images & Description
               </h2>
               <p className="text-gray-600 mb-6">
-                Fill in the details and upload 5-12 high-quality images of your
-                vehicle.
+                Set your asking price, upload 5-12 high-quality images, write a
+                description, and disclose any damage history.
               </p>
-
-              <div className="space-y-6">
-                {/* Simplified form - full form component needs to be created */}
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Model Name *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.modelName || ""}
-                      onChange={(e) =>
-                        handleFormChange({ modelName: e.target.value })
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-maroon focus:border-maroon"
-                      placeholder="e.g., Civic, Corolla"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Price (฿) *
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.price || ""}
-                      onChange={(e) =>
-                        handleFormChange({
-                          price: parseInt(e.target.value) || 0,
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-maroon focus:border-maroon"
-                      placeholder="e.g., 500000"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Mileage (km) *
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.mileage || ""}
-                      onChange={(e) =>
-                        handleFormChange({
-                          mileage: parseInt(e.target.value) || 0,
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-maroon focus:border-maroon"
-                      placeholder="e.g., 50000"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Description *
-                    </label>
-                    <textarea
-                      value={formData.description || ""}
-                      onChange={(e) =>
-                        handleFormChange({ description: e.target.value })
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-maroon focus:border-maroon"
-                      placeholder="Describe your vehicle (10-200 characters)"
-                      rows={4}
-                      minLength={10}
-                      maxLength={200}
-                    />
-                  </div>
-
-                  <div className="text-sm text-gray-500">
-                    Note: Full form with all fields (transmission, body type,
-                    fuel, etc.) coming soon. For now, these basic fields will be
-                    autosaved.
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-semibold mb-3">
-                    Vehicle Images (5-12 required)
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-3">
-                    Upload images using the carsAPI.uploadImages method. Image
-                    uploader component coming soon.
-                  </p>
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={async (e) => {
-                      const files = Array.from(e.target.files || []);
-                      if (files.length > 0) {
-                        try {
-                          await carsAPI.uploadImages(carId, files);
-                          handleImagesChanged(files.length);
-                        } catch (err) {
-                          setError(
-                            err instanceof Error
-                              ? err.message
-                              : "Image upload failed"
-                          );
-                        }
-                      }
-                    }}
-                    className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50"
-                  />
-                </div>
-
-                <div className="flex justify-end">
-                  <button
-                    onClick={handleReview}
-                    disabled={isSubmitting}
-                    className="px-6 py-3 bg-maroon text-white rounded-md font-semibold hover:bg-red-800 disabled:opacity-50"
-                  >
-                    Continue to Review
-                  </button>
-                </div>
-              </div>
+              <Step3PricingForm
+                carId={carId}
+                formData={formData}
+                onChange={handleFormChange}
+                onContinue={handleReview}
+                onBack={() => setCurrentStep("specs")}
+                isSubmitting={isSubmitting}
+                imagesUploaded={imagesUploaded}
+                onImagesUploaded={() => {
+                  setImagesUploaded(true);
+                  setHasProgress(true);
+                }}
+              />
             </div>
           )}
 
-          {currentStep === "review" && reviewResult && (
+          {currentStep === "review" && (
             <div>
-              <h2 className="text-2xl font-semibold mb-4">
+              <h2 className="text-2xl font-semibold mb-6">
                 Step 4: Review & Publish
               </h2>
-
-              {reviewResult.ready ? (
-                <div className="space-y-4">
-                  <div className="p-4 bg-green-50 border border-green-200 rounded-md">
-                    <p className="text-green-800 font-medium">
-                      ✓ Your listing is ready to publish!
-                    </p>
-                  </div>
-
-                  <div className="p-4 bg-gray-50 rounded-md">
-                    <h3 className="font-semibold mb-2">Listing Summary</h3>
-                    <dl className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <dt className="text-gray-600">Model:</dt>
-                        <dd className="font-medium">
-                          {formData.modelName || "N/A"}
-                        </dd>
-                      </div>
-                      <div className="flex justify-between">
-                        <dt className="text-gray-600">Price:</dt>
-                        <dd className="font-medium">
-                          {formData.price
-                            ? `฿${formData.price.toLocaleString()}`
-                            : "N/A"}
-                        </dd>
-                      </div>
-                      <div className="flex justify-between">
-                        <dt className="text-gray-600">Mileage:</dt>
-                        <dd className="font-medium">
-                          {formData.mileage
-                            ? `${formData.mileage.toLocaleString()} km`
-                            : "N/A"}
-                        </dd>
-                      </div>
-                    </dl>
-                  </div>
-
-                  <div className="flex justify-between">
-                    <button
-                      onClick={() => setCurrentStep("details")}
-                      className="px-6 py-3 border border-gray-300 rounded-md font-semibold text-gray-700 hover:bg-gray-50"
-                    >
-                      Back to Edit
-                    </button>
-                    <button
-                      onClick={handlePublish}
-                      disabled={isSubmitting}
-                      className="px-8 py-3 bg-green-600 text-white rounded-md font-semibold hover:bg-green-700 disabled:opacity-50"
-                    >
-                      {isSubmitting ? "Publishing..." : "Publish Listing"}
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
-                    <p className="text-yellow-800 font-medium mb-2">
-                      Your listing is not yet ready to publish. Please complete
-                      the following:
-                    </p>
-                    <ul className="list-disc list-inside space-y-1 text-sm text-yellow-700">
-                      {reviewResult.issues.map((issue, index) => (
-                        <li key={index}>{issue}</li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div className="flex justify-end">
-                    <button
-                      onClick={() => setCurrentStep("details")}
-                      className="px-6 py-3 bg-maroon text-white rounded-md font-semibold hover:bg-red-800"
-                    >
-                      Back to Edit
-                    </button>
-                  </div>
-                </div>
-              )}
+              <p className="text-gray-600 mb-6">
+                Review all information and make any final edits before
+                publishing your listing.
+              </p>
+              <Step4ReviewForm
+                formData={formData}
+                bookData={bookData}
+                inspectionData={inspectionData}
+                onChange={handleFormChange}
+                onBookDataChange={handleBookDataChange}
+                onInspectionDataChange={handleInspectionDataChange}
+                onPublish={handlePublish}
+                onBack={() => setCurrentStep("pricing")}
+                isSubmitting={isSubmitting}
+                reviewResult={reviewResult}
+              />
             </div>
           )}
 

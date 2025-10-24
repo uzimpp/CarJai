@@ -20,7 +20,7 @@ type Car struct {
 	ChassisNumber      string    `json:"chassisNumber" db:"chassis_number"`
 	Year               *int      `json:"year" db:"year"`
 	Mileage            *int      `json:"mileage" db:"mileage"`
-	EngineCC           *int      `json:"engineCc" db:"engine_cc"`
+	EngineCC           *int      `json:"engineCc" db:"engine_cc"` // Engine displacement in cc (rounded to int)
 	Seats              *int      `json:"seats" db:"seats"`
 	Doors              *int      `json:"doors" db:"doors"`
 	Prefix             *string   `json:"prefix" db:"prefix"`          // Nullable for drafts
@@ -85,33 +85,8 @@ type Drivetrain struct {
 }
 
 // Request and Response models
-type CreateCarRequest struct {
-	// Cars table fields
-	BodyTypeCode       *string  `json:"bodyTypeCode"`     // e.g., "PICKUP", "SUV"
-	TransmissionCode   *string  `json:"transmissionCode"` // e.g., "MANUAL", "AT"
-	DrivetrainCode     *string  `json:"drivetrainCode"`   // e.g., "FWD", "AWD"
-	BrandName          *string  `json:"brandName"`
-	ModelName          *string  `json:"modelName"`
-	SubmodelName       *string  `json:"submodelName"`
-	ChassisNumber      string   `json:"chassisNumber"` // Empty string allowed for initial drafts
-	Year               *int     `json:"year"`
-	Mileage            *int     `json:"mileage"`
-	EngineCC           *int     `json:"engineCc"`
-	Seats              *int     `json:"seats"`
-	Doors              *int     `json:"doors"`
-	FuelCodes          []string `json:"fuelCodes,omitempty"` // e.g., ["GASOLINE", "LPG"]
-	Prefix             *string  `json:"prefix"`              // Nullable for drafts
-	Number             *string  `json:"number"`              // Nullable for drafts
-	ProvinceID         *int     `json:"provinceId"`          // Nullable for drafts
-	Description        *string  `json:"description"`
-	Price              *int     `json:"price"` // Nullable for drafts
-	IsFlooded          bool     `json:"isFlooded"`
-	IsHeavilyDamaged   bool     `json:"isHeavilyDamaged"`
-	BookUploaded       bool     `json:"bookUploaded"`
-	InspectionUploaded bool     `json:"inspectionUploaded"`
-	ConditionRating    *int     `json:"conditionRating" validate:"omitempty,gte=1,lte=5"`
-	Status             *string  `json:"status" validate:"omitempty,oneof=draft active sold deleted"`
-}
+// Note: CreateCarRequest removed - POST /api/cars doesn't need a request body
+// It just creates an empty draft based on authenticated seller ID
 
 type UpdateCarRequest struct {
 	BodyTypeCode       *string  `json:"bodyTypeCode"`     // e.g., "PICKUP", "SUV"
@@ -372,16 +347,16 @@ func (r *CarRepository) GetCarsBySellerID(sellerID int) ([]Car, error) {
 
 // SearchCarsRequest represents search/filter parameters
 type SearchCarsRequest struct {
-	Query      string // Search query for brand/model/description
-	MinPrice   *int   // Minimum price filter
-	MaxPrice   *int   // Maximum price filter
-	ProvinceID *int   // Province filter
-	MinYear    *int   // Minimum year filter
-	MaxYear    *int   // Maximum year filter
-	BodyTypeID *int   // Body type filter
-	Status     string // Status filter (default: "active")
-	Limit      int    // Results per page (default: 20)
-	Offset     int    // Pagination offset (default: 0)
+	Query        string  // Search query for brand/model/description
+	MinPrice     *int    // Minimum price filter
+	MaxPrice     *int    // Maximum price filter
+	ProvinceID   *int    // Province filter
+	MinYear      *int    // Minimum year filter
+	MaxYear      *int    // Maximum year filter
+	BodyTypeCode *string // Body type filter (code like "PICKUP", "SUV")
+	Status       string  // Status filter (default: "active")
+	Limit        int     // Results per page (default: 20)
+	Offset       int     // Pagination offset (default: 0)
 }
 
 // GetActiveCars retrieves all active car listings with optional filters
@@ -421,9 +396,9 @@ func (r *CarRepository) GetActiveCars(req *SearchCarsRequest) ([]Car, int, error
 		argCounter++
 	}
 
-	if req.BodyTypeID != nil {
+	if req.BodyTypeCode != nil {
 		whereClauses = append(whereClauses, fmt.Sprintf("body_type_code = $%d", argCounter))
-		args = append(args, *req.BodyTypeID)
+		args = append(args, *req.BodyTypeCode)
 		argCounter++
 	}
 
@@ -545,6 +520,184 @@ func (r *CarRepository) DeleteCar(carID int) error {
 	}
 
 	return nil
+}
+
+// FindCarsByChassisNumber finds cars by chassis number (exact match) excluding deleted
+func (r *CarRepository) FindCarsByChassisNumber(chassisNumber string) ([]Car, error) {
+	query := `
+		SELECT id, seller_id, body_type_code, transmission_code, drivetrain_code,
+			brand_name, model_name, submodel_name, chassis_number,
+			year, mileage, engine_cc, seats, doors,
+			prefix, number, province_id, description, price,
+			is_flooded, is_heavily_damaged, book_uploaded, inspection_uploaded,
+			status, condition_rating, created_at, updated_at
+		FROM cars
+		WHERE chassis_number = $1 AND status != 'deleted'
+		ORDER BY created_at DESC`
+
+	rows, err := r.db.DB.Query(query, chassisNumber)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find cars by chassis: %w", err)
+	}
+	defer rows.Close()
+
+	var cars []Car
+	for rows.Next() {
+		var car Car
+		err := rows.Scan(
+			&car.ID, &car.SellerID, &car.BodyTypeCode, &car.TransmissionCode, &car.DrivetrainCode,
+			&car.BrandName, &car.ModelName, &car.SubmodelName, &car.ChassisNumber,
+			&car.Year, &car.Mileage, &car.EngineCC, &car.Seats, &car.Doors,
+			&car.Prefix, &car.Number, &car.ProvinceID, &car.Description, &car.Price,
+			&car.IsFlooded, &car.IsHeavilyDamaged, &car.BookUploaded, &car.InspectionUploaded,
+			&car.Status, &car.ConditionRating, &car.CreatedAt, &car.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan car: %w", err)
+		}
+		cars = append(cars, car)
+	}
+
+	return cars, nil
+}
+
+func (r *CarRepository) GetBodyTypeLabelByCode(code string, lang string) (string, error) {
+	nameCol := "name_en"
+	if lang == "th" {
+		nameCol = "name_th"
+	}
+	var label string
+	query := fmt.Sprintf("SELECT %s FROM body_types WHERE code = $1", nameCol)
+	err := r.db.DB.QueryRow(query, code).Scan(&label)
+	if err == sql.ErrNoRows {
+		return "", nil
+	}
+	return label, err
+}
+
+// GetTransmissionLabelByCode returns the display label for a transmission code
+func (r *CarRepository) GetTransmissionLabelByCode(code string, lang string) (string, error) {
+	nameCol := "name_en"
+	if lang == "th" {
+		nameCol = "name_th"
+	}
+	var label string
+	query := fmt.Sprintf("SELECT %s FROM transmissions WHERE code = $1", nameCol)
+	err := r.db.DB.QueryRow(query, code).Scan(&label)
+	if err == sql.ErrNoRows {
+		return "", nil
+	}
+	return label, err
+}
+
+// GetDrivetrainLabelByCode returns the display label for a drivetrain code
+func (r *CarRepository) GetDrivetrainLabelByCode(code string, lang string) (string, error) {
+	nameCol := "name_en"
+	if lang == "th" {
+		nameCol = "name_th"
+	}
+	var label string
+	query := fmt.Sprintf("SELECT %s FROM drivetrains WHERE code = $1", nameCol)
+	err := r.db.DB.QueryRow(query, code).Scan(&label)
+	if err == sql.ErrNoRows {
+		return "", nil
+	}
+	return label, err
+}
+
+// GetProvinceLabelByID returns the display label for a province ID
+func (r *CarRepository) GetProvinceLabelByID(id int, lang string) (string, error) {
+	nameCol := "name_en"
+	if lang == "th" {
+		nameCol = "name_th"
+	}
+	var label string
+	query := fmt.Sprintf("SELECT %s FROM provinces WHERE id = $1", nameCol)
+	err := r.db.DB.QueryRow(query, id).Scan(&label)
+	if err == sql.ErrNoRows {
+		return "", nil
+	}
+	return label, err
+}
+
+// GetFuelLabelsByCodes returns display labels for fuel type codes
+func (r *CarRepository) GetFuelLabelsByCodes(codes []string, lang string) ([]string, error) {
+	if len(codes) == 0 {
+		return []string{}, nil
+	}
+
+	labelCol := "label_en"
+	if lang == "th" {
+		labelCol = "label_th"
+	}
+
+	// Build placeholders for IN clause
+	placeholders := make([]string, len(codes))
+	args := make([]interface{}, len(codes))
+	for i, code := range codes {
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+		args[i] = code
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM fuel_types WHERE code IN (%s) ORDER BY code",
+		labelCol, strings.Join(placeholders, ","))
+
+	rows, err := r.db.DB.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var labels []string
+	for rows.Next() {
+		var label string
+		if err := rows.Scan(&label); err != nil {
+			return nil, err
+		}
+		labels = append(labels, label)
+	}
+
+	return labels, nil
+}
+
+// GetColorLabelsByIDs returns display labels for color IDs
+func (r *CarRepository) GetColorLabelsByCodes(codes []string, lang string) ([]string, error) {
+	if len(codes) == 0 {
+		return []string{}, nil
+	}
+
+	nameCol := "name_en"
+	if lang == "th" {
+		nameCol = "name_th"
+	}
+
+	// Build placeholders for IN clause
+	placeholders := make([]string, len(codes))
+	args := make([]interface{}, len(codes))
+	for i, code := range codes {
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+		args[i] = code
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM colors WHERE code IN (%s) ORDER BY code",
+		nameCol, strings.Join(placeholders, ","))
+
+	rows, err := r.db.DB.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var labels []string
+	for rows.Next() {
+		var label string
+		if err := rows.Scan(&label); err != nil {
+			return nil, err
+		}
+		labels = append(labels, label)
+	}
+
+	return labels, nil
 }
 
 // CarImageRepository handles car image-related database operations
@@ -771,9 +924,9 @@ func (r *CarFuelRepository) GetCarFuels(carID int) ([]string, error) {
 
 // CarColor represents a car-color mapping with position
 type CarColor struct {
-	CarID    int `json:"carId" db:"car_id"`
-	ColorID  int `json:"colorId" db:"color_id"`
-	Position int `json:"position" db:"position"`
+	CarID     int    `json:"carId" db:"car_id"`
+	ColorCode string `json:"colorCode" db:"color_code"`
+	Position  int    `json:"position" db:"position"`
 }
 
 // CarColorRepository handles car_colors operations
@@ -787,7 +940,7 @@ func NewCarColorRepository(db *Database) *CarColorRepository {
 }
 
 // SetCarColors replaces all colors for a car with ordered list
-func (r *CarColorRepository) SetCarColors(carID int, colorIDs []int) error {
+func (r *CarColorRepository) SetCarColors(carID int, colorCodes []string) error {
 	// Start transaction
 	tx, err := r.db.DB.Begin()
 	if err != nil {
@@ -801,10 +954,10 @@ func (r *CarColorRepository) SetCarColors(carID int, colorIDs []int) error {
 	}
 
 	// Insert new colors with positions
-	for i, colorID := range colorIDs {
+	for i, colorCode := range colorCodes {
 		if _, err = tx.Exec(
-			"INSERT INTO car_colors (car_id, color_id, position) VALUES ($1, $2, $3)",
-			carID, colorID, i,
+			"INSERT INTO car_colors (car_id, color_code, position) VALUES ($1, $2, $3)",
+			carID, colorCode, i,
 		); err != nil {
 			return fmt.Errorf("failed to insert color at position %d: %w", i, err)
 		}
@@ -817,10 +970,10 @@ func (r *CarColorRepository) SetCarColors(carID int, colorIDs []int) error {
 	return nil
 }
 
-// GetCarColors retrieves all color IDs for a car in order
-func (r *CarColorRepository) GetCarColors(carID int) ([]int, error) {
+// GetCarColors retrieves all color code for a car in order
+func (r *CarColorRepository) GetCarColors(carID int) ([]string, error) {
 	query := `
-        SELECT color_id 
+        SELECT color_code
         FROM car_colors 
         WHERE car_id = $1 
         ORDER BY position`
@@ -829,48 +982,90 @@ func (r *CarColorRepository) GetCarColors(carID int) ([]int, error) {
 		return nil, fmt.Errorf("failed to get car colors: %w", err)
 	}
 	defer rows.Close()
-	var ids []int
+	var codes []string
 	for rows.Next() {
-		var id int
-		if err := rows.Scan(&id); err != nil {
+		var code string
+		if err := rows.Scan(&code); err != nil {
 			return nil, fmt.Errorf("failed to scan color id: %w", err)
 		}
-		ids = append(ids, id)
+		codes = append(codes, code)
 	}
-	return ids, nil
+	return codes, nil
 }
 
-// LookupColorIDsByLabels attempts to find up to 3 color IDs by Thai or English labels (ILIKE)
-func (r *CarColorRepository) LookupColorIDsByLabels(labels []string) ([]int, error) {
+// LookupColorLabelsByCodes looks up color labels by exact color codes (e.g., "RED", "WHITE", "GRAY")
+func (r *CarColorRepository) LookupColorLabelsByCodes(codes []string, lang string) ([]string, error) {
+	if len(codes) == 0 {
+		return []string{}, nil
+	}
+
+	labelCol := "label_en"
+	if lang == "th" {
+		labelCol = "label_th"
+	}
+
+	// Build placeholders for IN clause
+	placeholders := make([]string, len(codes))
+	args := make([]interface{}, len(codes))
+	for i, code := range codes {
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+		args[i] = code
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM colors WHERE code IN (%s) ORDER BY code", labelCol, strings.Join(placeholders, ","))
+	rows, err := r.db.DB.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to lookup colors by codes: %w", err)
+	}
+	defer rows.Close()
+
+	var colors []string
+	for rows.Next() {
+		var label string
+		if err := rows.Scan(&label); err != nil {
+			return nil, fmt.Errorf("failed to scan color: %w", err)
+		}
+		colors = append(colors, label)
+	}
+
+	return colors, nil
+}
+
+func (r *CarColorRepository) LookupColorCodesByLabels(labels []string, lang string) ([]string, error) {
 	if len(labels) == 0 {
-		return []int{}, nil
+		return []string{}, nil
 	}
-	args := []interface{}{}
-	wheres := []string{}
+
+	labelCol := "label_en"
+	if lang == "th" {
+		labelCol = "label_th"
+	}
+
+	placeholders := make([]string, len(labels))
+	args := make([]interface{}, len(labels))
 	for i, label := range labels {
-		args = append(args, "%"+label+"%")
-		wheres = append(wheres, fmt.Sprintf("(label_th ILIKE $%d OR label_en ILIKE $%d)", i+1, i+1))
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+		args[i] = label
 	}
-	query := "SELECT id FROM colors WHERE " + strings.Join(wheres, " OR ") + " LIMIT 3"
+
+	query := fmt.Sprintf("SELECT code FROM colors WHERE %s IN (%s) ORDER BY code", labelCol, strings.Join(placeholders, ","))
 	rows, err := r.db.DB.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to lookup colors by labels: %w", err)
 	}
 	defer rows.Close()
-	var ids []int
+	var codes []string
 	for rows.Next() {
-		var id int
-		if err := rows.Scan(&id); err != nil {
-			return nil, fmt.Errorf("failed to scan color id: %w", err)
+		var code string
+		if err := rows.Scan(&code); err != nil {
+			return nil, fmt.Errorf("failed to scan color code: %w", err)
 		}
-		ids = append(ids, id)
+		codes = append(codes, code)
 	}
-	return ids, nil
+	return codes, nil
 }
 
 // Reference data lookup repositories
-// LookupProvinceByName finds province ID by Thai or English name (case-insensitive)
-// Note: Provinces still use integer IDs, not codes
 func (r *CarRepository) LookupProvinceByName(name string) (*int, error) {
 	var id int
 	query := `SELECT id FROM provinces WHERE name_th ILIKE $1 OR name_en ILIKE $1 LIMIT 1`
@@ -952,18 +1147,4 @@ func (r *CarRepository) LookupFuelCodesByLabels(labels []string) ([]string, erro
 		codes = append(codes, code)
 	}
 	return codes, nil
-}
-
-// InspectionUploadResponse is the response for inspection upload
-type InspectionUploadResponse struct {
-	Message string               `json:"message"`
-	Data    InspectionUploadData `json:"data"`
-}
-
-// InspectionUploadData contains chassis match information
-type InspectionUploadData struct {
-	ChassisMatch      bool              `json:"chassisMatch"`
-	BookChassis       string            `json:"bookChassis"`
-	InspectionChassis string            `json:"inspectionChassis"`
-	InspectionData    map[string]string `json:"inspectionData"`
 }

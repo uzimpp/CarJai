@@ -14,7 +14,7 @@ CREATE TABLE cars (
     mileage INTEGER, -- Must Enter by Seller
     engine_cc INTEGER, -- Book Uploaded
     seats INTEGER, -- Book Uploaded
-    doors INTEGER, -- Book Uploaded
+    doors INTEGER, -- Must Enter by Seller
     status VARCHAR(20) DEFAULT 'draft' CHECK (
         status IN (
             'draft',
@@ -43,9 +43,9 @@ CREATE TABLE cars (
 -- Inspection Uploaded
 CREATE TABLE car_colors (
     car_id INTEGER NOT NULL REFERENCES cars (id) ON DELETE CASCADE,
-    color_id INTEGER NOT NULL REFERENCES colors (id) ON DELETE RESTRICT,
+    color_code VARCHAR(20) NOT NULL REFERENCES colors (code) ON DELETE RESTRICT,
     position SMALLINT NOT NULL DEFAULT 0, -- Order: 0=primary, 1=secondary, 2=tertiary
-    PRIMARY KEY (car_id, color_id)
+    PRIMARY KEY (car_id, color_code)
 );
 
 -- Index for ordered color queries
@@ -77,9 +77,8 @@ CREATE TABLE car_images (
 CREATE TABLE car_inspection_results (
     id SERIAL PRIMARY KEY,
     car_id INTEGER NOT NULL REFERENCES cars (id) ON DELETE CASCADE,
-    inspected_at TIMESTAMP,
-    station VARCHAR(200),
-    overall_pass BOOLEAN,
+    station VARCHAR(200), --TH
+    overall_pass BOOLEAN, -- Overall inspection result (pass/fail)
     brake_result BOOLEAN, -- Brake test (pass/fail)
     handbrake_result BOOLEAN, -- Handbrake (pass/fail)
     alignment_result BOOLEAN, -- Wheel alignment (pass/fail)
@@ -131,8 +130,6 @@ CREATE TRIGGER update_cars_updated_at BEFORE UPDATE ON cars
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE INDEX idx_inspection_results_car_id ON car_inspection_results (car_id);
-
-CREATE INDEX idx_inspection_results_inspected_at ON car_inspection_results (inspected_at);
 
 CREATE TRIGGER update_inspection_results_updated_at BEFORE UPDATE ON car_inspection_results
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

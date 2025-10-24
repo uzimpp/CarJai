@@ -9,20 +9,20 @@ export default interface CarListing {
   mileage?: number;
   provinceId?: number;
   conditionRating?: number;
-  bodyTypeId?: number;
-  transmissionId?: number;
-  fuelTypeId?: number;
-  drivetrainId?: number;
+  bodyType?: string; // Display label from backend (e.g., "Pickup")
+  transmission?: string; // Display label from backend (e.g., "Manual")
+  fuelTypes?: string[]; // Display labels from backend (e.g., ["Gasoline", "LPG"])
+  drivetrain?: string; // Display label from backend (e.g., "FWD")
   seats?: number;
   doors?: number;
-  color?: string;
+  colors?: string[]; // Display labels from backend (e.g., ["White", "Gray"])
   status: string;
   images?: Array<{ id: number }>;
   createdAt?: string;
   updatedAt?: string;
 }
 
-// For full car data matching with the DB attributes
+// For full car data matching with the DB attributes - Updated to receive display labels
 export interface CarData {
   id: number;
   sellerId?: number;
@@ -33,13 +33,13 @@ export interface CarData {
   mileage?: number;
   provinceId?: number;
   conditionRating?: number;
-  bodyTypeId?: number;
-  transmissionId?: number;
-  fuelTypeId?: number;
-  drivetrainId?: number;
+  bodyType?: string; // Display label from backend (e.g., "Pickup")
+  transmission?: string; // Display label from backend (e.g., "Manual")
+  fuelTypes?: string[]; // Display labels from backend (e.g., ["Gasoline", "LPG"])
+  drivetrain?: string; // Display label from backend (e.g., "FWD")
   seats?: number;
   doors?: number;
-  color?: string;
+  colors?: string[]; // Display labels from backend (e.g., ["White", "Gray"])
   status: string;
   images?: Array<{ id: number }>;
   createdAt?: string;
@@ -71,6 +71,7 @@ export interface CarFormData {
   transmissionName?: string;
   drivetrainName?: string;
   fuelLabels?: string[];
+  brandName?: string;
   modelName?: string;
   submodelName?: string;
   description?: string;
@@ -82,19 +83,19 @@ export interface CarFormData {
   year?: number;
   seats?: number;
   doors?: number;
-  engineCc?: number;
+  engineCc?: number; // Can be decimal (1.5, 2.4) or whole number (1500, 2400)
 
   // Booleans
   isFlooded?: boolean;
   isHeavilyDamaged?: boolean;
 
-  // Inspection fields (read-only from scrape)
+  // Inspection fields (read-only from scrape) - Updated to use codes
   registrationNumber?: string;
-  vin?: string;
+  chassisNumber?: string;
   engineNumber?: string;
   bodyStyle?: string;
-  color?: string;
-  fuelTypeId?: number;
+  colorCodes?: string[]; // Changed from color (now array of codes)
+  fuelTypeCodes?: string[]; // Changed from fuelTypeId (now array of codes)
   overallResult?: string;
   brakePerformance?: string;
   handbrakePerformance?: string;

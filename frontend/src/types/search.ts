@@ -7,6 +7,6 @@ export interface SearchCarsParams {
   minYear?: number;
   maxYear?: number;
   provinceId?: number;
-  bodyTypeId?: number;
-  fuelTypeId?: number;
+  bodyType?: string; // Display label for filtering (e.g., "Pickup")
+  fuelTypes?: string[]; // Display labels for filtering (e.g., ["Gasoline", "LPG"])
 }

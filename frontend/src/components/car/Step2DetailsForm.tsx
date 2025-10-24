@@ -1,16 +1,14 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { TextField } from "@/components/ui/TextField";
 import { Choices } from "@/components/ui/Choices";
 import { FormSection } from "@/components/ui/FormSection";
 import { CheckBoxes } from "@/components/ui/CheckBoxes";
 import type { CarFormData } from "@/types/Car";
-import {
-  BODY_TYPE_OPTIONS,
-  TRANSMISSION_OPTIONS,
-  DRIVETRAIN_OPTIONS,
-  FUEL_TYPE_OPTIONS,
-} from "@/constants/car";
+import { DAMAGE_OPTIONS } from "@/constants/car";
+import { referenceAPI } from "@/lib/referenceAPI";
+import type { ChoiceOption } from "@/components/ui/Choices";
 
 interface Step2DetailsFormProps {
   formData: Partial<CarFormData>;
@@ -27,6 +25,38 @@ export default function Step2DetailsForm({
   onBack,
   isSubmitting,
 }: Step2DetailsFormProps) {
+  // Fetch reference options
+  const [bodyTypeOptions, setBodyTypeOptions] = useState<
+    ChoiceOption<string>[]
+  >([]);
+  const [transmissionOptions, setTransmissionOptions] = useState<
+    ChoiceOption<string>[]
+  >([]);
+  const [drivetrainOptions, setDrivetrainOptions] = useState<
+    ChoiceOption<string>[]
+  >([]);
+  const [fuelTypeOptions, setFuelTypeOptions] = useState<
+    ChoiceOption<string>[]
+  >([]);
+  // Optionally show skeletons while loading later if needed
+
+  useEffect(() => {
+    let mounted = true;
+    referenceAPI.getAll("en").then((res) => {
+      if (!mounted || !res.success) return;
+      const toChoice = (
+        arr: { code: string; label: string }[]
+      ): ChoiceOption<string>[] =>
+        arr.map((o) => ({ value: o.label, label: o.label }));
+      setBodyTypeOptions(toChoice(res.data.bodyTypes));
+      setTransmissionOptions(toChoice(res.data.transmissions));
+      setDrivetrainOptions(toChoice(res.data.drivetrains));
+      setFuelTypeOptions(toChoice(res.data.fuelTypes));
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
   // Check if required fields are filled
   const canContinue =
     formData.bodyTypeName &&
@@ -36,6 +66,18 @@ export default function Step2DetailsForm({
     formData.modelName &&
     formData.mileage !== undefined &&
     !isSubmitting;
+
+  // Get damage flags as array
+  const damageFlags: string[] = [];
+  if (formData.isFlooded) damageFlags.push("flooded");
+  if (formData.isHeavilyDamaged) damageFlags.push("heavilyDamaged");
+
+  const handleDamageFlagsChange = (values: string[]) => {
+    onChange({
+      isFlooded: values.includes("flooded"),
+      isHeavilyDamaged: values.includes("heavilyDamaged"),
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -47,7 +89,7 @@ export default function Step2DetailsForm({
         <Choices
           name="bodyType"
           value={formData.bodyTypeName || null}
-          options={BODY_TYPE_OPTIONS}
+          options={bodyTypeOptions}
           onChange={(value) => onChange({ bodyTypeName: value })}
           direction="row"
           required
@@ -62,7 +104,7 @@ export default function Step2DetailsForm({
         <Choices
           name="transmission"
           value={formData.transmissionName || null}
-          options={TRANSMISSION_OPTIONS}
+          options={transmissionOptions}
           onChange={(value) => onChange({ transmissionName: value })}
           direction="row"
           required
@@ -77,7 +119,7 @@ export default function Step2DetailsForm({
         <Choices
           name="drivetrain"
           value={formData.drivetrainName || null}
-          options={DRIVETRAIN_OPTIONS}
+          options={drivetrainOptions}
           onChange={(value) => onChange({ drivetrainName: value })}
           direction="row"
           required
@@ -92,49 +134,23 @@ export default function Step2DetailsForm({
         <CheckBoxes
           name="fuelType"
           values={formData.fuelLabels || []}
-          options={FUEL_TYPE_OPTIONS}
+          options={fuelTypeOptions}
           onChange={(values) => onChange({ fuelLabels: values })}
           direction="row"
         />
       </FormSection>
 
-      {/* Model Information */}
+      {/* Damage History */}
       <FormSection
-        title="Model Information"
-        description="Enter the model and submodel names"
+        title="Vehicle History"
+        description="Disclose any damage history (optional but recommended for transparency)"
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <TextField
-            label="Model Name *"
-            value={formData.modelName || ""}
-            onChange={(e) => onChange({ modelName: e.target.value })}
-            placeholder="e.g., Civic, Corolla, Camry"
-            required
-          />
-          <TextField
-            label="Submodel Name"
-            value={formData.submodelName || ""}
-            onChange={(e) => onChange({ submodelName: e.target.value })}
-            placeholder="e.g., RS, Hybrid, Sport"
-          />
-        </div>
-      </FormSection>
-
-      {/* Mileage */}
-      <FormSection
-        title="Current Mileage"
-        description="Enter the most recent mileage reading"
-      >
-        <TextField
-          label="Mileage (km) *"
-          type="number"
-          value={formData.mileage?.toString() || ""}
-          onChange={(e) =>
-            onChange({ mileage: parseInt(e.target.value) || undefined })
-          }
-          placeholder="e.g., 50000"
-          helper="This will be the most recent mileage value for your listing"
-          required
+        <CheckBoxes
+          name="damageHistory"
+          values={damageFlags}
+          options={DAMAGE_OPTIONS}
+          onChange={handleDamageFlagsChange}
+          direction="column"
         />
       </FormSection>
 

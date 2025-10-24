@@ -125,6 +125,7 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 			adminRepo,
 			sessionRepo,
 			ipWhitelistRepo,
+			carRepo,
 			utils.AppLogger,
 		),
 		OCR:      services.NewOCRService(appConfig.AigenAPIKey),
@@ -135,6 +136,7 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 }
 
 func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sql.DB) *http.ServeMux {
+	adminPrefix := appConfig.AdminRoutePrefix
 	mux := http.NewServeMux()
 
 	// Root endpoint (only for exact match)
@@ -152,7 +154,6 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 		routes.CarRoutes(services.Car, services.User, services.OCR, services.Scraper, services.UserJWT, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/cars/",
 		routes.CarRoutes(services.Car, services.User, services.OCR, services.Scraper, services.UserJWT, appConfig.CORSAllowedOrigins))
-	adminPrefix := appConfig.AdminRoutePrefix
 	mux.Handle(adminPrefix+"/",
 		routes.AdminRoutes(services.Admin, services.AdminJWT, adminPrefix, appConfig.CORSAllowedOrigins, appConfig.AdminIPWhitelist))
 	mux.Handle("/health/",

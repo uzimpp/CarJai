@@ -128,6 +128,12 @@ func handleCarRoutes(
 ) {
 	path := r.URL.Path
 
+	// /api/cars/{id}/book - Upload registration book to existing car (authenticated)
+	if strings.HasSuffix(path, "/book") {
+		authMiddleware.RequireAuth(handler.UploadBook)(w, r)
+		return
+	}
+
 	// /api/cars/{id}/images - Upload images (authenticated)
 	if strings.Contains(path, "/images") && !strings.Contains(path, "/images/order") {
 		authMiddleware.RequireAuth(handler.UploadCarImages)(w, r)

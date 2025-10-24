@@ -62,18 +62,8 @@ func (h *CarHandler) CreateCar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse request body
-	var req models.CreateCarRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid request body",
-		})
-		return
-	}
-
-	// Create car
-	car, err := h.carService.CreateCar(userID, &req)
+	// Create empty draft car (no request body needed)
+	car, err := h.carService.CreateCar(userID)
 	if err != nil {
 		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
 			Success: false,
@@ -82,10 +72,13 @@ func (h *CarHandler) CreateCar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.RespondJSON(w, http.StatusCreated, models.CarResponse{
-		Success: true,
-		Data:    *car,
-		Message: "Car created successfully",
+	// Return minimal response with just the car ID
+	utils.RespondJSON(w, http.StatusCreated, map[string]interface{}{
+		"success": true,
+		"message": "Draft created successfully",
+		"data": map[string]interface{}{
+			"id": car.ID,
+		},
 	})
 }
 
@@ -222,10 +215,8 @@ func (h *CarHandler) SearchCars(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Parse type filters
-	if bodyTypeStr := query.Get("bodyTypeId"); bodyTypeStr != "" {
-		if bodyType, err := strconv.Atoi(bodyTypeStr); err == nil {
-			req.BodyTypeID = &bodyType
-		}
+	if bodyTypeCode := query.Get("bodyTypeCode"); bodyTypeCode != "" {
+		req.BodyTypeCode = &bodyTypeCode
 	}
 
 	// Parse pagination
@@ -996,6 +987,16 @@ func (h *CarHandler) UploadBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Extract car ID from path: /api/cars/{id}/book
+	carID, err := extractIDFromPath(r.URL.Path, "/api/cars/")
+	if err != nil {
+		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
+			Success: false,
+			Error:   "Invalid car ID",
+		})
+		return
+	}
+
 	// Check if user is a seller
 	isSeller, err := h.userService.IsSeller(userID)
 	if err != nil || !isSeller {
@@ -1006,12 +1007,12 @@ func (h *CarHandler) UploadBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse multipart form (5.5 MB max)
-	const maxUploadSize = int64(5.5 * 1024 * 1024)
+	// Parse multipart form (10 MB max)
+	const maxUploadSize = int64(10 * 1024 * 1024)
 	if err := r.ParseMultipartForm(maxUploadSize); err != nil {
 		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
 			Success: false,
-			Error:   "File is too large (max 5.5MB)",
+			Error:   "File is too large (max 10MB)",
 		})
 		return
 	}
@@ -1028,7 +1029,7 @@ func (h *CarHandler) UploadBook(w http.ResponseWriter, r *http.Request) {
 	defer file.Close()
 
 	// Extract raw OCR fields once, then map to structured fields
-	rawFields, err := h.ocrService.ExtractFieldsFromFile(file, handler)
+	rawFields, err := h.ocrService.OCRFromFile(file, handler)
 	if err != nil {
 		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
 			Success: false,
@@ -1046,33 +1047,32 @@ func (h *CarHandler) UploadBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create draft car from book fields
-	car, err := h.carService.CreateCarFromBook(userID, bookFields)
+	// Upload book with duplicate resolution
+	_, action, redirectToCarID, errorCode, err := h.carService.UploadBookToDraft(carID, userID, bookFields)
 	if err != nil {
-		if strings.Contains(err.Error(), "duplicate key") || strings.Contains(err.Error(), "unique constraint") {
-			utils.RespondJSON(w, http.StatusConflict, models.UserErrorResponse{
-				Success: false,
-				Error:   "A car with this chassis number already exists",
+		if errorCode != "" {
+			// Return error with code for client handling
+			utils.RespondJSON(w, http.StatusConflict, map[string]interface{}{
+				"success":         false,
+				"message":         err.Error(),
+				"code":            errorCode,
+				"action":          action,
+				"redirectToCarID": redirectToCarID,
 			})
 			return
 		}
 		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
 			Success: false,
-			Error:   fmt.Sprintf("Failed to create car: %v", err),
+			Error:   fmt.Sprintf("Failed to upload book: %v", err),
 		})
 		return
 	}
 
-	// Return success with car ID and extracted fields
-	utils.RespondJSON(w, http.StatusCreated, map[string]interface{}{
+	// Return display-ready OCR fields without DB writes
+	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{
 		"success": true,
 		"message": "Vehicle registration book processed successfully",
-		"data": map[string]interface{}{
-			"carId":         car.ID,
-			"chassisNumber": car.ChassisNumber,
-			"extracted":     bookFields,
-			"rawFields":     rawFields,
-		},
+		"data":    bookFields.ToMap(),
 	})
 }
 
@@ -1166,40 +1166,51 @@ func (h *CarHandler) UploadInspection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Attach inspection to car (validates chassis match)
-	result, err := h.carService.AttachInspection(carID, userID, inspectionData, h.scraperService)
+	// Map scraped fields to structured inspection fields (no DB writes)
+	inspectionFields, err := h.scraperService.MapToInspectionFields(inspectionData)
 	if err != nil {
-		// Check for validation errors (BOOK_REQUIRED)
-		if validationErr, ok := err.(*services.ValidationError); ok {
-			utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-				Success: false,
-				Error:   validationErr.Message,
-			})
-			return
-		}
-		if strings.Contains(err.Error(), "unauthorized") {
-			utils.RespondJSON(w, http.StatusForbidden, models.UserErrorResponse{
-				Success: false,
-				Error:   err.Error(),
+		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
+			Success: false,
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	// Upload book with duplicate resolution
+	_, action, redirectToCarID, errorCode, err := h.carService.UploadInspectionToDraft(carID, userID, inspectionFields, h.scraperService)
+	if err != nil {
+		if errorCode != "" {
+			// Return error with code for client handling
+			utils.RespondJSON(w, http.StatusConflict, map[string]interface{}{
+				"success":         false,
+				"message":         err.Error(),
+				"code":            errorCode,
+				"action":          action,
+				"redirectToCarID": redirectToCarID,
 			})
 			return
 		}
 		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
 			Success: false,
-			Error:   fmt.Sprintf("Failed to attach inspection: %v", err),
+			Error:   fmt.Sprintf("Failed to upload inspection: %v", err),
 		})
 		return
 	}
 
-	// Return success with chassis match status
-	utils.RespondJSON(w, http.StatusOK, models.InspectionUploadResponse{
-		Message: "Vehicle inspection attached successfully",
-		Data: models.InspectionUploadData{
-			ChassisMatch:      result.ChassisMatch,
-			BookChassis:       result.BookChassis,
-			InspectionChassis: result.InspectionChassis,
-			InspectionData:    inspectionData,
-		},
+	// Build display payload and enrich with color labels from DB
+	payload := inspectionFields.ToMap()
+	if codesAny, ok := payload["colors"]; ok {
+		if codes, ok := codesAny.([]string); ok && len(codes) > 0 {
+			// Resolve labels via service
+			labels, _ := h.carService.GetColorLabelsByCodes(codes, "en")
+			payload["colors"] = labels
+		}
+	}
+
+	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{
+		"success": true,
+		"message": "Vehicle inspection processed successfully",
+		"data":    payload,
 	})
 }
 

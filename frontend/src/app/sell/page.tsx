@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { carsAPI } from "@/lib/carsAPI";
 
 export default function SellLanding() {

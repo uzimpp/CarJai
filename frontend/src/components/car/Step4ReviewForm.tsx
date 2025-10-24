@@ -1,20 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { InlineAlert } from "@/components/ui/InlineAlert";
 import { TextField } from "@/components/ui/TextField";
 import { Choices } from "@/components/ui/Choices";
 import { CheckBoxes } from "@/components/ui/CheckBoxes";
 import type { CarFormData } from "@/types/Car";
 import {
-  BODY_TYPE_OPTIONS,
-  TRANSMISSION_OPTIONS,
-  DRIVETRAIN_OPTIONS,
-  FUEL_TYPE_OPTIONS,
   MIN_DESCRIPTION_LENGTH,
   MAX_DESCRIPTION_LENGTH,
-  DAMAGE_OPTIONS,
 } from "@/constants/car";
+import { referenceAPI } from "@/lib/referenceAPI";
+import type { ChoiceOption } from "@/components/ui/Choices";
+import type { CheckOption } from "@/components/ui/CheckBoxes";
 
 interface Step4ReviewFormProps {
   formData: Partial<CarFormData>;
@@ -22,11 +20,25 @@ interface Step4ReviewFormProps {
   inspectionData: Record<string, string> | null;
   onChange: (updates: Partial<CarFormData>) => void;
   onBookDataChange: (data: Partial<CarFormData>) => void;
+  onInspectionDataChange: (data: Record<string, string>) => void;
   onPublish: () => void;
   onBack: () => void;
   isSubmitting: boolean;
   reviewResult: { ready: boolean; issues: string[] } | null;
 }
+
+const DAMAGE_OPTIONS: CheckOption<string>[] = [
+  {
+    value: "flooded",
+    label: "Flooded Vehicle",
+    description: "This vehicle has been damaged by flooding",
+  },
+  {
+    value: "heavilyDamaged",
+    label: "Heavy Crash History",
+    description: "This vehicle has been in a major accident",
+  },
+];
 
 export default function Step4ReviewForm({
   formData,
@@ -34,11 +46,43 @@ export default function Step4ReviewForm({
   inspectionData,
   onChange,
   onBookDataChange,
+  onInspectionDataChange,
   onPublish,
   onBack,
   isSubmitting,
   reviewResult,
 }: Step4ReviewFormProps) {
+  // Reference options for review-time editing
+  const [bodyTypeOptions, setBodyTypeOptions] = useState<
+    ChoiceOption<string>[]
+  >([]);
+  const [transmissionOptions, setTransmissionOptions] = useState<
+    ChoiceOption<string>[]
+  >([]);
+  const [drivetrainOptions, setDrivetrainOptions] = useState<
+    ChoiceOption<string>[]
+  >([]);
+  const [fuelTypeOptions, setFuelTypeOptions] = useState<
+    ChoiceOption<string>[]
+  >([]);
+
+  useEffect(() => {
+    let mounted = true;
+    referenceAPI.getAll("en").then((res) => {
+      if (!mounted || !res.success) return;
+      const toChoice = (
+        arr: { code: string; label: string }[]
+      ): ChoiceOption<string>[] =>
+        arr.map((o) => ({ value: o.label, label: o.label }));
+      setBodyTypeOptions(toChoice(res.data.bodyTypes));
+      setTransmissionOptions(toChoice(res.data.transmissions));
+      setDrivetrainOptions(toChoice(res.data.drivetrains));
+      setFuelTypeOptions(toChoice(res.data.fuelTypes));
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set()
   );
@@ -177,13 +221,13 @@ export default function Step4ReviewForm({
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <TextField
-                    label="Chassis Number *"
+                    label="Chassis Number"
                     value={bookData.chassisNumber || ""}
                     onChange={(e) =>
                       onBookDataChange({ chassisNumber: e.target.value })
                     }
-                    required
                   />
+                  {/* Registration Number omitted in book section; shown from inspection */}
                   <TextField
                     label="Brand"
                     value={bookData.brandName || ""}
@@ -201,75 +245,7 @@ export default function Step4ReviewForm({
                       })
                     }
                   />
-                  <TextField
-                    label="Color"
-                    value={bookData.color || ""}
-                    onChange={(e) =>
-                      onBookDataChange({ color: e.target.value })
-                    }
-                  />
-                </div>
-
-                {/* License Plate Information */}
-                <div className="mt-4">
-                  <h5 className="text-sm font-semibold text-gray-700 mb-3">
-                    License Plate
-                  </h5>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <TextField
-                      label="Plate Prefix"
-                      value={bookData.prefix || ""}
-                      onChange={(e) =>
-                        onBookDataChange({ prefix: e.target.value })
-                      }
-                      placeholder="e.g., กข"
-                    />
-                    <TextField
-                      label="Plate Number"
-                      value={bookData.number || ""}
-                      onChange={(e) =>
-                        onBookDataChange({ number: e.target.value })
-                      }
-                      placeholder="e.g., 1234"
-                    />
-                    <TextField
-                      label="Province (Thai)"
-                      value={bookData.provinceNameTh || ""}
-                      onChange={(e) =>
-                        onBookDataChange({ provinceNameTh: e.target.value })
-                      }
-                      placeholder="e.g., กรุงเทพมหานคร"
-                    />
-                  </div>
-                </div>
-
-                {/* Additional Info */}
-                <div className="mt-4">
-                  <h5 className="text-sm font-semibold text-gray-700 mb-3">
-                    Additional Info
-                  </h5>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <TextField
-                      label="Engine CC"
-                      type="number"
-                      value={bookData.engineCc?.toString() || ""}
-                      onChange={(e) =>
-                        onBookDataChange({
-                          engineCc: parseInt(e.target.value) || undefined,
-                        })
-                      }
-                    />
-                    <TextField
-                      label="Seats"
-                      type="number"
-                      value={bookData.seats?.toString() || ""}
-                      onChange={(e) =>
-                        onBookDataChange({
-                          seats: parseInt(e.target.value) || undefined,
-                        })
-                      }
-                    />
-                  </div>
+                  {/* Province and plate are populated from inspection */}
                 </div>
               </div>
             )}
@@ -277,18 +253,37 @@ export default function Step4ReviewForm({
             {inspectionData && (
               <div className="space-y-4">
                 <h4 className="font-semibold text-gray-900">
-                  Inspection Report (Read-Only)
+                  Inspection Report
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {Object.entries(inspectionData).map(([key, value]) => (
-                    <TextField
-                      key={key}
-                      label={key}
-                      value={value || ""}
-                      disabled
-                      readOnly
-                    />
-                  ))}
+                  <TextField
+                    label="Registration Number (from inspection)"
+                    value={`${inspectionData["เลขทะเบียน"] || ""} ${
+                      inspectionData["จังหวัด"] || ""
+                    }`.trim()}
+                    onChange={() => {}}
+                    disabled
+                  />
+                  <TextField
+                    label="Chassis Number"
+                    value={inspectionData["เลขตัวถังรถ"] || ""}
+                    onChange={(e) =>
+                      onInspectionDataChange({
+                        ...inspectionData,
+                        เลขตัวถังรถ: e.target.value,
+                      })
+                    }
+                  />
+                  <TextField
+                    label="Mileage"
+                    value={inspectionData["ระยะทางวิ่ง"] || ""}
+                    onChange={(e) =>
+                      onInspectionDataChange({
+                        ...inspectionData,
+                        ระยะทางวิ่ง: e.target.value,
+                      })
+                    }
+                  />
                 </div>
               </div>
             )}
@@ -325,7 +320,7 @@ export default function Step4ReviewForm({
               name="bodyType"
               label="Body Type *"
               value={formData.bodyTypeName || null}
-              options={BODY_TYPE_OPTIONS}
+              options={bodyTypeOptions}
               onChange={(value) => onChange({ bodyTypeName: value })}
               direction="row"
               required
@@ -335,7 +330,7 @@ export default function Step4ReviewForm({
               name="transmission"
               label="Transmission *"
               value={formData.transmissionName || null}
-              options={TRANSMISSION_OPTIONS}
+              options={transmissionOptions}
               onChange={(value) => onChange({ transmissionName: value })}
               direction="row"
               required
@@ -345,7 +340,7 @@ export default function Step4ReviewForm({
               name="drivetrain"
               label="Drivetrain *"
               value={formData.drivetrainName || null}
-              options={DRIVETRAIN_OPTIONS}
+              options={drivetrainOptions}
               onChange={(value) => onChange({ drivetrainName: value })}
               direction="row"
               required
@@ -355,7 +350,7 @@ export default function Step4ReviewForm({
               name="fuelType"
               label="Fuel Type *"
               values={formData.fuelLabels || []}
-              options={FUEL_TYPE_OPTIONS}
+              options={fuelTypeOptions}
               onChange={(values) => onChange({ fuelLabels: values })}
               direction="row"
             />

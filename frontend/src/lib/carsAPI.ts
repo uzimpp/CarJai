@@ -25,10 +25,12 @@ export const carsAPI = {
       searchParams.append("maxYear", params.maxYear.toString());
     if (params.provinceId)
       searchParams.append("provinceId", params.provinceId.toString());
-    if (params.bodyTypeId)
-      searchParams.append("bodyTypeId", params.bodyTypeId.toString());
-    if (params.fuelTypeId)
-      searchParams.append("fuelTypeId", params.fuelTypeId.toString());
+    if (params.bodyType) searchParams.append("bodyType", params.bodyType);
+    if (params.fuelTypes && params.fuelTypes.length > 0) {
+      params.fuelTypes.forEach((fuelType) => {
+        searchParams.append("fuelTypes", fuelType);
+      });
+    }
 
     const queryString = searchParams.toString();
     const endpoint = `/api/cars/search${queryString ? `?${queryString}` : ""}`;
@@ -89,20 +91,27 @@ export const carsAPI = {
     });
   },
 
-  // Upload vehicle registration book
-  async uploadBook(file: File): Promise<{
+  // Upload vehicle registration book to existing car draft
+  async uploadBook(
+    carId: number,
+    file: File
+  ): Promise<{
     success: boolean;
-    data: {
-      carId: number;
-      chassisNumber: string;
-      extracted: Record<string, unknown>;
-      rawFields: Record<string, unknown>;
-    };
     message?: string;
+    data: {
+      chassisNumber: string;
+      brandName: string;
+      year: number;
+      engineCc: number;
+      seats: number;
+    };
+    code?: string;
+    action?: "stay" | "redirect";
+    redirectToCarId?: number | null;
   }> {
     const formData = new FormData();
     formData.append("file", file);
-    return apiCall("/api/cars/book", {
+    return apiCall(`/api/cars/${carId}/book`, {
       method: "POST",
       body: formData,
     });
@@ -115,10 +124,34 @@ export const carsAPI = {
   ): Promise<{
     success: boolean;
     data: {
-      chassisMatch: boolean;
-      bookChassis: string;
-      inspectionChassis: string;
-      inspectionData: Record<string, string>;
+      chassisNumber?: string;
+      mileage?: number;
+      colors?: string[];
+      prefix?: string;
+      number?: string;
+      provinceTh?: string;
+      licensePlate?: string;
+
+      station?: string;
+      overallPass?: boolean;
+      brakeResult?: boolean;
+      handbrakeResult?: boolean;
+      alignmentResult?: boolean;
+      noiseResult?: boolean;
+      emissionResult?: boolean;
+      hornResult?: boolean;
+      highLowBeamResult?: boolean;
+      signalLightsResult?: boolean;
+      otherLightsResult?: boolean;
+      windshieldResult?: boolean;
+      steeringResult?: boolean;
+      wheelsTiresResult?: boolean;
+      fuelTankResult?: boolean;
+      chassisResult?: boolean;
+      bodyResult?: boolean;
+      doorsFloorResult?: boolean;
+      seatbeltResult?: boolean;
+      wiperResult?: boolean;
     };
     message?: string;
   }> {

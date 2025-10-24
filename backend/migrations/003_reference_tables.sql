@@ -28,8 +28,7 @@ CREATE TABLE drivetrains (
 
 -- Colors
 CREATE TABLE colors (
-    id SERIAL PRIMARY KEY,
-    code VARCHAR(20) NOT NULL UNIQUE, -- RED, GRAY, BLUE, etc.
+    code VARCHAR(20) PRIMARY KEY, -- RED, GRAY, BLUE, etc.
     label_th VARCHAR(100) NOT NULL,
     label_en VARCHAR(100) NOT NULL
 );
@@ -477,12 +476,6 @@ VALUES (
         'ภาคตะวันออก',
         'East'
     ),
-    (
-        'นครนายก',
-        'Nakhon Nayok',
-        'ภาคตะวันออก',
-        'East'
-    ), -- overlaps regionally sometimes
     (
         'ประจวบคีรีขันธ์',
         'Prachuap Khiri Khan',

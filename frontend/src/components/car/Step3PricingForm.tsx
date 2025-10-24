@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { TextField } from "@/components/ui/TextField";
 import { FormSection } from "@/components/ui/FormSection";
-import { CheckBoxes } from "@/components/ui/CheckBoxes";
 import { InlineAlert } from "@/components/ui/InlineAlert";
 import CarImageUploader from "@/components/car/CarImageUploader";
 import type { CarFormData } from "@/types/Car";
@@ -11,8 +10,8 @@ import {
   MIN_DESCRIPTION_LENGTH,
   MAX_DESCRIPTION_LENGTH,
   MIN_IMAGES,
-  DAMAGE_OPTIONS,
 } from "@/constants/car";
+
 
 interface Step3PricingFormProps {
   carId: number;
@@ -43,17 +42,6 @@ export default function Step3PricingForm({
     descriptionLength >= MIN_DESCRIPTION_LENGTH &&
     descriptionLength <= MAX_DESCRIPTION_LENGTH;
 
-  // Get damage flags as array
-  const damageFlags: string[] = [];
-  if (formData.isFlooded) damageFlags.push("flooded");
-  if (formData.isHeavilyDamaged) damageFlags.push("heavilyDamaged");
-
-  const handleDamageFlagsChange = (values: string[]) => {
-    onChange({
-      isFlooded: values.includes("flooded"),
-      isHeavilyDamaged: values.includes("heavilyDamaged"),
-    });
-  };
 
   const canContinue =
     formData.price &&
@@ -130,20 +118,6 @@ export default function Step3PricingForm({
             </span>
           </div>
         </div>
-      </FormSection>
-
-      {/* Damage History */}
-      <FormSection
-        title="Vehicle History"
-        description="Disclose any damage history (optional but recommended for transparency)"
-      >
-        <CheckBoxes
-          name="damageHistory"
-          values={damageFlags}
-          options={DAMAGE_OPTIONS}
-          onChange={handleDamageFlagsChange}
-          direction="column"
-        />
       </FormSection>
 
       {/* Images */}

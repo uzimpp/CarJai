@@ -6,15 +6,22 @@ import (
 	"time"
 )
 
+// InspectionUploadResponse for POST /api/cars/{id}/inspection
+type InspectionUploadResponse struct {
+	Success bool              `json:"success"`
+	Data    *InspectionResult `json:"data,omitempty"`
+	Message string            `json:"message,omitempty"`
+	Code    string            `json:"code,omitempty"`
+}
+
 // InspectionResult represents an inspection result record
 type InspectionResult struct {
-	ID          int        `json:"id" db:"id"`
-	CarID       int        `json:"carId" db:"car_id"`
-	OverallPass *bool      `json:"overallPass" db:"overall_pass"`
-	InspectedAt *time.Time `json:"inspectedAt" db:"inspected_at"`
-	Station     *string    `json:"station" db:"station"`
+	ID      int     `json:"id" db:"id"`
+	CarID   int     `json:"carId" db:"car_id"`
+	Station *string `json:"station" db:"station"`
 
 	// Basic test results
+	OverallPass        *bool `json:"overallPass" db:"overall_pass"`
 	BrakeResult        *bool `json:"brakeResult" db:"brake_result"`
 	HandbrakeResult    *bool `json:"handbrakeResult" db:"handbrake_result"`
 	AlignmentResult    *bool `json:"alignmentResult" db:"alignment_result"`
@@ -53,19 +60,19 @@ func NewInspectionRepository(db *Database) *InspectionRepository {
 func (r *InspectionRepository) CreateInspectionResult(inspection *InspectionResult) error {
 	query := `
 		INSERT INTO car_inspection_results (
-			car_id, inspected_at, station, overall_pass,
+			car_id, station, overall_pass,
 			brake_result, handbrake_result, alignment_result, noise_result, emission_result,
 			horn_result, speedometer_result, high_low_beam_result, signal_lights_result,
 			other_lights_result, windshield_result, steering_result, wheels_tires_result,
 			fuel_tank_result, chassis_result, body_result, doors_floor_result, seatbelt_result, wiper_result
 		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
-			$17, $18, $19, $20, $21, $22, $23
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
+			$16, $17, $18, $19, $20, $21, $22
 		)
 		RETURNING id, created_at, updated_at`
 
 	err := r.db.DB.QueryRow(query,
-		inspection.CarID, inspection.InspectedAt, inspection.Station, inspection.OverallPass,
+		inspection.CarID, inspection.Station, inspection.OverallPass,
 		inspection.BrakeResult, inspection.HandbrakeResult, inspection.AlignmentResult,
 		inspection.NoiseResult, inspection.EmissionResult, inspection.HornResult,
 		inspection.SpeedometerResult, inspection.HighLowBeamResult, inspection.SignalLightsResult,
@@ -84,7 +91,7 @@ func (r *InspectionRepository) CreateInspectionResult(inspection *InspectionResu
 func (r *InspectionRepository) GetInspectionByCarID(carID int) (*InspectionResult, error) {
 	inspection := &InspectionResult{}
 	query := `
-		SELECT id, car_id, inspected_at, station, overall_pass,
+		SELECT id, car_id, station, overall_pass,
 			brake_result, handbrake_result, alignment_result, noise_result, emission_result,
 			horn_result, speedometer_result, high_low_beam_result, signal_lights_result,
 			other_lights_result, windshield_result, steering_result, wheels_tires_result,
@@ -96,7 +103,7 @@ func (r *InspectionRepository) GetInspectionByCarID(carID int) (*InspectionResul
 		LIMIT 1`
 
 	err := r.db.DB.QueryRow(query, carID).Scan(
-		&inspection.ID, &inspection.CarID, &inspection.InspectedAt, &inspection.Station, &inspection.OverallPass,
+		&inspection.ID, &inspection.CarID, &inspection.Station, &inspection.OverallPass,
 		&inspection.BrakeResult, &inspection.HandbrakeResult, &inspection.AlignmentResult, &inspection.NoiseResult, &inspection.EmissionResult,
 		&inspection.HornResult, &inspection.SpeedometerResult, &inspection.HighLowBeamResult, &inspection.SignalLightsResult,
 		&inspection.OtherLightsResult, &inspection.WindshieldResult, &inspection.SteeringResult, &inspection.WheelsTiresResult,
@@ -118,16 +125,16 @@ func (r *InspectionRepository) GetInspectionByCarID(carID int) (*InspectionResul
 func (r *InspectionRepository) UpdateInspectionResult(inspection *InspectionResult) error {
 	query := `
 		UPDATE car_inspection_results SET
-			inspected_at = $2, station = $3, overall_pass = $4,
-			brake_result = $5, handbrake_result = $6, alignment_result = $7,
-			noise_result = $8, emission_result = $9, horn_result = $10,
-			speedometer_result = $11, high_low_beam_result = $12, signal_lights_result = $13,
-			other_lights_result = $14, windshield_result = $15, steering_result = $16, wheels_tires_result = $17,
-			fuel_tank_result = $18, chassis_result = $19, body_result = $20, doors_floor_result = $21, seatbelt_result = $22, wiper_result = $23
+			station = $2, overall_pass = $3,
+			brake_result = $4, handbrake_result = $5, alignment_result = $6,
+			noise_result = $7, emission_result = $8, horn_result = $9,
+			speedometer_result = $10, high_low_beam_result = $11, signal_lights_result = $12,
+			other_lights_result = $13, windshield_result = $14, steering_result = $15, wheels_tires_result = $16,
+			fuel_tank_result = $17, chassis_result = $18, body_result = $19, doors_floor_result = $20, seatbelt_result = $21, wiper_result = $22
 		WHERE id = $1`
 
 	result, err := r.db.DB.Exec(query,
-		inspection.ID, inspection.InspectedAt, inspection.Station, inspection.OverallPass,
+		inspection.ID, inspection.Station, inspection.OverallPass,
 		inspection.BrakeResult, inspection.HandbrakeResult, inspection.AlignmentResult,
 		inspection.NoiseResult, inspection.EmissionResult, inspection.HornResult,
 		inspection.SpeedometerResult, inspection.HighLowBeamResult, inspection.SignalLightsResult,

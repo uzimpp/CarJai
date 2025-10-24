@@ -6,79 +6,40 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"mime/multipart"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/uzimpp/CarJai/backend/models"
+	"github.com/uzimpp/CarJai/backend/utils"
 )
 
 // URL v2 ที่ถูกต้อง
 const aigenAPIURL = "https://api.aigen.online/aiscript/vehicle-registration-book/v2"
 
-// Struct สำหรับสร้าง JSON request body (ถูกต้องแล้ว)
 type aigenJSONRequest struct {
 	Image string `json:"image"`
 }
-
-// ===================================================================
-// === จุดที่แก้ไข (Final Struct) ===
-// ===================================================================
-// Struct ย่อยสำหรับดึงค่า "value" ที่ซ้อนอยู่ข้างใน
 type valueObject struct {
 	Value string `json:"value"`
 }
 
-// Struct หลักสำหรับรับ Response ทั้งหมด
-// เราจะใช้ map[string]valueObject เพื่อรองรับ key แบบ dynamic (ownership, model, etc.)
 type AigenSuccessResponse struct {
 	Status string                   `json:"status"`
 	Data   []map[string]valueObject `json:"data"`
 }
 
-// ===================================================================
-
 // BookFields represents structured data extracted from vehicle registration book
 type BookFields struct {
-	ChassisNumber      string  `json:"chassisNumber"`
-	BrandName          *string `json:"brandName"`
-	ModelName          *string `json:"modelName"`
-	Year               *int    `json:"year"`
-	EngineCC           *int    `json:"engineCc"`
-	Seats              *int    `json:"seats"`
-	RegistrationNumber string  `json:"registrationNumber"` // License plate
-	Province           *string `json:"province"`
-	OwnerName          *string `json:"ownerName"`
-}
-
-// ToMap converts BookFields to a map for JSON response
-func (bf *BookFields) ToMap() map[string]interface{} {
-	m := make(map[string]interface{})
-	m["chassisNumber"] = bf.ChassisNumber
-	if bf.BrandName != nil {
-		m["brandName"] = *bf.BrandName
-	}
-	if bf.ModelName != nil {
-		m["modelName"] = *bf.ModelName
-	}
-	if bf.Year != nil {
-		m["year"] = *bf.Year
-	}
-	if bf.EngineCC != nil {
-		m["engineCc"] = *bf.EngineCC
-	}
-	if bf.Seats != nil {
-		m["seats"] = *bf.Seats
-	}
-	if bf.RegistrationNumber != "" {
-		m["registrationNumber"] = bf.RegistrationNumber
-	}
-	if bf.Province != nil {
-		m["province"] = *bf.Province
-	}
-	if bf.OwnerName != nil {
-		m["ownerName"] = *bf.OwnerName
-	}
-	return m
+	ChassisNumber string  `json:"chassisNumber"` // Required
+	BrandName     *string `json:"brandName"`     // Optional
+	Year          *int    `json:"year"`          // Optional
+	EngineCC      *int    `json:"engineCc"`      // Optional (rounded to int)
+	Seats         *int    `json:"seats"`         // Optional
+	// RegistrationNumber string  `json:"registrationNumber"` // Required - License plate
+	// Province           *string `json:"province"`           // Optional
 }
 
 type OCRService struct {
@@ -93,8 +54,8 @@ func NewOCRService(apiKey string) *OCRService {
 	}
 }
 
-// ExtractFieldsFromFile calls AIGEN OCR and returns raw key->value fields
-func (s *OCRService) ExtractFieldsFromFile(file multipart.File, handler *multipart.FileHeader) (map[string]string, error) {
+// OCRFromFile calls AIGEN OCR and returns raw key->value fields
+func (s *OCRService) OCRFromFile(file multipart.File, handler *multipart.FileHeader) (map[string]string, error) {
 	// Reset file reader to beginning if seekable
 	if seeker, ok := file.(io.Seeker); ok {
 		seeker.Seek(0, io.SeekStart)
@@ -162,35 +123,44 @@ func (s *OCRService) ExtractFieldsFromFile(file multipart.File, handler *multipa
 }
 
 // MapToBookFields maps raw OCR fields to structured BookFields
+// Uses exact field names from AIGEN OCR API response
 func (s *OCRService) MapToBookFields(rawFields map[string]string) (*BookFields, error) {
 	bookFields := &BookFields{}
 
-	// Chassis number (car_number in OCR API)
+	// Chassis number (exact field: car_number)
 	if chassis, ok := rawFields["car_number"]; ok && chassis != "" {
-		bookFields.ChassisNumber = strings.TrimSpace(chassis)
+		normalized := utils.NormalizeChassis(chassis)
+		if len(normalized) < 10 || len(normalized) > 30 {
+			return nil, fmt.Errorf("invalid chassis number length: must be between 10 and 30 characters")
+		}
+		bookFields.ChassisNumber = normalized
 	}
 
-	// Brand name (brand_car in OCR API)
+	// Brand name (exact field: brand_car)
 	if brand, ok := rawFields["brand_car"]; ok && brand != "" {
 		trimmed := strings.TrimSpace(brand)
 		bookFields.BrandName = &trimmed
 	}
 
-	// Model name (model in OCR API)
-	if model, ok := rawFields["model"]; ok && model != "" {
-		trimmed := strings.TrimSpace(model)
-		bookFields.ModelName = &trimmed
-	}
-
-	// Engine CC (engine_size in OCR API)
-	if engineCc, ok := rawFields["engine_size"]; ok && engineCc != "" {
-		var cc int
-		if _, err := fmt.Sscanf(engineCc, "%d", &cc); err == nil {
-			bookFields.EngineCC = &cc
+	// Year (exact field: year_model)
+	if year, ok := rawFields["year_model"]; ok && year != "" {
+		var y int
+		if _, err := fmt.Sscanf(year, "%d", &y); err == nil {
+			bookFields.Year = &y
 		}
 	}
 
-	// Seats (number_of_seat in OCR API)
+	// Engine CC (exact field: engine_size)
+	if engineCc, ok := rawFields["engine_size"]; ok && engineCc != "" {
+		var cc float64
+		// Parse as float to handle various formats
+		if _, err := fmt.Sscanf(engineCc, "%f", &cc); err == nil {
+			rounded := int(math.Round(cc))
+			bookFields.EngineCC = &rounded
+		}
+	}
+
+	// Seats (exact field: number_of_seat)
 	if seats, ok := rawFields["number_of_seat"]; ok && seats != "" {
 		var s int
 		if _, err := fmt.Sscanf(seats, "%d", &s); err == nil {
@@ -198,29 +168,130 @@ func (s *OCRService) MapToBookFields(rawFields map[string]string) (*BookFields, 
 		}
 	}
 
-	// Registration number (registration_number_car in OCR API)
-	if regNum, ok := rawFields["registration_number_car"]; ok && regNum != "" {
-		bookFields.RegistrationNumber = strings.TrimSpace(regNum)
-	}
+	// Registration number (exact field: registration_number_car)
+	// if regNum, ok := rawFields["registration_number_car"]; ok && regNum != "" {
+	// 	bookFields.RegistrationNumber = strings.TrimSpace(regNum)
+	// }
 
-	// Province (province in OCR API)
-	if province, ok := rawFields["province"]; ok && province != "" {
-		trimmed := strings.TrimSpace(province)
-		bookFields.Province = &trimmed
-	}
+	// if province, ok := rawFields["province"]; ok && province != "" {
+	// 	bookFields.Province = &province
+	// }
 
-	// Owner name (ownership in OCR API - full name with title)
-	if owner, ok := rawFields["ownership"]; ok && owner != "" {
-		trimmed := strings.TrimSpace(owner)
-		bookFields.OwnerName = &trimmed
-	}
-
+	// Validate required fields
 	if bookFields.ChassisNumber == "" {
 		return nil, fmt.Errorf("chassis number not found in document")
 	}
-	if bookFields.RegistrationNumber == "" {
-		return nil, fmt.Errorf("registration number not found in document")
-	}
+	// if bookFields.RegistrationNumber == "" {
+	// 	return nil, fmt.Errorf("registration number not found in document")
+	// }
 
 	return bookFields, nil
+}
+
+// UploadBookToDraft uploads a book to an existing draft car with duplicate resolution
+// Returns: (car, action, redirectToCarID, errorCode, error)
+func (s *CarService) UploadBookToDraft(carID int, sellerID int, bookFields *BookFields) (*models.Car, string, *int, string, error) {
+	// Get the current draft car
+	currentCar, err := s.carRepo.GetCarByID(carID)
+	if err != nil {
+		return nil, "", nil, "", fmt.Errorf("failed to get car: %w", err)
+	}
+
+	// Check ownership
+	if currentCar.SellerID != sellerID {
+		return nil, "", nil, "", fmt.Errorf("unauthorized: you can only upload books to your own cars")
+	}
+
+	// Check if already published
+	if currentCar.Status != "draft" {
+		return nil, "", nil, "", fmt.Errorf("can only upload book to draft cars")
+	}
+
+	// Normalize chassis number
+	normalizedChassis := utils.NormalizeChassis(bookFields.ChassisNumber)
+
+	// Look for existing cars with this chassis
+	existingCars, err := s.carRepo.FindCarsByChassisNumber(normalizedChassis)
+	if err != nil {
+		return nil, "", nil, "", fmt.Errorf("failed to check for duplicates: %w", err)
+	}
+
+	// Filter out the current car
+	var otherCars []models.Car
+	for _, car := range existingCars {
+		if car.ID != carID {
+			otherCars = append(otherCars, car)
+		}
+	}
+
+	// Check for conflicts
+	if len(otherCars) > 0 {
+		for _, car := range otherCars {
+			// Check status and ownership for specific error codes
+			if car.SellerID == sellerID {
+				// Same seller owns another car with this chassis
+				switch car.Status {
+				case "draft":
+					// Check if current car is ephemeral
+					if !car.BookUploaded && !car.InspectionUploaded {
+						// Delete current ephemeral draft and redirect to existing
+						if err := s.carRepo.DeleteCar(carID); err != nil {
+							return nil, "", nil, "", fmt.Errorf("failed to delete ephemeral draft: %w", err)
+						}
+						return &car, "redirect", &car.ID, ErrCodeCarDuplicateOwnDraftRedirect, nil
+					} else {
+						// Current car has progress, return conflict
+						return nil, "", &car.ID, ErrCodeCarMultipleDrafts, fmt.Errorf("you have an existing draft for this vehicle. Please finish or discard it first")
+					}
+				case "active":
+					return nil, "", nil, ErrCodeCarDuplicateOwnActive, fmt.Errorf("you already have an active listing for this vehicle")
+				case "sold":
+					return nil, "", nil, ErrCodeCarDuplicateOwnSold, fmt.Errorf("you have already sold this vehicle")
+				case "deleted":
+					return nil, "", nil, ErrCodeCarDuplicateOwnDeleted, fmt.Errorf("this vehicle was previously deleted from your listings")
+				}
+			} else {
+				// Different seller owns this chassis
+				if car.Status != "deleted" {
+					return nil, "", nil, ErrCodeCarDuplicateOtherOwned, fmt.Errorf("this vehicle is already listed by another seller")
+				}
+			}
+		}
+	}
+
+	// No conflicts, attach book to current draft
+	currentCar.ChassisNumber = normalizedChassis
+	currentCar.BrandName = bookFields.BrandName
+	currentCar.Year = bookFields.Year
+	currentCar.EngineCC = bookFields.EngineCC // Already rounded in OCR service
+	currentCar.Seats = bookFields.Seats
+	currentCar.BookUploaded = true
+
+	return currentCar, "stay", nil, "", nil
+}
+
+// ToMap converts BookFields to a map for API responses
+func (bookFields *BookFields) ToMap() map[string]interface{} {
+	result := make(map[string]interface{})
+
+	result["chassisNumber"] = bookFields.ChassisNumber
+	if bookFields.BrandName != nil {
+		result["brandName"] = *bookFields.BrandName
+	}
+	if bookFields.Year != nil {
+		result["year"] = *bookFields.Year
+	}
+	if bookFields.EngineCC != nil {
+		result["engineCc"] = *bookFields.EngineCC
+	}
+	if bookFields.Seats != nil {
+		result["seats"] = *bookFields.Seats
+	}
+	// result["registrationNumber"] = bookFields.RegistrationNumber
+	// if bookFields.Province != nil {
+	// 	result["province"] = *bookFields.Province
+	// }
+	// result["province"] = utils.DisplayProvince(*bookFields.Province)
+
+	return result
 }
