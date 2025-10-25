@@ -30,7 +30,6 @@ export default function SellWithIdPage() {
 
   // Form data
   const [formData, setFormData] = useState<Partial<CarFormData>>({});
-  const [bookData, setBookData] = useState<Partial<CarFormData> | null>(null);
   const [inspectionData, setInspectionData] = useState<Record<
     string,
     string
@@ -189,22 +188,14 @@ export default function SellWithIdPage() {
       const result = await carsAPI.uploadBook(carId, file);
 
       if (result.success) {
-        // Handle server-side duplicate resolution
-        if (result.action === "redirect" && result.redirectToCarId) {
-          // Redirect to the existing draft that matches this chassis
-          router.replace(`/sell/${result.redirectToCarId}`);
-          return;
-        }
-
-        const extracted = result.data as Partial<CarFormData>;
-        extracted.chassisNumber = result.data.chassisNumber;
-        // Registration number may be provided as a single combined string
-        const extractedObj = result.data as Record<string, unknown>;
-        const regValue = extractedObj?.["registrationNumber"];
-        if (typeof regValue === "string") {
-          extracted.registrationNumber = regValue;
-        }
-        setBookData(extracted);
+        // Strict type matching - only pick fields that exist in both types
+        const extracted: Partial<CarFormData> = {
+          ...(result.data.brandName && { brandName: result.data.brandName }),
+          ...(result.data.year && { year: result.data.year }),
+          ...(result.data.engineCc && { engineCc: result.data.engineCc }),
+          ...(result.data.seats && { seats: result.data.seats }),
+        };
+        setFormData((prev) => ({ ...prev, ...extracted }));
         setHasProgress(true);
       } else {
         throw new Error(
@@ -228,6 +219,12 @@ export default function SellWithIdPage() {
       const result = await carsAPI.uploadInspection(carId, url);
 
       if (result.success) {
+        // Handle server-side duplicate resolution
+        if (result.action === "redirect" && result.redirectToCarId) {
+          // Redirect to the existing draft that matches this chassis
+          router.replace(`/sell/${result.redirectToCarId}`);
+          return;
+        }
         setInspectionData(result.data as Record<string, string>);
         setHasProgress(true);
       } else {
@@ -243,24 +240,31 @@ export default function SellWithIdPage() {
     () =>
       debounce(async (data: Partial<CarFormData>) => {
         if (!carId) return;
+
+        // Sanitize: remove chassisNumber if it somehow got in
+        const { chassisNumber, ...sanitizedData } =
+          data as Partial<CarFormData> & { chassisNumber?: string };
+
         try {
-          await carsAPI.autosaveDraft(carId, data);
+          await carsAPI.autosaveDraft(carId, sanitizedData);
           setHasProgress(true);
         } catch (err) {
           // Silent fail for autosave
           console.error("Autosave failed:", err);
         }
-      }, 1000),
+      }, 1500), // 1.5 seconds debounce
     [carId]
   );
 
   // Trigger autosave when form data changes
   useEffect(() => {
     if (
-      (currentStep === "specs" ||
+      (currentStep === "documents" ||
+        currentStep === "specs" ||
         currentStep === "pricing" ||
         currentStep === "review") &&
-      Object.keys(formData).length > 0
+      Object.keys(formData).length > 0 &&
+      !isSubmitting
     ) {
       debouncedAutoSave(formData);
     }
@@ -272,11 +276,7 @@ export default function SellWithIdPage() {
     setHasProgress(true);
   }, []);
 
-  // Handle book data changes
-  const handleBookDataChange = useCallback((updates: Partial<CarFormData>) => {
-    setBookData((prev) => ({ ...prev, ...updates }));
-    setHasProgress(true);
-  }, []);
+  // Note: handleBookDataChange removed - Step 1 now uses handleFormChange
 
   // Handle inspection data changes
   const handleInspectionDataChange = useCallback(
@@ -453,11 +453,11 @@ export default function SellWithIdPage() {
                 chassis numbers must match to continue.
               </p>
               <Step1DocumentsForm
+                formData={formData}
+                onFormDataChange={handleFormChange}
                 onBookUpload={handleBookUpload}
                 onInspectionUpload={handleInspectionUpload}
-                bookData={bookData}
                 inspectionData={inspectionData}
-                onBookDataChange={handleBookDataChange}
                 onContinue={() => setCurrentStep("specs")}
                 isSubmitting={isSubmitting}
               />
@@ -519,10 +519,8 @@ export default function SellWithIdPage() {
               </p>
               <Step4ReviewForm
                 formData={formData}
-                bookData={bookData}
                 inspectionData={inspectionData}
                 onChange={handleFormChange}
-                onBookDataChange={handleBookDataChange}
                 onInspectionDataChange={handleInspectionDataChange}
                 onPublish={handlePublish}
                 onBack={() => setCurrentStep("pricing")}

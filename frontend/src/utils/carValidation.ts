@@ -14,22 +14,7 @@ export function isDescriptionValid(description: string): boolean {
   return length >= MIN_DESCRIPTION_LENGTH && length <= MAX_DESCRIPTION_LENGTH;
 }
 
-/**
- * Validates if the chassis numbers match between book and inspection
- * @param bookChassisNumber - Chassis number from registration book
- * @param inspectionChassisNumber - Chassis number from inspection
- * @returns true if they match, false otherwise
- */
-export function doChassisNumbersMatch(
-  bookChassisNumber?: string,
-  inspectionChassisNumber?: string
-): boolean {
-  return (
-    !!bookChassisNumber &&
-    !!inspectionChassisNumber &&
-    bookChassisNumber === inspectionChassisNumber
-  );
-}
+
 
 /**
  * Validates if Step 1 (Documents) is complete
@@ -38,13 +23,20 @@ export function doChassisNumbersMatch(
  * @returns true if step is complete
  */
 export function isStep1Complete(
-  bookData: Partial<CarFormData> | null,
+  formData: Partial<CarFormData> | null,
   inspectionData: Record<string, string> | null
 ): boolean {
   return (
-    bookData !== null &&
+    formData !== null &&
     inspectionData !== null &&
-    doChassisNumbersMatch(bookData.chassisNumber, inspectionData["เลขตัวถังรถ"])
+    formData.mileage !== undefined &&
+    formData.year !== undefined &&
+    formData.seats !== undefined &&
+    formData.doors !== undefined &&
+    formData.engineCc !== undefined &&
+    formData.brandName !== undefined &&
+    formData.modelName !== undefined &&
+    formData.submodelName !== undefined
   );
 }
 
@@ -58,9 +50,7 @@ export function isStep2Complete(formData: Partial<CarFormData>): boolean {
     formData.bodyTypeName &&
     formData.transmissionName &&
     formData.drivetrainName &&
-    (formData.fuelLabels?.length ?? 0) > 0 &&
-    formData.modelName &&
-    formData.mileage !== undefined
+    (formData.fuelTypes?.length ?? 0) > 0
   );
 }
 

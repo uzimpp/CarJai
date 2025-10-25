@@ -63,48 +63,27 @@ export interface InspectionData {
 
 // Form data type with text fields for user input (frontend → backend)
 export interface CarFormData {
-  // Text fields for user input
-  colors?: string[];
-  prefix?: string;
-  number?: string;
-  provinceTh?: string;
-  licensePlate?: string;
-  bodyTypeName?: string;
-  transmissionName?: string;
-  drivetrainName?: string;
-  fuelLabels?: string[];
+  // Step 1
   brandName?: string;
   modelName?: string;
   submodelName?: string;
-  description?: string;
-
-  // Numbers
   mileage?: number;
-  price?: number;
-  conditionRating?: number;
   year?: number;
   seats?: number;
   doors?: number;
-  engineCc?: number; // Can be decimal (1.5, 2.4) or whole number (1500, 2400)
+  engineCc?: number;
 
-  // Booleans
+  // Step 2
+  bodyTypeName?: string;
+  transmissionName?: string;
+  drivetrainName?: string;
+  fuelTypes?: string[];
   isFlooded?: boolean;
   isHeavilyDamaged?: boolean;
 
-  // Inspection fields (read-only from scrape) - Updated to use codes
-  registrationNumber?: string;
-  chassisNumber?: string;
-  engineNumber?: string;
-  bodyStyle?: string;
-  colorCodes?: string[]; // Changed from color (now array of codes)
-  fuelTypeCodes?: string[]; // Changed from fuelTypeId (now array of codes)
-  overallResult?: string;
-  brakePerformance?: string;
-  handbrakePerformance?: string;
-  emissionValue?: string;
-  noiseLevel?: string;
-  brakeResult?: string;
-  wheelAlignmentResult?: string;
-  emissionResult?: string;
-  chassisConditionResult?: string;
+  // Step 3
+  images?: File[];
+  price?: number;
+  description?: string;
+  conditionRating?: number;
 }

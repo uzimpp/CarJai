@@ -224,7 +224,7 @@ func (s *CarService) UploadBookToDraft(carID int, sellerID int, bookFields *Book
 func (bookFields *BookFields) ToMap() map[string]interface{} {
 	result := make(map[string]interface{})
 
-	result["chassisNumber"] = bookFields.ChassisNumber
+	// result["chassisNumber"] = bookFields.ChassisNumber
 	if bookFields.BrandName != nil {
 		result["brandName"] = *bookFields.BrandName
 	}

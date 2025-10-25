@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { useState } from "react";
 import { TextField } from "@/components/ui/TextField";
 import { FormSection } from "@/components/ui/FormSection";
 import { InlineAlert } from "@/components/ui/InlineAlert";
@@ -9,21 +9,21 @@ import type { CarFormData, InspectionData } from "@/types/Car";
 import Image from "next/image";
 
 interface Step1DocumentsFormProps {
+  formData: Partial<CarFormData>;
+  onFormDataChange: (data: Partial<CarFormData>) => void;
   onBookUpload: (file: File) => Promise<void>;
   onInspectionUpload: (url: string) => Promise<void>;
-  bookData: Partial<CarFormData> | null;
   inspectionData: InspectionData | null;
-  onBookDataChange: (data: Partial<CarFormData>) => void;
   onContinue: () => void;
   isSubmitting: boolean;
 }
 
 export default function Step1DocumentsForm({
+  formData,
+  onFormDataChange,
   onBookUpload,
   onInspectionUpload,
-  bookData,
   inspectionData,
-  onBookDataChange,
   onContinue,
   isSubmitting,
 }: Step1DocumentsFormProps) {
@@ -31,21 +31,6 @@ export default function Step1DocumentsForm({
   const [isUploadingInspection, setIsUploadingInspection] = useState(false);
   const [error, setError] = useState("");
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
-
-  // Inspection is authoritative for chassis and license plate
-  const inspectionAuthoritative = Boolean(inspectionData?.chassisNumber);
-
-  // Continue condition: if inspection exists -> allow; else require both documents matching
-  const bothDocumentsUploaded =
-    Boolean(bookData?.chassisNumber) && Boolean(inspectionData?.chassisNumber);
-  const chassisNumbersMatch = inspectionAuthoritative
-    ? true
-    : Boolean(bookData?.chassisNumber) &&
-      bookData?.chassisNumber === inspectionData?.chassisNumber;
-  const canContinue =
-    (inspectionAuthoritative ||
-      (bothDocumentsUploaded && chassisNumbersMatch)) &&
-    !isSubmitting;
 
   const handleBookFileChange = async (
     e: React.ChangeEvent<HTMLInputElement>
@@ -160,27 +145,27 @@ export default function Step1DocumentsForm({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <TextField
                 label="Brand"
-                value={bookData?.brandName || ""}
+                value={formData.brandName || ""}
                 onChange={(e) =>
-                  onBookDataChange({ brandName: e.target.value })
+                  onFormDataChange({ brandName: e.target.value })
                 }
                 placeholder="e.g., Toyota"
                 required
               />
               <TextField
                 label="Model Name"
-                value={bookData?.modelName || ""}
+                value={formData.modelName || ""}
                 onChange={(e) =>
-                  onBookDataChange({ modelName: e.target.value })
+                  onFormDataChange({ modelName: e.target.value })
                 }
                 placeholder="e.g., Civic, Corolla, Camry"
                 required
               />
               <TextField
                 label="Submodel Name"
-                value={bookData?.submodelName || ""}
+                value={formData.submodelName || ""}
                 onChange={(e) =>
-                  onBookDataChange({ submodelName: e.target.value })
+                  onFormDataChange({ submodelName: e.target.value })
                 }
                 placeholder="e.g., RS, Hybrid, Sport"
                 required
@@ -188,9 +173,9 @@ export default function Step1DocumentsForm({
               <TextField
                 label="Year"
                 type="number"
-                value={bookData?.year?.toString() || ""}
+                value={formData.year?.toString() || ""}
                 onChange={(e) =>
-                  onBookDataChange({
+                  onFormDataChange({
                     year: parseInt(e.target.value) || undefined,
                   })
                 }
@@ -214,9 +199,9 @@ export default function Step1DocumentsForm({
               <TextField
                 label="Engine CC"
                 type="number"
-                value={bookData?.engineCc?.toString() || ""}
+                value={formData.engineCc?.toString() || ""}
                 onChange={(e) =>
-                  onBookDataChange({
+                  onFormDataChange({
                     engineCc: parseInt(e.target.value) || undefined,
                   })
                 }
@@ -226,9 +211,9 @@ export default function Step1DocumentsForm({
               <TextField
                 label="Seats"
                 type="number"
-                value={bookData?.seats?.toString() || ""}
+                value={formData.seats?.toString() || ""}
                 onChange={(e) =>
-                  onBookDataChange({
+                  onFormDataChange({
                     seats: parseInt(e.target.value) || undefined,
                   })
                 }
@@ -238,9 +223,9 @@ export default function Step1DocumentsForm({
               <TextField
                 label="Doors"
                 type="number"
-                value={bookData?.doors?.toString() || ""}
+                value={formData.doors?.toString() || ""}
                 onChange={(e) =>
-                  onBookDataChange({
+                  onFormDataChange({
                     doors: parseInt(e.target.value) || undefined,
                   })
                 }
@@ -252,7 +237,7 @@ export default function Step1DocumentsForm({
                 type="number"
                 value={inspectionData?.mileage.toString() || ""}
                 onChange={(e) =>
-                  onBookDataChange({
+                  onFormDataChange({
                     mileage: parseInt(e.target.value) || undefined,
                   })
                 }
@@ -384,31 +369,11 @@ export default function Step1DocumentsForm({
         </div>
       </FormSection>
 
-      {/* Chassis Number Validation (only when inspection not yet authoritative) */}
-      {bookData && inspectionData && !inspectionAuthoritative && (
-        <div className="mt-4">
-          {chassisNumbersMatch ? (
-            <InlineAlert type="success">
-              ✓ Chassis numbers match! You can continue to the next step.
-            </InlineAlert>
-          ) : (
-            <InlineAlert type="error">
-              ⚠ Chassis numbers do not match. Please verify the information in
-              both documents.
-              <br />
-              Book: {bookData?.chassisNumber || "(not found)"}
-              <br />
-              Inspection: {inspectionData?.chassisNumber || "(not found)"}
-            </InlineAlert>
-          )}
-        </div>
-      )}
-
       {/* Continue Button */}
       <div className="flex justify-end pt-6 border-t">
         <button
           onClick={onContinue}
-          disabled={!canContinue}
+          disabled={isSubmitting}
           className="px-8 py-3 bg-maroon text-white rounded-lg font-semibold hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Continue to Vehicle Details

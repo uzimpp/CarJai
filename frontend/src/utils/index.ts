@@ -2,7 +2,6 @@
 export { debounce } from "./debounce";
 export {
   isDescriptionValid,
-  doChassisNumbersMatch,
   isStep1Complete,
   isStep2Complete,
   isStep3Complete,

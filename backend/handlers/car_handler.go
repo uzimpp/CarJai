@@ -347,12 +347,6 @@ func (h *CarHandler) AutoSaveDraft(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if user is admin
-	isAdmin := false
-	if adminID, ok := r.Context().Value("admin_id").(int); ok && adminID > 0 {
-		isAdmin = true
-	}
-
 	// Parse request body
 	var req models.UpdateCarRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -364,7 +358,7 @@ func (h *CarHandler) AutoSaveDraft(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Auto-save draft (relaxed validation)
-	if err := h.carService.AutoSaveDraft(carID, userID, &req, isAdmin); err != nil {
+	if err := h.carService.AutoSaveDraft(carID, userID, &req); err != nil {
 		if strings.Contains(err.Error(), "unauthorized") {
 			utils.RespondJSON(w, http.StatusForbidden, models.UserErrorResponse{
 				Success: false,

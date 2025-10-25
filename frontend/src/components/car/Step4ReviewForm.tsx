@@ -16,10 +16,8 @@ import type { CheckOption } from "@/components/ui/CheckBoxes";
 
 interface Step4ReviewFormProps {
   formData: Partial<CarFormData>;
-  bookData: Partial<CarFormData> | null;
   inspectionData: Record<string, string> | null;
   onChange: (updates: Partial<CarFormData>) => void;
-  onBookDataChange: (data: Partial<CarFormData>) => void;
   onInspectionDataChange: (data: Record<string, string>) => void;
   onPublish: () => void;
   onBack: () => void;
@@ -42,10 +40,8 @@ const DAMAGE_OPTIONS: CheckOption<string>[] = [
 
 export default function Step4ReviewForm({
   formData,
-  bookData,
   inspectionData,
   onChange,
-  onBookDataChange,
   onInspectionDataChange,
   onPublish,
   onBack,
@@ -172,13 +168,13 @@ export default function Step4ReviewForm({
           <div>
             <p className="text-sm opacity-90">Vehicle</p>
             <p className="text-lg font-semibold">
-              {bookData?.brandName || "—"} {formData.modelName || "—"}{" "}
+              {formData.modelName || "—"}{" "}
               {formData.submodelName && `(${formData.submodelName})`}
             </p>
           </div>
           <div>
             <p className="text-sm opacity-90">Year</p>
-            <p className="text-lg font-semibold">{bookData?.year || "—"}</p>
+            <p className="text-lg font-semibold">{formData.year || "—"}</p>
           </div>
           <div>
             <p className="text-sm opacity-90">Price</p>
@@ -203,7 +199,7 @@ export default function Step4ReviewForm({
           <div>
             <p className="text-sm opacity-90">Fuel Type</p>
             <p className="text-lg font-semibold">
-              {formData.fuelLabels?.join(", ") || "—"}
+              {formData.fuelTypes?.join(", ") || "—"}
             </p>
           </div>
         </div>
@@ -214,42 +210,6 @@ export default function Step4ReviewForm({
         {/* Document Information */}
         <EditableSection id="documents" title="📄 Document Information">
           <div className="space-y-6">
-            {bookData && (
-              <div className="space-y-4">
-                <h4 className="font-semibold text-gray-900">
-                  Registration Book
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <TextField
-                    label="Chassis Number"
-                    value={bookData.chassisNumber || ""}
-                    onChange={(e) =>
-                      onBookDataChange({ chassisNumber: e.target.value })
-                    }
-                  />
-                  {/* Registration Number omitted in book section; shown from inspection */}
-                  <TextField
-                    label="Brand"
-                    value={bookData.brandName || ""}
-                    onChange={(e) =>
-                      onBookDataChange({ brandName: e.target.value })
-                    }
-                  />
-                  <TextField
-                    label="Year"
-                    type="number"
-                    value={bookData.year?.toString() || ""}
-                    onChange={(e) =>
-                      onBookDataChange({
-                        year: parseInt(e.target.value) || undefined,
-                      })
-                    }
-                  />
-                  {/* Province and plate are populated from inspection */}
-                </div>
-              </div>
-            )}
-
             {inspectionData && (
               <div className="space-y-4">
                 <h4 className="font-semibold text-gray-900">
@@ -349,9 +309,9 @@ export default function Step4ReviewForm({
             <CheckBoxes
               name="fuelType"
               label="Fuel Type *"
-              values={formData.fuelLabels || []}
+              values={formData.fuelTypes || []}
               options={fuelTypeOptions}
-              onChange={(values) => onChange({ fuelLabels: values })}
+              onChange={(values) => onChange({ fuelTypes: values })}
               direction="row"
             />
           </div>

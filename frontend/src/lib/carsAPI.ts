@@ -99,15 +99,11 @@ export const carsAPI = {
     success: boolean;
     message?: string;
     data: {
-      chassisNumber: string;
       brandName: string;
       year: number;
       engineCc: number;
       seats: number;
     };
-    code?: string;
-    action?: "stay" | "redirect";
-    redirectToCarId?: number | null;
   }> {
     const formData = new FormData();
     formData.append("file", file);
@@ -154,6 +150,9 @@ export const carsAPI = {
       wiperResult?: boolean;
     };
     message?: string;
+    code?: string;
+    action?: "stay" | "redirect";
+    redirectToCarId?: number | null;
   }> {
     return apiCall(`/api/cars/${carId}/inspection`, {
       method: "POST",

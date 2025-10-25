@@ -239,11 +239,6 @@ func (s *CarService) UpdateCar(carID, userID int, req *models.UpdateCarRequest, 
 		return err
 	}
 
-	// Validate step-2 access
-	if err := s.validateStep2Access(car, req); err != nil {
-		return err
-	}
-
 	// If trying to change status to "active", run full publish validation
 	if req.Status != nil && *req.Status == "active" && car.Status != "active" {
 		ready, issues := s.ValidatePublish(carID)
@@ -269,7 +264,7 @@ func (s *CarService) UpdateCar(carID, userID int, req *models.UpdateCarRequest, 
 }
 
 // AutoSaveDraft saves a car draft without strict validation (for auto-save functionality)
-func (s *CarService) AutoSaveDraft(carID, userID int, req *models.UpdateCarRequest, isAdmin bool) error {
+func (s *CarService) AutoSaveDraft(carID, userID int, req *models.UpdateCarRequest) error {
 	// Get the car to check ownership
 	car, err := s.carRepo.GetCarByID(carID)
 	if err != nil {
@@ -277,27 +272,22 @@ func (s *CarService) AutoSaveDraft(carID, userID int, req *models.UpdateCarReque
 	}
 
 	// Check authorization
-	if err := s.checkCarOwnership(car, userID, isAdmin); err != nil {
+	if err := s.checkCarOwnership(car, userID, false); err != nil {
 		return err
 	}
 
-	// Forbid editing read-only fields (colors come from inspection; status via dedicated endpoint)
+	// Forbid editing read-only fields (chassisNumber comes from book upload; status via dedicated endpoint)
+	if req.ChassisNumber != nil {
+		return fmt.Errorf("cannot modify chassis number via draft endpoint; upload registration book")
+	}
 	if req.Status != nil {
 		return fmt.Errorf("cannot change status via draft endpoint; use PUT /api/cars/{id}/status instead")
-	}
-	if req.ChassisNumber != nil {
-		return fmt.Errorf("cannot modify chassis number via draft endpoint")
 	}
 
 	// Map text fields to IDs if provided
 	if err := s.mapTextFieldsToIDs(req, car); err != nil {
 		// Log error but don't fail - autosave is lenient
 		// In production, you might want to return issues in stepStatus
-	}
-
-	// Validate step-2 access (still enforce document upload requirement)
-	if err := s.validateStep2Access(car, req); err != nil {
-		return err
 	}
 
 	// Validate mileage is non-decreasing (basic validation even in draft)
@@ -433,20 +423,6 @@ func (s *CarService) ComputeStep3Status(carID int) (bool, []string) {
 func (s *CarService) checkCarOwnership(car *models.Car, userID int, isAdmin bool) error {
 	if !isAdmin && car.SellerID != userID {
 		return fmt.Errorf("unauthorized: you can only update your own cars")
-	}
-	return nil
-}
-
-// validateStep2Access checks if step-2 fields can be edited
-func (s *CarService) validateStep2Access(car *models.Car, req *models.UpdateCarRequest) error {
-	// Step-2 fields: body_type, transmission, drivetrain, model/submodel, mileage, year, price, description, condition_rating, seats/doors, flooded/damaged
-	// Prevent editing step-2 fields if documents not uploaded
-	if req.BodyTypeCode != nil || req.TransmissionCode != nil || req.DrivetrainCode != nil ||
-		req.ModelName != nil || req.SubmodelName != nil || req.Mileage != nil ||
-		req.Year != nil || req.Price != nil || req.Description != nil ||
-		req.ConditionRating != nil || req.Seats != nil || req.Doors != nil ||
-		req.IsFlooded != nil || req.IsHeavilyDamaged != nil {
-		return fmt.Errorf("cannot edit car details until both vehicle book and inspection are uploaded")
 	}
 	return nil
 }

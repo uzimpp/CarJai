@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { TextField } from "@/components/ui/TextField";
 import { Choices } from "@/components/ui/Choices";
 import { FormSection } from "@/components/ui/FormSection";
 import { CheckBoxes } from "@/components/ui/CheckBoxes";
@@ -62,9 +61,7 @@ export default function Step2DetailsForm({
     formData.bodyTypeName &&
     formData.transmissionName &&
     formData.drivetrainName &&
-    (formData.fuelLabels?.length ?? 0) > 0 &&
-    formData.modelName &&
-    formData.mileage !== undefined &&
+    (formData.fuelTypes?.length ?? 0) > 0 &&
     !isSubmitting;
 
   // Get damage flags as array
@@ -133,9 +130,9 @@ export default function Step2DetailsForm({
       >
         <CheckBoxes
           name="fuelType"
-          values={formData.fuelLabels || []}
+          values={formData.fuelTypes || []}
           options={fuelTypeOptions}
-          onChange={(values) => onChange({ fuelLabels: values })}
+          onChange={(values) => onChange({ fuelTypes: values })}
           direction="row"
         />
       </FormSection>
