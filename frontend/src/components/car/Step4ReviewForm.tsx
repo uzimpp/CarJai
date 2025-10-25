@@ -149,13 +149,15 @@ export default function Step4ReviewForm({
             </InlineAlert>
           ) : (
             <InlineAlert type="warning">
-              Your listing is not yet ready. Please address the following
-              issues:
-              <ul className="list-disc list-inside mt-2 space-y-1">
-                {reviewResult.issues.map((issue, index) => (
-                  <li key={index}>{issue}</li>
-                ))}
-              </ul>
+              <div>
+                Your listing is not yet ready. Please address the following
+                issues:
+                <ul className="list-disc list-inside mt-2 space-y-1">
+                  {reviewResult.issues.map((issue, index) => (
+                    <li key={index}>{issue}</li>
+                  ))}
+                </ul>
+              </div>
             </InlineAlert>
           )}
         </div>
@@ -199,7 +201,7 @@ export default function Step4ReviewForm({
           <div>
             <p className="text-sm opacity-90">Fuel Type</p>
             <p className="text-lg font-semibold">
-              {formData.fuelTypes?.join(", ") || "—"}
+              {formData.fuelLabels?.join(", ") || "—"}
             </p>
           </div>
         </div>
@@ -309,9 +311,9 @@ export default function Step4ReviewForm({
             <CheckBoxes
               name="fuelType"
               label="Fuel Type *"
-              values={formData.fuelTypes || []}
+              values={formData.fuelLabels || []}
               options={fuelTypeOptions}
-              onChange={(values) => onChange({ fuelTypes: values })}
+              onChange={(values) => onChange({ fuelLabels: values })}
               direction="row"
             />
           </div>

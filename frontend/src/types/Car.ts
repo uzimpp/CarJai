@@ -77,7 +77,7 @@ export interface CarFormData {
   bodyTypeName?: string;
   transmissionName?: string;
   drivetrainName?: string;
-  fuelTypes?: string[];
+  fuelLabels?: string[]; // Maps to backend fuelLabels (e.g., ["Gasoline", "LPG"])
   isFlooded?: boolean;
   isHeavilyDamaged?: boolean;
 

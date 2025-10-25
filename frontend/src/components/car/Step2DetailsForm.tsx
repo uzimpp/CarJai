@@ -61,7 +61,7 @@ export default function Step2DetailsForm({
     formData.bodyTypeName &&
     formData.transmissionName &&
     formData.drivetrainName &&
-    (formData.fuelTypes?.length ?? 0) > 0 &&
+    (formData.fuelLabels?.length ?? 0) > 0 &&
     !isSubmitting;
 
   // Get damage flags as array
@@ -130,9 +130,9 @@ export default function Step2DetailsForm({
       >
         <CheckBoxes
           name="fuelType"
-          values={formData.fuelTypes || []}
+          values={formData.fuelLabels || []}
           options={fuelTypeOptions}
-          onChange={(values) => onChange({ fuelTypes: values })}
+          onChange={(values) => onChange({ fuelLabels: values })}
           direction="row"
         />
       </FormSection>

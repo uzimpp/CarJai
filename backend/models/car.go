@@ -1116,7 +1116,7 @@ func (r *CarRepository) LookupDrivetrainByName(name string) (*string, error) {
 	return &code, nil
 }
 
-// LookupFuelCodesByLabels finds fuel codes by Thai or English labels
+// LookupFuelCodesByLabels finds fuel codes by Thai or English labels (exact match)
 func (r *CarRepository) LookupFuelCodesByLabels(labels []string) ([]string, error) {
 	if len(labels) == 0 {
 		return []string{}, nil
@@ -1124,10 +1124,10 @@ func (r *CarRepository) LookupFuelCodesByLabels(labels []string) ([]string, erro
 	args := []interface{}{}
 	wheres := []string{}
 	for i, label := range labels {
-		args = append(args, "%"+label+"%")
-		wheres = append(wheres, fmt.Sprintf("(label_th ILIKE $%d OR label_en ILIKE $%d)", i+1, i+1))
+		args = append(args, label)
+		wheres = append(wheres, fmt.Sprintf("(label_th = $%d OR label_en = $%d)", i+1, i+1))
 	}
-	query := "SELECT code FROM fuel_types WHERE " + strings.Join(wheres, " OR ")
+	query := "SELECT DISTINCT code FROM fuel_types WHERE " + strings.Join(wheres, " OR ")
 	rows, err := r.db.DB.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to lookup fuel codes: %w", err)

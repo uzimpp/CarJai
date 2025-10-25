@@ -50,7 +50,7 @@ export function isStep2Complete(formData: Partial<CarFormData>): boolean {
     formData.bodyTypeName &&
     formData.transmissionName &&
     formData.drivetrainName &&
-    (formData.fuelTypes?.length ?? 0) > 0
+    (formData.fuelLabels?.length ?? 0) > 0
   );
 }
 
