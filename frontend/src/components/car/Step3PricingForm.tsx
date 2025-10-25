@@ -12,7 +12,6 @@ import {
   MIN_IMAGES,
 } from "@/constants/car";
 
-
 interface Step3PricingFormProps {
   carId: number;
   formData: Partial<CarFormData>;
@@ -34,14 +33,11 @@ export default function Step3PricingForm({
   imagesUploaded = false,
   onImagesUploaded,
 }: Step3PricingFormProps) {
-  const [showImageUploader, setShowImageUploader] = useState(!imagesUploaded);
-
   const description = formData.description || "";
   const descriptionLength = description.length;
   const descriptionValid =
     descriptionLength >= MIN_DESCRIPTION_LENGTH &&
     descriptionLength <= MAX_DESCRIPTION_LENGTH;
-
 
   const canContinue =
     formData.price &&
@@ -125,35 +121,20 @@ export default function Step3PricingForm({
         title="Vehicle Images"
         description={`Upload ${MIN_IMAGES}-12 high-quality images of your vehicle. The first image will be the main display image.`}
       >
-        {imagesUploaded && !showImageUploader ? (
-          <div className="space-y-4">
-            <InlineAlert type="success">
-              ✓ Images uploaded successfully
-            </InlineAlert>
-            <button
-              onClick={() => setShowImageUploader(true)}
-              className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg"
-            >
-              Upload More Images or Reorder
-            </button>
-          </div>
-        ) : (
-          <CarImageUploader
-            carId={carId}
-            onUploadComplete={() => {
-              setShowImageUploader(false);
-              if (onImagesUploaded) {
-                onImagesUploaded();
-              }
-            }}
-          />
-        )}
+        <CarImageUploader
+          carId={carId}
+          onUploadComplete={() => {
+            if (onImagesUploaded) {
+              onImagesUploaded();
+            }
+          }}
+        />
       </FormSection>
 
       {/* Validation Messages */}
       {!imagesUploaded && (
         <InlineAlert type="warning">
-          Please upload at least {MIN_IMAGES} images before continuing
+          Please add at least {MIN_IMAGES} images before continuing
         </InlineAlert>
       )}
 

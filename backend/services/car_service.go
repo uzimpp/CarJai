@@ -373,6 +373,9 @@ func (s *CarService) ComputeStep2Status(carID int) (bool, []string) {
 	if car.Mileage == nil {
 		issues = append(issues, "Mileage required")
 	}
+	if car.ConditionRating == nil || *car.ConditionRating < 1 || *car.ConditionRating > 5 {
+		issues = append(issues, "Condition rating required (1-5)")
+	}
 	// Fuels presence (informational here; enforced on publish)
 	fuels, err := s.fuelRepo.GetCarFuels(carID)
 	if err == nil && len(fuels) == 0 {

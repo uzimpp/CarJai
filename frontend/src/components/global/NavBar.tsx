@@ -73,16 +73,10 @@ export default function NavBar() {
             Home
           </Link>
           <Link
-            href="/buy"
+            href="/browse"
             className="text-0 text-gray-700 hover:text-maroon transition-colors font-medium"
           >
             Browse Cars
-          </Link>
-          <Link
-            href="/sell"
-            className="text-0 text-gray-700 hover:text-maroon transition-colors font-medium"
-          >
-            Sell Cars
           </Link>
           <Link
             href="/about-us"

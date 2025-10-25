@@ -62,6 +62,7 @@ export default function Step2DetailsForm({
     formData.transmissionName &&
     formData.drivetrainName &&
     (formData.fuelLabels?.length ?? 0) > 0 &&
+    formData.conditionRating &&
     !isSubmitting;
 
   // Get damage flags as array
@@ -133,6 +134,28 @@ export default function Step2DetailsForm({
           values={formData.fuelLabels || []}
           options={fuelTypeOptions}
           onChange={(values) => onChange({ fuelLabels: values })}
+          direction="row"
+        />
+      </FormSection>
+
+      {/* Condition Rating */}
+      <FormSection
+        title="Overall Condition"
+        description="Rate your vehicle's overall condition"
+      >
+        <Choices
+          name="conditionRating"
+          value={formData.conditionRating?.toString() || null}
+          options={[
+            { value: "1", label: "1 - Poor" },
+            { value: "2", label: "2 - Fair" },
+            { value: "3", label: "3 - Good" },
+            { value: "4", label: "4 - Very Good" },
+            { value: "5", label: "5 - Excellent" },
+          ]}
+          onChange={(value) =>
+            onChange({ conditionRating: value ? parseInt(value) : undefined })
+          }
           direction="row"
         />
       </FormSection>

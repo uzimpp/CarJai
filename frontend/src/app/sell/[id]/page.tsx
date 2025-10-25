@@ -96,66 +96,7 @@ export default function SellWithIdPage() {
     }
   }, [isAuthenticated, isLoading, roles, profiles, router]);
 
-  // Auto-discard on real page leave (not React remount) if no progress
-  useEffect(() => {
-    const shouldDiscard = () => {
-      return (
-        !hasProgressRef.current &&
-        carId &&
-        !isNaN(carId) &&
-        !suppressAutoDiscardRef.current
-      );
-    };
-
-    const handleBeforeUnload = () => {
-      if (shouldDiscard()) {
-        const blob = new Blob([JSON.stringify({})], {
-          type: "application/json",
-        });
-        navigator.sendBeacon(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/cars/${carId}/discard`,
-          blob
-        );
-      }
-    };
-
-    const handlePageHide = () => {
-      if (shouldDiscard()) {
-        const blob = new Blob([JSON.stringify({})], {
-          type: "application/json",
-        });
-        navigator.sendBeacon(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/cars/${carId}/discard`,
-          blob
-        );
-      }
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "hidden" && shouldDiscard()) {
-        const blob = new Blob([JSON.stringify({})], {
-          type: "application/json",
-        });
-        navigator.sendBeacon(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/cars/${carId}/discard`,
-          blob
-        );
-      }
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    window.addEventListener("pagehide", handlePageHide);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      window.removeEventListener("pagehide", handlePageHide);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      // IMPORTANT: No discard here - cleanup runs on every React remount in dev
-    };
-  }, [carId]);
-
-  // Auto-discard when navigating away from this draft page (client-side routing)
+  // Auto-discard when navigating away from this draft page (client-side routing only)
   useEffect(() => {
     // Skip on first mount to avoid false positive from Strict Mode
     if (!initializedPathRef.current) {
@@ -186,7 +127,6 @@ export default function SellWithIdPage() {
 
     try {
       const result = await carsAPI.uploadBook(carId, file);
-
       if (result.success) {
         // Strict type matching - only pick fields that exist in both types
         const extracted: Partial<CarFormData> = {

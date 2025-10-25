@@ -210,6 +210,15 @@ export const carsAPI = {
     });
   },
 
+  // Delete car image
+  async deleteImage(
+    imageId: number
+  ): Promise<{ success: boolean; message?: string }> {
+    return apiCall(`/api/cars/images/${imageId}`, {
+      method: "DELETE",
+    });
+  },
+
   // Review car for publish readiness
   async reviewCar(carId: number): Promise<{
     success: boolean;

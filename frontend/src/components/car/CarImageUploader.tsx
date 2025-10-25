@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef, DragEvent } from "react";
+import { useState, useRef, DragEvent, useEffect } from "react";
 import Image from "next/image";
 import { apiCall } from "@/lib/ApiCall";
+import { carsAPI } from "@/lib/carsAPI";
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const MIN_IMAGES = 5;
@@ -15,9 +16,12 @@ const ACCEPTED_IMAGE_TYPES = [
 ];
 
 interface ImagePreview {
-  file: File;
+  file: File | null;
   preview: string;
   order: number;
+  status: "uploading" | "uploaded" | "failed";
+  serverId?: number;
+  error?: string;
 }
 
 interface CarImageUploaderProps {
@@ -36,12 +40,44 @@ export default function CarImageUploader({
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFiles = (files: FileList | null) => {
+  // Load existing images on mount
+  useEffect(() => {
+    const loadExistingImages = async () => {
+      try {
+        const result = await carsAPI.getById(carId);
+        if (result.success && result.data.images) {
+          const existingImages: ImagePreview[] = result.data.images.map(
+            (img: any, idx: number) => ({
+              file: null as any, // Not a file since already uploaded
+              preview: `/api/cars/images/${img.id}`, // Backend image URL
+              order: img.displayOrder,
+              status: "uploaded" as const,
+              serverId: img.id,
+            })
+          );
+          setImages(existingImages);
+          if (onUploadComplete) {
+            onUploadComplete();
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load existing images:", err);
+        // Silent fail - user can still add new images
+      }
+    };
+
+    if (carId) {
+      loadExistingImages();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [carId]);
+
+  const handleFiles = async (files: FileList | null) => {
     if (!files) return;
 
     setError("");
-    const newImages: ImagePreview[] = [];
     const fileArray = Array.from(files);
+    const newImages: ImagePreview[] = [];
 
     // Check if adding these files would exceed max
     if (images.length + fileArray.length > MAX_IMAGES) {
@@ -51,6 +87,7 @@ export default function CarImageUploader({
       return;
     }
 
+    // Validate files and create previews
     for (const file of fileArray) {
       // Validate file type
       if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
@@ -72,10 +109,108 @@ export default function CarImageUploader({
         file,
         preview,
         order: images.length + newImages.length,
+        status: "uploading",
       });
     }
 
-    setImages([...images, ...newImages]);
+    if (newImages.length === 0) return;
+
+    // Add to UI immediately
+    const updatedImages = [...images, ...newImages];
+    setImages(updatedImages);
+
+    // Upload immediately
+    setIsUploading(true);
+
+    try {
+      const formData = new FormData();
+      newImages.forEach((img) => {
+        if (img.file) {
+          formData.append("images", img.file);
+        }
+      });
+
+      const result = await apiCall<{
+        success: boolean;
+        data?: {
+          carId: number;
+          uploadedCount: number;
+          images: Array<{
+            id: number;
+            carId: number;
+            imageType: string;
+            imageSize: number;
+            displayOrder: number;
+            uploadedAt: string;
+          }>;
+        };
+        message?: string;
+      }>(`/api/cars/${carId}/images`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (result.success && result.data) {
+        // Update images with server IDs and success status
+        const updatedImagesWithIds = images.map((img) => {
+          const matchingNewImg = newImages.find((ni) => ni.file === img.file);
+          if (matchingNewImg) {
+            const uploadIdx = newImages.indexOf(matchingNewImg);
+            const uploadedImg = result.data?.images[uploadIdx];
+
+            if (uploadedImg) {
+              return {
+                ...img,
+                status: "uploaded" as const,
+                serverId: uploadedImg.id,
+                preview: `/api/cars/images/${uploadedImg.id}`, // Update to server URL
+              };
+            }
+          }
+          return img;
+        });
+
+        setImages(updatedImagesWithIds);
+
+        if (onUploadComplete) {
+          onUploadComplete();
+        }
+      } else {
+        // Mark all new images as failed
+        setImages(
+          images.map((img, idx) => {
+            if (newImages.some((ni) => ni.file === img.file)) {
+              return {
+                ...img,
+                status: "failed" as const,
+                error: result.message || "Upload failed",
+              };
+            }
+            return img;
+          })
+        );
+        setError(result.message || "Upload error occurred");
+      }
+    } catch (err) {
+      console.error("Upload exception:", err);
+      // Mark all new images as failed
+      setImages(
+        images.map((img) => {
+          if (newImages.some((ni) => ni.file === img.file)) {
+            return {
+              ...img,
+              status: "failed" as const,
+              error:
+                err instanceof Error ? err.message : "Upload error occurred",
+            };
+          }
+          return img;
+        })
+      );
+      setError(err instanceof Error ? err.message : "Upload error occurred");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleDrag = (e: DragEvent<HTMLDivElement>) => {
@@ -102,18 +237,28 @@ export default function CarImageUploader({
     handleFiles(e.target.files);
   };
 
-  const removeImage = (index: number) => {
-    const newImages = images.filter(
-      (_: ImagePreview, i: number) => i !== index
-    );
-    // Update order
-    newImages.forEach((img: ImagePreview, i: number) => {
+  const removeImage = async (index: number) => {
+    const imageToRemove = images[index];
+
+    // Optimistically remove from UI
+    const newImages = images.filter((_, i) => i !== index);
+    newImages.forEach((img, i) => {
       img.order = i;
     });
     setImages(newImages);
+    URL.revokeObjectURL(imageToRemove.preview);
 
-    // Revoke URL to free memory
-    URL.revokeObjectURL(images[index].preview);
+    // Delete from backend if uploaded
+    if (imageToRemove.serverId && imageToRemove.status === "uploaded") {
+      try {
+        await carsAPI.deleteImage(imageToRemove.serverId);
+        console.log("✅ Image removed from draft");
+      } catch (err) {
+        console.error("Failed to remove image:", err);
+        setError("Failed to remove image");
+        // Could restore the image here if needed
+      }
+    }
   };
 
   const handleDragStart = (index: number) => {
@@ -130,7 +275,7 @@ export default function CarImageUploader({
     newImages.splice(index, 0, draggedImage);
 
     // Update order
-    newImages.forEach((img: ImagePreview, i: number) => {
+    newImages.forEach((img, i) => {
       img.order = i;
     });
 
@@ -138,89 +283,27 @@ export default function CarImageUploader({
     setDraggedIndex(index);
   };
 
-  const handleDragEnd = () => {
+  const handleDragEnd = async () => {
     setDraggedIndex(null);
-  };
 
-  const handleUpload = async () => {
-    console.log("=== Upload Debug Info ===");
-    console.log("Car ID:", carId);
-    console.log("Images count:", images.length);
-    console.log("MIN_IMAGES:", MIN_IMAGES);
+    // Save new order to backend if all images are uploaded
+    const allUploaded = images.every(
+      (img) => img.status === "uploaded" && img.serverId
+    );
 
-    if (images.length < MIN_IMAGES) {
-      const errorMsg = `Please select at least ${MIN_IMAGES} images (currently have ${images.length})`;
-      setError(errorMsg);
-      console.error(errorMsg);
-      return;
-    }
+    if (allUploaded && images.length > 0) {
+      const imageIds = images.map((img) => img.serverId!);
 
-    setIsUploading(true);
-    setError("");
-
-    const formData = new FormData();
-
-    // Sort by order and append to formData
-    const sortedImages = [...images].sort((a, b) => a.order - b.order);
-    sortedImages.forEach((img, index) => {
-      console.log(
-        `Adding image ${index + 1}:`,
-        img.file.name,
-        img.file.size,
-        "bytes"
-      );
-      formData.append("images", img.file);
-    });
-
-    try {
-      const url = `/api/cars/${carId}/images`;
-      console.log("Uploading to:", url);
-
-      const result = await apiCall<{
-        success: boolean;
-        data?: {
-          carId: number;
-          uploadedCount: number;
-          images: Array<{
-            id: number;
-            carId: number;
-            imageType: string;
-            imageSize: number;
-            displayOrder: number;
-            uploadedAt: string;
-          }>;
-        };
-        message?: string;
-      }>(url, {
-        method: "POST",
-        body: formData,
-      });
-
-      console.log("Upload result:", result);
-
-      if (result.success) {
-        console.log("✅ Upload successful!");
-        // Clear previews
-        images.forEach((img) => URL.revokeObjectURL(img.preview));
-        setImages([]);
-
-        if (onUploadComplete) {
-          onUploadComplete();
-        }
-      } else {
-        const errorMsg = result.message || "Upload error occurred";
-        console.error("❌ Upload failed:", errorMsg);
-        setError(errorMsg);
+      try {
+        await apiCall(`/api/cars/${carId}/images/order`, {
+          method: "PUT",
+          body: JSON.stringify({ imageIds }),
+        });
+        console.log("✅ Image order saved");
+      } catch (err) {
+        console.error("Failed to save image order:", err);
+        setError("Failed to save image order");
       }
-    } catch (err) {
-      console.error("❌ Upload exception:", err);
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Upload error occurred");
-      }
-    } finally {
-      setIsUploading(false);
     }
   };
 
@@ -303,21 +386,28 @@ export default function CarImageUploader({
         <div>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-800">
-              Selected Images ({images.length}/{MAX_IMAGES})
+              Images ({images.length}/{MAX_IMAGES})
             </h3>
             {images.length < MIN_IMAGES && (
               <span className="text-sm font-medium text-orange-600 bg-orange-50 px-3 py-1 rounded-full">
                 ⚠️ Need {MIN_IMAGES - images.length} more
               </span>
             )}
-            {images.length >= MIN_IMAGES && (
-              <span className="text-sm font-medium text-green-600 bg-green-50 px-3 py-1 rounded-full">
-                ✓ Ready to upload
+            {images.length >= MIN_IMAGES &&
+              images.every((img) => img.status === "uploaded") && (
+                <span className="text-sm font-medium text-green-600 bg-green-50 px-3 py-1 rounded-full">
+                  ✓ All images saved
+                </span>
+              )}
+            {images.some((img) => img.status === "uploading") && (
+              <span className="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                ⏳ Uploading...
               </span>
             )}
           </div>
           <p className="text-sm text-gray-600 mb-4">
-            💡 Drag images to reorder (first image will be the main image)
+            💡 Images are saved automatically. Drag to reorder (first image will
+            be the main image)
           </p>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -341,6 +431,23 @@ export default function CarImageUploader({
                   {index + 1}
                   {index === 0 && " (Main)"}
                 </div>
+
+                {/* Status Badge */}
+                {img.status === "uploading" && (
+                  <div className="absolute top-2 right-12 z-10 px-2 py-1 bg-blue-500 text-white text-xs font-bold rounded">
+                    ⏳
+                  </div>
+                )}
+                {img.status === "uploaded" && (
+                  <div className="absolute top-2 right-12 z-10 px-2 py-1 bg-green-500 text-white text-xs font-bold rounded">
+                    ✓
+                  </div>
+                )}
+                {img.status === "failed" && (
+                  <div className="absolute top-2 right-12 z-10 px-2 py-1 bg-red-500 text-white text-xs font-bold rounded">
+                    ✗
+                  </div>
+                )}
 
                 {/* Remove Button */}
                 <button
@@ -374,65 +481,32 @@ export default function CarImageUploader({
                 />
 
                 {/* File Info */}
-                <div className="p-2 bg-gray-50">
-                  <p
-                    className="text-xs text-gray-600 truncate"
-                    title={img.file.name}
-                  >
-                    {img.file.name}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {(img.file.size / 1024 / 1024).toFixed(2)} MB
-                  </p>
-                </div>
+                {img.file && (
+                  <div className="p-2 bg-gray-50">
+                    <p
+                      className="text-xs text-gray-600 truncate"
+                      title={img.file.name}
+                    >
+                      {img.file.name}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {(img.file.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                  </div>
+                )}
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Upload Button */}
-      <div className="flex gap-4">
-        <button
-          onClick={handleUpload}
-          disabled={images.length < MIN_IMAGES || isUploading}
-          className="flex-1 px-6 py-3 text-lg font-semibold text-white bg-red-600 rounded-xl hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-          title={
-            images.length < MIN_IMAGES
-              ? `Need ${MIN_IMAGES - images.length} more images`
-              : "Click to upload"
-          }
-        >
-          {isUploading ? (
-            <>
-              <span className="inline-block animate-spin mr-2">⏳</span>
-              Uploading...
-            </>
-          ) : (
-            `Upload ${images.length} image${images.length > 1 ? "s" : ""} ${
-              images.length < MIN_IMAGES
-                ? `(need ${MIN_IMAGES - images.length} more)`
-                : ""
-            }`
-          )}
-        </button>
-
-        {images.length > 0 && (
-          <button
-            onClick={() => {
-              images.forEach((img: ImagePreview) =>
-                URL.revokeObjectURL(img.preview)
-              );
-              setImages([]);
-              setError("");
-            }}
-            disabled={isUploading}
-            className="px-6 py-3 text-lg font-semibold text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Clear All
-          </button>
+      {/* Status Message */}
+      {images.length >= MIN_IMAGES &&
+        images.every((img) => img.status === "uploaded") && (
+          <div className="p-4 text-center text-green-600 bg-green-50 rounded-lg">
+            ✓ {images.length} images saved to draft
+          </div>
         )}
-      </div>
 
       {/* Instructions */}
       <div className="p-4 bg-blue-50 rounded-lg">

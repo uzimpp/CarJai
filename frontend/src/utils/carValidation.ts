@@ -14,8 +14,6 @@ export function isDescriptionValid(description: string): boolean {
   return length >= MIN_DESCRIPTION_LENGTH && length <= MAX_DESCRIPTION_LENGTH;
 }
 
-
-
 /**
  * Validates if Step 1 (Documents) is complete
  * @param bookData - Data from registration book
@@ -50,7 +48,8 @@ export function isStep2Complete(formData: Partial<CarFormData>): boolean {
     formData.bodyTypeName &&
     formData.transmissionName &&
     formData.drivetrainName &&
-    (formData.fuelLabels?.length ?? 0) > 0
+    (formData.fuelLabels?.length ?? 0) > 0 &&
+    formData.conditionRating
   );
 }
 

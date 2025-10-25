@@ -150,28 +150,6 @@ export default function AccountBtn({
                   </div>
                 )}
 
-                {roles?.seller && (
-                  <Link
-                    href={`/seller/${user?.id}`}
-                    onClick={() => setOpen(false)}
-                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-maroon/10 hover:text-maroon transition-colors"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      className="w-5 h-5"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 2a4 4 0 110 8 4 4 0 010-8zm-6 14a6 6 0 1112 0v1a1 1 0 01-1 1H5a1 1 0 01-1-1v-1z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <span className="font-medium">View Public Profile</span>
-                  </Link>
-                )}
-
                 {roles?.buyer && (
                   <Link
                     href="/favorites"
@@ -205,6 +183,28 @@ export default function AccountBtn({
                       <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 18.657l-6.828-6.83a4 4 0 010-5.655z" />
                     </svg>
                     <span className="font-medium">Recent Views</span>
+                  </Link>
+                )}
+
+                {roles?.seller && (
+                  <Link
+                    href={`/seller/${user?.id}`}
+                    onClick={() => setOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-maroon/10 hover:text-maroon transition-colors"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      className="w-5 h-5"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 2a4 4 0 110 8 4 4 0 010-8zm-6 14a6 6 0 1112 0v1a1 1 0 01-1 1H5a1 1 0 01-1-1v-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <span className="font-medium">View Public Profile</span>
                   </Link>
                 )}
 

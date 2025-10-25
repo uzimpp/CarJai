@@ -245,6 +245,13 @@ export default function Step1DocumentsForm({
                 helper="This will be the most recent mileage value for your listing"
               />
               <TextField
+                label="Color"
+                value={inspectionData?.colors || ""}
+                onChange={() => {}}
+                placeholder="e.g., Red, Blue, Green"
+                disabled
+              />
+              <TextField
                 label="Inspection Station"
                 value={inspectionData?.station || ""}
                 onChange={() => {}}
