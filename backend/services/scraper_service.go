@@ -279,21 +279,22 @@ func (s *ScraperService) ExtractInspectionResult(kv map[string]string, possibleK
 }
 
 // AttachInspection attaches inspection data to a car and validates chassis match
-func (s *CarService) UploadInspectionToDraft(carID int, sellerID int, inspectionFields *InspectionFields, scraperService *ScraperService) (*models.Car, string, *int, string, error) {
+// Returns: savedCar (on success), existingCarID (on duplicate), errorCode, error
+func (s *CarService) UploadInspectionToDraft(carID int, sellerID int, inspectionFields *InspectionFields, scraperService *ScraperService) (*models.Car, *int, string, error) {
 	// Get the car to check ownership and chassis
 	currentCar, err := s.carRepo.GetCarByID(carID)
 	if err != nil {
-		return nil, "", nil, "", fmt.Errorf("failed to get car: %w", err)
+		return nil, nil, "", fmt.Errorf("failed to get car: %w", err)
 	}
 
 	// Check ownership
 	if currentCar.SellerID != sellerID {
-		return nil, "", nil, "", fmt.Errorf("unauthorized: you can only attach inspection to your own cars")
+		return nil, nil, "", fmt.Errorf("unauthorized: you can only attach inspection to your own cars")
 	}
 
 	// Check if already published
 	if currentCar.Status != "draft" {
-		return nil, "", nil, "", fmt.Errorf("can only upload inspection to draft cars")
+		return nil, nil, "", fmt.Errorf("can only upload inspection to draft cars")
 	}
 
 	// Normalize both chassis numbers for comparison
@@ -302,7 +303,7 @@ func (s *CarService) UploadInspectionToDraft(carID int, sellerID int, inspection
 	// Look for existing cars with this chassis
 	existingCars, err := s.carRepo.FindCarsByChassisNumber(normalizedChassis)
 	if err != nil {
-		return nil, "", nil, "", fmt.Errorf("failed to check for duplicates: %w", err)
+		return nil, nil, "", fmt.Errorf("failed to check for duplicates: %w", err)
 	}
 
 	// Filter out the current car
@@ -321,27 +322,18 @@ func (s *CarService) UploadInspectionToDraft(carID int, sellerID int, inspection
 				// Same seller owns another car with this chassis
 				switch car.Status {
 				case "draft":
-					if s.hasProgress(currentCar) {
-						// Delete current ephemeral draft and redirect to existing
-						if err := s.carRepo.DeleteCar(carID); err != nil {
-							return nil, "", nil, "", fmt.Errorf("failed to delete ephemeral draft: %w", err)
-						}
-						return &car, "redirect", &car.ID, ErrCodeCarDuplicateOwnDraftRedirect, nil
-					} else {
-						// Current car has progress, return conflict
-						return nil, "", &car.ID, ErrCodeCarMultipleDrafts, fmt.Errorf("you have an existing draft for this vehicle. Please finish or discard it first")
-					}
+					return nil, &car.ID, ErrCodeCarDuplicateOwnDraft, fmt.Errorf("you already have a draft for this vehicle. Do you want to continue with the existing draft or create a new listing?")
 				case "active":
-					return nil, "", nil, ErrCodeCarDuplicateOwnActive, fmt.Errorf("you already have an active listing for this vehicle")
+					return nil, nil, ErrCodeCarDuplicateOwnActive, fmt.Errorf("you already have an active listing for this vehicle")
 				case "sold":
-					return nil, "", nil, ErrCodeCarDuplicateOwnSold, fmt.Errorf("you have already sold this vehicle")
+					return nil, nil, ErrCodeCarDuplicateOwnSold, fmt.Errorf("you have already sold this vehicle")
 				case "deleted":
-					return nil, "", nil, ErrCodeCarDuplicateOwnDeleted, fmt.Errorf("this vehicle was previously deleted from your listings")
+					return nil, nil, ErrCodeCarDuplicateOwnDeleted, fmt.Errorf("this vehicle was previously deleted from your listings")
 				}
 			} else {
 				// Different seller owns this chassis
 				if car.Status != "deleted" {
-					return nil, "", nil, ErrCodeCarDuplicateOtherOwned, fmt.Errorf("this vehicle is already listed by another seller")
+					return nil, nil, ErrCodeCarDuplicateOtherOwned, fmt.Errorf("this vehicle is already listed by another seller")
 				}
 			}
 		}
@@ -377,7 +369,7 @@ func (s *CarService) UploadInspectionToDraft(carID int, sellerID int, inspection
 
 	err = s.inspectionRepo.CreateInspectionResult(inspection)
 	if err != nil {
-		return nil, "", nil, "", fmt.Errorf("failed to create inspection: %w", err)
+		return nil, nil, "", fmt.Errorf("failed to create inspection: %w", err)
 	}
 
 	currentCar.Mileage = inspectionFields.Mileage
@@ -394,16 +386,16 @@ func (s *CarService) UploadInspectionToDraft(carID int, sellerID int, inspection
 
 	// Update colors if available (up to 3 ordered colors)
 	if err := s.colorRepo.SetCarColors(carID, inspectionFields.Colors); err != nil {
-		return nil, "", nil, "", fmt.Errorf("failed to set colors: %w", err)
+		return nil, nil, "", fmt.Errorf("failed to set colors: %w", err)
 	}
 
 	// Persist authoritative fields to database
 	if err := s.carRepo.UpdateCar(currentCar); err != nil {
-		return nil, "", nil, "", fmt.Errorf("failed to save inspection fields: %w", err)
+		return nil, nil, "", fmt.Errorf("failed to save inspection fields: %w", err)
 	}
 
 	// Return the result with match status
-	return currentCar, "stay", nil, "", nil
+	return currentCar, nil, "", nil
 }
 
 // ToMap converts InspectionFields to a display-ready map without any DB lookups

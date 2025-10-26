@@ -1170,18 +1170,21 @@ func (h *CarHandler) UploadInspection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Upload book with duplicate resolution
-	_, action, redirectToCarID, errorCode, err := h.carService.UploadInspectionToDraft(carID, userID, inspectionFields, h.scraperService)
+	// Upload inspection with duplicate resolution
+	_, redirectToCarID, errorCode, err := h.carService.UploadInspectionToDraft(carID, userID, inspectionFields, h.scraperService)
 	if err != nil {
 		if errorCode != "" {
 			// Return error with code for client handling
-			utils.RespondJSON(w, http.StatusConflict, map[string]interface{}{
-				"success":         false,
-				"message":         err.Error(),
-				"code":            errorCode,
-				"action":          action,
-				"redirectToCarID": redirectToCarID,
-			})
+			resp := map[string]interface{}{
+				"success": false,
+				"message": err.Error(),
+				"code":    errorCode,
+			}
+			// For duplicate-own-draft, include existingCarId only (no action/redirect in conflict flow)
+			if errorCode == services.ErrCodeCarDuplicateOwnDraft && redirectToCarID != nil {
+				resp["redirectToCarID"] = *redirectToCarID
+			}
+			utils.RespondJSON(w, http.StatusConflict, resp)
 			return
 		}
 		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
@@ -1205,6 +1208,255 @@ func (h *CarHandler) UploadInspection(w http.ResponseWriter, r *http.Request) {
 		"success": true,
 		"message": "Vehicle inspection processed successfully",
 		"data":    payload,
+	})
+}
+
+// RestoreProgress handles POST /api/cars/{id}/restore-progress
+func (h *CarHandler) RestoreProgress(w http.ResponseWriter, r *http.Request) {
+	// Check method
+	if r.Method != http.MethodPost {
+		utils.RespondJSON(w, http.StatusMethodNotAllowed, models.UserErrorResponse{
+			Success: false,
+			Error:   "Method not allowed",
+		})
+		return
+	}
+
+	// Get user from context
+	userID, ok := r.Context().Value("userID").(int)
+	if !ok {
+		utils.RespondJSON(w, http.StatusUnauthorized, models.UserErrorResponse{
+			Success: false,
+			Error:   "Unauthorized",
+		})
+		return
+	}
+
+	// Extract car ID from URL
+	carID, err := extractIDFromPath(r.URL.Path, "/api/cars/")
+	if err != nil {
+		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
+			Success: false,
+			Error:   "Invalid car ID",
+		})
+		return
+	}
+
+	// Parse request body
+	var req struct {
+		SourceCarID int `json:"sourceCarId"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
+			Success: false,
+			Error:   "Invalid request body",
+		})
+		return
+	}
+
+	// Validate source car ID
+	if req.SourceCarID <= 0 {
+		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
+			Success: false,
+			Error:   "Source car ID is required",
+		})
+		return
+	}
+
+	// Check ownership of both cars
+	targetCar, err := h.carService.GetCarByID(carID)
+	if err != nil {
+		utils.RespondJSON(w, http.StatusNotFound, models.UserErrorResponse{
+			Success: false,
+			Error:   "Target car not found",
+		})
+		return
+	}
+
+	if targetCar.SellerID != userID {
+		utils.RespondJSON(w, http.StatusForbidden, models.UserErrorResponse{
+			Success: false,
+			Error:   "You can only restore progress to your own cars",
+		})
+		return
+	}
+
+	sourceCar, err := h.carService.GetCarByID(req.SourceCarID)
+	if err != nil {
+		utils.RespondJSON(w, http.StatusNotFound, models.UserErrorResponse{
+			Success: false,
+			Error:   "Source car not found",
+		})
+		return
+	}
+
+	if sourceCar.SellerID != userID {
+		utils.RespondJSON(w, http.StatusForbidden, models.UserErrorResponse{
+			Success: false,
+			Error:   "You can only restore progress from your own cars",
+		})
+		return
+	}
+
+	// Check that target car is a draft
+	if targetCar.Status != "draft" {
+		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
+			Success: false,
+			Error:   "Can only restore progress to draft cars",
+		})
+		return
+	}
+
+	// Check that source car is a draft
+	if sourceCar.Status != "draft" {
+		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
+			Success: false,
+			Error:   "Can only restore progress from draft cars",
+		})
+		return
+	}
+
+	// Restore progress from source to target
+	if err := h.carService.RestoreProgressFromCar(req.SourceCarID, carID); err != nil {
+		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
+			Success: false,
+			Error:   fmt.Sprintf("Failed to restore progress: %v", err),
+		})
+		return
+	}
+
+	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{
+		"success": true,
+		"message": "Progress restored successfully",
+	})
+}
+
+// RedirectToDraft handles POST /api/cars/{id}/redirect-to-draft
+func (h *CarHandler) RedirectToDraft(w http.ResponseWriter, r *http.Request) {
+	// Check method
+	if r.Method != http.MethodPost {
+		utils.RespondJSON(w, http.StatusMethodNotAllowed, models.UserErrorResponse{
+			Success: false,
+			Error:   "Method not allowed",
+		})
+		return
+	}
+
+	// Get user from context
+	userID, ok := r.Context().Value("userID").(int)
+	if !ok {
+		utils.RespondJSON(w, http.StatusUnauthorized, models.UserErrorResponse{
+			Success: false,
+			Error:   "Unauthorized",
+		})
+		return
+	}
+
+	// Parse request body
+	var req struct {
+		TargetCarID int `json:"targetCarId"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
+			Success: false,
+			Error:   "Invalid request body",
+		})
+		return
+	}
+
+	// Extract car ID from URL
+	carID, err := extractIDFromPath(r.URL.Path, "/api/cars/")
+	if err != nil {
+		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
+			Success: false,
+			Error:   "Invalid car ID",
+		})
+		return
+	}
+
+	// Validate target car ID
+	if req.TargetCarID <= 0 {
+		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
+			Success: false,
+			Error:   "Target car ID is required",
+		})
+		return
+	}
+
+	// Check ownership of both cars
+	currentCar, err := h.carService.GetCarByID(carID)
+	if err != nil {
+		utils.RespondJSON(w, http.StatusNotFound, models.UserErrorResponse{
+			Success: false,
+			Error:   "Current car not found",
+		})
+		return
+	}
+
+	if currentCar.SellerID != userID {
+		utils.RespondJSON(w, http.StatusForbidden, models.UserErrorResponse{
+			Success: false,
+			Error:   "You can only redirect your own cars",
+		})
+		return
+	}
+
+	targetCar, err := h.carService.GetCarByID(req.TargetCarID)
+	if err != nil {
+		utils.RespondJSON(w, http.StatusNotFound, models.UserErrorResponse{
+			Success: false,
+			Error:   "Target car not found",
+		})
+		return
+	}
+
+	if targetCar.SellerID != userID {
+		utils.RespondJSON(w, http.StatusForbidden, models.UserErrorResponse{
+			Success: false,
+			Error:   "You can only redirect to your own cars",
+		})
+		return
+	}
+
+	// Check that both cars are drafts
+	if currentCar.Status != "draft" {
+		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
+			Success: false,
+			Error:   "Can only redirect from draft cars",
+		})
+		return
+	}
+
+	if targetCar.Status != "draft" {
+		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
+			Success: false,
+			Error:   "Can only redirect to draft cars",
+		})
+		return
+	}
+
+	// Transfer progress from current car to target car
+	if err := h.carService.RestoreProgressFromCar(carID, req.TargetCarID); err != nil {
+		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
+			Success: false,
+			Error:   fmt.Sprintf("Failed to transfer progress: %v", err),
+		})
+		return
+	}
+
+	// Delete the current car (even if it has progress, user chose to redirect)
+	if err := h.carService.DeleteCar(carID, userID, false); err != nil {
+		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
+			Success: false,
+			Error:   fmt.Sprintf("Failed to delete current car: %v", err),
+		})
+		return
+	}
+
+	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{
+		"success":         true,
+		"message":         "Redirected to existing draft successfully",
+		"redirectToCarId": req.TargetCarID,
 	})
 }
 

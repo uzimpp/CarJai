@@ -5,7 +5,6 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/uzimpp/CarJai/backend/models"
@@ -26,6 +25,7 @@ func (e *ValidationError) Error() string {
 const (
 	// Book upload errors
 	ErrCodeCarDuplicateOwnDraftRedirect = "CAR_DUPLICATE_OWN_DRAFT_REDIRECT"
+	ErrCodeCarDuplicateOwnDraft         = "CAR_DUPLICATE_OWN_DRAFT"
 	ErrCodeCarDuplicateOwnActive        = "CAR_DUPLICATE_OWN_ACTIVE"
 	ErrCodeCarDuplicateOwnSold          = "CAR_DUPLICATE_OWN_SOLD"
 	ErrCodeCarDuplicateOwnDeleted       = "CAR_DUPLICATE_OWN_DELETED"
@@ -599,62 +599,6 @@ func (s *CarService) GetCarImage(imageID int) (*models.CarImage, error) {
 	return s.imageRepo.GetCarImageByID(imageID)
 }
 
-// hasNonEmptyString returns true if the pointer is non-nil and trimmed value is not empty
-func hasNonEmptyString(p *string) bool {
-	return p != nil && strings.TrimSpace(*p) != ""
-}
-
-// hasPositiveInt returns true if the pointer is non-nil and > 0
-func hasPositiveInt(p *int) bool {
-	return p != nil && *p > 0
-}
-
-// hasProgress determines whether a draft has meaningful progress
-// Used to decide whether a draft is ephemeral when resolving duplicates
-func (s *CarService) hasProgress(car *models.Car) bool {
-	if car == nil {
-		return false
-	}
-
-	// Textual/spec fields
-	if hasNonEmptyString(car.BrandName) || hasNonEmptyString(car.ModelName) || hasNonEmptyString(car.SubmodelName) ||
-		hasNonEmptyString(car.Description) || hasNonEmptyString(car.BodyTypeCode) || hasNonEmptyString(car.TransmissionCode) ||
-		hasNonEmptyString(car.DrivetrainCode) {
-		return true
-	}
-
-	// Numeric fields
-	if hasPositiveInt(car.Year) || hasPositiveInt(car.Mileage) || hasPositiveInt(car.EngineCC) || hasPositiveInt(car.Seats) ||
-		hasPositiveInt(car.Doors) || hasPositiveInt(car.Price) || hasPositiveInt(car.ConditionRating) {
-		return true
-	}
-
-	// Province selection
-	if car.ProvinceID != nil {
-		return true
-	}
-
-	// Any uploaded images
-	if cnt, err := s.imageRepo.CountCarImages(car.ID); err == nil && cnt > 0 {
-		return true
-	}
-
-	// Any fuels/colors selected
-	if codes, err := s.fuelRepo.GetCarFuels(car.ID); err == nil && len(codes) > 0 {
-		return true
-	}
-	if colors, err := s.colorRepo.GetCarColors(car.ID); err == nil && len(colors) > 0 {
-		return true
-	}
-
-	// Any inspection exists
-	if insp, _ := s.inspectionRepo.GetInspectionByCarID(car.ID); insp != nil {
-		return true
-	}
-
-	return false
-}
-
 // DeleteCarImage deletes a single image
 func (s *CarService) DeleteCarImage(imageID, userID int, isAdmin bool) error {
 	// Get the image to find the car
@@ -677,21 +621,18 @@ func (s *CarService) DeleteCarImage(imageID, userID int, isAdmin bool) error {
 	return s.imageRepo.DeleteCarImage(imageID)
 }
 
-// GetCarWithImages retrieves a car with its image metadata
+// GetCarWithImages retrieves a car with its image metadata and inspection data (optimized with fewer queries)
 func (s *CarService) GetCarWithImages(carID int) (*models.CarWithImages, error) {
-	car, err := s.carRepo.GetCarByID(carID)
-	if err != nil {
-		return nil, err
-	}
-
-	images, err := s.imageRepo.GetCarImagesMetadata(carID)
+	// Use optimized method that fetches everything in 3 queries instead of separate calls
+	car, images, inspection, err := s.carRepo.GetCarWithImagesAndInspection(carID)
 	if err != nil {
 		return nil, err
 	}
 
 	return &models.CarWithImages{
-		Car:    *car,
-		Images: images,
+		Car:        *car,
+		Images:     images,
+		Inspection: inspection,
 	}, nil
 }
 
@@ -991,4 +932,144 @@ func (s *CarService) TranslateCarForDisplay(car *models.Car, lang string) (*Tran
 		}
 	}
 	return display, nil
+}
+
+// RestoreProgressFromCar transfers all progress data from source car to target car
+func (s *CarService) RestoreProgressFromCar(sourceCarID int, targetCarID int) error {
+	// Get source car data
+	sourceCar, err := s.carRepo.GetCarByID(sourceCarID)
+	if err != nil {
+		return fmt.Errorf("failed to get source car: %w", err)
+	}
+
+	// Get target car data
+	targetCar, err := s.carRepo.GetCarByID(targetCarID)
+	if err != nil {
+		return fmt.Errorf("failed to get target car: %w", err)
+	}
+
+	// Transfer basic car data (excluding chassis number and status)
+	targetCar.BrandName = sourceCar.BrandName
+	targetCar.ModelName = sourceCar.ModelName
+	targetCar.SubmodelName = sourceCar.SubmodelName
+	targetCar.Year = sourceCar.Year
+	targetCar.Mileage = sourceCar.Mileage
+	targetCar.EngineCC = sourceCar.EngineCC
+	targetCar.Seats = sourceCar.Seats
+	targetCar.Doors = sourceCar.Doors
+	targetCar.BodyTypeCode = sourceCar.BodyTypeCode
+	targetCar.TransmissionCode = sourceCar.TransmissionCode
+	targetCar.DrivetrainCode = sourceCar.DrivetrainCode
+	targetCar.Description = sourceCar.Description
+	targetCar.Price = sourceCar.Price
+	targetCar.ConditionRating = sourceCar.ConditionRating
+	targetCar.IsFlooded = sourceCar.IsFlooded
+	targetCar.IsHeavilyDamaged = sourceCar.IsHeavilyDamaged
+	targetCar.Prefix = sourceCar.Prefix
+	targetCar.Number = sourceCar.Number
+	targetCar.ProvinceID = sourceCar.ProvinceID
+
+	// Update target car in database
+	if err := s.carRepo.UpdateCar(targetCar); err != nil {
+		return fmt.Errorf("failed to update target car: %w", err)
+	}
+
+	// Transfer fuel types
+	if sourceFuels, err := s.fuelRepo.GetCarFuels(sourceCarID); err == nil && len(sourceFuels) > 0 {
+		if err := s.fuelRepo.SetCarFuels(targetCarID, sourceFuels); err != nil {
+			return fmt.Errorf("failed to transfer fuel types: %w", err)
+		}
+	}
+
+	// Transfer colors
+	if sourceColors, err := s.colorRepo.GetCarColors(sourceCarID); err == nil && len(sourceColors) > 0 {
+		if err := s.colorRepo.SetCarColors(targetCarID, sourceColors); err != nil {
+			return fmt.Errorf("failed to transfer colors: %w", err)
+		}
+	}
+
+	// Transfer images
+	if err := s.transferCarImages(sourceCarID, targetCarID); err != nil {
+		return fmt.Errorf("failed to transfer images: %w", err)
+	}
+
+	// Transfer inspection data
+	if err := s.transferInspectionData(sourceCarID, targetCarID); err != nil {
+		return fmt.Errorf("failed to transfer inspection data: %w", err)
+	}
+
+	return nil
+}
+
+// transferCarImages transfers all images from source car to target car
+func (s *CarService) transferCarImages(sourceCarID int, targetCarID int) error {
+	// Get source car images
+	sourceImages, err := s.imageRepo.GetCarImagesMetadata(sourceCarID)
+	if err != nil {
+		return fmt.Errorf("failed to get source car images: %w", err)
+	}
+
+	if len(sourceImages) == 0 {
+		return nil // No images to transfer
+	}
+
+	// Get current target car image count to determine display order
+	targetImageCount, err := s.imageRepo.CountCarImages(targetCarID)
+	if err != nil {
+		return fmt.Errorf("failed to count target car images: %w", err)
+	}
+
+	// Transfer each image
+	for i, sourceImage := range sourceImages {
+		// Create new image record for target car
+		newImage := &models.CarImage{
+			CarID:        targetCarID,
+			ImageType:    sourceImage.ImageType,
+			ImageSize:    sourceImage.ImageSize,
+			DisplayOrder: targetImageCount + i + 1,
+		}
+
+		if err := s.imageRepo.CreateCarImage(newImage); err != nil {
+			return fmt.Errorf("failed to transfer image %d: %w", i+1, err)
+		}
+	}
+
+	return nil
+}
+
+// transferInspectionData transfers inspection data from source car to target car
+func (s *CarService) transferInspectionData(sourceCarID int, targetCarID int) error {
+	// Get source inspection
+	sourceInspection, err := s.inspectionRepo.GetInspectionByCarID(sourceCarID)
+	if err != nil || sourceInspection == nil {
+		return nil // No inspection to transfer
+	}
+
+	// Create new inspection for target car
+	targetInspection := &models.InspectionResult{
+		CarID:              targetCarID,
+		Station:            sourceInspection.Station,
+		OverallPass:        sourceInspection.OverallPass,
+		BrakeResult:        sourceInspection.BrakeResult,
+		HandbrakeResult:    sourceInspection.HandbrakeResult,
+		AlignmentResult:    sourceInspection.AlignmentResult,
+		NoiseResult:        sourceInspection.NoiseResult,
+		EmissionResult:     sourceInspection.EmissionResult,
+		HornResult:         sourceInspection.HornResult,
+		SpeedometerResult:  sourceInspection.SpeedometerResult,
+		HighLowBeamResult:  sourceInspection.HighLowBeamResult,
+		SignalLightsResult: sourceInspection.SignalLightsResult,
+		OtherLightsResult:  sourceInspection.OtherLightsResult,
+		WindshieldResult:   sourceInspection.WindshieldResult,
+		SteeringResult:     sourceInspection.SteeringResult,
+		WheelsTiresResult:  sourceInspection.WheelsTiresResult,
+		FuelTankResult:     sourceInspection.FuelTankResult,
+		ChassisResult:      sourceInspection.ChassisResult,
+		BodyResult:         sourceInspection.BodyResult,
+		DoorsFloorResult:   sourceInspection.DoorsFloorResult,
+		SeatbeltResult:     sourceInspection.SeatbeltResult,
+		WiperResult:        sourceInspection.WiperResult,
+	}
+
+	return s.inspectionRepo.CreateInspectionResult(targetInspection)
 }

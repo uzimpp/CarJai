@@ -9,10 +9,14 @@ import Step1DocumentsForm from "@/components/car/Step1DocumentsForm";
 import Step2DetailsForm from "@/components/car/Step2DetailsForm";
 import Step3PricingForm from "@/components/car/Step3PricingForm";
 import Step4ReviewForm from "@/components/car/Step4ReviewForm";
+import ProgressRestoreModal from "@/components/car/ProgressRestoreModal";
+import DuplicateConflictModal from "@/components/car/DuplicateConflictModal";
 import type { CarFormData } from "@/types/Car";
 import type { Step } from "@/types/Selling";
 
 export default function SellWithIdPage() {
+  const hasHydratedRef = useRef(false); // Track if initial hydration has completed
+  const isHydratingRef = useRef(false); // Track if we're currently hydrating
   const router = useRouter();
   const params = useParams();
   const pathname = usePathname();
@@ -43,6 +47,13 @@ export default function SellWithIdPage() {
     ready: boolean;
     issues: string[];
   } | null>(null);
+  const [showProgressRestoreModal, setShowProgressRestoreModal] =
+    useState(false);
+  const [showDuplicateConflictModal, setShowDuplicateConflictModal] =
+    useState(false);
+  const [conflictExistingCarId, setConflictExistingCarId] = useState<
+    number | null
+  >(null);
 
   // Update hasProgressRef whenever hasProgress changes
   useEffect(() => {
@@ -95,6 +106,142 @@ export default function SellWithIdPage() {
       }
     }
   }, [isAuthenticated, isLoading, roles, profiles, router]);
+
+  useEffect(() => {
+    const hydrate = async () => {
+      if (
+        hasHydratedRef.current || // Skip if already hydrated once
+        !carId ||
+        isNaN(carId) ||
+        isLoading ||
+        !isAuthenticated
+      )
+        return;
+
+      // Mark that we're starting hydration
+      isHydratingRef.current = true;
+
+      try {
+        const res = await carsAPI.getById(carId);
+        if (!res.success) return;
+
+        const car = (res.data as any).car; // Extract car from nested structure
+        if (!car) return;
+
+        const initial: Partial<CarFormData> = {
+          ...(car.brandName && { brandName: car.brandName }),
+          ...(car.modelName && { modelName: car.modelName }),
+          ...(car.submodelName && { submodelName: car.submodelName }),
+          ...(car.year && { year: car.year }),
+          ...(car.mileage && { mileage: car.mileage }),
+          ...(car.engineCc && { engineCc: car.engineCc }),
+          ...(car.seats && { seats: car.seats }),
+          ...(car.doors && { doors: car.doors }),
+          ...(car.bodyTypeCode && { bodyTypeCode: car.bodyTypeCode }),
+          ...(car.transmissionCode && {
+            transmissionCode: car.transmissionCode,
+          }),
+          ...(car.drivetrainCode && { drivetrainCode: car.drivetrainCode }),
+          ...(car.description && { description: car.description }),
+          ...(car.price && { price: car.price }),
+          ...(car.provinceId && { provinceId: car.provinceId }),
+          ...(car.prefix && { prefix: car.prefix }),
+          ...(car.number && { number: car.number }),
+        };
+
+        if (Object.keys(initial).length > 0) {
+          setFormData((prev) => ({ ...initial, ...prev })); // preserve any local edits
+          setHasProgress(true);
+        }
+
+        // Load inspection data if exists (from same response)
+        const inspection = (res.data as any).inspection;
+        if (inspection) {
+          const inspectionFields: Record<string, string> = {};
+          // Map all inspection fields to display format
+          if (inspection.station) inspectionFields.station = inspection.station;
+          if (inspection.overallPass !== undefined)
+            inspectionFields.overallPass = String(inspection.overallPass);
+          if (inspection.brakeResult !== undefined)
+            inspectionFields.brakeResult = String(inspection.brakeResult);
+          if (inspection.handbrakeResult !== undefined)
+            inspectionFields.handbrakeResult = String(
+              inspection.handbrakeResult
+            );
+          if (inspection.alignmentResult !== undefined)
+            inspectionFields.alignmentResult = String(
+              inspection.alignmentResult
+            );
+          if (inspection.noiseResult !== undefined)
+            inspectionFields.noiseResult = String(inspection.noiseResult);
+          if (inspection.emissionResult !== undefined)
+            inspectionFields.emissionResult = String(inspection.emissionResult);
+          if (inspection.hornResult !== undefined)
+            inspectionFields.hornResult = String(inspection.hornResult);
+          if (inspection.speedometerResult !== undefined)
+            inspectionFields.speedometerResult = String(
+              inspection.speedometerResult
+            );
+          if (inspection.highLowBeamResult !== undefined)
+            inspectionFields.highLowBeamResult = String(
+              inspection.highLowBeamResult
+            );
+          if (inspection.signalLightsResult !== undefined)
+            inspectionFields.signalLightsResult = String(
+              inspection.signalLightsResult
+            );
+          if (inspection.otherLightsResult !== undefined)
+            inspectionFields.otherLightsResult = String(
+              inspection.otherLightsResult
+            );
+          if (inspection.windshieldResult !== undefined)
+            inspectionFields.windshieldResult = String(
+              inspection.windshieldResult
+            );
+          if (inspection.steeringResult !== undefined)
+            inspectionFields.steeringResult = String(inspection.steeringResult);
+          if (inspection.wheelsTiresResult !== undefined)
+            inspectionFields.wheelsTiresResult = String(
+              inspection.wheelsTiresResult
+            );
+          if (inspection.fuelTankResult !== undefined)
+            inspectionFields.fuelTankResult = String(inspection.fuelTankResult);
+          if (inspection.chassisResult !== undefined)
+            inspectionFields.chassisResult = String(inspection.chassisResult);
+          if (inspection.bodyResult !== undefined)
+            inspectionFields.bodyResult = String(inspection.bodyResult);
+          if (inspection.doorsFloorResult !== undefined)
+            inspectionFields.doorsFloorResult = String(
+              inspection.doorsFloorResult
+            );
+          if (inspection.seatbeltResult !== undefined)
+            inspectionFields.seatbeltResult = String(inspection.seatbeltResult);
+          if (inspection.wiperResult !== undefined)
+            inspectionFields.wiperResult = String(inspection.wiperResult);
+
+          if (Object.keys(inspectionFields).length > 0) {
+            setInspectionData(inspectionFields);
+          }
+        }
+
+        // mark images uploaded if server has images metadata
+        const images = (res.data as any).images;
+        if (images && Array.isArray(images) && images.length > 0) {
+          setImagesUploaded(true);
+        }
+
+        // Mark hydration complete after all state updates have settled
+        setTimeout(() => {
+          hasHydratedRef.current = true; // Prevent re-hydration
+          isHydratingRef.current = false; // Allow auto-save now
+        }, 100); // Small delay to ensure all React updates have settled
+      } catch {
+        // ignore; existing guards already handle invalid car
+        isHydratingRef.current = false; // Clear flag on error too
+      }
+    };
+    hydrate();
+  }, [carId, isAuthenticated, isLoading]);
 
   // Auto-discard when navigating away from this draft page (client-side routing only)
   useEffect(() => {
@@ -159,15 +306,36 @@ export default function SellWithIdPage() {
       const result = await carsAPI.uploadInspection(carId, url);
 
       if (result.success) {
-        // Handle server-side duplicate resolution
-        if (result.action === "redirect" && result.redirectToCarId) {
-          // Redirect to the existing draft that matches this chassis
-          router.replace(`/sell/${result.redirectToCarId}`);
-          return;
-        }
         setInspectionData(result.data as Record<string, string>);
         setHasProgress(true);
       } else {
+        // Handle duplicate chassis conflict
+        if (
+          result.code === "CAR_DUPLICATE_OWN_DRAFT" &&
+          result.redirectToCarID
+        ) {
+          // Show modal asking user to choose: redirect or create new
+          setConflictExistingCarId(result.redirectToCarID);
+          setShowDuplicateConflictModal(true);
+          return;
+        }
+
+        // Handle other duplicate scenarios with helpful redirects
+        if (result.code === "CAR_DUPLICATE_OWN_ACTIVE") {
+          router.replace("/listings?message=already-active");
+          return;
+        }
+
+        if (result.code === "CAR_DUPLICATE_OWN_SOLD") {
+          router.replace("/listings?message=already-sold");
+          return;
+        }
+
+        if (result.code === "CAR_DUPLICATE_OTHER_OWNED") {
+          router.replace("/browse?message=listed-by-other");
+          return;
+        }
+
         throw new Error(result.message || "Failed to upload inspection");
       }
     } catch (err) {
@@ -196,9 +364,11 @@ export default function SellWithIdPage() {
     [carId]
   );
 
-  // Trigger autosave when form data changes
+  // Trigger autosave when form data changes (but not during initial hydration)
   useEffect(() => {
     if (
+      hasHydratedRef.current && // Only autosave after initial hydration is complete
+      !isHydratingRef.current && // Don't autosave while hydrating
       (currentStep === "documents" ||
         currentStep === "specs" ||
         currentStep === "pricing" ||
@@ -208,13 +378,50 @@ export default function SellWithIdPage() {
     ) {
       debouncedAutoSave(formData);
     }
-  }, [formData, currentStep, debouncedAutoSave]);
+  }, [formData, currentStep, debouncedAutoSave, isSubmitting]);
 
   // Handle form field changes
   const handleFormChange = useCallback((updates: Partial<CarFormData>) => {
     setFormData((prev) => ({ ...prev, ...updates }));
     setHasProgress(true);
   }, []);
+
+  // Handle progress restoration
+  const handleProgressRestore = () => {
+    setShowProgressRestoreModal(true);
+  };
+
+  const handleProgressRestoreSuccess = () => {
+    // Reload the page to show restored data
+    window.location.reload();
+  };
+
+  // Handle duplicate conflict modal actions
+  const handleRedirectToExisting = async () => {
+    if (!conflictExistingCarId) return;
+
+    try {
+      const redirectResult = await carsAPI.redirectToDraft(
+        carId,
+        conflictExistingCarId
+      );
+      if (redirectResult.success) {
+        router.replace(`/sell/${redirectResult.redirectToCarId}`);
+      }
+    } catch (err) {
+      setError(`Failed to redirect to existing draft: ${err}`);
+    } finally {
+      setShowDuplicateConflictModal(false);
+      setConflictExistingCarId(null);
+    }
+  };
+
+  const handleCreateNewListing = () => {
+    // User chose to create new - continue with current car
+    setShowDuplicateConflictModal(false);
+    setConflictExistingCarId(null);
+    setError("Please create a new listing for this vehicle");
+  };
 
   // Note: handleBookDataChange removed - Step 1 now uses handleFormChange
 
@@ -381,6 +588,29 @@ export default function SellWithIdPage() {
           </div>
         )}
 
+        {/* Progress restore button */}
+        {currentStep === "documents" && !hasProgress && (
+          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-md p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-blue-800 font-medium">
+                  Restore Previous Progress
+                </h3>
+                <p className="text-blue-600 text-sm">
+                  Have you started listing this car before? Restore your
+                  progress from another draft.
+                </p>
+              </div>
+              <button
+                onClick={handleProgressRestore}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+              >
+                Restore Progress
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Step content */}
         <div className="bg-white shadow-md rounded-lg p-6">
           {currentStep === "documents" && (
@@ -485,6 +715,23 @@ export default function SellWithIdPage() {
             </div>
           )}
         </div>
+
+        {/* Progress Restore Modal */}
+        <ProgressRestoreModal
+          isOpen={showProgressRestoreModal}
+          onClose={() => setShowProgressRestoreModal(false)}
+          targetCarId={carId}
+          onSuccess={handleProgressRestoreSuccess}
+        />
+
+        {/* Duplicate Conflict Modal */}
+        <DuplicateConflictModal
+          isOpen={showDuplicateConflictModal}
+          onClose={() => setShowDuplicateConflictModal(false)}
+          onRedirect={handleRedirectToExisting}
+          onCreateNew={handleCreateNewListing}
+          existingCarId={conflictExistingCarId || 0}
+        />
       </div>
     </div>
   );

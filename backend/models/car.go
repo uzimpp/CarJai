@@ -174,8 +174,9 @@ type CarWithImagesResponse struct {
 }
 
 type CarWithImages struct {
-	Car    Car                `json:"car"`
-	Images []CarImageMetadata `json:"images"`
+	Car        Car                `json:"car"`
+	Images     []CarImageMetadata `json:"images"`
+	Inspection *InspectionResult  `json:"inspection"` // Always include, even if null
 }
 
 type CarListingWithImages struct {
@@ -299,6 +300,94 @@ func (r *CarRepository) GetCarByID(carID int) (*Car, error) {
 	}
 
 	return car, nil
+}
+
+// GetCarWithImagesAndInspection retrieves car, images, and inspection in one optimized query
+func (r *CarRepository) GetCarWithImagesAndInspection(carID int) (*Car, []CarImageMetadata, *InspectionResult, error) {
+	// First get the car data
+	car := &Car{}
+	carQuery := `
+		SELECT id, seller_id, body_type_code, transmission_code, drivetrain_code,
+			brand_name, model_name, submodel_name, chassis_number,
+			year, mileage, engine_cc, seats, doors,
+			prefix, number, province_id, description, price,
+			is_flooded, is_heavily_damaged,
+			status, condition_rating, created_at, updated_at
+		FROM cars
+		WHERE id = $1`
+
+	err := r.db.DB.QueryRow(carQuery, carID).Scan(
+		&car.ID, &car.SellerID, &car.BodyTypeCode, &car.TransmissionCode, &car.DrivetrainCode,
+		&car.BrandName, &car.ModelName, &car.SubmodelName, &car.ChassisNumber,
+		&car.Year, &car.Mileage, &car.EngineCC, &car.Seats, &car.Doors,
+		&car.Prefix, &car.Number, &car.ProvinceID, &car.Description, &car.Price,
+		&car.IsFlooded, &car.IsHeavilyDamaged, &car.Status,
+		&car.ConditionRating, &car.CreatedAt, &car.UpdatedAt,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil, nil, fmt.Errorf("car not found")
+		}
+		return nil, nil, nil, fmt.Errorf("failed to get car: %w", err)
+	}
+
+	// Get images metadata (separate query since it's a one-to-many relationship)
+	imageQuery := `
+		SELECT id, car_id, image_type, image_size, display_order, uploaded_at
+		FROM car_images
+		WHERE car_id = $1
+		ORDER BY display_order, uploaded_at`
+
+	imageRows, err := r.db.DB.Query(imageQuery, carID)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failed to get car images: %w", err)
+	}
+	defer imageRows.Close()
+
+	var images []CarImageMetadata
+	for imageRows.Next() {
+		var img CarImageMetadata
+		err := imageRows.Scan(&img.ID, &img.CarID, &img.ImageType, &img.ImageSize, &img.DisplayOrder, &img.UploadedAt)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("failed to scan image metadata: %w", err)
+		}
+		images = append(images, img)
+	}
+
+	// Get inspection data (LEFT JOIN would return nil if no inspection exists)
+	inspection := &InspectionResult{}
+	inspectionQuery := `
+		SELECT id, car_id, station, overall_pass,
+			brake_result, handbrake_result, alignment_result, noise_result, emission_result,
+			horn_result, speedometer_result, high_low_beam_result, signal_lights_result,
+			other_lights_result, windshield_result, steering_result, wheels_tires_result,
+			fuel_tank_result, chassis_result, body_result, doors_floor_result, seatbelt_result, wiper_result,
+			created_at, updated_at
+		FROM car_inspection_results
+		WHERE car_id = $1
+		ORDER BY created_at DESC
+		LIMIT 1`
+
+	err = r.db.DB.QueryRow(inspectionQuery, carID).Scan(
+		&inspection.ID, &inspection.CarID, &inspection.Station, &inspection.OverallPass,
+		&inspection.BrakeResult, &inspection.HandbrakeResult, &inspection.AlignmentResult, &inspection.NoiseResult, &inspection.EmissionResult,
+		&inspection.HornResult, &inspection.SpeedometerResult, &inspection.HighLowBeamResult, &inspection.SignalLightsResult,
+		&inspection.OtherLightsResult, &inspection.WindshieldResult, &inspection.SteeringResult, &inspection.WheelsTiresResult,
+		&inspection.FuelTankResult, &inspection.ChassisResult, &inspection.BodyResult, &inspection.DoorsFloorResult, &inspection.SeatbeltResult, &inspection.WiperResult,
+		&inspection.CreatedAt, &inspection.UpdatedAt,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// No inspection found is OK
+			inspection = nil
+		} else {
+			return nil, nil, nil, fmt.Errorf("failed to get inspection: %w", err)
+		}
+	}
+
+	return car, images, inspection, nil
 }
 
 // GetCarsBySellerID retrieves all cars for a seller

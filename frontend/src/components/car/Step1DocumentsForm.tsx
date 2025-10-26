@@ -243,6 +243,7 @@ export default function Step1DocumentsForm({
                 }
                 placeholder="e.g., 50000"
                 helper="This will be the most recent mileage value for your listing"
+                disabled
               />
               <TextField
                 label="Color"

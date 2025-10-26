@@ -152,7 +152,7 @@ export const carsAPI = {
     message?: string;
     code?: string;
     action?: "stay" | "redirect";
-    redirectToCarId?: number | null;
+    redirectToCarID?: number | null;
   }> {
     return apiCall(`/api/cars/${carId}/inspection`, {
       method: "POST",
@@ -244,6 +244,28 @@ export const carsAPI = {
   ): Promise<{ success: boolean; message: string }> {
     return apiCall(`/api/cars/${carId}/discard`, {
       method: "POST",
+    });
+  },
+
+  // Restore progress from another car
+  async restoreProgress(
+    targetCarId: number,
+    sourceCarId: number
+  ): Promise<{ success: boolean; message: string }> {
+    return apiCall(`/api/cars/${targetCarId}/restore-progress`, {
+      method: "POST",
+      body: JSON.stringify({ sourceCarId }),
+    });
+  },
+
+  // Redirect to existing draft and delete current car
+  async redirectToDraft(
+    currentCarId: number,
+    targetCarId: number
+  ): Promise<{ success: boolean; message: string; redirectToCarId: number }> {
+    return apiCall(`/api/cars/${currentCarId}/redirect-to-draft`, {
+      method: "POST",
+      body: JSON.stringify({ targetCarId }),
     });
   },
 };

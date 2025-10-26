@@ -176,6 +176,18 @@ func handleCarRoutes(
 		return
 	}
 
+	// /api/cars/{id}/restore-progress - Restore progress from another car (authenticated)
+	if strings.HasSuffix(path, "/restore-progress") {
+		authMiddleware.RequireAuth(handler.RestoreProgress)(w, r)
+		return
+	}
+
+	// /api/cars/{id}/redirect-to-draft - Redirect to existing draft and delete current car (authenticated)
+	if strings.HasSuffix(path, "/redirect-to-draft") {
+		authMiddleware.RequireAuth(handler.RedirectToDraft)(w, r)
+		return
+	}
+
 	// General car CRUD: /api/cars/{id}
 	idPart := strings.TrimPrefix(path, "/api/cars/")
 	if !strings.Contains(idPart, "/") || idPart == "" {
