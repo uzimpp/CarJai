@@ -42,7 +42,6 @@ export default function NavBar() {
         await userSignout();
       }
     } catch (error) {
-      console.error("Sign out failed:", error);
     }
   };
 

@@ -35,7 +35,7 @@ export default function QrCodeUploader({
     reader.readAsDataURL(file);
   };
 
-  const scanQrCode = (imageUrl: string) => {
+  const scanQrCode = async (imageUrl: string) => {
     const canvas = canvasRef.current;
     const context = canvas?.getContext("2d", { willReadFrequently: true });
     if (!canvas || !context) {
@@ -46,7 +46,7 @@ export default function QrCodeUploader({
 
     const image = new window.Image();
     image.src = imageUrl;
-    image.onload = () => {
+    image.onload = async () => {
       canvas.width = image.width;
       canvas.height = image.height;
       context.drawImage(image, 0, 0, image.width, image.height);
@@ -55,8 +55,12 @@ export default function QrCodeUploader({
       const code = jsQR(imageData.data, imageData.width, imageData.height);
 
       if (code) {
-        console.log("QR Code found -> URL:", code.data);
-        onScanComplete(code.data);
+        try {
+          await onScanComplete(code.data);
+        } finally {
+          setIsLoading(false);
+          if (fileInputRef.current) fileInputRef.current.value = "";
+        }
       } else {
         setError("No QR Code found in this image. Please try again");
         setIsLoading(false);
@@ -74,6 +78,20 @@ export default function QrCodeUploader({
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setError(null);
+    if (isLoading) return;
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    // Simulate input change path
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    if (fileInputRef.current) fileInputRef.current.files = dt.files;
+    handleFileChange({ target: { files: dt.files } } as any);
   };
 
   return (
@@ -99,7 +117,18 @@ export default function QrCodeUploader({
         </div>
       )}
 
-      <div className="pt-4">
+      <div
+        className="pt-4 p-6 border-2 border-dashed rounded-xl text-center bg-gray-50"
+        onDragEnter={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+        onDrop={handleDrop}
+      >
         <input
           type="file"
           ref={fileInputRef}
@@ -111,7 +140,7 @@ export default function QrCodeUploader({
         <button
           onClick={handleUploadClick}
           disabled={isLoading}
-          className="w-full px-6 py-4 text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-wait transition-colors text-lg font-semibold"
+          className="w-full px-6 py-3 bg-maroon text-white rounded-lg font-semibold hover:bg-red-800 disabled:bg-gray-400 disabled:cursor-wait transition-colors"
         >
           {isLoading ? "Scanning QR Code..." : "Select Image"}
         </button>

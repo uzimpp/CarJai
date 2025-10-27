@@ -425,7 +425,6 @@ export default function SellWithIdPage() {
           setHasProgress(true);
         } catch (err) {
           // Silent fail for autosave
-          console.error("Autosave failed:", err);
         }
       }, 1500), // 1.5 seconds debounce
     [carId, sanitizeForSave]

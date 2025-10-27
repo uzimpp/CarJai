@@ -35,6 +35,7 @@ export default function Step1DocumentsForm({
   const [isUploadingInspection, setIsUploadingInspection] = useState(false);
   const [error, setError] = useState("");
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+  const [isDraggingBook, setIsDraggingBook] = useState(false);
 
   const PassFail = ({
     label,
@@ -95,7 +96,57 @@ export default function Step1DocumentsForm({
       setError(err instanceof Error ? err.message : "Failed to upload book");
     } finally {
       setIsUploadingBook(false);
+      const inputEl = document.getElementById(
+        "book-upload"
+      ) as HTMLInputElement | null;
+      if (inputEl) inputEl.value = "";
     }
+  };
+
+  const handleBookDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingBook(false);
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+
+    setError("");
+    setIsUploadingBook(true);
+
+    try {
+      const maxSizeBytes = 10 * 1024 * 1024;
+      if (file.size > maxSizeBytes) {
+        throw new Error("File is too large (max 10MB)");
+      }
+
+      const isPdf =
+        file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+      if (isPdf) {
+        throw new Error(
+          "PDF detected. Please upload a clear PNG or JPEG image of the registration book."
+        );
+      }
+
+      const objectUrl = URL.createObjectURL(file);
+      setPreviewSrc(objectUrl);
+      await onBookUpload(file);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to upload book");
+    } finally {
+      setIsUploadingBook(false);
+      const inputEl = document.getElementById(
+        "book-upload"
+      ) as HTMLInputElement | null;
+      if (inputEl) inputEl.value = "";
+    }
+  };
+
+  const handleBookDrag = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover")
+      setIsDraggingBook(true);
+    if (e.type === "dragleave") setIsDraggingBook(false);
   };
 
   const handleQrScanComplete = async (url: string) => {
@@ -132,7 +183,15 @@ export default function Step1DocumentsForm({
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Registration Book (image)
               </label>
-              <div className="p-6 border-2 border-dashed rounded-xl text-center bg-gray-50">
+              <div
+                className={`p-6 border-2 border-dashed rounded-xl text-center ${
+                  isDraggingBook ? "bg-red-50 border-red-400" : "bg-gray-50"
+                }`}
+                onDragEnter={handleBookDrag}
+                onDragOver={handleBookDrag}
+                onDragLeave={handleBookDrag}
+                onDrop={handleBookDrop}
+              >
                 <input
                   id="book-upload"
                   type="file"

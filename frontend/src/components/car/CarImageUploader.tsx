@@ -64,7 +64,6 @@ export default function CarImageUploader({
           }
         }
       } catch (err) {
-        console.error("Failed to load existing images:", err);
         // Silent fail - user can still add new images
       }
     };
@@ -197,7 +196,6 @@ export default function CarImageUploader({
         setError(result.message || "Upload error occurred");
       }
     } catch (err) {
-      console.error("Upload exception:", err);
       // Mark all new images as failed
       const failedExceptionImages = updatedImages.map((img) => {
         if (newImages.some((ni) => ni.file === img.file)) {
@@ -255,9 +253,7 @@ export default function CarImageUploader({
     if (imageToRemove.serverId && imageToRemove.status === "uploaded") {
       try {
         await carsAPI.deleteImage(imageToRemove.serverId);
-        console.log("✅ Image removed from draft");
       } catch (err) {
-        console.error("Failed to remove image:", err);
         setError("Failed to remove image");
         // Could restore the image here if needed
       }
@@ -302,9 +298,7 @@ export default function CarImageUploader({
           method: "PUT",
           body: JSON.stringify({ imageIds }),
         });
-        console.log("✅ Image order saved");
       } catch (err) {
-        console.error("Failed to save image order:", err);
         setError("Failed to save image order");
       }
     }
