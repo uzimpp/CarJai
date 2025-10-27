@@ -1,17 +1,15 @@
 package services
 
 import (
-	"bytes" // Needed for capturing command output
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
-	"os/exec" // Needed to run external command
+	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
-
-	// pdfLib "github.com/ledongthuc/pdf" // No longer needed
 )
 
 // MarketPrice struct remains the same...
@@ -55,29 +53,49 @@ var brandSet = map[string]bool{
 	"VESPA": true, "YAMAHA": true,
 }
 
-// Regex definitions remain the same...
+// Regex definitions
 var (
-	dataRegex             = regexp.MustCompile(`^(.+?)\s+(\d{4}-\d{4})\s+(.+)$`)
-	cleanRegex            = regexp.MustCompile(`[,\$]`)
-	skipLineRegex         = regexp.MustCompile(`^(\d{1,3}|\d{4})$`) // Keep this for skipping page numbers in text output
-	headerRegex           = regexp.MustCompile(`(?i)(แบบ\s*/\s*รุ่น|ปีผลิต|ราคาประเมิน|สารบัญ)`)
+	// Car data (single line)
+	dataRegex = regexp.MustCompile(`^(.+?)\s+(\d{4}-\d{4})\s+(.+)$`)
+	// Year range (stricter: space optional around hyphen)
+	yearRegex = regexp.MustCompile(`^(\d{4})\s*-\s*(\d{4})$`)
+	// Price range (allows numbers, commas, spaces, hyphens)
+	priceRegex = regexp.MustCompile(`^[\d,\s-]+$`) // Basic check, parsing logic handles format
+	// Clean price string
+	cleanRegex = regexp.MustCompile(`[,\$]`)
+	// Skip lines
+	skipLineRegex         = regexp.MustCompile(`^(\d{1,3}|\d{4})$`) // Page numbers or years
+	headerRegex           = regexp.MustCompile(`(?i)(แบบ\s*/\s*รุ่น|ปีผลิต|ราคาประเมิน|สารบัญ|แบบ/รุ่น\s*อื่นๆ)`) // Added "แบบ/รุ่น อื่นๆ"
 	motorcycleHeaderRegex = regexp.MustCompile(`(?i)รถจักรยานยนต์`)
-	// Regex to detect form feed character which often separates pages in pdftotext output
-	pageSeparatorRegex = regexp.MustCompile(`\f`)
+	pageSeparatorRegex    = regexp.MustCompile(`\f`)
+)
+
+// Parsing State for multi-line entries
+type ParseState int
+
+const (
+	ExpectingModel ParseState = iota
+	ExpectingYear
+	ExpectingPrice
 )
 
 // Helper functions (cleanPriceString, parseYearRange, parsePriceRange) remain the same...
 func cleanPriceString(priceStr string) string { return cleanRegex.ReplaceAllString(priceStr, "") }
 func parseYearRange(yearStr string) (int, int, error) { /* ... implementation ... */
-	parts := strings.Split(yearStr, "-")
-	if len(parts) != 2 { return 0, 0, fmt.Errorf("invalid year format: %s", yearStr) }
-	start, err := strconv.Atoi(parts[0])
-	if err != nil { return 0, 0, fmt.Errorf("invalid start year '%s': %w", parts[0], err) }
-	end, err := strconv.Atoi(parts[1])
-	if err != nil { return 0, 0, fmt.Errorf("invalid end year '%s': %w", parts[1], err) }
+	matches := yearRegex.FindStringSubmatch(yearStr)
+	if len(matches) != 3 {
+		return 0, 0, fmt.Errorf("invalid year format: %s", yearStr)
+	}
+	start, err := strconv.Atoi(matches[1])
+	if err != nil { return 0, 0, fmt.Errorf("invalid start year '%s': %w", matches[1], err) }
+	end, err := strconv.Atoi(matches[2])
+	if err != nil { return 0, 0, fmt.Errorf("invalid end year '%s': %w", matches[2], err) }
 	return start, end, nil
 }
 func parsePriceRange(priceStr string) (int64, int64, error) { /* ... implementation ... */
+	if !priceRegex.MatchString(priceStr) { // Pre-check format
+		return 0, 0, fmt.Errorf("string does not match price pattern: %s", priceStr)
+	}
 	priceStr = cleanPriceString(priceStr)
 	var parts []string
 	if strings.Contains(priceStr, " ") { parts = strings.Fields(priceStr)
@@ -94,135 +112,172 @@ func parsePriceRange(priceStr string) (int64, int64, error) { /* ... implementat
 }
 
 
-// ExtractAndPrintMarketPricesPOC performs PDF extraction using pdftotext.
+// ExtractAndPrintMarketPricesPOC performs PDF extraction using pdftotext (supports multi-line).
 func ExtractAndPrintMarketPricesPOC(filePath string) error {
 	log.Printf("Attempting to extract text using pdftotext from: %s", filePath)
-
-	// Command: pdftotext <filePath> -
-	// The '-' tells pdftotext to output to stdout instead of a file
 	cmd := exec.Command("pdftotext", filePath, "-")
-
 	var out bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &stderr
-
 	err := cmd.Run()
 	if err != nil {
 		log.Printf("pdftotext error output: %s", stderr.String())
 		return fmt.Errorf("failed to run pdftotext command: %w", err)
 	}
-
 	log.Println("pdftotext command executed successfully.")
 	fullText := out.String()
 
-	// --- Parsing Logic (Applied to the full text output) ---
 	var allPrices []MarketPrice
 	var currentBrand string
-	parsingMotorcycles := false
-	currentPage := 1 // Keep track roughly
+	currentPage := 1
 
-	// Split the output into lines
+	// State machine variables
+	currentState := ExpectingModel
+	var tempModel string
+	var tempYearStart, tempYearEnd int
+
 	lines := strings.Split(fullText, "\n")
 
 	for lineNum, line := range lines {
-		// Check for page separator character (\f)
 		if pageSeparatorRegex.MatchString(line) {
 			currentPage++
-			// Reset brand context if needed, depending on PDF layout
-			// currentBrand = "" // Optional: Reset brand on new page?
+			// Reset state/temps on new page to avoid carrying over partial data
+			currentState = ExpectingModel
+			tempModel = ""
 			continue
 		}
 
 		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
+		if line == "" { continue }
 
-		// Skip pages before actual data (heuristic based on page number)
-		// This is less precise than the previous page loop, adjust if necessary
-		if currentPage < 8 {
-			continue
-		}
+		// Skip early pages (adjust threshold if needed)
+		if currentPage < 8 { continue }
 
-
-		if motorcycleHeaderRegex.MatchString(line) {
-			log.Printf("Detected motorcycle section around page %d. Stopping car data extraction.", currentPage)
-			parsingMotorcycles = true
-			// break // Can break here if motorcycle data is reliably at the end
-		}
-		if parsingMotorcycles {
-			continue // Skip motorcycle lines
-		}
-
+		// --- Check for Brand first ---
 		potentialBrand := line
+		// Special handling for multi-word brands split across lines (simple check)
+		// e.g., "HARLEY" might be followed by "DAVIDSON"
+		// This needs refinement for robustness
 		if _, isBrand := brandSet[potentialBrand]; isBrand {
-			currentBrand = potentialBrand
-			log.Printf("Page ~%d: Switched brand to: %s", currentPage, currentBrand)
+			// Check if the potential brand is a continuation (e.g., DAVIDSON)
+			// This heuristic is basic and might misclassify
+			isLikelyContinuation := strings.Contains(potentialBrand, " ") == false && len(strings.Fields(potentialBrand)) == 1
+			if currentBrand != "" && isLikelyContinuation && brandSet[currentBrand+" "+potentialBrand] {
+				currentBrand = currentBrand + " " + potentialBrand // Combine
+				log.Printf("Page ~%d: Updated brand to: %s", currentPage, currentBrand)
+			} else {
+				currentBrand = potentialBrand // Set new brand
+				log.Printf("Page ~%d: Switched brand to: %s", currentPage, currentBrand)
+			}
+			currentState = ExpectingModel // Reset state on brand change
+			tempModel = ""
 			continue
 		}
 
-		if currentBrand == "" {
-			continue
-		}
+		// Skip if no brand context yet
+		if currentBrand == "" { continue }
 
+		// Skip headers, page numbers, years
 		if headerRegex.MatchString(line) || skipLineRegex.MatchString(line) {
+			// If we skip while expecting year/price, reset state
+			if currentState != ExpectingModel {
+				log.Printf("Page ~%d, Line %d: Resetting state due to skip line: %s", currentPage, lineNum+1, line)
+				currentState = ExpectingModel
+				tempModel = ""
+			}
 			continue
 		}
 
-		matches := dataRegex.FindStringSubmatch(line)
-		if len(matches) == 4 {
-			modelTrim := strings.TrimSpace(matches[1])
-			yearStr := matches[2]
-			priceStr := strings.TrimSpace(matches[3])
-
+		// --- Try matching Single-Line (Car) format first ---
+		carMatches := dataRegex.FindStringSubmatch(line)
+		if len(carMatches) == 4 {
+			modelTrim := strings.TrimSpace(carMatches[1])
+			yearStr := carMatches[2]
+			priceStr := strings.TrimSpace(carMatches[3])
 			modelTrim = strings.TrimSuffix(modelTrim, yearStr)
 			modelTrim = strings.TrimSpace(modelTrim)
 
-			if modelTrim == "" {
-				log.Printf("Page ~%d, Line %d: Skipping line (empty model after cleaning): %s", currentPage, lineNum+1, line)
-				continue
-			}
+			if modelTrim != "" {
+				yearStart, yearEnd, errYear := parseYearRange(yearStr)
+				priceMin, priceMax, errPrice := parsePriceRange(priceStr)
 
-			yearStart, yearEnd, err := parseYearRange(yearStr)
-			if err != nil {
-				log.Printf("Page ~%d, Line %d: Skipping line (bad year format '%s'): %s", currentPage, lineNum+1, yearStr, line)
-				continue
-			}
-
-			priceMin, priceMax, err := parsePriceRange(priceStr)
-			if err != nil {
-				log.Printf("Page ~%d, Line %d: Skipping line (bad price format '%s'): %s", currentPage, lineNum+1, priceStr, line)
-				continue
-			}
-
-			now := time.Now()
-			marketPrice := MarketPrice{
-				Brand:     currentBrand,
-				ModelTrim: modelTrim,
-				YearStart: yearStart,
-				YearEnd:   yearEnd,
-				PriceMin:  priceMin,
-				PriceMax:  priceMax,
-				CreatedAt: now,
-				UpdatedAt: now,
-			}
-			allPrices = append(allPrices, marketPrice)
-		} else {
-			// Only log non-matching lines if they appear *after* page 8 approx.
-			if currentPage >= 8 {
-				log.Printf("Page ~%d, Line %d: Skipping line (no data match): %s", currentPage, lineNum+1, line)
+				if errYear == nil && errPrice == nil {
+					now := time.Now()
+					marketPrice := MarketPrice{ Brand: currentBrand, ModelTrim: modelTrim, YearStart: yearStart, YearEnd: yearEnd, PriceMin: priceMin, PriceMax: priceMax, CreatedAt: now, UpdatedAt: now }
+					allPrices = append(allPrices, marketPrice)
+					log.Printf("Page ~%d, Line %d: Parsed single-line entry: %s", currentPage, lineNum+1, modelTrim)
+					// Reset state after successful single-line match
+					currentState = ExpectingModel
+					tempModel = ""
+					continue // Move to next line
+				} else {
+					log.Printf("Page ~%d, Line %d: Single-line regex matched but parsing failed (YearErr: %v, PriceErr: %v): %s", currentPage, lineNum+1, errYear, errPrice, line)
+				}
 			}
 		}
+
+		// --- If not single-line, process with State Machine (Motorcycle/Multi-line) ---
+		switch currentState {
+		case ExpectingModel:
+			// If line looks like year or price, it's unexpected here
+			if yearRegex.MatchString(line) || priceRegex.MatchString(line) {
+				log.Printf("Page ~%d, Line %d: WARNING - Expected model, but line looks like year/price. Skipping: %s", currentPage, lineNum+1, line)
+				// Don't change state, hope the next line is a model
+			} else {
+				// Assume it's a model name
+				tempModel = line
+				currentState = ExpectingYear
+				// log.Printf("Page ~%d, Line %d: Got Model: %s -> Expecting Year", currentPage, lineNum+1, tempModel)
+			}
+		case ExpectingYear:
+			yearStart, yearEnd, errYear := parseYearRange(line)
+			if errYear == nil {
+				// Got year successfully
+				tempYearStart = yearStart
+				tempYearEnd = yearEnd
+				currentState = ExpectingPrice
+				// log.Printf("Page ~%d, Line %d: Got Year: %s -> Expecting Price", currentPage, lineNum+1, line)
+			} else {
+				// Didn't get year, reset state and maybe log warning
+				log.Printf("Page ~%d, Line %d: WARNING - Expected year, got '%s'. Resetting state.", currentPage, lineNum+1, line)
+				currentState = ExpectingModel
+				tempModel = ""
+				// Consider re-processing 'line' as a potential model? For now, just reset.
+			}
+		case ExpectingPrice:
+			priceMin, priceMax, errPrice := parsePriceRange(line)
+			if errPrice == nil {
+				// Got price successfully, we have a complete entry
+				now := time.Now()
+				marketPrice := MarketPrice{
+					Brand:     currentBrand,
+					ModelTrim: tempModel,
+					YearStart: tempYearStart,
+					YearEnd:   tempYearEnd,
+					PriceMin:  priceMin,
+					PriceMax:  priceMax,
+					CreatedAt: now,
+					UpdatedAt: now,
+				}
+				allPrices = append(allPrices, marketPrice)
+				log.Printf("Page ~%d, Line %d: Parsed multi-line entry: %s", currentPage, lineNum+1, tempModel)
+				// Reset for the next entry
+				currentState = ExpectingModel
+				tempModel = ""
+			} else {
+				// Didn't get price, reset state and log warning
+				log.Printf("Page ~%d, Line %d: WARNING - Expected price, got '%s'. Resetting state.", currentPage, lineNum+1, line)
+				currentState = ExpectingModel
+				tempModel = ""
+				// Consider re-processing 'line' as a potential model? For now, just reset.
+			}
+		} // end switch
 	} // end line loop
 
 	log.Printf("Successfully extracted %d records.", len(allPrices))
-
 	jsonData, err := json.MarshalIndent(allPrices, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal JSON: %w", err)
-	}
-
+	if err != nil { return fmt.Errorf("failed to marshal JSON: %w", err) }
 	fmt.Println(string(jsonData))
 	return nil
 }
