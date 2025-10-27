@@ -1,11 +1,12 @@
 module github.com/uzimpp/CarJai/backend
 
-go 1.24
+go 1.24.1
 
 require (
 	github.com/PuerkitoBio/goquery v1.10.3
 	github.com/chromedp/chromedp v0.14.1
 	github.com/golang-jwt/jwt/v5 v5.2.1
+	github.com/ledongthuc/pdf v0.0.0-20250511090121-5959a4027728
 	github.com/lib/pq v1.10.9
 	golang.org/x/crypto v0.37.0
 )
