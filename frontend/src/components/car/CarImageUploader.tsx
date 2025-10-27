@@ -34,9 +34,9 @@ export default function CarImageUploader({
   onUploadComplete,
 }: CarImageUploaderProps) {
   const [images, setImages] = useState<ImagePreview[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false); // reserved for future disable states
   const [error, setError] = useState("");
-  const [dragActive, setDragActive] = useState(false);
+  const [dragActive, setDragActive] = useState(false); // used to style dropzone
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -49,10 +49,11 @@ export default function CarImageUploader({
           const existingImages: ImagePreview[] = result.data.images
             .slice()
             .sort(
-              (a: any, b: any) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0)
+              (a: { displayOrder?: number }, b: { displayOrder?: number }) =>
+                (a.displayOrder ?? 0) - (b.displayOrder ?? 0)
             )
-            .map((img: any) => ({
-              file: null as any, // Not a file since already uploaded
+            .map((img: { id: number; displayOrder: number }) => ({
+              file: null,
               preview: `/api/cars/images/${img.id}`, // Backend image URL
               order: img.displayOrder,
               status: "uploaded" as const,
@@ -234,8 +235,8 @@ export default function CarImageUploader({
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    handleFiles(e.target.files);
+  const handleFileChange = (_e: React.ChangeEvent<HTMLInputElement>) => {
+    handleFiles(_e.target.files);
   };
 
   const removeImage = async (index: number) => {

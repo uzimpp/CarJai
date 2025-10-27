@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useRouter, useParams, usePathname } from "next/navigation";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import { carsAPI } from "@/lib/carsAPI";
-import { referenceAPI } from "@/lib/referenceAPI";
+// import { referenceAPI } from "@/lib/referenceAPI"; // not used
 import { debounce } from "@/utils/debounce";
 import Step1DocumentsForm from "@/components/car/Step1DocumentsForm";
 import Step2DetailsForm from "@/components/car/Step2DetailsForm";
@@ -74,7 +74,7 @@ export default function SellWithIdPage() {
           suppressAutoDiscardRef.current = true; // Don't discard non-existent cars
           setTimeout(() => router.push("/sell"), 2000);
         }
-      } catch (err) {
+      } catch {
         setError("Car not found. Redirecting...");
         suppressAutoDiscardRef.current = true; // Don't discard non-existent cars
         setTimeout(() => router.push("/sell"), 2000);
@@ -130,9 +130,13 @@ export default function SellWithIdPage() {
           ...(car.bodyType && { bodyTypeName: car.bodyType }),
           ...(car.transmission && { transmissionName: car.transmission }),
           ...(car.drivetrain && { drivetrainName: car.drivetrain }),
-          ...(Array.isArray((car as any).fuelTypes) &&
-            (car as any).fuelTypes.length > 0 && {
-              fuelLabels: (car as any).fuelTypes,
+          ...(Array.isArray(
+            (car as unknown as { fuelTypes?: string[] }).fuelTypes
+          ) &&
+            ((car as unknown as { fuelTypes?: string[] }).fuelTypes?.length ??
+              0) > 0 && {
+              fuelLabels: (car as unknown as { fuelTypes?: string[] })
+                .fuelTypes,
             }),
         };
 
@@ -160,9 +164,10 @@ export default function SellWithIdPage() {
           ...(car.prefix && { prefix: car.prefix }),
           ...(car.number && { number: car.number }),
           // Colors from car
-          ...(Array.isArray((car as any).colors) &&
-            (car as any).colors.length > 0 && {
-              colors: (car as any).colors,
+          ...(Array.isArray((car as unknown as { colors?: string[] }).colors) &&
+            ((car as unknown as { colors?: string[] }).colors?.length ?? 0) >
+              0 && {
+              colors: (car as unknown as { colors?: string[] }).colors,
             }),
         };
 
@@ -423,7 +428,7 @@ export default function SellWithIdPage() {
         try {
           await carsAPI.autosaveDraft(carId, sanitizeForSave(data));
           setHasProgress(true);
-        } catch (err) {
+        } catch {
           // Silent fail for autosave
         }
       }, 1500), // 1.5 seconds debounce

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Seller, SellerContact } from "@/types/user";
+import type { CarListing } from "@/types/Car";
 import { sellerAPI } from "@/lib/sellerAPI";
 import CarCard from "@/components/car/CarCard";
 
@@ -14,7 +15,7 @@ export default function SellerPage() {
   const [seller, setSeller] = useState<Seller | null>(null);
   const [contacts, setContacts] = useState<SellerContact[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [cars, setCars] = useState<any[]>([]);
+  const [cars, setCars] = useState<CarListing[]>([]);
   const [notFoundState, setNotFoundState] = useState(false);
 
   useEffect(() => {
@@ -34,8 +35,8 @@ export default function SellerPage() {
           ]);
           if (!mounted) return;
           setContacts(contactsRes.contacts || []);
-          const activeCars = (carsRes.cars || []).filter(
-            (c: any) => c.status === "active"
+          const activeCars = ((carsRes.cars || []) as CarListing[]).filter(
+            (c) => c.status === "active"
           );
           setCars(activeCars);
         } catch {

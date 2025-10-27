@@ -91,7 +91,9 @@ export default function QrCodeUploader({
     const dt = new DataTransfer();
     dt.items.add(file);
     if (fileInputRef.current) fileInputRef.current.files = dt.files;
-    handleFileChange({ target: { files: dt.files } } as any);
+    handleFileChange({
+      target: { files: dt.files },
+    } as unknown as ChangeEvent<HTMLInputElement>);
   };
 
   return (

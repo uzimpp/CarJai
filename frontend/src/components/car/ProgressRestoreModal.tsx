@@ -37,12 +37,10 @@ export default function ProgressRestoreModal({
       const response = await carsAPI.getMyCars();
       if (response.success) {
         // Filter to only show draft cars (excluding current target)
-        const draftCars = response.data
-          .filter(
-            (car: any) => car.status === "draft" && car.id !== targetCarId
-          )
+        const draftCars = (response.data as unknown as CarSummary[])
+          .filter((car) => car.status === "draft" && car.id !== targetCarId)
           // Prefer the most recently created (approximate by id desc)
-          .sort((a: any, b: any) => b.id - a.id);
+          .sort((a, b) => (b.id || 0) - (a.id || 0));
         setAvailableCars(draftCars);
       }
     } catch (err) {
@@ -57,7 +55,8 @@ export default function ProgressRestoreModal({
     if (isOpen && !isLoading && availableCars.length === 0) {
       loadAvailableCars();
     }
-  }, [isOpen]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, isLoading, availableCars.length]);
 
   const handleSubmit = async () => {
     // Auto-pick the most recent draft (first in sorted list)

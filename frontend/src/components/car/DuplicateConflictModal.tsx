@@ -2,10 +2,10 @@
 
 interface DuplicateConflictModalProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose: () => void; // kept for future use
   onRedirect: () => void;
   onCreateNew: () => void;
-  existingCarId: number;
+  existingCarId: number; // shown in text in future
 }
 
 export default function DuplicateConflictModal({

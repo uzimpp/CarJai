@@ -24,7 +24,10 @@ export default function SearchFilters({ onFiltersChange }: SearchFiltersProps) {
   const [filters, setFilters] = useState<SearchFiltersData>({});
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const handleChange = (key: keyof SearchFiltersData, value: any) => {
+  const handleChange = (
+    key: keyof SearchFiltersData,
+    value: string | number | undefined
+  ) => {
     const newFilters = { ...filters, [key]: value || undefined };
     setFilters(newFilters);
     onFiltersChange(newFilters);

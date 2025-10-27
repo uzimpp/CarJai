@@ -1,9 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { TextField } from "@/components/ui/TextField";
 import { FormSection } from "@/components/ui/FormSection";
-// InlineAlert already imported above
 import CarImageUploader from "@/components/car/CarImageUploader";
 import type { CarFormData } from "@/types/Car";
 import {
