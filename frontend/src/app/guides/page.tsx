@@ -193,24 +193,24 @@ export default function CarJaiGuides() {
         <div className="flex gap-4 mb-8">
           <button
             onClick={() => setActiveTab('seller')}
-            className={`flex-1 py-5 px-6 rounded-xl font-semibold text-lg transition-all ${
+            className={`flex-1 py-5 px-6 rounded-xl font-semibold text-lg transition-all flex items-center justify-center ${
               activeTab === 'seller'
                 ? 'bg-gradient-to-r from-red-900 to-red-800 text-white shadow-lg'
                 : 'bg-white text-gray-700 hover:bg-gray-50 shadow-md'
             }`}
           >
-            <Car className="inline-block w-6 h-6 mr-2 mb-1" />
+            <Car className="w-6 h-6 mr-2" />
             Seller
           </button>
           <button
             onClick={() => setActiveTab('buyer')}
-            className={`flex-1 py-5 px-6 rounded-xl font-semibold text-lg transition-all ${
+            className={`flex-1 py-5 px-6 rounded-xl font-semibold text-lg transition-all flex items-center justify-center ${
               activeTab === 'buyer'
                 ? 'bg-gradient-to-r from-green-700 to-green-600 text-white shadow-lg'
                 : 'bg-white text-gray-700 hover:bg-gray-50 shadow-md'
             }`}
           >
-            <ShoppingCart className="inline-block w-6 h-6 mr-2 mb-1" />
+            <ShoppingCart className="w-6 h-6 mr-2" />
             Buyer
           </button>
         </div>
