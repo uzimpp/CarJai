@@ -636,6 +636,44 @@ func (s *CarService) GetCarWithImages(carID int) (*models.CarWithImages, error) 
 	}, nil
 }
 
+// GetCarFuelLabels returns the fuel labels for a car in the requested language
+func (s *CarService) GetCarFuelLabels(carID int, lang string) ([]string, error) {
+	if lang == "" {
+		lang = "en"
+	}
+	codes, err := s.fuelRepo.GetCarFuels(carID)
+	if err != nil {
+		return nil, err
+	}
+	if len(codes) == 0 {
+		return []string{}, nil
+	}
+	labels, err := s.carRepo.GetFuelLabelsByCodes(codes, lang)
+	if err != nil {
+		return nil, err
+	}
+	return labels, nil
+}
+
+// GetCarColorLabels returns the color labels for a car in the requested language
+func (s *CarService) GetCarColorLabels(carID int, lang string) ([]string, error) {
+	if lang == "" {
+		lang = "en"
+	}
+	codes, err := s.colorRepo.GetCarColors(carID)
+	if err != nil {
+		return nil, err
+	}
+	if len(codes) == 0 {
+		return []string{}, nil
+	}
+	labels, err := s.carRepo.GetColorLabelsByCodes(codes, lang)
+	if err != nil {
+		return nil, err
+	}
+	return labels, nil
+}
+
 // (Removed unused UpdateImageDisplayOrder; bulk reorder endpoint is used instead)
 
 // ReorderImagesBulk reorders all images for a car in one transaction
@@ -803,8 +841,24 @@ func (s *CarService) GetColorLabelsByCodes(codes []string, lang string) ([]strin
 	return s.colorRepo.LookupColorLabelsByCodes(codes, lang)
 }
 
+// TranslatedCarDisplay provides a display-ready car object with all codes/IDs translated to labels
+// This struct matches the frontend expectations for the display block in GET /api/cars/:id
 type TranslatedCarDisplay struct {
-	// Core fields (unchanged)
+	// Inspection results as display-ready strings
+	CarDisplay *CarDisplay `json:"car,omitempty"`
+	ImagesDisplay *ImagesDisplay `json:"images,omitempty"`
+	InspectionDisplay *InspectionDisplay `json:"inspection,omitempty"`
+}
+
+type ImagesDisplay struct {
+	Images []ImageMetadata `json:"images,omitempty"`
+}
+type ImageMetadata struct {
+	ID int `json:"id"`
+	URL string `json:"url"`
+}
+type CarDisplay struct {
+		// Core fields (unchanged from Car model)
 	ID        int       `json:"id"`
 	SellerID  int       `json:"sellerId"`
 	Year      *int      `json:"year"`
@@ -812,31 +866,60 @@ type TranslatedCarDisplay struct {
 	Price     *int      `json:"price"`
 	Status    string    `json:"status"`
 	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
 
-	// Translated fields (from codes/IDs to labels)
+	// Translated reference fields (codes/IDs → human-readable labels)
 	BodyType     *string  `json:"bodyType"`     // e.g., "Pickup" (from body_type_code)
 	Transmission *string  `json:"transmission"` // e.g., "Manual" (from transmission_code)
 	Drivetrain   *string  `json:"drivetrain"`   // e.g., "FWD" (from drivetrain_code)
-	Province     *string  `json:"province"`     // e.g., "Bangkok" (from province_id)
 	FuelTypes    []string `json:"fuelTypes"`    // e.g., ["Gasoline", "LPG"] (from car_fuel codes)
-	Colors       []string `json:"colors"`       // e.g., ["White", "Gray"] (from car_colors IDs)
+	Colors       []string `json:"colors"`       // e.g., ["White", "Gray"] (from car_colors codes)
 
-	// Other fields
-	BrandName          *string `json:"brandName"`
-	ModelName          *string `json:"modelName"`
-	SubmodelName       *string `json:"submodelName"`
-	Description        *string `json:"description"`
-	ChassisNumber      *string `json:"chassisNumber"`
-	LicensePlate       string  `json:"licensePlate"` // Constructed: "กข 5177 กรุงเทพมหานคร"
-	Seats              *int    `json:"seats"`
-	Doors              *int    `json:"doors"`
-	EngineCC           *int    `json:"engineCc"`
-	ConditionRating    *int    `json:"conditionRating"`
-	IsFlooded          bool    `json:"isFlooded"`
-	IsHeavilyDamaged   bool    `json:"isHeavilyDamaged"`
-	BookUploaded       bool    `json:"bookUploaded"`
-	InspectionUploaded bool    `json:"inspectionUploaded"`
+	// Car details (unchanged from Car model)
+	BrandName    *string `json:"brandName"`
+	ModelName    *string `json:"modelName"`
+	SubmodelName *string `json:"submodelName"`
+	Description  *string `json:"description"`
+
+	// License plate fields
+	ChassisNumber *string `json:"chassisNumber"`
+	LicensePlate  string  `json:"licensePlate"` // Constructed: "กข 5177 กรุงเทพมหานคร"
+	Prefix        *string `json:"prefix"`       // e.g., "กข"
+	Number        *string `json:"number"`       // e.g., "5177"
+	Province      *string `json:"province"`     // e.g., "Bangkok" (from province_id)
+
+	// Specifications
+	Seats    *int `json:"seats"`
+	Doors    *int `json:"doors"`
+	EngineCC *int `json:"engineCc"`
+
+	// Condition & damage
+	ConditionRating  *int `json:"conditionRating"`
+	IsFlooded        bool `json:"isFlooded"`
+	IsHeavilyDamaged bool `json:"isHeavilyDamaged"`
+}
+// InspectionDisplay contains stringified inspection results for UI consumption
+type InspectionDisplay struct {
+	Station            string `json:"station,omitempty"`
+	OverallPass        bool   `json:"overallPass,omitempty"`
+	BrakeResult        bool   `json:"brakeResult,omitempty"`
+	HandbrakeResult    bool   `json:"handbrakeResult,omitempty"`
+	AlignmentResult    bool   `json:"alignmentResult,omitempty"`
+	NoiseResult        bool   `json:"noiseResult,omitempty"`
+	EmissionResult     bool   `json:"emissionResult,omitempty"`
+	HornResult         bool   `json:"hornResult,omitempty"`
+	SpeedometerResult  bool   `json:"speedometerResult,omitempty"`
+	HighLowBeamResult  bool   `json:"highLowBeamResult,omitempty"`
+	SignalLightsResult bool   `json:"signalLightsResult,omitempty"`
+	OtherLightsResult  bool   `json:"otherLightsResult,omitempty"`
+	WindshieldResult   bool   `json:"windshieldResult,omitempty"`
+	SteeringResult     bool   `json:"steeringResult,omitempty"`
+	WheelsTiresResult  bool   `json:"wheelsTiresResult,omitempty"`
+	FuelTankResult     bool   `json:"fuelTankResult,omitempty"`
+	ChassisResult      bool   `json:"chassisResult,omitempty"`
+	BodyResult         bool   `json:"bodyResult,omitempty"`
+	DoorsFloorResult   bool   `json:"doorsFloorResult,omitempty"`
+	SeatbeltResult     bool   `json:"seatbeltResult,omitempty"`
+	WiperResult        bool   `json:"wiperResult,omitempty"`
 }
 
 // TranslateCarForDisplay converts a Car model to a display-ready format with translated labels
@@ -848,7 +931,8 @@ func (s *CarService) TranslateCarForDisplay(car *models.Car, lang string) (*Tran
 	}
 
 	display := &TranslatedCarDisplay{
-		// Copy unchanged fields
+		CarDisplay: &CarDisplay{
+		// Copy core fields
 		ID:               car.ID,
 		SellerID:         car.SellerID,
 		Year:             car.Year,
@@ -856,61 +940,137 @@ func (s *CarService) TranslateCarForDisplay(car *models.Car, lang string) (*Tran
 		Price:            car.Price,
 		Status:           car.Status,
 		CreatedAt:        car.CreatedAt,
-		UpdatedAt:        car.UpdatedAt,
 		BrandName:        car.BrandName,
 		ModelName:        car.ModelName,
 		SubmodelName:     car.SubmodelName,
 		Description:      car.Description,
 		ChassisNumber:    car.ChassisNumber,
+		Prefix:           car.Prefix,
+		Number:           car.Number,
 		Seats:            car.Seats,
 		Doors:            car.Doors,
 		EngineCC:         car.EngineCC,
 		ConditionRating:  car.ConditionRating,
 		IsFlooded:        car.IsFlooded,
 		IsHeavilyDamaged: car.IsHeavilyDamaged,
+		},
 	}
 
 	// Construct license plate for display (combine prefix + number + province name)
 	if car.Prefix != nil && car.Number != nil {
 		provinceName := ""
 		if car.ProvinceID != nil {
-			// Get province name in the requested language
-			if name, err := s.carRepo.GetProvinceLabelByID(*car.ProvinceID, lang); err == nil && name != "" {
+			// Get province name in Thai by default
+			if name, err := s.carRepo.GetProvinceLabelByID(*car.ProvinceID, "th"); err == nil && name != "" {
 				provinceName = name
 			}
 		}
-		display.LicensePlate = utils.ConstructLicensePlate(
+		display.CarDisplay.LicensePlate = utils.ConstructLicensePlate(
 			*car.Prefix,
 			*car.Number,
 			provinceName,
 		)
 	}
 
+	// Status and damage displays
+	display.CarDisplay.Status = car.Status
+	display.CarDisplay.IsFlooded = car.IsFlooded
+	display.CarDisplay.IsHeavilyDamaged = car.IsHeavilyDamaged
+
 	// Translate body type code to label
 	if car.BodyTypeCode != nil && *car.BodyTypeCode != "" {
 		if label, err := s.carRepo.GetBodyTypeLabelByCode(*car.BodyTypeCode, lang); err == nil && label != "" {
-			display.BodyType = &label
+			display.CarDisplay.BodyType = &label
 		}
+	}
+
+	// Inspection display
+	if insp, err := s.inspectionRepo.GetInspectionByCarID(car.ID); err == nil && insp != nil {
+		idisp := &InspectionDisplay{}
+		if insp.Station != nil {
+			idisp.Station = *insp.Station
+		}
+		if insp.OverallPass != nil {
+			idisp.OverallPass = *insp.OverallPass
+		}
+		if insp.BrakeResult != nil {
+			idisp.BrakeResult = *insp.BrakeResult
+		}
+		if insp.HandbrakeResult != nil {
+			idisp.HandbrakeResult = *insp.HandbrakeResult
+		}
+		if insp.AlignmentResult != nil {
+			idisp.AlignmentResult = *insp.AlignmentResult
+		}
+		if insp.NoiseResult != nil {
+			idisp.NoiseResult = *insp.NoiseResult
+		}
+		if insp.EmissionResult != nil {
+			idisp.EmissionResult = *insp.EmissionResult
+		}
+		if insp.HornResult != nil {
+			idisp.HornResult = *insp.HornResult
+		}
+		if insp.SpeedometerResult != nil {
+			idisp.SpeedometerResult = *insp.SpeedometerResult
+		}
+		if insp.HighLowBeamResult != nil {
+			idisp.HighLowBeamResult = *insp.HighLowBeamResult
+		}
+		if insp.SignalLightsResult != nil {
+			idisp.SignalLightsResult = *insp.SignalLightsResult
+		}
+		if insp.OtherLightsResult != nil {
+			idisp.OtherLightsResult = *insp.OtherLightsResult
+		}
+		if insp.WindshieldResult != nil {
+			idisp.WindshieldResult = *insp.WindshieldResult
+		}
+		if insp.SteeringResult != nil {
+			idisp.SteeringResult = *insp.SteeringResult
+		}
+		if insp.WheelsTiresResult != nil {
+			idisp.WheelsTiresResult = *insp.WheelsTiresResult
+		}
+		if insp.FuelTankResult != nil {
+			idisp.FuelTankResult = *insp.FuelTankResult
+		}
+		if insp.ChassisResult != nil {
+			idisp.ChassisResult = *insp.ChassisResult
+		}
+		if insp.BodyResult != nil {
+			idisp.BodyResult = *insp.BodyResult
+		}
+		if insp.DoorsFloorResult != nil {
+			idisp.DoorsFloorResult = *insp.DoorsFloorResult
+		}
+		if insp.SeatbeltResult != nil {
+			idisp.SeatbeltResult = *insp.SeatbeltResult
+		}
+		if insp.WiperResult != nil {
+			idisp.WiperResult = *insp.WiperResult
+		}
+		display.InspectionDisplay = idisp
 	}
 
 	// Translate transmission code to label
 	if car.TransmissionCode != nil && *car.TransmissionCode != "" {
 		if label, err := s.carRepo.GetTransmissionLabelByCode(*car.TransmissionCode, lang); err == nil && label != "" {
-			display.Transmission = &label
+			display.CarDisplay.Transmission = &label
 		}
 	}
 
 	// Translate drivetrain code to label
 	if car.DrivetrainCode != nil && *car.DrivetrainCode != "" {
 		if label, err := s.carRepo.GetDrivetrainLabelByCode(*car.DrivetrainCode, lang); err == nil && label != "" {
-			display.Drivetrain = &label
+			display.CarDisplay.Drivetrain = &label
 		}
 	}
 
 	// Translate province ID to label
 	if car.ProvinceID != nil {
 		if label, err := s.carRepo.GetProvinceLabelByID(*car.ProvinceID, lang); err == nil && label != "" {
-			display.Province = &label
+			display.CarDisplay.Province = &label
 		}
 	}
 
@@ -919,7 +1079,7 @@ func (s *CarService) TranslateCarForDisplay(car *models.Car, lang string) (*Tran
 	if err == nil && len(fuelCodes) > 0 {
 		fuelLabels, err := s.carRepo.GetFuelLabelsByCodes(fuelCodes, lang)
 		if err == nil {
-			display.FuelTypes = fuelLabels
+			display.CarDisplay.FuelTypes = fuelLabels
 		}
 	}
 
@@ -928,7 +1088,7 @@ func (s *CarService) TranslateCarForDisplay(car *models.Car, lang string) (*Tran
 	if err == nil && len(colorCodes) > 0 {
 		colorLabels, err := s.carRepo.GetColorLabelsByCodes(colorCodes, lang)
 		if err == nil {
-			display.Colors = colorLabels
+			display.CarDisplay.Colors = colorLabels
 		}
 	}
 	return display, nil
@@ -987,89 +1147,5 @@ func (s *CarService) RestoreProgressFromCar(sourceCarID int, targetCarID int) er
 			return fmt.Errorf("failed to transfer colors: %w", err)
 		}
 	}
-
-	// Transfer images
-	if err := s.transferCarImages(sourceCarID, targetCarID); err != nil {
-		return fmt.Errorf("failed to transfer images: %w", err)
-	}
-
-	// Transfer inspection data
-	if err := s.transferInspectionData(sourceCarID, targetCarID); err != nil {
-		return fmt.Errorf("failed to transfer inspection data: %w", err)
-	}
-
 	return nil
-}
-
-// transferCarImages transfers all images from source car to target car
-func (s *CarService) transferCarImages(sourceCarID int, targetCarID int) error {
-	// Get source car images
-	sourceImages, err := s.imageRepo.GetCarImagesMetadata(sourceCarID)
-	if err != nil {
-		return fmt.Errorf("failed to get source car images: %w", err)
-	}
-
-	if len(sourceImages) == 0 {
-		return nil // No images to transfer
-	}
-
-	// Get current target car image count to determine display order
-	targetImageCount, err := s.imageRepo.CountCarImages(targetCarID)
-	if err != nil {
-		return fmt.Errorf("failed to count target car images: %w", err)
-	}
-
-	// Transfer each image
-	for i, sourceImage := range sourceImages {
-		// Create new image record for target car
-		newImage := &models.CarImage{
-			CarID:        targetCarID,
-			ImageType:    sourceImage.ImageType,
-			ImageSize:    sourceImage.ImageSize,
-			DisplayOrder: targetImageCount + i + 1,
-		}
-
-		if err := s.imageRepo.CreateCarImage(newImage); err != nil {
-			return fmt.Errorf("failed to transfer image %d: %w", i+1, err)
-		}
-	}
-
-	return nil
-}
-
-// transferInspectionData transfers inspection data from source car to target car
-func (s *CarService) transferInspectionData(sourceCarID int, targetCarID int) error {
-	// Get source inspection
-	sourceInspection, err := s.inspectionRepo.GetInspectionByCarID(sourceCarID)
-	if err != nil || sourceInspection == nil {
-		return nil // No inspection to transfer
-	}
-
-	// Create new inspection for target car
-	targetInspection := &models.InspectionResult{
-		CarID:              targetCarID,
-		Station:            sourceInspection.Station,
-		OverallPass:        sourceInspection.OverallPass,
-		BrakeResult:        sourceInspection.BrakeResult,
-		HandbrakeResult:    sourceInspection.HandbrakeResult,
-		AlignmentResult:    sourceInspection.AlignmentResult,
-		NoiseResult:        sourceInspection.NoiseResult,
-		EmissionResult:     sourceInspection.EmissionResult,
-		HornResult:         sourceInspection.HornResult,
-		SpeedometerResult:  sourceInspection.SpeedometerResult,
-		HighLowBeamResult:  sourceInspection.HighLowBeamResult,
-		SignalLightsResult: sourceInspection.SignalLightsResult,
-		OtherLightsResult:  sourceInspection.OtherLightsResult,
-		WindshieldResult:   sourceInspection.WindshieldResult,
-		SteeringResult:     sourceInspection.SteeringResult,
-		WheelsTiresResult:  sourceInspection.WheelsTiresResult,
-		FuelTankResult:     sourceInspection.FuelTankResult,
-		ChassisResult:      sourceInspection.ChassisResult,
-		BodyResult:         sourceInspection.BodyResult,
-		DoorsFloorResult:   sourceInspection.DoorsFloorResult,
-		SeatbeltResult:     sourceInspection.SeatbeltResult,
-		WiperResult:        sourceInspection.WiperResult,
-	}
-
-	return s.inspectionRepo.CreateInspectionResult(targetInspection)
 }

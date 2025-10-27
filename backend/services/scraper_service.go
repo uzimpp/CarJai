@@ -422,24 +422,25 @@ func (inspFields *InspectionFields) ToMap() map[string]interface{} {
 		result["licensePlate"] = utils.ConstructLicensePlate(inspFields.LicensePlate.Prefix, inspFields.LicensePlate.Number, inspFields.LicensePlate.ProvinceTh)
 	}
 	result["station"] = inspFields.Station
-	result["overallPass"] = utils.DisplayBool(*inspFields.OverallPass)
-	result["brakeResult"] = utils.DisplayBool(*inspFields.BrakeResult)
-	result["handbrakeResult"] = utils.DisplayBool(*inspFields.HandbrakeResult)
-	result["alignmentResult"] = utils.DisplayBool(*inspFields.AlignmentResult)
-	result["noiseResult"] = utils.DisplayBool(*inspFields.NoiseResult)
-	result["emissionResult"] = utils.DisplayBool(*inspFields.EmissionResult)
-	result["hornResult"] = utils.DisplayBool(*inspFields.HornResult)
-	result["highLowBeamResult"] = utils.DisplayBool(*inspFields.HighLowBeamResult)
-	result["signalLightsResult"] = utils.DisplayBool(*inspFields.SignalLightsResult)
-	result["otherLightsResult"] = utils.DisplayBool(*inspFields.OtherLightsResult)
-	result["windshieldResult"] = utils.DisplayBool(*inspFields.WindshieldResult)
-	result["steeringResult"] = utils.DisplayBool(*inspFields.SteeringResult)
-	result["wheelsTiresResult"] = utils.DisplayBool(*inspFields.WheelsTiresResult)
-	result["fuelTankResult"] = utils.DisplayBool(*inspFields.FuelTankResult)
-	result["chassisResult"] = utils.DisplayBool(*inspFields.ChassisResult)
-	result["bodyResult"] = utils.DisplayBool(*inspFields.BodyResult)
-	result["doorsFloorResult"] = utils.DisplayBool(*inspFields.DoorsFloorResult)
-	result["seatbeltResult"] = utils.DisplayBool(*inspFields.SeatbeltResult)
-	result["wiperResult"] = utils.DisplayBool(*inspFields.WiperResult)
+	result["overallPass"] = *inspFields.OverallPass
+	result["brakeResult"] = *inspFields.BrakeResult
+	result["handbrakeResult"] = *inspFields.HandbrakeResult
+	result["alignmentResult"] = *inspFields.AlignmentResult
+	result["noiseResult"] = *inspFields.NoiseResult
+	result["emissionResult"] = *inspFields.EmissionResult
+	result["hornResult"] = *inspFields.HornResult
+	result["speedometerResult"] = *inspFields.SpeedometerResult
+	result["highLowBeamResult"] = *inspFields.HighLowBeamResult
+	result["signalLightsResult"] = *inspFields.SignalLightsResult
+	result["otherLightsResult"] = *inspFields.OtherLightsResult
+	result["windshieldResult"] = *inspFields.WindshieldResult
+	result["steeringResult"] = *inspFields.SteeringResult
+	result["wheelsTiresResult"] = *inspFields.WheelsTiresResult
+	result["fuelTankResult"] = *inspFields.FuelTankResult
+	result["chassisResult"] = *inspFields.ChassisResult
+	result["bodyResult"] = *inspFields.BodyResult
+	result["doorsFloorResult"] = *inspFields.DoorsFloorResult
+	result["seatbeltResult"] = *inspFields.SeatbeltResult
+	result["wiperResult"] = *inspFields.WiperResult
 	return result
 }

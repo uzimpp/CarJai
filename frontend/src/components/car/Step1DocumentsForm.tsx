@@ -5,7 +5,7 @@ import { TextField } from "@/components/ui/TextField";
 import { FormSection } from "@/components/ui/FormSection";
 import { InlineAlert } from "@/components/ui/InlineAlert";
 import QrCodeUploader from "@/components/car/QrCodeUploader";
-import type { CarFormData, InspectionData } from "@/types/Car";
+import type { CarFormData } from "@/types/Car";
 import Image from "next/image";
 
 interface Step1DocumentsFormProps {
@@ -13,9 +13,11 @@ interface Step1DocumentsFormProps {
   onFormDataChange: (data: Partial<CarFormData>) => void;
   onBookUpload: (file: File) => Promise<void>;
   onInspectionUpload: (url: string) => Promise<void>;
-  inspectionData: InspectionData | null;
   onContinue: () => void;
   isSubmitting: boolean;
+  inspectionOpen: boolean;
+  onToggleInspection: () => void;
+  inspectionPassSummary?: { passed: number; total: number };
 }
 
 export default function Step1DocumentsForm({
@@ -23,14 +25,41 @@ export default function Step1DocumentsForm({
   onFormDataChange,
   onBookUpload,
   onInspectionUpload,
-  inspectionData,
   onContinue,
   isSubmitting,
+  inspectionOpen,
+  onToggleInspection,
+  inspectionPassSummary,
 }: Step1DocumentsFormProps) {
   const [isUploadingBook, setIsUploadingBook] = useState(false);
   const [isUploadingInspection, setIsUploadingInspection] = useState(false);
   const [error, setError] = useState("");
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+
+  const PassFail = ({
+    label,
+    value,
+  }: {
+    label: string;
+    value: boolean | undefined;
+  }) => (
+    <div className="flex items-center justify-between p-3 border rounded-lg bg-gray-50">
+      <span className="text-sm font-medium text-gray-700">{label}</span>
+      {value === undefined ? (
+        <span className="px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-600">
+          —
+        </span>
+      ) : value ? (
+        <span className="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700">
+          Pass
+        </span>
+      ) : (
+        <span className="px-3 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-700">
+          Fail
+        </span>
+      )}
+    </div>
+  );
 
   const handleBookFileChange = async (
     e: React.ChangeEvent<HTMLInputElement>
@@ -183,20 +212,6 @@ export default function Step1DocumentsForm({
                 required
               />
               <TextField
-                label="License Plate"
-                value={inspectionData?.licensePlate || ""}
-                onChange={() => {}}
-                placeholder="e.g., 3กบ2399"
-                disabled
-              />
-              <TextField
-                label="Chassis Number"
-                value={inspectionData?.chassisNumber || ""}
-                onChange={() => {}}
-                placeholder="e.g., MGRxxxxxxxxxxx"
-                disabled
-              />
-              <TextField
                 label="Engine CC"
                 type="number"
                 value={formData.engineCc?.toString() || ""}
@@ -232,146 +247,142 @@ export default function Step1DocumentsForm({
                 placeholder="e.g., 5"
                 required
               />
+
+              <TextField
+                label="Color"
+                value={
+                  formData?.colors
+                    ? Array.isArray(formData.colors)
+                      ? formData.colors.join(", ")
+                      : formData.colors
+                    : ""
+                }
+                onChange={() => {}}
+                placeholder="e.g., Red, Blue, Green"
+                disabled
+              />
+              <TextField
+                label="License Plate"
+                value={formData?.licensePlate || ""}
+                onChange={() => {}}
+                placeholder="e.g., 3กบ2399"
+                disabled
+              />
+              <TextField
+                label="Chassis Number"
+                value={formData?.chassisNumber || ""}
+                onChange={() => {}}
+                placeholder="e.g., MGRxxxxxxxxxxx"
+                disabled
+              />
               <TextField
                 label="Mileage (km)"
                 type="number"
-                value={inspectionData?.mileage.toString() || ""}
+                value={formData?.mileage?.toString() || ""}
                 onChange={(e) =>
                   onFormDataChange({
                     mileage: parseInt(e.target.value) || undefined,
                   })
                 }
                 placeholder="e.g., 50000"
-                helper="This will be the most recent mileage value for your listing"
+                // helper="This will be the most recent mileage value for your listing"
                 disabled
               />
-              <TextField
-                label="Color"
-                value={inspectionData?.colors || ""}
-                onChange={() => {}}
-                placeholder="e.g., Red, Blue, Green"
-                disabled
-              />
-              <TextField
-                label="Inspection Station"
-                value={inspectionData?.station || ""}
-                onChange={() => {}}
-                disabled
-              />
-              <TextField
-                label="Overall Result"
-                value={inspectionData?.overallPass || ""}
-                onChange={() => {}}
-                disabled
-              />
-              <TextField
-                label="Brake Result"
-                value={inspectionData?.brakeResult || ""}
-                onChange={() => {}}
-                disabled
-              />
-              <TextField
-                label="Handbrake Result"
-                value={inspectionData?.handbrakeResult || ""}
-                onChange={() => {}}
-                disabled
-              />
-              <TextField
-                label="Alignment Result"
-                value={inspectionData?.alignmentResult || ""}
-                onChange={() => {}}
-                disabled
-              />
-              <TextField
-                label="Noise Result"
-                value={inspectionData?.noiseResult || ""}
-                onChange={() => {}}
-                disabled
-              />
-              <TextField
-                label="Emission Result"
-                value={inspectionData?.emissionResult || ""}
-                onChange={() => {}}
-                disabled
-              />
-              <TextField
-                label="Horn Result"
-                value={inspectionData?.hornResult || ""}
-                onChange={() => {}}
-                disabled
-              />
-              <TextField
-                label="High Low Beam Result"
-                value={inspectionData?.highLowBeamResult || ""}
-                onChange={() => {}}
-                disabled
-              />
-              <TextField
-                label="Signal Lights Result"
-                value={inspectionData?.signalLightsResult || ""}
-                onChange={() => {}}
-                disabled
-              />
-              <TextField
-                label="Other Lights Result"
-                value={inspectionData?.otherLightsResult || ""}
-                onChange={() => {}}
-                disabled
-              />
-              <TextField
-                label="Windshield Result"
-                value={inspectionData?.windshieldResult || ""}
-                onChange={() => {}}
-                disabled
-              />
-              <TextField
-                label="Steering Result"
-                value={inspectionData?.steeringResult || ""}
-                onChange={() => {}}
-                disabled
-              />
-              <TextField
-                label="Wheels and Tires Result"
-                value={inspectionData?.wheelsTiresResult || ""}
-                onChange={() => {}}
-                disabled
-              />
-              <TextField
-                label="Fuel Tank Result"
-                value={inspectionData?.fuelTankResult || ""}
-                onChange={() => {}}
-                disabled
-              />
-              <TextField
-                label="Chassis Result"
-                value={inspectionData?.chassisResult || ""}
-                onChange={() => {}}
-                disabled
-              />
-              <TextField
-                label="Body Result"
-                value={inspectionData?.bodyResult || ""}
-                onChange={() => {}}
-                disabled
-              />
-              <TextField
-                label="Doors and Floor Result"
-                value={inspectionData?.doorsFloorResult || ""}
-                onChange={() => {}}
-                disabled
-              />
-              <TextField
-                label="Seatbelt Result"
-                value={inspectionData?.seatbeltResult || ""}
-                onChange={() => {}}
-                disabled
-              />
-              <TextField
-                label="Wiper Result"
-                value={inspectionData?.wiperResult || ""}
-                onChange={() => {}}
-                disabled
-              />
+            </div>
+            <div className="gap-4">
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={onToggleInspection}
+                  className="w-full flex items-center justify-between px-4 py-3 border rounded-lg hover:bg-gray-50"
+                >
+                  <span className="text-sm font-medium text-gray-800">
+                    Inspection Results
+                  </span>
+                  <span className="text-xs text-gray-600">
+                    {inspectionPassSummary
+                      ? `Pass ${inspectionPassSummary.passed}/${inspectionPassSummary.total}`
+                      : ""}
+                  </span>
+                </button>
+                {inspectionOpen && (
+                  <div className="space-y-3">
+                    <TextField
+                      label="Inspection Station"
+                      value={formData?.station || ""}
+                      onChange={() => {}}
+                      disabled
+                    />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <PassFail label="Overall" value={formData?.overallPass} />
+                      <PassFail label="Brake" value={formData?.brakeResult} />
+                      <PassFail
+                        label="Handbrake"
+                        value={formData?.handbrakeResult}
+                      />
+                      <PassFail
+                        label="Alignment"
+                        value={formData?.alignmentResult}
+                      />
+                      <PassFail label="Noise" value={formData?.noiseResult} />
+                      <PassFail
+                        label="Emission"
+                        value={formData?.emissionResult}
+                      />
+                      <PassFail label="Horn" value={formData?.hornResult} />
+                      <PassFail
+                        label="Speedometer"
+                        value={formData?.speedometerResult}
+                      />
+                      <PassFail
+                        label="High Low Beam"
+                        value={formData?.highLowBeamResult}
+                      />
+                      <PassFail
+                        label="Signal Lights"
+                        value={formData?.signalLightsResult}
+                      />
+                      <PassFail
+                        label="Other Lights"
+                        value={formData?.otherLightsResult}
+                      />
+                      <PassFail
+                        label="Windshield"
+                        value={formData?.windshieldResult}
+                      />
+                      <PassFail
+                        label="Steering"
+                        value={formData?.steeringResult}
+                      />
+                      <PassFail
+                        label="Wheels and Tires"
+                        value={formData?.wheelsTiresResult}
+                      />
+                      <PassFail
+                        label="Fuel Tank"
+                        value={formData?.fuelTankResult}
+                      />
+                      <PassFail
+                        label="Chassis"
+                        value={formData?.chassisResult}
+                      />
+                      <PassFail
+                        label="Body and Frame"
+                        value={formData?.bodyResult}
+                      />
+                      <PassFail
+                        label="Doors and Floor"
+                        value={formData?.doorsFloorResult}
+                      />
+                      <PassFail
+                        label="Seatbelt"
+                        value={formData?.seatbeltResult}
+                      />
+                      <PassFail label="Wiper" value={formData?.wiperResult} />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

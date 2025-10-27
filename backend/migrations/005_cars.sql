@@ -83,6 +83,7 @@ CREATE TABLE car_inspection_results (
     id SERIAL PRIMARY KEY,
     car_id INTEGER NOT NULL REFERENCES cars (id) ON DELETE CASCADE,
     station VARCHAR(200), --TH
+    -- 20 fields
     overall_pass BOOLEAN, -- Overall inspection result (pass/fail)
     brake_result BOOLEAN, -- Brake test (pass/fail)
     handbrake_result BOOLEAN, -- Handbrake (pass/fail)

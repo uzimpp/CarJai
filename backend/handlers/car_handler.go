@@ -120,10 +120,41 @@ func (h *CarHandler) GetCar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.RespondJSON(w, http.StatusOK, models.CarWithImagesResponse{
-		Success: true,
-		Data:    *carWithImages,
-	})
+	// Enrich with labels and flatten into car payload
+	lang := r.URL.Query().Get("lang")
+	if lang == "" {
+		lang = "en"
+	}
+
+	var display *services.TranslatedCarDisplay
+	if d, err := h.carService.TranslateCarForDisplay(&carWithImages.Car, lang); err == nil {
+		display = d
+	}
+
+	// Enrich images with URLs for display
+	enrichedImages := make([]map[string]interface{}, len(carWithImages.Images))
+	for i, img := range carWithImages.Images {
+		enrichedImages[i] = map[string]interface{}{
+			"id":           img.ID,
+			"carId":        img.CarID,
+			"imageType":    img.ImageType,
+			"imageSize":    img.ImageSize,
+			"displayOrder": img.DisplayOrder,
+			"uploadedAt":   img.UploadedAt,
+			"url":          fmt.Sprintf("/api/cars/images/%d", img.ID), // Add URL for display
+		}
+	}
+
+	// Return flattened response with complete metadata + URLs
+	resp := map[string]interface{}{
+		"success": true,
+		"data": map[string]interface{}{
+			"car":        display.CarDisplay,
+			"images":     enrichedImages,           // Complete metadata + URL for <img src="">
+			"inspection": carWithImages.Inspection, // Complete InspectionResult
+		},
+	}
+	utils.WriteJSON(w, http.StatusOK, resp)
 }
 
 // GetMyCars handles GET /api/cars/my

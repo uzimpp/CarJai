@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useRouter, useParams, usePathname } from "next/navigation";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import { carsAPI } from "@/lib/carsAPI";
+import { referenceAPI } from "@/lib/referenceAPI";
 import { debounce } from "@/utils/debounce";
 import Step1DocumentsForm from "@/components/car/Step1DocumentsForm";
 import Step2DetailsForm from "@/components/car/Step2DetailsForm";
@@ -11,7 +12,7 @@ import Step3PricingForm from "@/components/car/Step3PricingForm";
 import Step4ReviewForm from "@/components/car/Step4ReviewForm";
 import ProgressRestoreModal from "@/components/car/ProgressRestoreModal";
 import DuplicateConflictModal from "@/components/car/DuplicateConflictModal";
-import type { CarFormData } from "@/types/Car";
+import type { CarFormData, InspectionResult } from "@/types/Car";
 import type { Step } from "@/types/Selling";
 
 export default function SellWithIdPage() {
@@ -32,13 +33,9 @@ export default function SellWithIdPage() {
   // Step management
   const [currentStep, setCurrentStep] = useState<Step>("documents");
 
-  // Form data
+  // Form data - unified state
   const [formData, setFormData] = useState<Partial<CarFormData>>({});
-  const [inspectionData, setInspectionData] = useState<Record<
-    string,
-    string
-  > | null>(null);
-  const [imagesUploaded, setImagesUploaded] = useState(false);
+  const [inspectionOpen, setInspectionOpen] = useState(false);
 
   // UI state
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -125,10 +122,22 @@ export default function SellWithIdPage() {
         const res = await carsAPI.getById(carId);
         if (!res.success) return;
 
-        const car = (res.data as any).car; // Extract car from nested structure
+        const car = res.data.car; // Access car data from nested structure
         if (!car) return;
 
+        // Build unified formData from car payload
+        const codeMapped: Partial<CarFormData> = {
+          ...(car.bodyType && { bodyTypeName: car.bodyType }),
+          ...(car.transmission && { transmissionName: car.transmission }),
+          ...(car.drivetrain && { drivetrainName: car.drivetrain }),
+          ...(Array.isArray((car as any).fuelTypes) &&
+            (car as any).fuelTypes.length > 0 && {
+              fuelLabels: (car as any).fuelTypes,
+            }),
+        };
+
         const initial: Partial<CarFormData> = {
+          // Basic car info
           ...(car.brandName && { brandName: car.brandName }),
           ...(car.modelName && { modelName: car.modelName }),
           ...(car.submodelName && { submodelName: car.submodelName }),
@@ -137,97 +146,82 @@ export default function SellWithIdPage() {
           ...(car.engineCc && { engineCc: car.engineCc }),
           ...(car.seats && { seats: car.seats }),
           ...(car.doors && { doors: car.doors }),
-          ...(car.bodyTypeCode && { bodyTypeCode: car.bodyTypeCode }),
-          ...(car.transmissionCode && {
-            transmissionCode: car.transmissionCode,
+          ...codeMapped,
+          ...(car.conditionRating && { conditionRating: car.conditionRating }),
+          ...(typeof car.isFlooded === "boolean" && {
+            isFlooded: car.isFlooded,
           }),
-          ...(car.drivetrainCode && { drivetrainCode: car.drivetrainCode }),
+          ...(typeof car.isHeavilyDamaged === "boolean" && {
+            isHeavilyDamaged: car.isHeavilyDamaged,
+          }),
           ...(car.description && { description: car.description }),
           ...(car.price && { price: car.price }),
-          ...(car.provinceId && { provinceId: car.provinceId }),
+          ...(car.province && { province: car.province }),
           ...(car.prefix && { prefix: car.prefix }),
           ...(car.number && { number: car.number }),
+          // Colors from car
+          ...(Array.isArray((car as any).colors) &&
+            (car as any).colors.length > 0 && {
+              colors: (car as any).colors,
+            }),
         };
 
+        // Load inspection data if exists (from same response)
+        const inspection = res.data.inspection;
+        if (inspection) {
+          // Map all inspection fields into formData
+          if (inspection.station) initial.station = inspection.station;
+          if (inspection.overallPass !== undefined)
+            initial.overallPass = inspection.overallPass;
+          if (inspection.brakeResult !== undefined)
+            initial.brakeResult = inspection.brakeResult;
+          if (inspection.handbrakeResult !== undefined)
+            initial.handbrakeResult = inspection.handbrakeResult;
+          if (inspection.alignmentResult !== undefined)
+            initial.alignmentResult = inspection.alignmentResult;
+          if (inspection.noiseResult !== undefined)
+            initial.noiseResult = inspection.noiseResult;
+          if (inspection.emissionResult !== undefined)
+            initial.emissionResult = inspection.emissionResult;
+          if (inspection.hornResult !== undefined)
+            initial.hornResult = inspection.hornResult;
+          if (inspection.speedometerResult !== undefined)
+            initial.speedometerResult = inspection.speedometerResult;
+          if (inspection.highLowBeamResult !== undefined)
+            initial.highLowBeamResult = inspection.highLowBeamResult;
+          if (inspection.signalLightsResult !== undefined)
+            initial.signalLightsResult = inspection.signalLightsResult;
+          if (inspection.otherLightsResult !== undefined)
+            initial.otherLightsResult = inspection.otherLightsResult;
+          if (inspection.windshieldResult !== undefined)
+            initial.windshieldResult = inspection.windshieldResult;
+          if (inspection.steeringResult !== undefined)
+            initial.steeringResult = inspection.steeringResult;
+          if (inspection.wheelsTiresResult !== undefined)
+            initial.wheelsTiresResult = inspection.wheelsTiresResult;
+          if (inspection.fuelTankResult !== undefined)
+            initial.fuelTankResult = inspection.fuelTankResult;
+          if (inspection.chassisResult !== undefined)
+            initial.chassisResult = inspection.chassisResult;
+          if (inspection.bodyResult !== undefined)
+            initial.bodyResult = inspection.bodyResult;
+          if (inspection.doorsFloorResult !== undefined)
+            initial.doorsFloorResult = inspection.doorsFloorResult;
+          if (inspection.seatbeltResult !== undefined)
+            initial.seatbeltResult = inspection.seatbeltResult;
+          if (inspection.wiperResult !== undefined)
+            initial.wiperResult = inspection.wiperResult;
+        }
+
+        // Mark images uploaded if server has images metadata
+        if (res.data.images && res.data.images.length > 0) {
+          initial.imagesUploaded = true;
+        }
+
+        // Update formData with all loaded data
         if (Object.keys(initial).length > 0) {
           setFormData((prev) => ({ ...initial, ...prev })); // preserve any local edits
           setHasProgress(true);
-        }
-
-        // Load inspection data if exists (from same response)
-        const inspection = (res.data as any).inspection;
-        if (inspection) {
-          const inspectionFields: Record<string, string> = {};
-          // Map all inspection fields to display format
-          if (inspection.station) inspectionFields.station = inspection.station;
-          if (inspection.overallPass !== undefined)
-            inspectionFields.overallPass = String(inspection.overallPass);
-          if (inspection.brakeResult !== undefined)
-            inspectionFields.brakeResult = String(inspection.brakeResult);
-          if (inspection.handbrakeResult !== undefined)
-            inspectionFields.handbrakeResult = String(
-              inspection.handbrakeResult
-            );
-          if (inspection.alignmentResult !== undefined)
-            inspectionFields.alignmentResult = String(
-              inspection.alignmentResult
-            );
-          if (inspection.noiseResult !== undefined)
-            inspectionFields.noiseResult = String(inspection.noiseResult);
-          if (inspection.emissionResult !== undefined)
-            inspectionFields.emissionResult = String(inspection.emissionResult);
-          if (inspection.hornResult !== undefined)
-            inspectionFields.hornResult = String(inspection.hornResult);
-          if (inspection.speedometerResult !== undefined)
-            inspectionFields.speedometerResult = String(
-              inspection.speedometerResult
-            );
-          if (inspection.highLowBeamResult !== undefined)
-            inspectionFields.highLowBeamResult = String(
-              inspection.highLowBeamResult
-            );
-          if (inspection.signalLightsResult !== undefined)
-            inspectionFields.signalLightsResult = String(
-              inspection.signalLightsResult
-            );
-          if (inspection.otherLightsResult !== undefined)
-            inspectionFields.otherLightsResult = String(
-              inspection.otherLightsResult
-            );
-          if (inspection.windshieldResult !== undefined)
-            inspectionFields.windshieldResult = String(
-              inspection.windshieldResult
-            );
-          if (inspection.steeringResult !== undefined)
-            inspectionFields.steeringResult = String(inspection.steeringResult);
-          if (inspection.wheelsTiresResult !== undefined)
-            inspectionFields.wheelsTiresResult = String(
-              inspection.wheelsTiresResult
-            );
-          if (inspection.fuelTankResult !== undefined)
-            inspectionFields.fuelTankResult = String(inspection.fuelTankResult);
-          if (inspection.chassisResult !== undefined)
-            inspectionFields.chassisResult = String(inspection.chassisResult);
-          if (inspection.bodyResult !== undefined)
-            inspectionFields.bodyResult = String(inspection.bodyResult);
-          if (inspection.doorsFloorResult !== undefined)
-            inspectionFields.doorsFloorResult = String(
-              inspection.doorsFloorResult
-            );
-          if (inspection.seatbeltResult !== undefined)
-            inspectionFields.seatbeltResult = String(inspection.seatbeltResult);
-          if (inspection.wiperResult !== undefined)
-            inspectionFields.wiperResult = String(inspection.wiperResult);
-
-          if (Object.keys(inspectionFields).length > 0) {
-            setInspectionData(inspectionFields);
-          }
-        }
-
-        // mark images uploaded if server has images metadata
-        const images = (res.data as any).images;
-        if (images && Array.isArray(images) && images.length > 0) {
-          setImagesUploaded(true);
         }
 
         // Mark hydration complete after all state updates have settled
@@ -306,7 +300,41 @@ export default function SellWithIdPage() {
       const result = await carsAPI.uploadInspection(carId, url);
 
       if (result.success) {
-        setInspectionData(result.data as Record<string, string>);
+        // Merge inspection result into formData
+        const inspectionData = result.data as unknown as InspectionResult;
+        setFormData((prev) => ({
+          ...prev,
+          // Inspection metadata
+          chassisNumber: inspectionData.chassisNumber,
+          licensePlate: inspectionData.licensePlate,
+          colors: inspectionData.colors,
+          prefix: inspectionData.prefix,
+          number: inspectionData.number,
+          provinceTh: inspectionData.provinceTh,
+          mileage: inspectionData.mileage,
+          // Inspection station and results
+          station: inspectionData.station,
+          overallPass: inspectionData.overallPass,
+          brakeResult: inspectionData.brakeResult,
+          handbrakeResult: inspectionData.handbrakeResult,
+          alignmentResult: inspectionData.alignmentResult,
+          noiseResult: inspectionData.noiseResult,
+          emissionResult: inspectionData.emissionResult,
+          hornResult: inspectionData.hornResult,
+          speedometerResult: inspectionData.speedometerResult,
+          highLowBeamResult: inspectionData.highLowBeamResult,
+          signalLightsResult: inspectionData.signalLightsResult,
+          otherLightsResult: inspectionData.otherLightsResult,
+          windshieldResult: inspectionData.windshieldResult,
+          steeringResult: inspectionData.steeringResult,
+          wheelsTiresResult: inspectionData.wheelsTiresResult,
+          fuelTankResult: inspectionData.fuelTankResult,
+          chassisResult: inspectionData.chassisResult,
+          bodyResult: inspectionData.bodyResult,
+          doorsFloorResult: inspectionData.doorsFloorResult,
+          seatbeltResult: inspectionData.seatbeltResult,
+          wiperResult: inspectionData.wiperResult,
+        }));
         setHasProgress(true);
       } else {
         // Handle duplicate chassis conflict
@@ -320,19 +348,26 @@ export default function SellWithIdPage() {
           return;
         }
 
-        // Handle other duplicate scenarios with helpful redirects
+        // Handle other duplicate scenarios with user-friendly errors
         if (result.code === "CAR_DUPLICATE_OWN_ACTIVE") {
-          router.replace("/listings?message=already-active");
+          setError(
+            "You already have an active listing for this vehicle. Please check your listings page."
+          );
+          setTimeout(() => router.replace("/listings"), 3000);
           return;
         }
 
         if (result.code === "CAR_DUPLICATE_OWN_SOLD") {
-          router.replace("/listings?message=already-sold");
+          setError("This vehicle is already marked as sold in your listings.");
+          setTimeout(() => router.replace("/listings"), 3000);
           return;
         }
 
         if (result.code === "CAR_DUPLICATE_OTHER_OWNED") {
-          router.replace("/browse?message=listed-by-other");
+          setError(
+            "This vehicle is already listed by another seller. You cannot create a duplicate listing."
+          );
+          setTimeout(() => router.replace("/browse"), 3000);
           return;
         }
 
@@ -343,25 +378,57 @@ export default function SellWithIdPage() {
     }
   };
 
+  // Helper to filter out read-only fields before saving
+  const sanitizeForSave = useCallback((data: Partial<CarFormData>) => {
+    const {
+      chassisNumber,
+      licensePlate,
+      colors,
+      prefix,
+      number,
+      province,
+      station,
+      overallPass,
+      brakeResult,
+      handbrakeResult,
+      alignmentResult,
+      noiseResult,
+      emissionResult,
+      hornResult,
+      speedometerResult,
+      highLowBeamResult,
+      signalLightsResult,
+      otherLightsResult,
+      windshieldResult,
+      steeringResult,
+      wheelsTiresResult,
+      fuelTankResult,
+      chassisResult,
+      bodyResult,
+      doorsFloorResult,
+      seatbeltResult,
+      wiperResult,
+      imagesUploaded,
+      ...sanitizedData
+    } = data;
+    return sanitizedData;
+  }, []);
+
   // Autosave draft with debounce (Steps 2 & 3)
   const debouncedAutoSave = useMemo(
     () =>
       debounce(async (data: Partial<CarFormData>) => {
         if (!carId) return;
 
-        // Sanitize: remove chassisNumber if it somehow got in
-        const { chassisNumber, ...sanitizedData } =
-          data as Partial<CarFormData> & { chassisNumber?: string };
-
         try {
-          await carsAPI.autosaveDraft(carId, sanitizedData);
+          await carsAPI.autosaveDraft(carId, sanitizeForSave(data));
           setHasProgress(true);
         } catch (err) {
           // Silent fail for autosave
           console.error("Autosave failed:", err);
         }
       }, 1500), // 1.5 seconds debounce
-    [carId]
+    [carId, sanitizeForSave]
   );
 
   // Trigger autosave when form data changes (but not during initial hydration)
@@ -417,22 +484,44 @@ export default function SellWithIdPage() {
   };
 
   const handleCreateNewListing = () => {
-    // User chose to create new - continue with current car
+    // User chose to start fresh - continue with current car
     setShowDuplicateConflictModal(false);
     setConflictExistingCarId(null);
-    setError("Please create a new listing for this vehicle");
+    // Clear the error so they can continue on this page
+    setError("");
   };
 
-  // Note: handleBookDataChange removed - Step 1 now uses handleFormChange
-
-  // Handle inspection data changes
-  const handleInspectionDataChange = useCallback(
-    (updates: Record<string, string>) => {
-      setInspectionData(updates);
-      setHasProgress(true);
-    },
-    []
-  );
+  // Compute inspection pass summary from formData
+  const computeInspectionPassSummary = useCallback(() => {
+    const keys: (keyof CarFormData)[] = [
+      "overallPass",
+      "brakeResult",
+      "handbrakeResult",
+      "alignmentResult",
+      "noiseResult",
+      "emissionResult",
+      "hornResult",
+      "speedometerResult",
+      "highLowBeamResult",
+      "signalLightsResult",
+      "otherLightsResult",
+      "windshieldResult",
+      "steeringResult",
+      "wheelsTiresResult",
+      "fuelTankResult",
+      "chassisResult",
+      "bodyResult",
+      "doorsFloorResult",
+      "seatbeltResult",
+      "wiperResult",
+    ];
+    const total = keys.length;
+    const passed = keys.reduce((acc, k) => {
+      const val = formData[k];
+      return typeof val === "boolean" && val ? acc + 1 : acc;
+    }, 0);
+    return total > 0 ? { passed, total } : undefined;
+  }, [formData]);
 
   // Handle review (Step 4)
   const handleReview = async () => {
@@ -440,6 +529,15 @@ export default function SellWithIdPage() {
     setIsSubmitting(true);
 
     try {
+      // Ensure latest edits are saved before review
+      if (Object.keys(formData).length > 0) {
+        try {
+          await carsAPI.autosaveDraft(carId, sanitizeForSave(formData));
+          setHasProgress(true);
+        } catch {
+          // ignore autosave failure before review
+        }
+      }
       const result = await carsAPI.reviewCar(carId);
 
       if (result.success) {
@@ -627,8 +725,24 @@ export default function SellWithIdPage() {
                 onFormDataChange={handleFormChange}
                 onBookUpload={handleBookUpload}
                 onInspectionUpload={handleInspectionUpload}
-                inspectionData={inspectionData}
-                onContinue={() => setCurrentStep("specs")}
+                inspectionOpen={inspectionOpen}
+                onToggleInspection={() => setInspectionOpen((o) => !o)}
+                inspectionPassSummary={computeInspectionPassSummary()}
+                onContinue={async () => {
+                  // save progress before moving forward
+                  if (Object.keys(formData).length > 0) {
+                    try {
+                      await carsAPI.autosaveDraft(
+                        carId,
+                        sanitizeForSave(formData)
+                      );
+                      setHasProgress(true);
+                    } catch {
+                      // best-effort; continue navigation
+                    }
+                  }
+                  setCurrentStep("specs");
+                }}
                 isSubmitting={isSubmitting}
               />
             </div>
@@ -646,8 +760,30 @@ export default function SellWithIdPage() {
               <Step2DetailsForm
                 formData={formData}
                 onChange={handleFormChange}
-                onContinue={() => setCurrentStep("pricing")}
-                onBack={() => setCurrentStep("documents")}
+                onContinue={async () => {
+                  if (Object.keys(formData).length > 0) {
+                    try {
+                      await carsAPI.autosaveDraft(
+                        carId,
+                        sanitizeForSave(formData)
+                      );
+                      setHasProgress(true);
+                    } catch {}
+                  }
+                  setCurrentStep("pricing");
+                }}
+                onBack={async () => {
+                  if (Object.keys(formData).length > 0) {
+                    try {
+                      await carsAPI.autosaveDraft(
+                        carId,
+                        sanitizeForSave(formData)
+                      );
+                      setHasProgress(true);
+                    } catch {}
+                  }
+                  setCurrentStep("documents");
+                }}
                 isSubmitting={isSubmitting}
               />
             </div>
@@ -667,12 +803,22 @@ export default function SellWithIdPage() {
                 formData={formData}
                 onChange={handleFormChange}
                 onContinue={handleReview}
-                onBack={() => setCurrentStep("specs")}
+                onBack={async () => {
+                  if (Object.keys(formData).length > 0) {
+                    try {
+                      await carsAPI.autosaveDraft(
+                        carId,
+                        sanitizeForSave(formData)
+                      );
+                      setHasProgress(true);
+                    } catch {}
+                  }
+                  setCurrentStep("specs");
+                }}
                 isSubmitting={isSubmitting}
-                imagesUploaded={imagesUploaded}
+                imagesUploaded={formData.imagesUploaded || false}
                 onImagesUploaded={() => {
-                  setImagesUploaded(true);
-                  setHasProgress(true);
+                  handleFormChange({ imagesUploaded: true });
                 }}
               />
             </div>
@@ -689,9 +835,7 @@ export default function SellWithIdPage() {
               </p>
               <Step4ReviewForm
                 formData={formData}
-                inspectionData={inspectionData}
                 onChange={handleFormChange}
-                onInspectionDataChange={handleInspectionDataChange}
                 onPublish={handlePublish}
                 onBack={() => setCurrentStep("pricing")}
                 isSubmitting={isSubmitting}

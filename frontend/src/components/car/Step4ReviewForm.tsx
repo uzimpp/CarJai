@@ -16,9 +16,7 @@ import type { CheckOption } from "@/components/ui/CheckBoxes";
 
 interface Step4ReviewFormProps {
   formData: Partial<CarFormData>;
-  inspectionData: Record<string, string> | null;
   onChange: (updates: Partial<CarFormData>) => void;
-  onInspectionDataChange: (data: Record<string, string>) => void;
   onPublish: () => void;
   onBack: () => void;
   isSubmitting: boolean;
@@ -40,9 +38,7 @@ const DAMAGE_OPTIONS: CheckOption<string>[] = [
 
 export default function Step4ReviewForm({
   formData,
-  inspectionData,
   onChange,
-  onInspectionDataChange,
   onPublish,
   onBack,
   isSubmitting,
@@ -212,39 +208,31 @@ export default function Step4ReviewForm({
         {/* Document Information */}
         <EditableSection id="documents" title="📄 Document Information">
           <div className="space-y-6">
-            {inspectionData && (
+            {(formData.chassisNumber ||
+              formData.licensePlate ||
+              formData.station) && (
               <div className="space-y-4">
                 <h4 className="font-semibold text-gray-900">
-                  Inspection Report
+                  Inspection & Registration
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <TextField
-                    label="Registration Number (from inspection)"
-                    value={`${inspectionData["เลขทะเบียน"] || ""} ${
-                      inspectionData["จังหวัด"] || ""
-                    }`.trim()}
+                    label="License Plate"
+                    value={formData.licensePlate || ""}
                     onChange={() => {}}
                     disabled
                   />
                   <TextField
                     label="Chassis Number"
-                    value={inspectionData["เลขตัวถังรถ"] || ""}
-                    onChange={(e) =>
-                      onInspectionDataChange({
-                        ...inspectionData,
-                        เลขตัวถังรถ: e.target.value,
-                      })
-                    }
+                    value={formData.chassisNumber || ""}
+                    onChange={() => {}}
+                    disabled
                   />
                   <TextField
-                    label="Mileage"
-                    value={inspectionData["ระยะทางวิ่ง"] || ""}
-                    onChange={(e) =>
-                      onInspectionDataChange({
-                        ...inspectionData,
-                        ระยะทางวิ่ง: e.target.value,
-                      })
-                    }
+                    label="Inspection Station"
+                    value={formData.station || ""}
+                    onChange={() => {}}
+                    disabled
                   />
                 </div>
               </div>

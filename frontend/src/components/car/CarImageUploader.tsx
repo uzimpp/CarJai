@@ -46,15 +46,18 @@ export default function CarImageUploader({
       try {
         const result = await carsAPI.getById(carId);
         if (result.success && result.data.images) {
-          const existingImages: ImagePreview[] = result.data.images.map(
-            (img: any, idx: number) => ({
+          const existingImages: ImagePreview[] = result.data.images
+            .slice()
+            .sort(
+              (a: any, b: any) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0)
+            )
+            .map((img: any) => ({
               file: null as any, // Not a file since already uploaded
               preview: `/api/cars/images/${img.id}`, // Backend image URL
               order: img.displayOrder,
               status: "uploaded" as const,
               serverId: img.id,
-            })
-          );
+            }));
           setImages(existingImages);
           if (onUploadComplete) {
             onUploadComplete();

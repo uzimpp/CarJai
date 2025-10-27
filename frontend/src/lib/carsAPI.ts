@@ -1,15 +1,29 @@
 // Cars API utilities - following the codebase pattern
 import { apiCall } from "@/lib/ApiCall";
-import type Car from "@/types/Car";
 import type { SearchCarsParams } from "@/types/search";
-import type { PaginatedCarsResponse, CarFormData } from "@/types/Car";
+import type {
+  Car,
+  CarFormData,
+  InspectionResult,
+  BookResult,
+  CarListing,
+} from "@/types/Car";
 
 // Type definitions now sourced from types/Car
 
 // Cars API functions
 export const carsAPI = {
   // Search/browse cars with filters
-  async search(params: SearchCarsParams = {}): Promise<PaginatedCarsResponse> {
+  async search(params: SearchCarsParams = {}): Promise<{
+    success: boolean;
+    data: {
+      cars: CarListing[];
+      total: number;
+      page: number;
+      limit: number;
+    };
+    message?: string;
+  }> {
     const searchParams = new URLSearchParams();
 
     if (params.q) searchParams.append("q", params.q);
@@ -35,21 +49,33 @@ export const carsAPI = {
     const queryString = searchParams.toString();
     const endpoint = `/api/cars/search${queryString ? `?${queryString}` : ""}`;
 
-    return apiCall<PaginatedCarsResponse>(endpoint, {
+    return apiCall<{
+      success: boolean;
+      data: {
+        cars: CarListing[];
+        total: number;
+        page: number;
+        limit: number;
+      };
+      message?: string;
+    }>(endpoint, {
       method: "GET",
     });
   },
 
-  // Get single car details
-  async getById(
-    carId: number
-  ): Promise<{ success: boolean; data: Car; message?: string }> {
-    return apiCall<{ success: boolean; data: Car; message?: string }>(
-      `/api/cars/${carId}`,
-      {
-        method: "GET",
-      }
-    );
+  // Get single car details (car + images + inspection)
+  async getById(carId: number): Promise<{
+    success: boolean;
+    data: Car;
+    message?: string;
+  }> {
+    return apiCall<{
+      success: boolean;
+      data: Car;
+      message?: string;
+    }>(`/api/cars/${carId}`, {
+      method: "GET",
+    });
   },
 
   // Get current user's cars
@@ -98,12 +124,7 @@ export const carsAPI = {
   ): Promise<{
     success: boolean;
     message?: string;
-    data: {
-      brandName: string;
-      year: number;
-      engineCc: number;
-      seats: number;
-    };
+    data: BookResult;
   }> {
     const formData = new FormData();
     formData.append("file", file);
@@ -119,40 +140,11 @@ export const carsAPI = {
     url: string
   ): Promise<{
     success: boolean;
-    data: {
-      chassisNumber?: string;
-      mileage?: number;
-      colors?: string[];
-      prefix?: string;
-      number?: string;
-      provinceTh?: string;
-      licensePlate?: string;
-
-      station?: string;
-      overallPass?: boolean;
-      brakeResult?: boolean;
-      handbrakeResult?: boolean;
-      alignmentResult?: boolean;
-      noiseResult?: boolean;
-      emissionResult?: boolean;
-      hornResult?: boolean;
-      highLowBeamResult?: boolean;
-      signalLightsResult?: boolean;
-      otherLightsResult?: boolean;
-      windshieldResult?: boolean;
-      steeringResult?: boolean;
-      wheelsTiresResult?: boolean;
-      fuelTankResult?: boolean;
-      chassisResult?: boolean;
-      bodyResult?: boolean;
-      doorsFloorResult?: boolean;
-      seatbeltResult?: boolean;
-      wiperResult?: boolean;
-    };
-    message?: string;
-    code?: string;
-    action?: "stay" | "redirect";
-    redirectToCarID?: number | null;
+    data: InspectionResult;
+    message: string;
+    code: string;
+    action: "stay" | "redirect";
+    redirectToCarID: number | null;
   }> {
     return apiCall(`/api/cars/${carId}/inspection`, {
       method: "POST",

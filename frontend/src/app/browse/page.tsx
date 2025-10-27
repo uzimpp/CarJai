@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { carsAPI } from "@/lib/carsAPI";
-import Image from "next/image";
 import Link from "next/link";
 import SearchFilters, {
   SearchFiltersData,
 } from "@/components/search/SearchFilters";
-import CarListing from "@/types/Car";
+import { CarListing } from "@/types/Car";
 import type { SearchCarsParams } from "@/types/search";
+import CarCard from "@/components/car/CarCard";
 
 export default function BrowsePage() {
   const [cars, setCars] = useState<CarListing[]>([]);
@@ -123,63 +123,8 @@ export default function BrowsePage() {
                 {/* Car Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
                   {cars.map((car) => (
-                    <Link
-                      key={car.id}
-                      href={`/car/${car.id}`}
-                      className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
-                    >
-                      {/* Image */}
-                      <div className="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200">
-                        {car.images && car.images.length > 0 ? (
-                          <Image
-                            src={`/api/cars/images/${car.images[0].id}`}
-                            alt={`${car.brandName} ${car.modelName}`}
-                            fill
-                            className="object-cover"
-                            unoptimized
-                          />
-                        ) : (
-                          <div className="flex items-center justify-center h-full">
-                            <span className="text-6xl">🚗</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Content */}
-                      <div className="p-4">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                          {car.brandName || "Unknown"}{" "}
-                          {car.modelName || "Model"}
-                        </h3>
-
-                        <div className="flex items-baseline gap-2 mb-3">
-                          <span className="text-2xl font-bold text-maroon">
-                            ฿{car.price ? car.price.toLocaleString() : "0"}
-                          </span>
-                        </div>
-
-                        {/* Details */}
-                        <div className="space-y-1 text-sm text-gray-600">
-                          {car.year && (
-                            <div className="flex items-center gap-2">
-                              <span>📅</span>
-                              <span>{car.year}</span>
-                            </div>
-                          )}
-                          {car.mileage && car.mileage > 0 && (
-                            <div className="flex items-center gap-2">
-                              <span>🛣️</span>
-                              <span>{car.mileage.toLocaleString()} km</span>
-                            </div>
-                          )}
-                          {car.conditionRating && (
-                            <div className="flex items-center gap-2">
-                              <span>⭐</span>
-                              <span>{car.conditionRating}/5 Condition</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                    <Link key={car.id} href={`/car/${car.id}`}>
+                      <CarCard car={car} variant="browse" />
                     </Link>
                   ))}
                 </div>
