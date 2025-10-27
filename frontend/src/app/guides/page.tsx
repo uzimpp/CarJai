@@ -131,7 +131,7 @@ export default function CarJaiGuides() {
 
   const StepCard: React.FC<StepCardProps> = ({ step, index }) => {
     return (
-      <div className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow p-6 mb-4 border border-gray-100">
+      <div className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow p-6 mb-2 border border-gray-100">
         <div className="flex items-start gap-5">
           <div className="flex-shrink-0">
             <div className="w-14 h-14 bg-gradient-to-br from-red-900 to-red-800 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-md">
@@ -175,10 +175,10 @@ export default function CarJaiGuides() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="px-4 pt-4 pb-4">
       {/* Header matching CarJai style */}
-      <div className="bg-gradient-to-r from-red-900 to-red-800 text-white py-16 px-4">
-        <div className="max-w-5xl mx-auto text-center">
+      <div className="bg-gradient-to-r from-red-900 to-red-800 text-white py-16 px-8 rounded-3xl shadow-lg max-w-6xl mx-auto">
+        <div className="text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
             How It Works
           </h1>
