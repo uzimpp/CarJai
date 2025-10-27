@@ -115,10 +115,16 @@ export default function Step1DocumentsForm({
 
   return (
     <div className="space-y-6">
+      {/* Context tips */}
+      <InlineAlert type="info">
+        Registration book OCR is optional and only helps auto-fill details. You
+        can skip it and type fields manually. Uploading the inspection QR image
+        lets us fetch your inspection results.
+      </InlineAlert>
       {/* Unified Step 1: uploads + fields together */}
       <FormSection
         title="Vehicle Details & Documents"
-        description="Upload your registration book and inspection report; fields below will auto-fill and remain editable"
+        description="Upload your inspection report and optionally your registration book; fields below will auto-fill and remain editable"
       >
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -126,19 +132,41 @@ export default function Step1DocumentsForm({
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Registration Book (image)
               </label>
-              <input
-                type="file"
-                accept="image/*,application/pdf"
-                onChange={handleBookFileChange}
-                disabled={isUploadingBook}
-                className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none disabled:opacity-50"
-              />
+              <div className="p-6 border-2 border-dashed rounded-xl text-center bg-gray-50">
+                <input
+                  id="book-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleBookFileChange}
+                  disabled={isUploadingBook}
+                  className="hidden"
+                />
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-700">
+                    Drag and drop here, or
+                  </p>
+                  <label
+                    htmlFor="book-upload"
+                    className="inline-block px-4 py-2 bg-maroon text-white rounded-lg font-medium hover:bg-red-800 cursor-pointer"
+                  >
+                    Select Image
+                  </label>
+                  <p className="text-xs text-gray-600">
+                    Optional. Upload a clear PNG/JPEG photo to auto-fill
+                    details.
+                  </p>
+                </div>
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Inspection Report
               </label>
               <QrCodeUploader onScanComplete={handleQrScanComplete} />
+              <p className="mt-2 text-xs text-gray-600">
+                Upload a photo/screenshot of the QR code from your inspection
+                receipt. Well read it and fetch the results automatically.
+              </p>
             </div>
           </div>
 
@@ -163,6 +191,7 @@ export default function Step1DocumentsForm({
           {isUploadingInspection && (
             <InlineAlert type="info">Retrieving inspection data...</InlineAlert>
           )}
+          {error && <InlineAlert type="error">{error}</InlineAlert>}
 
           {/* Always-visible editable fields */}
           <div className="space-y-4 p-4">

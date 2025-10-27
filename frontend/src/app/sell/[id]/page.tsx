@@ -636,9 +636,9 @@ export default function SellWithIdPage() {
           </button>
         </div>
 
-        {/* Progress indicator */}
+        {/* Progress indicator (Signup-style) */}
         <div className="mb-8">
-          <div className="flex items-center justify-between">
+          <div className="flex items-start justify-between">
             {(["documents", "specs", "pricing", "review"] as Step[]).map(
               (step, index) => {
                 const stepOrder = ["documents", "specs", "pricing", "review"];
@@ -647,35 +647,69 @@ export default function SellWithIdPage() {
                 const isCurrent = currentStep === step;
 
                 return (
-                  <div key={step} className="flex items-center">
-                    <div
-                      className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
-                        isCurrent
-                          ? "bg-maroon text-white"
-                          : isCompleted
-                          ? "bg-green-500 text-white"
-                          : "bg-gray-300 text-gray-600"
-                      }`}
-                    >
-                      {index + 1}
-                    </div>
-                    {index < 3 && (
+                  <div key={step} className="flex-1 flex items-start">
+                    <div className="flex flex-col items-center">
                       <div
-                        className={`w-16 h-1 ${
-                          isCompleted ? "bg-green-500" : "bg-gray-300"
+                        className={`w-(--space-m) h-(--space-m) rounded-full flex items-center justify-center text--1 font-semibold transition-all duration-200 ${
+                          isCompleted
+                            ? "bg-green-500 text-white"
+                            : isCurrent
+                            ? "bg-black text-white ring-4 ring-black/20"
+                            : "bg-gray-200 text-gray-500"
                         }`}
-                      />
+                      >
+                        {isCompleted ? (
+                          <svg
+                            className="w-(--space-s) h-(--space-s)"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={3}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        ) : (
+                          String(index + 1)
+                        )}
+                      </div>
+                      <span
+                        className={`mt-2 text-sm font-medium transition-colors ${
+                          isCompleted || isCurrent
+                            ? "text-gray-900"
+                            : "text-gray-400"
+                        }`}
+                      >
+                        {step === "documents"
+                          ? "Documents"
+                          : step === "specs"
+                          ? "Specs"
+                          : step === "pricing"
+                          ? "Pricing"
+                          : "Review"}
+                      </span>
+                    </div>
+
+                    {index < 3 && (
+                      <div className="flex items-center flex-1 pt-(--space-xs) px-2">
+                        <div
+                          className={`w-full h-1 rounded transition-colors duration-300 ${
+                            index + 1 <= currentStepIndex
+                              ? isCurrent
+                                ? "bg-black"
+                                : "bg-green-500/60"
+                              : "bg-gray-200"
+                          }`}
+                        />
+                      </div>
                     )}
                   </div>
                 );
               }
             )}
-          </div>
-          <div className="flex justify-between mt-2 text-sm text-gray-600">
-            <span>Documents</span>
-            <span>Specs</span>
-            <span>Pricing</span>
-            <span>Review</span>
           </div>
         </div>
 
@@ -713,12 +747,11 @@ export default function SellWithIdPage() {
         <div className="bg-white shadow-md rounded-lg p-6">
           {currentStep === "documents" && (
             <div>
-              <h2 className="text-2xl font-semibold mb-6">
-                Step 1: Upload Documents
-              </h2>
+              <h2 className="text-2xl font-semibold mb-6">Step 1: Documents</h2>
               <p className="text-gray-600 mb-6">
-                Upload your vehicle registration book and inspection report. The
-                chassis numbers must match to continue.
+                Upload your inspection report and optionally your registration
+                book. Book OCR is just a helper to auto-fill fields — you can
+                also edit them manually.
               </p>
               <Step1DocumentsForm
                 formData={formData}

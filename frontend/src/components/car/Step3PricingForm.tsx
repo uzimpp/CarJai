@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { TextField } from "@/components/ui/TextField";
 import { FormSection } from "@/components/ui/FormSection";
-import { InlineAlert } from "@/components/ui/InlineAlert";
+// InlineAlert already imported above
 import CarImageUploader from "@/components/car/CarImageUploader";
 import type { CarFormData } from "@/types/Car";
 import {
@@ -11,6 +11,7 @@ import {
   MAX_DESCRIPTION_LENGTH,
   MIN_IMAGES,
 } from "@/constants/car";
+import { InlineAlert } from "@/components/ui/InlineAlert";
 
 interface Step3PricingFormProps {
   carId: number;
@@ -48,6 +49,24 @@ export default function Step3PricingForm({
 
   return (
     <div className="space-y-6">
+      {/* Images */}
+      <FormSection
+        title="Vehicle Images"
+        description={`Upload ${MIN_IMAGES}-12 high-quality images (JPEG, PNG, WebP, GIF). First image becomes the main photo. Max 50MB per image.`}
+      >
+        <CarImageUploader
+          carId={carId}
+          onUploadComplete={() => {
+            if (onImagesUploaded) {
+              onImagesUploaded();
+            }
+          }}
+        />
+        <InlineAlert type="info">
+          Tip: Include angles like front, rear, sides, interior, dashboard, and
+          engine for better buyer interest.
+        </InlineAlert>
+      </FormSection>
       {/* Price */}
       <FormSection
         title="Pricing"
@@ -114,21 +133,6 @@ export default function Step3PricingForm({
             </span>
           </div>
         </div>
-      </FormSection>
-
-      {/* Images */}
-      <FormSection
-        title="Vehicle Images"
-        description={`Upload ${MIN_IMAGES}-12 high-quality images of your vehicle. The first image will be the main display image.`}
-      >
-        <CarImageUploader
-          carId={carId}
-          onUploadComplete={() => {
-            if (onImagesUploaded) {
-              onImagesUploaded();
-            }
-          }}
-        />
       </FormSection>
 
       {/* Validation Messages */}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Choices } from "@/components/ui/Choices";
+import StarRating from "@/components/ui/StarRating";
 import { FormSection } from "@/components/ui/FormSection";
 import { CheckBoxes } from "@/components/ui/CheckBoxes";
 import type { CarFormData } from "@/types/Car";
@@ -143,20 +144,10 @@ export default function Step2DetailsForm({
         title="Overall Condition"
         description="Rate your vehicle's overall condition"
       >
-        <Choices
-          name="conditionRating"
-          value={formData.conditionRating?.toString() || null}
-          options={[
-            { value: "1", label: "1 - Poor" },
-            { value: "2", label: "2 - Fair" },
-            { value: "3", label: "3 - Good" },
-            { value: "4", label: "4 - Very Good" },
-            { value: "5", label: "5 - Excellent" },
-          ]}
-          onChange={(value) =>
-            onChange({ conditionRating: value ? parseInt(value) : undefined })
-          }
-          direction="row"
+        <StarRating
+          value={formData.conditionRating}
+          onChange={(val) => onChange({ conditionRating: val })}
+          labels={["Poor", "Fair", "Good", "Very Good", "Excellent"]}
         />
       </FormSection>
 

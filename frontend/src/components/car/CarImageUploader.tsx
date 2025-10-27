@@ -4,10 +4,10 @@ import { useState, useRef, DragEvent, useEffect } from "react";
 import Image from "next/image";
 import { apiCall } from "@/lib/ApiCall";
 import { carsAPI } from "@/lib/carsAPI";
+import { InlineAlert } from "@/components/ui/InlineAlert";
+import { MIN_IMAGES, MAX_IMAGES } from "@/constants/car";
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
-const MIN_IMAGES = 5;
-const MAX_IMAGES = 12;
 const ACCEPTED_IMAGE_TYPES = [
   "image/jpeg",
   "image/png",
@@ -155,20 +155,23 @@ export default function CarImageUploader({
 
       if (result.success && result.data) {
         // Update images with server IDs and success status
-        const updatedImagesWithIds = images.map((img) => {
-          const matchingNewImg = newImages.find((ni) => ni.file === img.file);
-          if (matchingNewImg) {
-            const uploadIdx = newImages.indexOf(matchingNewImg);
-            const uploadedImg = result.data?.images[uploadIdx];
-
+        const updatedImagesWithIds = updatedImages.map((img) => {
+          const matchIdx = newImages.findIndex((ni) => ni.file === img.file);
+          if (matchIdx !== -1) {
+            const uploadedImg = result.data!.images[matchIdx];
             if (uploadedImg) {
               return {
                 ...img,
                 status: "uploaded" as const,
                 serverId: uploadedImg.id,
-                preview: `/api/cars/images/${uploadedImg.id}`, // Update to server URL
+                preview: `/api/cars/images/${uploadedImg.id}`,
               };
             }
+            return {
+              ...img,
+              status: "failed" as const,
+              error: "Upload failed",
+            };
           }
           return img;
         });
@@ -180,36 +183,33 @@ export default function CarImageUploader({
         }
       } else {
         // Mark all new images as failed
-        setImages(
-          images.map((img, idx) => {
-            if (newImages.some((ni) => ni.file === img.file)) {
-              return {
-                ...img,
-                status: "failed" as const,
-                error: result.message || "Upload failed",
-              };
-            }
-            return img;
-          })
-        );
+        const failedImages = updatedImages.map((img) => {
+          if (newImages.some((ni) => ni.file === img.file)) {
+            return {
+              ...img,
+              status: "failed" as const,
+              error: result.message || "Upload failed",
+            };
+          }
+          return img;
+        });
+        setImages(failedImages);
         setError(result.message || "Upload error occurred");
       }
     } catch (err) {
       console.error("Upload exception:", err);
       // Mark all new images as failed
-      setImages(
-        images.map((img) => {
-          if (newImages.some((ni) => ni.file === img.file)) {
-            return {
-              ...img,
-              status: "failed" as const,
-              error:
-                err instanceof Error ? err.message : "Upload error occurred",
-            };
-          }
-          return img;
-        })
-      );
+      const failedExceptionImages = updatedImages.map((img) => {
+        if (newImages.some((ni) => ni.file === img.file)) {
+          return {
+            ...img,
+            status: "failed" as const,
+            error: err instanceof Error ? err.message : "Upload error occurred",
+          };
+        }
+        return img;
+      });
+      setImages(failedExceptionImages);
       setError(err instanceof Error ? err.message : "Upload error occurred");
     } finally {
       setIsUploading(false);
@@ -311,78 +311,15 @@ export default function CarImageUploader({
   };
 
   return (
-    <div className="w-full max-w-6xl p-8 space-y-6 bg-white rounded-2xl shadow-lg">
-      <div className="text-center">
-        <h2 className="text-3xl font-bold text-gray-900">Upload Car Images</h2>
-        <p className="mt-2 text-gray-600">
-          Upload at least {MIN_IMAGES} images (maximum {MAX_IMAGES} images)
-        </p>
-        <p className="text-sm text-gray-500">
-          Current: {images.length} images | Max file size: 50MB/image
-        </p>
-      </div>
-
-      {/* Drag & Drop Zone */}
-      <div
-        onDragEnter={handleDrag}
-        onDragLeave={handleDrag}
-        onDragOver={handleDrag}
-        onDrop={handleDrop}
-        className={`p-12 border-2 border-dashed rounded-xl text-center transition-all ${
-          dragActive
-            ? "border-red-500 bg-red-50"
-            : "border-gray-300 hover:border-red-400 bg-gray-50"
-        }`}
-      >
-        <input
-          ref={fileInputRef}
-          type="file"
-          id="images-upload"
-          className="hidden"
-          onChange={handleFileChange}
-          accept={ACCEPTED_IMAGE_TYPES.join(",")}
-          multiple
-        />
-
-        <div className="space-y-4">
-          <div className="flex justify-center">
-            <svg
-              className="w-16 h-16 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-              />
-            </svg>
-          </div>
-
-          <div>
-            <p className="text-lg text-gray-700">
-              Drag and drop images here, or
-            </p>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="mt-2 px-6 py-2 text-red-600 font-medium hover:text-red-800 transition-colors"
-            >
-              Select Files
-            </button>
-          </div>
-
-          <p className="text-sm text-gray-500">Supports JPEG, PNG, WebP, GIF</p>
-        </div>
-      </div>
-
+    <div
+      onDragEnter={handleDrag}
+      onDragLeave={handleDrag}
+      onDragOver={handleDrag}
+      onDrop={handleDrop}
+      className="w-full max-w-6xl pb-4 space-y-6"
+    >
       {/* Error Message */}
-      {error && (
-        <div className="p-4 text-red-600 bg-red-50 rounded-lg text-center">
-          {error}
-        </div>
-      )}
+      {error && <InlineAlert type="error">{error}</InlineAlert>}
 
       {/* Image Previews with Reorder */}
       {images.length > 0 && (
@@ -407,7 +344,10 @@ export default function CarImageUploader({
                 ⏳ Uploading...
               </span>
             )}
+            {/* Add More tile trigger (desktop) */}
           </div>
+
+          {/* Grid with Add More tile */}
           <p className="text-sm text-gray-600 mb-4">
             💡 Images are saved automatically. Drag to reorder (first image will
             be the main image)
@@ -499,30 +439,32 @@ export default function CarImageUploader({
                 )}
               </div>
             ))}
+            {/* Add more tile */}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center justify-center aspect-square border-2 border-dashed rounded-lg text-gray-400 hover:text-red-600 hover:border-red-300 transition-colors"
+              title="Add more images"
+            >
+              <svg
+                className="w-10 h-10"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.3}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+            </button>
           </div>
         </div>
       )}
 
-      {/* Status Message */}
-      {images.length >= MIN_IMAGES &&
-        images.every((img) => img.status === "uploaded") && (
-          <div className="p-4 text-center text-green-600 bg-green-50 rounded-lg">
-            ✓ {images.length} images saved to draft
-          </div>
-        )}
-
-      {/* Instructions */}
-      <div className="p-4 bg-blue-50 rounded-lg">
-        <h4 className="font-semibold text-blue-900 mb-2">💡 Tips:</h4>
-        <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-          <li>Upload high-quality images to attract buyers</li>
-          <li>First image will be the main image shown in listings</li>
-          <li>Drag images to reorder display sequence</li>
-          <li>
-            Recommended angles: front, rear, sides, interior, dashboard, engine
-          </li>
-        </ul>
-      </div>
+      <p className="text-sm text-gray-500">Supports JPEG, PNG, WebP, GIF</p>
     </div>
   );
 }
