@@ -54,7 +54,7 @@ export default function Home() {
               ].map((c) => (
                 <Link
                   key={c.q}
-                  href={`/buy?q=${encodeURIComponent(c.q)}`}
+                  href={`/browse?q=${encodeURIComponent(c.q)}`}
                   className="text-white bg-maroon hover:bg-red px-(--space-m) py-(--space-2xs) rounded-full text-0 font-medium transition-all hover:shadow-lg hover:scale-105"
                 >
                   {c.label}
@@ -102,7 +102,7 @@ export default function Home() {
           {categories.map((cat) => (
             <Link
               key={cat.title}
-              href={`/buy?category=${encodeURIComponent(cat.title)}`}
+              href={`/browse?category=${encodeURIComponent(cat.title)}`}
               className="group relative shadow-lg rounded-tr-5xl rounded-2xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
             >
               <div

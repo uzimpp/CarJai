@@ -46,16 +46,20 @@ export default function CarCard({
           </div>
         )}
 
-        {/* Status badge (always visible) */}
-        <div className="absolute top-(--space-s) left-(--space-s)">
-          <span
-            className={`px-(--space-s) py-(--space-xs) rounded-full text--1 bold shadow-md ${
-              isActive ? "bg-green-600 text-white" : "bg-orange-500 text-white"
-            }`}
-          >
-            {isActive ? "Listed" : car.status?.toUpperCase?.() || "DRAFT"}
-          </span>
-        </div>
+        {/* Status badge (only visible to seller) */}
+        {showActions && (
+          <div className="absolute top-(--space-s) left-(--space-s)">
+            <span
+              className={`px-(--space-s) py-(--space-xs) rounded-full text--1 bold shadow-md ${
+                isActive
+                  ? "bg-green-600 text-white"
+                  : "bg-orange-500 text-white"
+              }`}
+            >
+              {isActive ? "Listed" : car.status?.toUpperCase?.() || "DRAFT"}
+            </span>
+          </div>
+        )}
 
         {/* Delete icon (top-right) */}
         {showActions && onDelete && (

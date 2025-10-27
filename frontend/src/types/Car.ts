@@ -1,8 +1,11 @@
+import type { SellerContact } from "./user";
+
 // Car interface for car card
 export interface CarListing {
   id: number;
-  sellerId?: number;
+  sellerId: number;
   brandName?: string;
+  submodelName?: string;
   modelName?: string;
   year?: number;
   price: number;
@@ -18,6 +21,7 @@ export interface CarListing {
   colors?: string[]; // Display labels from backend (e.g., ["White", "Gray"])
   status: string;
   images?: Array<{ id: number }>;
+  contacts?: SellerContact[];
   createdAt?: string;
   updatedAt?: string;
 }

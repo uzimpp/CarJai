@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import { apiCall } from "@/lib/ApiCall";
 import Link from "next/link";
-import CarListing from "@/types/Car";
+import { CarListing } from "@/types/Car";
 import CarCard from "@/components/car/CarCard";
 
 export default function MyListingsPage() {

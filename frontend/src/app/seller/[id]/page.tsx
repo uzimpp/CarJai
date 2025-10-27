@@ -78,10 +78,10 @@ export default function SellerPage() {
             The seller you are looking for does not exist or is unavailable.
           </p>
           <Link
-            href="/buy"
+            href="/browse"
             className="inline-flex items-center px-(--space-m) py-(--space-2xs) text-0 font-medium rounded-lg text-white bg-maroon hover:bg-red transition-colors"
           >
-            Go to Buy
+            Go to Browse
           </Link>
         </div>
       </div>

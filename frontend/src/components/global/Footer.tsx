@@ -30,7 +30,7 @@ export default function Footer() {
           </h4>
           <ul className="space-y-(--space-2xs)">
             {[
-              { name: "Browse Cars", href: "/buy" },
+              { name: "Browse Cars", href: "/browse" },
               { name: "Sell Your Car", href: "/sell" },
               { name: "About Us", href: "/about-us" },
               { name: "How It Works", href: "/guides" },

@@ -8,7 +8,7 @@ import { useAdminAuth } from "@/hooks/useAdminAuth";
 import SearchBar from "@/components/global/SearchBar";
 import AccountBtn from "@/components/global/AccountBtn";
 
-const noSearchBarPages = ["/", "/buy"];
+const noSearchBarPages = ["/", "/browse"];
 
 export default function NavBar() {
   const pathname = usePathname();

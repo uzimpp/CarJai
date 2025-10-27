@@ -41,7 +41,7 @@ export default function GoogleSigninButton({
 
     // Handle navigation after successful auth
     if (result.success) {
-      router.push("/buy");
+      router.push("/browse");
     }
   };
 
