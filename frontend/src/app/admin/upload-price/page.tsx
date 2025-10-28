@@ -47,21 +47,22 @@ export default function UploadMarketPricePage() {
 
     try {
       // *** 1. ดึง Admin Token (ตัวอย่าง: จาก Local Storage) ***
-      const adminToken = localStorage.getItem("admin_jwt"); // ใช้ "admin_jwt" ซึ่งเป็นชื่อ cookie/token ที่ใช้บ่อยใน Admin
+      // const adminToken = localStorage.getItem("admin_jwt"); // ใช้ "admin_jwt" ซึ่งเป็นชื่อ cookie/token ที่ใช้บ่อยใน Admin
       
-      if (!adminToken) {
-           setUploadStatus({ message: '', error: 'Admin authentication token not found. Please sign in first.' });
-           setIsLoading(false);
-           return;
-      }
+      // if (!adminToken) {
+      //      setUploadStatus({ message: '', error: 'Admin authentication token not found. Please sign in first.' });
+      //      setIsLoading(false);
+      //      return;
+      // }
 
-      const response = await fetch('/api/admin/market-price/import', { 
+      const response = await fetch('/admin/market-price/import', { 
         method: 'POST',
         headers: {
            // *** 2. เพิ่ม Authorization Header ***
-           'Authorization': `Bearer ${adminToken}`,
+           // 'Authorization': `Bearer ${adminToken}`,
         },
         body: formData,
+        credentials: 'include',
       });
 
       // Handle response body (checking if it is JSON first)
