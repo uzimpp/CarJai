@@ -36,7 +36,7 @@ erDiagram
     sellers {
         int id PK "ref: users.id ON DELETE CASCADE (1:1)"
         varchar display_name "ชื่อแสดง (max 50, not blank)"
-        text about "เกี่ยวกับ (max 200)"
+        varchar about "เกี่ยวกับ (max 200)"
         text map_link "ลิงก์แผนที่"
     }
 
@@ -49,69 +49,66 @@ erDiagram
     }
 
     body_types {
-        int id PK ""
-        varchar code UK "PICKUP, SUV, CITYCAR, etc. (max 20)"
-        varchar name_th "ชื่อไทย (max 100)"
-        varchar name_en "ชื่ออังกฤษ (max 100)"
+        varchar code PK "PICKUP, SUV, CITYCAR, etc. (max 20)"
+        varchar name_th "max 100"
+        varchar name_en "max 100"
     }
 
     transmissions {
-        int id PK ""
-        varchar code UK "MANUAL, AT (max 10)"
-        varchar name_th "ชื่อไทย (max 100)"
-        varchar name_en "ชื่ออังกฤษ (max 100)"
+        varchar code PK "MANUAL, AT (max 10)"
+        varchar name_th "max 100"
+        varchar name_en "max 100"
     }
 
     fuel_types {
         varchar code PK "GASOLINE, DIESEL, LPG, CNG, HYBRID, ELECTRIC (max 20)"
-        varchar label_th "ชื่อไทย (max 100)"
-        varchar label_en "ชื่ออังกฤษ (max 100)"
+        varchar label_th "max 100"
+        varchar label_en "max 100"
     }
 
     drivetrains {
-        int id PK ""
-        varchar code UK "FWD, RWD, AWD, 4WD (max 10)"
-        varchar name_th "ชื่อไทย (max 100)"
-        varchar name_en "ชื่ออังกฤษ (max 100)"
+        varchar code PK "FWD, RWD, AWD, 4WD (max 10)"
+        varchar name_th "max 100"
+        varchar name_en "max 100"
     }
 
     colors {
-        varchar code PK UK "RED, GRAY, BLUE, etc. (max 20)"
-        varchar label_th "ชื่อไทย (max 100)"
-        varchar label_en "ชื่ออังกฤษ (max 100)"
+        varchar code PK "RED, GRAY, BLUE, etc. (max 20)"
+        varchar label_th "max 100"
+        varchar label_en "max 100"
     }
 
     provinces {
         int id PK ""
-        varchar name_th "ชื่อไทย (max 50)"
-        varchar name_en "ชื่ออังกฤษ (max 50)"
-        varchar region_th "ภาค (max 30)"
+        varchar name_th "max 50"
+        varchar name_en "max 50"
+        varchar region_th "max 30"
         varchar region_en "Region (max 30)"
     }
 
     cars {
         int id PK ""
         int seller_id FK "ref: sellers.id, not null"
-        int body_type_id FK "ref: body_types.id"
-        int transmission_id FK "ref: transmissions.id"
-        int drivetrain_id FK "ref: drivetrains.id"
+        varchar body_type_code FK "ref: body_types.code"
+        varchar transmission_code FK "ref: transmissions.code"
+        varchar drivetrain_code FK "ref: drivetrains.code"
         varchar brand_name "ยี่ห้อรถ (max 100)"
         varchar model_name "รุ่นรถ (max 100)"
         varchar submodel_name "รุ่นย่อย (max 100)"
-        varchar chassis_number UK "เลขตัวถัง (max 30, unique, not null)"
+        varchar chassis_number UK "เลขตัวถัง (max 30, unique)"
         int year "ปี"
         int mileage "เลขไมล์"
         int engine_cc "ขนาดเครื่องยนต์ (ซีซี)"
         int seats "จำนวนที่นั่ง"
         int doors "จำนวนประตู"
-        varchar prefix "เลขทะเบียนส่วนหน้า (max 10, not null)"
-        varchar number "เลขทะเบียนส่วนหลัง (max 10, not null)"
-        int province_id FK "ref: provinces.id (not null)"
+        varchar prefix "เลขทะเบียนส่วนหน้า (max 10)"
+        varchar number "เลขทะเบียนส่วนหลัง (max 10)"
+        int province_id FK "ref: provinces.id"
         varchar description "รายละเอียด (max 200)"
-        int price "ราคา (THB, not null)"
-        boolean is_flooded "เคยน้ำท่วม"
-        boolean is_heavily_damaged "ความเสียหายหนัก"
-        varchar status "draft/active/sold/deleted - default: 'draft'"
+        int price "ราคา (THB)"
+        boolean is_flooded "เคยน้ำท่วม (default: false)"
+        boolean is_heavily_damaged "ความเสียหายหนัก (default: false)"
+        varchar status "draft/active/sold/deleted (default: 'draft')"
         int condition_rating "คะแนนสภาพ 1-5"
         timestamp created_at "default: now()"
         timestamp updated_at "default: now()"
@@ -119,7 +116,8 @@ erDiagram
 
     car_colors {
         int car_id PK "ref: cars.id ON DELETE CASCADE"
-        string color_code PK "ref: colors.code ON DELETE RESTRICT"
+        varchar color_code PK "ref: colors.code ON DELETE RESTRICT"
+        smallint position "ลำดับสี (default: 0)"
     }
 
     car_fuel {
