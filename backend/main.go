@@ -53,6 +53,7 @@ type ServiceContainer struct {
 	Maintenance *services.MaintenanceService
 	OCR         *services.OCRService
 	Scraper     *services.ScraperService // + เพิ่มส่วนนี้
+	RecentViews *services.RecentViewsService
 	UserJWT     *utils.JWTManager
 	AdminJWT    *utils.JWTManager
 }
@@ -111,6 +112,9 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 	// Create scraper service
 	scraperService := services.NewScraperService()
 
+	// Create recent views service
+	recentViewsService := services.NewRecentViewsService(db)
+
 	return &ServiceContainer{
 		Admin: services.NewAdminService(
 			adminRepo,
@@ -128,10 +132,11 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 			carRepo,
 			utils.AppLogger,
 		),
-		OCR:      services.NewOCRService(appConfig.AigenAPIKey),
-		Scraper:  scraperService,
-		UserJWT:  userJWTManager,
-		AdminJWT: adminJWTManager,
+		OCR:         services.NewOCRService(appConfig.AigenAPIKey),
+		Scraper:     scraperService,
+		RecentViews: recentViewsService,
+		UserJWT:     userJWTManager,
+		AdminJWT:    adminJWTManager,
 	}
 }
 
@@ -158,6 +163,12 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 		routes.AdminRoutes(services.Admin, services.AdminJWT, adminPrefix, appConfig.CORSAllowedOrigins, appConfig.AdminIPWhitelist))
 	mux.Handle("/health/",
 		routes.HealthRoutes(db, appConfig.CORSAllowedOrigins))
+	mux.Handle("/api/scrape/",
+		routes.ScrapeRoutes(services.Scraper, appConfig.CORSAllowedOrigins))
+	mux.Handle("/api/recent-views",
+		routes.RecentViewsRoutes(services.RecentViews, services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
+	mux.Handle("/api/recent-views/",
+		routes.RecentViewsRoutes(services.RecentViews, services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/reference-data",
 		routes.ReferenceRoutes(db, appConfig.CORSAllowedOrigins))
 

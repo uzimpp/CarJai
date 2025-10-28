@@ -23,7 +23,16 @@ export async function apiCall<T>(
   // Read body ONCE, then try JSON; avoids "body stream already read"
   const rawText = await response.text();
   let data: unknown = null;
-  data = rawText ? JSON.parse(rawText) : null;
+  
+  try {
+    data = rawText ? JSON.parse(rawText) : null;
+  } catch (parseError) {
+    // If JSON parsing fails, the server likely returned HTML or plain text
+    if (rawText.includes("Internal Server Error") || rawText.includes("<!DOCTYPE")) {
+      throw new Error("Backend server is not responding properly. Please check if the server is running.");
+    }
+    throw new Error(`Server returned invalid response: ${rawText.substring(0, 100)}...`);
+  }
 
   if (!response.ok) {
     // Safely extract server-provided error/message if JSON object
