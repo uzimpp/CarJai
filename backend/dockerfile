@@ -16,17 +16,23 @@ RUN go mod download
 COPY . .
 
 # Build the application
+# Ensure build command is correct for your project structure
 RUN CGO_ENABLED=0 GOOS=linux go build -mod=mod -a -installsuffix cgo -o main .
 
 # Final stage
 FROM alpine:latest
 
 # Install ca-certificates for HTTPS requests
-RUN apk --no-cache add ca-certificates
+# Also install poppler-utils for pdftotext command
+RUN apk update && \
+    apk add --no-cache ca-certificates poppler-utils && \
+    rm -rf /var/cache/apk/*
 
-WORKDIR /root/
+WORKDIR /app/ # Changed WORKDIR to /app for consistency
 
-RUN apk update && apk add --no-cache chromium chromium-chromedriver
+# Note: chromium and chromedriver seem unrelated to the Go backend PDF extraction.
+# If they are not needed by the Go app, consider removing them to reduce image size.
+# RUN apk update && apk add --no-cache chromium chromium-chromedriver
 
 # Copy the binary from builder stage
 COPY --from=builder /app/main .

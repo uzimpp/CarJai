@@ -27,7 +27,7 @@ func NewAdminExtractionHandler(es *services.ExtractionService) *AdminExtractionH
 	}
 }
 
-// HandleImportMarketPrices handles the PDF upload and triggers the import process.
+// HandleImportMarketPrices handles the PDF upload, extracts data, and returns JSON.
 func (h *AdminExtractionHandler) HandleImportMarketPrices(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		utils.WriteError(w, http.StatusMethodNotAllowed, "Method Not Allowed")
@@ -77,9 +77,19 @@ func (h *AdminExtractionHandler) HandleImportMarketPrices(w http.ResponseWriter,
 	_, err = io.Copy(tempFile, file)
 	// Close the temp file *after* copying
 	closeErr := tempFile.Close()
+
+	// *** ทำการ Cleanup ไฟล์ temp หลังจากจบ Request นี้ ***
+	defer func() {
+		log.Printf("Attempting to delete temporary file: %s", tempFilePath)
+		deleteErr := os.Remove(tempFilePath)
+		if deleteErr != nil {
+			log.Printf("Warning: Failed to delete temporary file %s: %v", tempFilePath, deleteErr)
+		}
+	}()
+
 	if err != nil { // Prioritize copy error
 		log.Printf("Error copying uploaded file content: %v", err)
-		os.Remove(tempFilePath) // Attempt to clean up
+		// No need for os.Remove here as defer will handle it
 		utils.WriteError(w, http.StatusInternalServerError, "Failed to save uploaded file content.")
 		return
 	}
@@ -88,28 +98,26 @@ func (h *AdminExtractionHandler) HandleImportMarketPrices(w http.ResponseWriter,
 	}
 	// --- End File Upload Handling ---
 
-	// --- Trigger Import Process (Background) ---
-	log.Printf("Triggering background import for file: %s", tempFilePath)
-	go func(filePathToDelete string) {
-		ctx := context.Background() // Create a new context for the goroutine
-		inserted, updated, importErr := h.ExtractionService.ImportMarketPricesFromPDF(ctx, filePathToDelete)
+	// --- *** เปลี่ยน: เรียก Extraction Service แบบ Synchronous *** ---
+	log.Printf("Starting synchronous extraction for file: %s", tempFilePath)
+	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Minute) // ตั้ง Timeout 2 นาทีเผื่อ Extract นาน
+	defer cancel()
 
-		// Log result (in production, use a more robust notification system)
-		if importErr != nil {
-			log.Printf("ERROR during background market price import from %s: %v", filePathToDelete, importErr)
-		} else {
-			log.Printf("Background market price import from %s completed. Inserted: %d, Updated: %d", filePathToDelete, inserted, updated)
-		}
+	extractedData, extractErr := h.ExtractionService.ExtractMarketPricesFromPDF(ctx, tempFilePath)
 
-		// Clean up the temporary file
-		log.Printf("Deleting temporary file: %s", filePathToDelete)
-		deleteErr := os.Remove(filePathToDelete)
-		if deleteErr != nil {
-			log.Printf("Warning: Failed to delete temporary file %s: %v", filePathToDelete, deleteErr)
-		}
-	}(tempFilePath)
+	if extractErr != nil {
+		log.Printf("ERROR during synchronous market price extraction from %s: %v", tempFilePath, extractErr)
+		// ส่ง Error กลับไปหา Client พร้อมรายละเอียด
+		utils.WriteError(w, http.StatusInternalServerError, fmt.Sprintf("Extraction failed: %v", extractErr))
+		return
+	}
 
-	// --- Respond to Client ---
-	utils.WriteJSON(w, http.StatusAccepted, map[string]string{"message": "PDF received and import process started in background."})
-	log.Println("Admin ImportMarketPrices request processed, background task started.")
+	log.Printf("Synchronous extraction from %s completed. Found %d records.", tempFilePath, len(extractedData))
+
+	// --- *** เปลี่ยน: ลบ go func(...) เดิมออก *** ---
+	// (ไม่มีโค้ด go func เดิมแล้ว)
+
+	// --- *** เปลี่ยน: ตอบกลับ Client ด้วย Status 200 OK และข้อมูล JSON ที่ Extract ได้ *** ---
+	utils.WriteJSON(w, http.StatusOK, extractedData) // ส่ง Slice กลับไปเลย
+	log.Println("Admin ImportMarketPrices request processed, extraction complete, JSON response sent.")
 }
