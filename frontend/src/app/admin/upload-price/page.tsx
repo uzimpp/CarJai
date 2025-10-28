@@ -29,51 +29,59 @@ export default function UploadMarketPricePage() {
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault(); // Prevent default form submission
+    event.preventDefault();
+
+    // *** แก้ไข 1: ตรวจสอบ selectedFile ก่อนใช้ append() เพื่อแก้ Type Error ***
     if (!selectedFile) {
-      setUploadStatus({ message: '', error: 'Please select a PDF file first.' });
-      return;
+        setUploadStatus({ message: '', error: 'Please select a PDF file first.' });
+        return;
     }
+    // *** สิ้นสุดการแก้ไข ***
 
     setIsLoading(true);
-    setUploadStatus(null); // Clear previous status
-
+    setUploadStatus(null);
     const formData = new FormData();
-    formData.append('marketPricePdf', selectedFile); // Key must match backend handler
+    // *** แก้ไข 2: ใช้ Non-null Assertion (!) เพื่อให้ TypeScript ยอมรับ ***
+    formData.append('marketPricePdf', selectedFile!); 
+    // *** สิ้นสุดการแก้ไข ***
 
     try {
-      // Adjust the URL based on your API setup (proxy or full URL)
-      // Assuming Next.js proxy handles /api/ prefix to backend
-      const response = await fetch('/api/admin/market-price/import', {
+      // *** 1. ดึง Admin Token (ตัวอย่าง: จาก Local Storage) ***
+      const adminToken = localStorage.getItem("admin_jwt"); // ใช้ "admin_jwt" ซึ่งเป็นชื่อ cookie/token ที่ใช้บ่อยใน Admin
+      
+      if (!adminToken) {
+           setUploadStatus({ message: '', error: 'Admin authentication token not found. Please sign in first.' });
+           setIsLoading(false);
+           return;
+      }
+
+      const response = await fetch('/api/admin/market-price/import', { 
         method: 'POST',
-        // *** IMPORTANT: Add Authentication Header Here ***
-        // You need to get the admin token (e.g., from context, local storage)
-        // and include it in the request. Example:
-        // headers: {
-        //   'Authorization': `Bearer ${getAdminToken()}`, // Replace getAdminToken() with your actual token retrieval logic
-        // },
+        headers: {
+           // *** 2. เพิ่ม Authorization Header ***
+           'Authorization': `Bearer ${adminToken}`,
+        },
         body: formData,
       });
 
-      // Check if response is JSON before parsing
+      // Handle response body (checking if it is JSON first)
       const contentType = response.headers.get("content-type");
-      let result;
-      if (contentType && contentType.indexOf("application/json") !== -1) {
+      let result = { message: "", error: "" };
+      if (contentType && contentType.includes("application/json")) {
           result = await response.json();
       } else {
-          // Handle non-JSON responses (e.g., plain text error from proxy)
-          const textResult = await response.text();
-          result = { message: '', error: textResult }; // Treat as error
+          // If 401/403/404 is returned without JSON, we use status text
+          result.error = await response.text(); 
       }
-
-
+      
       if (response.ok && response.status === 202) {
         setUploadStatus({ message: result.message || 'PDF received and import process started in background.' });
-        setSelectedFile(null); // Clear file input after successful trigger
+        setSelectedFile(null);
          const fileInput = document.getElementById('pdf-upload') as HTMLInputElement;
          if (fileInput) fileInput.value = '';
 
       } else {
+        // Try to get error message from backend response, otherwise use status text
         const errorMessage = result.error || result.message || response.statusText || 'Upload failed. Please check backend logs.';
         setUploadStatus({ message: '', error: `Error ${response.status}: ${errorMessage}` });
       }
