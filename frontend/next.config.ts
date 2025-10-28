@@ -19,18 +19,23 @@ const nextConfig: NextConfig = {
       backendUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.carjai.com";
     }
     return [
+      // *** ลบ Rule นี้ออกไป ***
+      // {
+      //   source: "/admin/:path*",
+      //   destination: `${backendUrl}/admin/:path*`,
+      // },
       {
-        source: "/admin/:path*",
-        destination: `${backendUrl}/admin/:path*`,
-      },
-      {
+        // Rule นี้จะจับคู่ request ที่ขึ้นต้นด้วย /api/ ทั้งหมด (รวมถึง /api/admin/)
+        // และส่งต่อไปยัง Backend
         source: "/api/:path*",
         destination: `${backendUrl}/api/:path*`,
       },
-      {
-        source: "/api/cars/images/:path*",
-        destination: `${backendUrl}/api/cars/images/:path*`,
-      },
+      // Rule นี้อาจจะไม่จำเป็นแล้ว เพราะถูกครอบคลุมโดย rule ข้างบน
+      // แต่เก็บไว้ก็ได้ถ้าต้องการความชัดเจน หรือมี logic พิเศษ
+      // {
+      //   source: "/api/cars/images/:path*",
+      //   destination: `${backendUrl}/api/cars/images/:path*`,
+      // },
     ];
   },
 };
