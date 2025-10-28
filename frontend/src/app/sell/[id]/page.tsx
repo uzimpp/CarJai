@@ -12,8 +12,8 @@ import Step3PricingForm from "@/components/car/Step3PricingForm";
 import Step4ReviewForm from "@/components/car/Step4ReviewForm";
 import ProgressRestoreModal from "@/components/car/ProgressRestoreModal";
 import DuplicateConflictModal from "@/components/car/DuplicateConflictModal";
-import type { CarFormData, InspectionResult } from "@/types/Car";
-import type { Step } from "@/types/Selling";
+import type { CarFormData, InspectionResult } from "@/types/car";
+import type { Step } from "@/types/selling";
 
 export default function SellWithIdPage() {
   const hasHydratedRef = useRef(false); // Track if initial hydration has completed

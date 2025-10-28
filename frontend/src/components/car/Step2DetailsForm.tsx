@@ -5,7 +5,7 @@ import { Choices } from "@/components/ui/Choices";
 import StarRating from "@/components/ui/StarRating";
 import { FormSection } from "@/components/ui/FormSection";
 import { CheckBoxes } from "@/components/ui/CheckBoxes";
-import type { CarFormData } from "@/types/Car";
+import type { CarFormData } from "@/types/car";
 import { DAMAGE_OPTIONS } from "@/constants/car";
 import { referenceAPI } from "@/lib/referenceAPI";
 import type { ChoiceOption } from "@/components/ui/Choices";

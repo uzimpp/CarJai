@@ -5,7 +5,7 @@ import { TextField } from "@/components/ui/TextField";
 import { FormSection } from "@/components/ui/FormSection";
 import { InlineAlert } from "@/components/ui/InlineAlert";
 import QrCodeUploader from "@/components/car/QrCodeUploader";
-import type { CarFormData } from "@/types/Car";
+import type { CarFormData } from "@/types/car";
 import Image from "next/image";
 
 interface Step1DocumentsFormProps {

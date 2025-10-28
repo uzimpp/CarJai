@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { CarListing } from "@/types/Car";
+import { CarListing } from "@/types/car";
 import { useCallback } from "react";
 
 export interface CarCardProps {

@@ -6,7 +6,7 @@ import Link from "next/link";
 import SearchFilters, {
   SearchFiltersData,
 } from "@/components/search/SearchFilters";
-import { CarListing } from "@/types/Car";
+import { CarListing } from "@/types/car";
 import type { SearchCarsParams } from "@/types/search";
 import CarCard from "@/components/car/CarCard";
 

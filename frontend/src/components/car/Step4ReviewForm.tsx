@@ -5,7 +5,7 @@ import { InlineAlert } from "@/components/ui/InlineAlert";
 import { TextField } from "@/components/ui/TextField";
 import { Choices } from "@/components/ui/Choices";
 import { CheckBoxes } from "@/components/ui/CheckBoxes";
-import type { CarFormData } from "@/types/Car";
+import type { CarFormData } from "@/types/car";
 import {
   MIN_DESCRIPTION_LENGTH,
   MAX_DESCRIPTION_LENGTH,

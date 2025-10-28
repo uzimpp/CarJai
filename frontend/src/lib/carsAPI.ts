@@ -7,7 +7,7 @@ import type {
   InspectionResult,
   BookResult,
   CarListing,
-} from "@/types/Car";
+} from "@/types/car";
 
 // Type definitions now sourced from types/Car
 

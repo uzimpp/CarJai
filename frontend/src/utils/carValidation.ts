@@ -1,4 +1,4 @@
-import type { CarFormData } from "@/types/Car";
+import type { CarFormData } from "@/types/car";
 import {
   MIN_DESCRIPTION_LENGTH,
   MAX_DESCRIPTION_LENGTH,

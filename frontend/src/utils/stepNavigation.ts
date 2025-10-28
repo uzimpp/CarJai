@@ -1,4 +1,4 @@
-import type { Step } from "@/types/Selling";
+import type { Step } from "@/types/selling";
 
 /**
  * Ordered list of steps in the selling flow

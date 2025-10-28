@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Seller, SellerContact } from "@/types/user";
-import type { CarListing } from "@/types/Car";
+import type { CarListing } from "@/types/car";
 import { sellerAPI } from "@/lib/sellerAPI";
 import CarCard from "@/components/car/CarCard";
 

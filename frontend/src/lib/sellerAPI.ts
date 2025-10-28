@@ -1,5 +1,5 @@
 import type { Seller, SellerContact } from "@/types/user";
-import type { CarListing } from "@/types/Car";
+import type { CarListing } from "@/types/car";
 
 // Public seller API - uses relative paths to flow through Next rewrites
 export const sellerAPI = {
