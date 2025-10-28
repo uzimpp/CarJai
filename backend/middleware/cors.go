@@ -1,9 +1,11 @@
 package middleware
 
 import (
-	"log"
 	"net/http"
 	"strings"
+
+	"github.com/uzimpp/CarJai/backend/utils" // *** ต้องเพิ่ม ***
+	// *** Note: หาก WriteError เรียกใช้ models.AdminErrorResponse, คุณอาจต้อง import models ในไฟล์นี้ด้วย ***
 )
 
 // CORSMiddleware handles Cross-Origin Resource Sharing
@@ -22,11 +24,12 @@ func CORSMiddleware(allowedOrigins []string) func(http.HandlerFunc) http.Handler
 
 			// Check if origin is allowed (from array), with normalization and simple wildcard support
 			allowed := isOriginAllowed(allowedOrigins, origin)
-			log.Printf("CORS check: origin=%s allowed=%v allowedOrigins=%v", origin, allowed, allowedOrigins)
 
 			// Reject unauthorized origins immediately
 			if !allowed {
-				http.Error(w, "CORS: Origin not allowed", http.StatusForbidden)
+				// *** แก้ไข: ใช้ utils.WriteError แทน http.Error ***
+				// นี่คือจุดที่ทำให้เกิด HTML Error
+				utils.WriteError(w, http.StatusForbidden, "CORS: Origin not allowed")
 				return
 			}
 
