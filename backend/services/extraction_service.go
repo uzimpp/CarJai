@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
-	"encoding/json" // Keep for potential debug logging inside method
+	"encoding/json" // Keep for logging
 	"fmt"
 	"log"
 	"os/exec"
@@ -12,12 +12,13 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	// No io/ioutil needed
 )
 
 // MarketPrice represents the structure for market price data.
 type MarketPrice struct {
 	Brand     string    `json:"brand"`
-	ModelTrim string    `json:"model_trim"` // Ensure frontend uses this name (model_trim)
+	ModelTrim string    `json:"model_trim"`
 	YearStart int       `json:"year_start"`
 	YearEnd   int       `json:"year_end"`
 	PriceMin  int64     `json:"price_min_thb"`
@@ -37,7 +38,6 @@ func NewExtractionService(db *sql.DB) *ExtractionService {
 }
 
 // --- Constants and Variables ---
-// (brandSet, Regex definitions, ParseState enum - เหมือนเดิมทั้งหมด)
 var brandSet = map[string]bool{
 	"AION": true, "ALFA ROMEO": true, "ASTON MARTIN": true, "AUDI": true, "AUSTIN": true,
 	"AVATR": true, "BENTLEY": true, "BMW": true, "BYD": true, "CADILLAC": true,
@@ -66,10 +66,11 @@ var brandSet = map[string]bool{
 	"VESPA": true, "YAMAHA": true,
 }
 var (
-	dataRegex = regexp.MustCompile(`^(.+?)\s+(\d{4}\s*-\s*\d{4})\s+(.+)$`) // Adjusted year part
-	yearRegex = regexp.MustCompile(`^(\d{4})\s*-\s*(\d{4})$`)
-	priceRegex = regexp.MustCompile(`^[\d,\s-]+$`)
-	cleanRegex = regexp.MustCompile(`[,\$]`)
+	// Regex definitions
+	dataRegex             = regexp.MustCompile(`^(.+?)\s+(\d{4}\s*-\s*\d{4})\s+(.+)$`) // Adjusted year part
+	yearRegex             = regexp.MustCompile(`^(\d{4})\s*-\s*(\d{4})$`)
+	priceRegex            = regexp.MustCompile(`^[\d,\s-]+$`)
+	cleanRegex            = regexp.MustCompile(`[,\$]`)
 	skipLineRegex         = regexp.MustCompile(`^(\d{1,3}|\d{4})$`)
 	headerRegex           = regexp.MustCompile(`(?i)(แบบ\s*/\s*รุ่น|ปีผลิต|ราคาประเมิน|สารบัญ|แบบ/รุ่น\s*อื่นๆ)`)
 	motorcycleHeaderRegex = regexp.MustCompile(`(?i)รถจักรยานยนต์`)
@@ -83,7 +84,6 @@ const (
 )
 
 // --- Helper Functions ---
-// (cleanPriceString, parseYearRange, parsePriceRange - เหมือนเดิมทั้งหมด)
 func cleanPriceString(priceStr string) string {
 	return cleanRegex.ReplaceAllString(priceStr, "")
 }
@@ -147,14 +147,13 @@ func parsePriceRange(priceStr string) (int64, int64, error) {
 	return minPrice, maxPrice, nil
 }
 
-// --- *** ฟังก์ชันใหม่: ทำหน้าที่ Extract อย่างเดียว *** ---
+// --- Extract Function ---
 // ExtractMarketPricesFromPDF extracts data from a PDF file using pdftotext
 // and returns the parsed data as a slice of MarketPrice.
 func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, filePath string) ([]MarketPrice, error) {
 	log.Printf("Starting market price extraction from PDF: %s", filePath)
 
 	// 1. Execute pdftotext
-	// Consider adding a timeout to the context here if not done in the handler
 	cmd := exec.CommandContext(ctx, "pdftotext", filePath, "-")
 	var out bytes.Buffer
 	var stderr bytes.Buffer
@@ -164,34 +163,23 @@ func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, file
 	runErr := cmd.Run()
 	if runErr != nil {
 		log.Printf("pdftotext error output: %s", stderr.String())
-		// Return stderr content for better debugging on the frontend
 		return nil, fmt.Errorf("failed to run pdftotext command: %w\nstderr: %s", runErr, stderr.String())
 	}
 	log.Println("pdftotext command executed successfully.")
 	fullText := out.String()
 
-	// 2. Parse the text output (โค้ดเหมือนเดิม)
+	// 2. Parse the text output
 	var allPrices []MarketPrice
 	var currentBrand string
 	currentPage := 1
 	currentState := ExpectingModel
 	var tempModel string
 	var tempYearStart, tempYearEnd int
-
 	lines := strings.Split(fullText, "\n")
 
 	for lineNum, line := range lines {
-		if pageSeparatorRegex.MatchString(line) {
-			currentPage++
-			currentState = ExpectingModel
-			tempModel = ""
-			continue
-		}
-
-		line = strings.TrimSpace(line)
-		if line == "" { continue }
-		if currentPage < 8 { continue }
-
+		if pageSeparatorRegex.MatchString(line) { currentPage++; currentState = ExpectingModel; tempModel = ""; continue }
+		line = strings.TrimSpace(line); if line == "" { continue }; if currentPage < 8 { continue } // Adjust page skip if needed
 		potentialBrand := line
 		if _, isBrand := brandSet[potentialBrand]; isBrand {
 			isLikelyContinuation := !strings.Contains(potentialBrand, " ") && len(strings.Fields(potentialBrand)) == 1
@@ -202,123 +190,83 @@ func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, file
 				currentBrand = potentialBrand
 				log.Printf("Page ~%d: Switched brand to: %s", currentPage, currentBrand)
 			}
-			currentState = ExpectingModel
-			tempModel = ""
-			continue
+			currentState = ExpectingModel; tempModel = ""; continue
 		}
-
 		if currentBrand == "" { continue }
-
 		if headerRegex.MatchString(line) || skipLineRegex.MatchString(line) {
-			if currentState != ExpectingModel {
-				log.Printf("Page ~%d, Line %d: Resetting state due to skip line: %s", currentPage, lineNum+1, line)
-				currentState = ExpectingModel
-				tempModel = ""
-			}
+			if currentState != ExpectingModel { log.Printf("Page ~%d, Line %d: Resetting state due to skip line: %s", currentPage, lineNum+1, line); currentState = ExpectingModel; tempModel = "" }
 			continue
 		}
-
 		carMatches := dataRegex.FindStringSubmatch(line)
 		if len(carMatches) == 4 {
 			modelTrim := strings.TrimSpace(carMatches[1])
-			yearStr := strings.TrimSpace(carMatches[2]) // Trim year string
+			yearStr := strings.TrimSpace(carMatches[2])
 			priceStr := strings.TrimSpace(carMatches[3])
-			// Ensure we don't accidentally remove part of the model name if it ends with year-like pattern
-			// A simple approach: check if modelTrim still ends with yearStr after initial capture
-			if strings.HasSuffix(modelTrim, yearStr) {
-				modelTrim = strings.TrimSuffix(modelTrim, yearStr)
-				modelTrim = strings.TrimSpace(modelTrim)
+			originalModelYearPart := strings.TrimSpace(carMatches[1]) + " " + yearStr
+			if strings.HasSuffix(originalModelYearPart, " "+yearStr) {
+				potentialModel := strings.TrimSuffix(originalModelYearPart, " "+yearStr)
+				if len(potentialModel) > 0 && !yearRegex.MatchString(potentialModel) {
+					modelTrim = strings.TrimSpace(potentialModel)
+				}
 			}
-
-
 			if modelTrim != "" {
 				yearStart, yearEnd, errYear := parseYearRange(yearStr)
 				priceMin, priceMax, errPrice := parsePriceRange(priceStr)
-
 				if errYear == nil && errPrice == nil {
 					now := time.Now()
 					marketPrice := MarketPrice{ Brand: currentBrand, ModelTrim: modelTrim, YearStart: yearStart, YearEnd: yearEnd, PriceMin: priceMin, PriceMax: priceMax, CreatedAt: now, UpdatedAt: now }
 					allPrices = append(allPrices, marketPrice)
-					currentState = ExpectingModel
-					tempModel = ""
-					continue
+					currentState = ExpectingModel; tempModel = ""; continue
 				} else {
 					log.Printf("Page ~%d, Line %d: Single-line regex matched but parsing failed (YearErr: %v, PriceErr: %v): %s", currentPage, lineNum+1, errYear, errPrice, line)
 				}
+			} else {
+				log.Printf("Page ~%d, Line %d: Single-line regex matched but extracted empty modelTrim: %s", currentPage, lineNum+1, line)
 			}
 		}
-
 		switch currentState {
 		case ExpectingModel:
 			if yearRegex.MatchString(line) || priceRegex.MatchString(line) {
-				log.Printf("Page ~%d, Line %d: WARNING - Expected model, but line looks like year/price. Skipping: %s", currentPage, lineNum+1, line)
+				log.Printf("Page ~%d, Line %d: WARNING - Expected model, but line looks like year/price. Skipping line: %s", currentPage, lineNum+1, line)
 			} else {
-				tempModel = line
-				currentState = ExpectingYear
+				tempModel = line; currentState = ExpectingYear
 			}
 		case ExpectingYear:
 			yearStart, yearEnd, errYear := parseYearRange(line)
 			if errYear == nil {
-				tempYearStart = yearStart
-				tempYearEnd = yearEnd
-				currentState = ExpectingPrice
+				tempYearStart = yearStart; tempYearEnd = yearEnd; currentState = ExpectingPrice
 			} else {
-				log.Printf("Page ~%d, Line %d: WARNING - Expected year, got '%s'. Resetting state.", currentPage, lineNum+1, line)
-				currentState = ExpectingModel
-				tempModel = ""
+				log.Printf("Page ~%d, Line %d: Expected year, got '%s'. Appending to model and expecting year again.", currentPage, lineNum+1, line)
+				tempModel += " " + line
 			}
 		case ExpectingPrice:
 			priceMin, priceMax, errPrice := parsePriceRange(line)
 			if errPrice == nil {
 				now := time.Now()
-				marketPrice := MarketPrice{
-					Brand:     currentBrand,
-					ModelTrim: tempModel,
-					YearStart: tempYearStart,
-					YearEnd:   tempYearEnd,
-					PriceMin:  priceMin,
-					PriceMax:  priceMax,
-					CreatedAt: now,
-					UpdatedAt: now,
-				}
+				marketPrice := MarketPrice{ Brand: currentBrand, ModelTrim: tempModel, YearStart: tempYearStart, YearEnd: tempYearEnd, PriceMin: priceMin, PriceMax: priceMax, CreatedAt: now, UpdatedAt: now }
 				allPrices = append(allPrices, marketPrice)
-				currentState = ExpectingModel
-				tempModel = ""
+				currentState = ExpectingModel; tempModel = "";
 			} else {
 				log.Printf("Page ~%d, Line %d: WARNING - Expected price, got '%s'. Resetting state.", currentPage, lineNum+1, line)
-				currentState = ExpectingModel
-				tempModel = ""
+				currentState = ExpectingModel; tempModel = "";
 			}
 		}
-	} // end line loop
-
+	}
 	log.Printf("PDF parsing finished. Found %d records.", len(allPrices))
-
-	// *** ไม่มีการ Insert Database ในฟังก์ชันนี้ ***
-	// *** คืนค่า allPrices ที่ Parse ได้ออกไป ***
 	return allPrices, nil
 }
 
-
-// --- ฟังก์ชัน Import เดิม (ยังคงไว้ เผื่อใช้ภายหลัง) ---
-// ImportMarketPricesFromPDF extracts data and upserts into the database.
-func (s *ExtractionService) ImportMarketPricesFromPDF(ctx context.Context, filePath string) (insertedCount int, updatedCount int, err error) {
-	log.Printf("Starting market price import (Extraction + DB) from PDF: %s", filePath)
-
-	// 1. Extract data first using the dedicated function
-	allPrices, extractErr := s.ExtractMarketPricesFromPDF(ctx, filePath)
-	if extractErr != nil {
-		err = fmt.Errorf("extraction failed during import: %w", extractErr)
-		return // Return 0, 0, err
+// --- Commit Function ---
+// CommitMarketPrices takes a slice of MarketPrice data and upserts it into the database.
+func (s *ExtractionService) CommitMarketPrices(ctx context.Context, pricesToCommit []MarketPrice) (insertedCount int, updatedCount int, err error) {
+	if len(pricesToCommit) == 0 {
+		log.Println("No records received to commit.")
+		return 0, 0, nil
 	}
 
-	if len(allPrices) == 0 {
-		log.Println("No records found in PDF to import.")
-		return 0, 0, nil // Return 0, 0, nil
-	}
+	log.Printf("Starting database commit for %d market price records...", len(pricesToCommit))
 
-	// 2. Database Operation (UPSERT) - โค้ดส่วนนี้เหมือนเดิม
-	log.Println("Starting database insertion/update...")
+	// --- Database Operation (UPSERT) ---
 	stmt, prepErr := s.db.PrepareContext(ctx, `
 		INSERT INTO market_price (brand, model_trim, year_start, year_end, price_min_thb, price_max_thb, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -340,14 +288,16 @@ func (s *ExtractionService) ImportMarketPricesFromPDF(ctx context.Context, fileP
 		err = fmt.Errorf("failed to begin transaction: %w", txErr)
 		return
 	}
+	// Defer function for Rollback/Commit
 	defer func() {
 		if p := recover(); p != nil {
 			_ = tx.Rollback()
-			panic(p)
+			panic(p) // Re-throw panic after Rollback
 		} else if err != nil {
 			log.Printf("Rolling back transaction due to error: %v", err)
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
 				log.Printf("Error during transaction rollback: %v", rollbackErr)
+				err = fmt.Errorf("original error: %w; rollback error: %v", err, rollbackErr)
 			}
 		} else {
 			commitErr := tx.Commit()
@@ -360,21 +310,24 @@ func (s *ExtractionService) ImportMarketPricesFromPDF(ctx context.Context, fileP
 				log.Println("Transaction committed successfully.")
 			}
 		}
-	}()
+	}() // End of deferred function
 
 	txStmt := tx.StmtContext(ctx, stmt)
+	now := time.Now() // Use a consistent timestamp for all updates in this batch
 
-	for i, price := range allPrices {
+	for i, price := range pricesToCommit {
 		var inserted bool
+		// Use 'now' for created_at and updated_at for consistency during commit
 		scanErr := txStmt.QueryRowContext(ctx,
 			price.Brand, price.ModelTrim, price.YearStart, price.YearEnd,
-			price.PriceMin, price.PriceMax, price.CreatedAt, price.UpdatedAt,
+			price.PriceMin, price.PriceMax, now, now, // Use consistent 'now'
 		).Scan(&inserted)
 
 		if scanErr != nil {
-			recordJson, _ := json.Marshal(price)
+			recordJson, _ := json.Marshal(price) // Log the problematic record
 			log.Printf("Failed to upsert record #%d [%s]: %v", i+1, string(recordJson), scanErr)
-			err = fmt.Errorf("failed to upsert record #%d: %w", i+1, scanErr)
+			err = fmt.Errorf("failed to upsert record #%d (%s %s %d-%d): %w",
+				i+1, price.Brand, price.ModelTrim, price.YearStart, price.YearEnd, scanErr)
 			return // Exit loop and trigger rollback via defer
 		}
 
@@ -385,7 +338,24 @@ func (s *ExtractionService) ImportMarketPricesFromPDF(ctx context.Context, fileP
 		}
 	}
 
-	log.Printf("Database operation loop completed. Inserted: %d, Updated: %d", insertedCount, updatedCount)
+	log.Printf("Database commit loop completed. Inserted: %d, Updated: %d", insertedCount, updatedCount)
 	// err is nil here if loop completed, commit happens in defer
 	return
+}
+
+// --- Original Import Function (Calls Extract then Commit) ---
+// ImportMarketPricesFromPDF extracts data and upserts into the database.
+func (s *ExtractionService) ImportMarketPricesFromPDF(ctx context.Context, filePath string) (insertedCount int, updatedCount int, err error) {
+	log.Printf("Starting market price import (Extraction + DB) from PDF: %s", filePath)
+	allPrices, extractErr := s.ExtractMarketPricesFromPDF(ctx, filePath)
+	if extractErr != nil {
+		err = fmt.Errorf("extraction failed during import: %w", extractErr)
+		return
+	}
+	if len(allPrices) == 0 {
+		log.Println("No records found in PDF to import.")
+		return 0, 0, nil
+	}
+	// Delegate DB operation to the new function
+	return s.CommitMarketPrices(ctx, allPrices)
 }
