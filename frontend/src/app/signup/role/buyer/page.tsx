@@ -23,8 +23,8 @@ export default function BuyerProfilePage() {
     try {
       setError(null);
       await profileAPI.upsertBuyerProfile(data);
-      // Redirect to buy page after successful profile creation
-      router.push("/browse");
+      // Redirect to welcome page after successful profile creation
+      router.push("/signup/welcome");
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to save profile";
