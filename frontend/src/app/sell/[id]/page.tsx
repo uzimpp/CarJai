@@ -385,38 +385,36 @@ export default function SellWithIdPage() {
 
   // Helper to filter out read-only fields before saving
   const sanitizeForSave = useCallback((data: Partial<CarFormData>) => {
-    const {
-      chassisNumber,
-      licensePlate,
-      colors,
-      prefix,
-      number,
-      province,
-      station,
-      overallPass,
-      brakeResult,
-      handbrakeResult,
-      alignmentResult,
-      noiseResult,
-      emissionResult,
-      hornResult,
-      speedometerResult,
-      highLowBeamResult,
-      signalLightsResult,
-      otherLightsResult,
-      windshieldResult,
-      steeringResult,
-      wheelsTiresResult,
-      fuelTankResult,
-      chassisResult,
-      bodyResult,
-      doorsFloorResult,
-      seatbeltResult,
-      wiperResult,
-      imagesUploaded,
-      ...sanitizedData
-    } = data;
-    return sanitizedData;
+    // Define editable fields (fields we want to keep)
+    const editableFields = new Set<keyof CarFormData>([
+      "brandName",
+      "modelName",
+      "submodelName",
+      "mileage",
+      "year",
+      "seats",
+      "doors",
+      "engineCc",
+      "bodyTypeName",
+      "transmissionName",
+      "drivetrainName",
+      "fuelLabels",
+      "isFlooded",
+      "isHeavilyDamaged",
+      "conditionRating",
+      "price",
+      "description",
+      "images",
+    ]);
+
+    // Return only editable fields
+    const sanitized: Partial<CarFormData> = {};
+    for (const [key, value] of Object.entries(data)) {
+      if (editableFields.has(key as keyof CarFormData)) {
+        (sanitized as Record<string, unknown>)[key] = value;
+      }
+    }
+    return sanitized;
   }, []);
 
   // Autosave draft with debounce (Steps 2 & 3)
@@ -908,10 +906,8 @@ export default function SellWithIdPage() {
         {/* Duplicate Conflict Modal */}
         <DuplicateConflictModal
           isOpen={showDuplicateConflictModal}
-          onClose={() => setShowDuplicateConflictModal(false)}
           onRedirect={handleRedirectToExisting}
           onCreateNew={handleCreateNewListing}
-          existingCarId={conflictExistingCarId || 0}
         />
       </div>
     </div>

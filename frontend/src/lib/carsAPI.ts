@@ -1,5 +1,5 @@
 // Cars API utilities - following the codebase pattern
-import { apiCall } from "@/lib/ApiCall";
+import { apiCall } from "@/lib/apiCall";
 import type { SearchCarsParams } from "@/types/search";
 import type {
   Car,
@@ -173,19 +173,42 @@ export const carsAPI = {
   // Upload car images
   async uploadImages(
     carId: number,
-    files: File[]
+    files: FileList | File[]
   ): Promise<{
     success: boolean;
-    data: {
+    data?: {
       carId: number;
       uploadedCount: number;
-      images: Array<{ id: number; displayOrder: number }>;
+      images: Array<{
+        id: number;
+        carId: number;
+        imageType: string;
+        imageSize: number;
+        displayOrder: number;
+        uploadedAt: string;
+      }>;
     };
     message?: string;
   }> {
     const formData = new FormData();
-    files.forEach((file) => formData.append("images", file));
-    return apiCall(`/api/cars/${carId}/images`, {
+    const fileArray = Array.from(files);
+    fileArray.forEach((file) => formData.append("images", file));
+    return apiCall<{
+      success: boolean;
+      data?: {
+        carId: number;
+        uploadedCount: number;
+        images: Array<{
+          id: number;
+          carId: number;
+          imageType: string;
+          imageSize: number;
+          displayOrder: number;
+          uploadedAt: string;
+        }>;
+      };
+      message?: string;
+    }>(`/api/cars/${carId}/images`, {
       method: "POST",
       body: formData,
     });

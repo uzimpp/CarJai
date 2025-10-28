@@ -41,7 +41,8 @@ export default function NavBar() {
       } else if (isAuthedUser) {
         await userSignout();
       }
-    } catch (error) {
+    } catch {
+      // Silent fail on signout
     }
   };
 

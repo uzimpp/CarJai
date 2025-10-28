@@ -1,9 +1,6 @@
-import type { CarFormData } from "@/types/Car";
 import type { CheckOption } from "@/components/ui/CheckBoxes";
 
-
 // Damage Options
-
 export const DAMAGE_OPTIONS: CheckOption<string>[] = [
   {
     value: "flooded",
@@ -24,4 +21,3 @@ export const MAX_IMAGES = 12;
 // Description constraints
 export const MIN_DESCRIPTION_LENGTH = 10;
 export const MAX_DESCRIPTION_LENGTH = 200;
-

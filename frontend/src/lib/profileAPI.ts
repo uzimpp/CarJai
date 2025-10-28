@@ -6,7 +6,7 @@ import {
   SellerRequest,
   SellerResponse,
 } from "@/types/user";
-import { apiCall } from "./ApiCall";
+import { apiCall } from "@/lib/apiCall";
 
 // Request type for updating user account fields
 export interface UpdateSelfRequest {

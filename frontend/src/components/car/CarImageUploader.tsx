@@ -2,7 +2,6 @@
 
 import { useState, useRef, DragEvent, useEffect } from "react";
 import Image from "next/image";
-import { apiCall } from "@/lib/ApiCall";
 import { carsAPI } from "@/lib/carsAPI";
 import { InlineAlert } from "@/components/ui/InlineAlert";
 import { MIN_IMAGES, MAX_IMAGES } from "@/constants/car";
@@ -34,9 +33,9 @@ export default function CarImageUploader({
   onUploadComplete,
 }: CarImageUploaderProps) {
   const [images, setImages] = useState<ImagePreview[]>([]);
-  const [isUploading, setIsUploading] = useState(false); // reserved for future disable states
+  const [, setIsUploading] = useState(false); // reserved for future disable states
   const [error, setError] = useState("");
-  const [dragActive, setDragActive] = useState(false); // used to style dropzone
+  const [, setDragActive] = useState(false); // used to style dropzone
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -64,7 +63,7 @@ export default function CarImageUploader({
             onUploadComplete();
           }
         }
-      } catch (err) {
+      } catch {
         // Silent fail - user can still add new images
       }
     };
@@ -126,32 +125,11 @@ export default function CarImageUploader({
     setIsUploading(true);
 
     try {
-      const formData = new FormData();
-      newImages.forEach((img) => {
-        if (img.file) {
-          formData.append("images", img.file);
-        }
-      });
+      const filesToUpload = newImages
+        .filter((img) => img.file)
+        .map((img) => img.file!);
 
-      const result = await apiCall<{
-        success: boolean;
-        data?: {
-          carId: number;
-          uploadedCount: number;
-          images: Array<{
-            id: number;
-            carId: number;
-            imageType: string;
-            imageSize: number;
-            displayOrder: number;
-            uploadedAt: string;
-          }>;
-        };
-        message?: string;
-      }>(`/api/cars/${carId}/images`, {
-        method: "POST",
-        body: formData,
-      });
+      const result = await carsAPI.uploadImages(carId, filesToUpload);
 
       if (result.success && result.data) {
         // Update images with server IDs and success status
@@ -235,9 +213,10 @@ export default function CarImageUploader({
     }
   };
 
-  const handleFileChange = (_e: React.ChangeEvent<HTMLInputElement>) => {
-    handleFiles(_e.target.files);
-  };
+  // handleFileChange unused but kept for future direct file input usage
+  // const handleFileChange = (_e: React.ChangeEvent<HTMLInputElement>) => {
+  //   handleFiles(_e.target.files);
+  // };
 
   const removeImage = async (index: number) => {
     const imageToRemove = images[index];
@@ -254,7 +233,7 @@ export default function CarImageUploader({
     if (imageToRemove.serverId && imageToRemove.status === "uploaded") {
       try {
         await carsAPI.deleteImage(imageToRemove.serverId);
-      } catch (err) {
+      } catch {
         setError("Failed to remove image");
         // Could restore the image here if needed
       }
@@ -295,11 +274,8 @@ export default function CarImageUploader({
       const imageIds = images.map((img) => img.serverId!);
 
       try {
-        await apiCall(`/api/cars/${carId}/images/order`, {
-          method: "PUT",
-          body: JSON.stringify({ imageIds }),
-        });
-      } catch (err) {
+        await carsAPI.reorderImages(carId, imageIds);
+      } catch {
         setError("Failed to save image order");
       }
     }

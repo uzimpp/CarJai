@@ -43,7 +43,7 @@ export default function ProgressRestoreModal({
           .sort((a, b) => (b.id || 0) - (a.id || 0));
         setAvailableCars(draftCars);
       }
-    } catch (err) {
+    } catch {
       setError("Failed to load available cars");
     } finally {
       setIsLoading(false);
@@ -77,7 +77,7 @@ export default function ProgressRestoreModal({
       } else {
         setError(result.message || "Failed to restore progress");
       }
-    } catch (err) {
+    } catch {
       setError("Failed to restore progress");
     } finally {
       setIsSubmitting(false);

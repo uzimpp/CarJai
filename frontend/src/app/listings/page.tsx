@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUserAuth } from "@/hooks/useUserAuth";
-import { apiCall } from "@/lib/ApiCall";
+import { apiCall } from "@/lib/apiCall";
 import Link from "next/link";
 import { CarListing } from "@/types/Car";
 import CarCard from "@/components/car/CarCard";
