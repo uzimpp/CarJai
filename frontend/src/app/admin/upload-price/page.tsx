@@ -3,93 +3,124 @@
 import React, { useState, ChangeEvent, FormEvent } from 'react';
 import ConditionalLayout from '@/components/global/Layout'; // Import your global layout
 
-// Define a type for the response message
+// *** เพิ่ม: Interface MarketPrice (ชื่อ field ตรงกับ JSON จาก Backend) ***
+interface MarketPrice {
+  brand: string;
+  model_trim: string; // ใช้ snake_case ตาม Go struct tag
+  year_start: number;
+  year_end: number;
+  price_min_thb: number; // ใช้ number ถ้า Backend ส่ง number
+  price_max_thb: number;
+  // created_at?: string; // ไม่จำเป็นต้องแสดง
+  // updated_at?: string;
+}
+
+
+// Define a type for the response message and potential JSON error
 interface UploadResponse {
   message: string;
   error?: string; // Optional error details
 }
+// Type for JSON error structure from Go backend's utils.WriteError
+interface GoErrorResponse {
+	success: boolean;
+	error: string;
+	code: number;
+}
+
 
 export default function UploadMarketPricePage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadStatus, setUploadStatus] = useState<UploadResponse | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  // *** เพิ่ม: State สำหรับเก็บผลลัพธ์ JSON ***
+  const [extractedJson, setExtractedJson] = useState<string | null>(null);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
-      // Check if file is PDF before setting state
       if (event.target.files[0].type === 'application/pdf') {
         setSelectedFile(event.target.files[0]);
-        setUploadStatus(null); // Clear previous status on new file selection
+        setUploadStatus(null);
+        setExtractedJson(null); // *** เคลียร์ JSON เก่าเมื่อเลือกไฟล์ใหม่ ***
       } else {
-        setSelectedFile(null); // Clear selection if not PDF
+        setSelectedFile(null);
         setUploadStatus({ message: '', error: 'Invalid file type. Please select a PDF file.' });
-        event.target.value = ''; // Reset the file input visually
+        event.target.value = '';
+        setExtractedJson(null); // เคลียร์ JSON ด้วยถ้าไฟล์ไม่ถูกต้อง
       }
+    } else {
+      // Clear selection if user cancels file dialog
+      setSelectedFile(null);
+      setUploadStatus(null);
+      setExtractedJson(null);
     }
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
-    // *** แก้ไข 1: ตรวจสอบ selectedFile ก่อนใช้ append() เพื่อแก้ Type Error ***
     if (!selectedFile) {
         setUploadStatus({ message: '', error: 'Please select a PDF file first.' });
         return;
     }
-    // *** สิ้นสุดการแก้ไข ***
 
     setIsLoading(true);
     setUploadStatus(null);
+    setExtractedJson(null); // เคลียร์ JSON ก่อนเริ่ม Upload ใหม่
     const formData = new FormData();
-    // *** แก้ไข 2: ใช้ Non-null Assertion (!) เพื่อให้ TypeScript ยอมรับ ***
-    formData.append('marketPricePdf', selectedFile!); 
-    // *** สิ้นสุดการแก้ไข ***
+    formData.append('marketPricePdf', selectedFile!);
 
     try {
-      // *** 1. ดึง Admin Token (ตัวอย่าง: จาก Local Storage) ***
-      // const adminToken = localStorage.getItem("admin_jwt"); // ใช้ "admin_jwt" ซึ่งเป็นชื่อ cookie/token ที่ใช้บ่อยใน Admin
-      
-      // if (!adminToken) {
-      //      setUploadStatus({ message: '', error: 'Admin authentication token not found. Please sign in first.' });
-      //      setIsLoading(false);
-      //      return;
-      // }
+      // *** ไม่ต้องดึง หรือเช็ค Token จาก localStorage แล้ว ***
 
-      const response = await fetch('/admin/market-price/import', { 
+      const response = await fetch('/admin/market-price/import', { // URL ถูกต้อง
         method: 'POST',
-        headers: {
-           // *** 2. เพิ่ม Authorization Header ***
-           // 'Authorization': `Bearer ${adminToken}`,
-        },
+        // headers: {}, // ไม่ต้องใส่ Authorization หรือ Content-Type สำหรับ FormData
         body: formData,
-        credentials: 'include',
+        credentials: 'include', // <--- ต้องมีอันนี้ เพื่อให้ส่ง Cookie
       });
 
-      // Handle response body (checking if it is JSON first)
       const contentType = response.headers.get("content-type");
-      let result = { message: "", error: "" };
-      if (contentType && contentType.includes("application/json")) {
-          result = await response.json();
-      } else {
-          // If 401/403/404 is returned without JSON, we use status text
-          result.error = await response.text(); 
-      }
-      
-      if (response.ok && response.status === 202) {
-        setUploadStatus({ message: result.message || 'PDF received and import process started in background.' });
-        setSelectedFile(null);
-         const fileInput = document.getElementById('pdf-upload') as HTMLInputElement;
-         if (fileInput) fileInput.value = '';
+
+      // *** เปลี่ยน: การจัดการ Response ***
+      if (response.ok && response.status === 200 && contentType && contentType.includes("application/json")) {
+          // คาดหวัง JSON Array (MarketPrice[]) เมื่อสำเร็จ (Status 200 OK)
+          const result: MarketPrice[] = await response.json();
+          setExtractedJson(JSON.stringify(result, null, 2)); // จัดรูปแบบ JSON ให้อ่านง่าย (indent 2 spaces)
+          setUploadStatus({ message: `Successfully extracted ${result.length} records.`, error: undefined });
+          setSelectedFile(null); // เคลียร์ไฟล์ที่เลือก
+           // Reset file input visually
+           const fileInput = document.getElementById('pdf-upload') as HTMLInputElement;
+           if (fileInput) fileInput.value = '';
 
       } else {
-        // Try to get error message from backend response, otherwise use status text
-        const errorMessage = result.error || result.message || response.statusText || 'Upload failed. Please check backend logs.';
-        setUploadStatus({ message: '', error: `Error ${response.status}: ${errorMessage}` });
+        // จัดการ Error (อาจจะเป็น JSON Error จาก Backend หรือ Text อื่นๆ)
+        let errorMessage = `Request failed with status ${response.status}`;
+        try {
+            if (contentType && contentType.includes("application/json")) {
+                const errorResult: GoErrorResponse = await response.json(); // ลอง Parse เป็น GoErrorResponse
+                errorMessage = errorResult.error || `Error ${errorResult.code || response.status}`;
+            } else {
+                 const textError = await response.text(); // อ่านเป็น Text ถ้าไม่ใช่ JSON
+                 errorMessage = textError || response.statusText || errorMessage;
+            }
+        } catch (parseError) {
+             console.error("Error parsing error response:", parseError);
+             // Attempt to read as text if JSON parsing fails
+             try {
+                const textError = await response.text();
+                errorMessage = textError || response.statusText || errorMessage;
+             } catch {
+                errorMessage = response.statusText || errorMessage; // Fallback สุดท้าย
+             }
+        }
+        setUploadStatus({ message: '', error: errorMessage });
+        setExtractedJson(null); // ไม่มี JSON ถ้าเกิด Error
       }
     } catch (error) {
-      console.error('Upload error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-      setUploadStatus({ message: '', error: `An error occurred during upload: ${errorMessage}. Check console or network logs.` });
+      console.error('Network or other error during upload:', error);
+      const errorMessage = error instanceof Error ? error.message : 'An unknown network error occurred';
+      setUploadStatus({ message: '', error: `Upload Error: ${errorMessage}` });
+      setExtractedJson(null);
     } finally {
       setIsLoading(false);
     }
@@ -98,9 +129,9 @@ export default function UploadMarketPricePage() {
   // Wrap the content with your ConditionalLayout
   return (
     <ConditionalLayout>
-      <div className="flex justify-center items-center w-full py-12 px-4"> {/* Adjust padding as needed */}
-        <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md w-full max-w-md">
-          {/* UI Card */}
+      <div className="flex justify-center items-start w-full py-12 px-4"> {/* items-start ให้ชิดบน */}
+        <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md w-full max-w-2xl"> {/* ขยายความกว้าง */}
+          {/* UI Card Header */}
           <div className="text-center mb-6">
             <span className="inline-block p-3 bg-red-100 dark:bg-red-900 rounded-full mb-3">
               {/* Document Icon */}
@@ -170,9 +201,28 @@ export default function UploadMarketPricePage() {
                          dark:bg-red-700 dark:hover:bg-red-800 dark:focus:ring-red-600
                          disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Uploading...' : 'Upload and Start Import'}
+              {isLoading ? 'Extracting...' : 'Upload and Extract Data'} {/* เปลี่ยน Text ปุ่ม */}
             </button>
           </form>
+
+          {/* *** เพิ่ม: Textarea สำหรับแสดงผล JSON *** */}
+          {extractedJson && (
+            <div className="mt-6">
+              <label htmlFor="json-output" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Extracted JSON Data:
+              </label>
+              <textarea
+                id="json-output"
+                readOnly
+                value={extractedJson}
+                rows={15} // กำหนดจำนวนบรรทัดเริ่มต้น
+                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-200 text-xs font-mono" // ใช้ font monospace ให้อ่านง่าย
+                style={{ resize: 'vertical' }} // อนุญาตให้ย่อขยายแนวตั้ง
+              />
+            </div>
+          )}
+          {/* *** สิ้นสุดส่วนที่เพิ่ม *** */}
+
         </div>
       </div>
     </ConditionalLayout>
