@@ -2,9 +2,9 @@ package services
 
 import (
 	"bytes"
-	"context" // *** เพิ่ม context ***
-	"database/sql" // *** เพิ่ม database/sql ***
-	"encoding/json" // *** เพิ่ม encoding/json (สำหรับ marshal กรณี debug) ***
+	"context"
+	"database/sql"
+	"encoding/json" // Keep for potential debug logging inside method
 	"fmt"
 	"log"
 	"os/exec"
@@ -26,7 +26,19 @@ type MarketPrice struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// brandSet (POC version - potentially load dynamically in production)
+// --- Service Struct and Constructor ---
+type ExtractionService struct {
+	db *sql.DB // Dependency: Database connection pool
+}
+
+// NewExtractionService creates a new instance of ExtractionService.
+func NewExtractionService(db *sql.DB) *ExtractionService {
+	return &ExtractionService{db: db}
+}
+
+// --- Constants and Variables (Moved here from previous POC global scope) ---
+
+// brandSet defines known brands for parsing context.
 var brandSet = map[string]bool{
 	"AION": true, "ALFA ROMEO": true, "ASTON MARTIN": true, "AUDI": true, "AUSTIN": true,
 	"AVATR": true, "BENTLEY": true, "BMW": true, "BYD": true, "CADILLAC": true,
@@ -34,7 +46,7 @@ var brandSet = map[string]bool{
 	"DAIHATSU": true, "DEEPAL": true, "DENZA": true, "DFSK": true, "FERRARI": true,
 	"FIAT": true, "FORD": true, "GEELY": true, "GWM TANK": true, "HAVAL": true,
 	"HINO": true, "HONDA": true, "HUMMER": true, "HYUNDAI": true, "ISUZU": true,
-	"JAECOO": true, "JAGUAR": true, "JEEP": true, "ΚΙΑ": true, // Note: Greek Kappa might cause issues, check PDF source if needed
+	"JAECOO": true, "JAGUAR": true, "JEEP": true, "ΚΙΑ": true,
 	"LAMBORGHINI": true, "LAND ROVER": true, "LEAPMOTOR": true, "LEXUS": true, "LOTUS": true,
 	"MASERATI": true, "MAZDA": true, "MCLAREN": true, "MERCEDES BENZ": true, "MG": true,
 	"MINI": true, "MITSUBISHI": true, "MITSUOKA": true, "NAZA": true, "NETA": true,
@@ -44,7 +56,7 @@ var brandSet = map[string]bool{
 	"SUBARU": true, "SUZUKI": true, "TATA": true, "TESLA": true, "THAIRUNG": true,
 	"TOYOTA": true, "VOLKSWAGEN": true, "VOLVO": true, "WULING": true, "XPENG": true,
 	"ZEEKR": true,
-	// Motorcycle brands (added for completeness)
+	// Motorcycle brands
 	"AJ": true, "APRILIA": true, "ARIIC": true, "BAJAJ": true, "BENELLI": true,
 	"CFMOTO": true, "DECO": true, "DUCATI": true, "EM": true, "GPX": true, "H SEM": true,
 	"HAONAIQI": true, "HARLEY DAVIDSON": true, "HUSQVARNA": true, "INDIAN": true,
@@ -81,12 +93,11 @@ const (
 	ExpectingPrice
 )
 
-// cleanPriceString removes unwanted characters from a price string.
+// --- Helper Functions with Implementation ---
 func cleanPriceString(priceStr string) string {
 	return cleanRegex.ReplaceAllString(priceStr, "")
 }
 
-// parseYearRange converts "YYYY-YYYY" or "YYYY - YYYY" to (startYear, endYear).
 func parseYearRange(yearStr string) (int, int, error) {
 	matches := yearRegex.FindStringSubmatch(yearStr)
 	if len(matches) != 3 {
@@ -103,7 +114,6 @@ func parseYearRange(yearStr string) (int, int, error) {
 	return start, end, nil
 }
 
-// parsePriceRange converts "min max" or "min-max" to (minPrice, maxPrice).
 func parsePriceRange(priceStr string) (int64, int64, error) {
 	if !priceRegex.MatchString(priceStr) { // Pre-check format
 		return 0, 0, fmt.Errorf("string does not match price pattern: %s", priceStr)
@@ -155,22 +165,31 @@ func parsePriceRange(priceStr string) (int64, int64, error) {
 }
 
 
-// ExtractAndPrintMarketPricesPOC performs PDF extraction using pdftotext and inserts/updates data into the DB.
-func ExtractAndPrintMarketPricesPOC(ctx context.Context, db *sql.DB, filePath string) error {
-	log.Printf("Attempting to extract text using pdftotext from: %s", filePath)
-	cmd := exec.Command("pdftotext", filePath, "-")
+// --- Service Method with Full Parsing Logic ---
+
+// ImportMarketPricesFromPDF extracts data from a PDF file using pdftotext
+// and upserts it into the market_price table.
+// It returns the number of inserted records, updated records, and any error encountered.
+func (s *ExtractionService) ImportMarketPricesFromPDF(ctx context.Context, filePath string) (insertedCount int, updatedCount int, err error) {
+	log.Printf("Starting market price import from PDF: %s", filePath)
+
+	// 1. Execute pdftotext
+	cmd := exec.CommandContext(ctx, "pdftotext", filePath, "-")
 	var out bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &stderr
-	err := cmd.Run()
-	if err != nil {
+
+	runErr := cmd.Run()
+	if runErr != nil {
 		log.Printf("pdftotext error output: %s", stderr.String())
-		return fmt.Errorf("failed to run pdftotext command: %w", err)
+		err = fmt.Errorf("failed to run pdftotext command: %w", runErr)
+		return
 	}
 	log.Println("pdftotext command executed successfully.")
 	fullText := out.String()
 
+	// 2. Parse the text output
 	var allPrices []MarketPrice
 	var currentBrand string
 	currentPage := 1
@@ -222,7 +241,7 @@ func ExtractAndPrintMarketPricesPOC(ctx context.Context, db *sql.DB, filePath st
 		}
 
 		// Try matching Single-Line (Car) format first
-		carMatches := dataRegex.FindStringSubmatch(line)
+		carMatches := dataRegex.FindStringSubmatch(line) // Define carMatches here
 		if len(carMatches) == 4 {
 			modelTrim := strings.TrimSpace(carMatches[1])
 			yearStr := carMatches[2]
@@ -294,15 +313,17 @@ func ExtractAndPrintMarketPricesPOC(ctx context.Context, db *sql.DB, filePath st
 		} // end switch
 	} // end line loop
 
-	log.Printf("Successfully extracted %d records.", len(allPrices))
 
-	// --- ส่วน Database Insertion/Update ---
+	log.Printf("PDF parsing finished. Found %d potential records.", len(allPrices))
+	if len(allPrices) == 0 {
+		log.Println("No records found in PDF to import.")
+		return 0, 0, nil
+	}
+
+	// 3. Database Operation (UPSERT)
 	log.Println("Starting database insertion/update...")
-	insertedCount := 0
-	updatedCount := 0
 
-	// เตรียม SQL statement (UPSERT)
-	stmt, err := db.PrepareContext(ctx, `
+	stmt, prepErr := s.db.PrepareContext(ctx, `
 		INSERT INTO market_price (brand, model_trim, year_start, year_end, price_min_thb, price_max_thb, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		ON CONFLICT (brand, model_trim, year_start, year_end)
@@ -310,61 +331,55 @@ func ExtractAndPrintMarketPricesPOC(ctx context.Context, db *sql.DB, filePath st
 			price_min_thb = EXCLUDED.price_min_thb,
 			price_max_thb = EXCLUDED.price_max_thb,
 			updated_at = EXCLUDED.updated_at
-		RETURNING (xmax = 0) AS inserted; -- xmax=0 indicates INSERT
+		RETURNING (xmax = 0) AS inserted;
 	`)
-	if err != nil {
-		// Log detailed error for debugging preparation failure
-		log.Printf("Error preparing statement: %v", err)
-		// Try to provide more context if possible, e.g., was DB connection successful?
-		pingErr := db.PingContext(ctx)
-		if pingErr != nil {
-			log.Printf("Database ping also failed: %v", pingErr)
-		}
-		return fmt.Errorf("failed to prepare upsert statement: %w", err)
+	if prepErr != nil {
+		err = fmt.Errorf("failed to prepare upsert statement: %w", prepErr)
+		return
 	}
 	defer stmt.Close()
 
-
-	tx, err := db.BeginTx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
+	tx, txErr := s.db.BeginTx(ctx, nil)
+	if txErr != nil {
+		err = fmt.Errorf("failed to begin transaction: %w", txErr)
+		return
 	}
-	// Use defer with a function literal to handle potential rollback error
 	defer func() {
-		if err != nil { // Check if an error occurred during the loop or commit
-			log.Println("Rolling back transaction due to error.")
-			rollbackErr := tx.Rollback()
-			if rollbackErr != nil {
+		if p := recover(); p != nil {
+			_ = tx.Rollback()
+			panic(p)
+		} else if err != nil {
+			log.Printf("Rolling back transaction due to error: %v", err)
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
 				log.Printf("Error during transaction rollback: %v", rollbackErr)
+			}
+		} else {
+			commitErr := tx.Commit()
+			if commitErr != nil {
+				log.Printf("Error committing transaction: %v", commitErr)
+				insertedCount = 0
+				updatedCount = 0
+				err = fmt.Errorf("failed to commit transaction: %w", commitErr)
+			} else {
+				log.Println("Transaction committed successfully.")
 			}
 		}
 	}()
 
-
-	txStmt := tx.StmtContext(ctx, stmt) // Use statement within transaction
+	txStmt := tx.StmtContext(ctx, stmt)
 
 	for i, price := range allPrices {
 		var inserted bool
-		// Log the data being inserted for debugging potential issues
-		// log.Printf("Upserting record %d: %+v", i+1, price)
 		scanErr := txStmt.QueryRowContext(ctx,
-			price.Brand,
-			price.ModelTrim,
-			price.YearStart,
-			price.YearEnd,
-			price.PriceMin,
-			price.PriceMax,
-			price.CreatedAt,
-			price.UpdatedAt,
+			price.Brand, price.ModelTrim, price.YearStart, price.YearEnd,
+			price.PriceMin, price.PriceMax, price.CreatedAt, price.UpdatedAt,
 		).Scan(&inserted)
 
 		if scanErr != nil {
-			// Log the specific record causing the error
-			recordJson, _ := json.Marshal(price) // Marshal for easy logging
+			recordJson, _ := json.Marshal(price)
 			log.Printf("Failed to upsert record #%d [%s]: %v", i+1, string(recordJson), scanErr)
-			// Assign error to outer scope err to trigger rollback
 			err = fmt.Errorf("failed to upsert record #%d: %w", i+1, scanErr)
-			return err // Stop processing and trigger rollback
+			return // Exit loop and trigger rollback via defer
 		}
 
 		if inserted {
@@ -374,18 +389,8 @@ func ExtractAndPrintMarketPricesPOC(ctx context.Context, db *sql.DB, filePath st
 		}
 	}
 
-	// Commit Transaction if loop completed without errors
-	log.Println("Attempting to commit transaction...")
-	if err == nil { // Only commit if no error occurred during the loop
-		commitErr := tx.Commit()
-		if commitErr != nil {
-			err = fmt.Errorf("failed to commit transaction: %w", commitErr) // Assign error to trigger rollback defer
-			log.Printf("Commit failed: %v", err)
-			return err // Return commit error
-		}
-	}
-
-
-	log.Printf("Database operation completed successfully. Inserted: %d, Updated: %d", insertedCount, updatedCount)
-	return nil // Return nil on successful commit
+	log.Printf("Database operation loop completed. Inserted: %d, Updated: %d", insertedCount, updatedCount)
+	return // Return current counts and nil error (commit happens in defer)
 }
+
+/* // Placeholder for future service methods if needed */
