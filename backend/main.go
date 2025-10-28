@@ -53,6 +53,7 @@ type ServiceContainer struct {
 	Maintenance *services.MaintenanceService
 	OCR         *services.OCRService
 	Scraper     *services.ScraperService // + เพิ่มส่วนนี้
+	Extraction  *services.ExtractionService
 	UserJWT     *utils.JWTManager
 	AdminJWT    *utils.JWTManager
 }
@@ -111,6 +112,10 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 	// Create scraper service
 	scraperService := services.NewScraperService()
 
+	extractionService := services.NewExtractionService(db)
+
+	
+
 	return &ServiceContainer{
 		Admin: services.NewAdminService(
 			adminRepo,
@@ -130,6 +135,7 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 		),
 		OCR:      services.NewOCRService(appConfig.AigenAPIKey),
 		Scraper:  scraperService,
+		Extraction:  extractionService,
 		UserJWT:  userJWTManager,
 		AdminJWT: adminJWTManager,
 	}
@@ -143,6 +149,7 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Hello from CarJai Backend!")
 	})
+
 	// Mount all routes
 	mux.Handle("/api/auth/",
 		routes.UserAuthRoutes(services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
@@ -153,9 +160,20 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 	mux.Handle("/api/cars",
 		routes.CarRoutes(services.Car, services.User, services.OCR, services.Scraper, services.UserJWT, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/cars/",
-		routes.CarRoutes(services.Car, services.User, services.OCR, services.Scraper, services.UserJWT, appConfig.CORSAllowedOrigins))
-	mux.Handle(adminPrefix+"/",
-		routes.AdminRoutes(services.Admin, services.AdminJWT, adminPrefix, appConfig.CORSAllowedOrigins, appConfig.AdminIPWhitelist))
+		routes.CarRoutes(services.Car, services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
+	adminPrefix := appConfig.AdminRoutePrefix
+	mux.Handle(adminPrefix+"/", // Handle all paths under /admin/
+		routes.AdminRoutes( // *** อัปเดตการเรียกใช้ให้ตรงกับ signature ใหม่ใน admin_routes.go ***
+			services.Admin, // ยังคงส่ง AdminService สำหรับ middleware
+			services.AdminJWT,
+			services.Extraction,
+			adminPrefix,
+			appConfig.CORSAllowedOrigins,
+			appConfig.AdminIPWhitelist,
+		),
+	)
+	mux.Handle("/api/ocr/",
+		routes.OCRRoutes(services.OCR, services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
 	mux.Handle("/health/",
 		routes.HealthRoutes(db, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/reference-data",
