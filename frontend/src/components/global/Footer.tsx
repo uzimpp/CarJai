@@ -3,7 +3,7 @@ import Image from "next/image";
 
 export default function Footer() {
   return (
-    <div className="max-w-[1536px] mx-auto pt-48">
+    <div className="max-w-[1536px] mx-auto pt-20">
       {/* Main Footer Content */}
       <div className="flex sm:flex-row flex-col-reverse gap-(--space-xl) justify-between p-(--space-l-xl) text-white">
         {/* Brand Section */}
@@ -30,7 +30,7 @@ export default function Footer() {
           </h4>
           <ul className="space-y-(--space-2xs)">
             {[
-              { name: "Browse Cars", href: "/buy" },
+              { name: "Browse Cars", href: "/browse" },
               { name: "Sell Your Car", href: "/sell" },
               { name: "About Us", href: "/about-us" },
               { name: "How It Works", href: "/guides" },

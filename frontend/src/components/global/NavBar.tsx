@@ -8,7 +8,7 @@ import { useAdminAuth } from "@/hooks/useAdminAuth";
 import SearchBar from "@/components/global/SearchBar";
 import AccountBtn from "@/components/global/AccountBtn";
 
-const noSearchBarPages = ["/", "/buy"];
+const noSearchBarPages = ["/", "/browse"];
 
 export default function NavBar() {
   const pathname = usePathname();
@@ -41,8 +41,8 @@ export default function NavBar() {
       } else if (isAuthedUser) {
         await userSignout();
       }
-    } catch (error) {
-      console.error("Sign out failed:", error);
+    } catch {
+      // Silent fail on signout
     }
   };
 
@@ -73,16 +73,10 @@ export default function NavBar() {
             Home
           </Link>
           <Link
-            href="/buy"
+            href="/browse"
             className="text-0 text-gray-700 hover:text-maroon transition-colors font-medium"
           >
             Browse Cars
-          </Link>
-          <Link
-            href="/sell"
-            className="text-0 text-gray-700 hover:text-maroon transition-colors font-medium"
-          >
-            Sell Cars
           </Link>
           <Link
             href="/about-us"

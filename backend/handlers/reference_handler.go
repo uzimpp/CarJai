@@ -25,18 +25,30 @@ type ReferenceDataResponse struct {
 	Message string        `json:"message,omitempty"`
 }
 
+// ReferenceOption represents a simple code/label pair
+type ReferenceOption struct {
+	Code  string `json:"code"`
+	Label string `json:"label"`
+}
+
 // ReferenceData contains all dropdown options
 type ReferenceData struct {
-	BodyTypes     []models.BodyType     `json:"bodyTypes"`
-	Transmissions []models.Transmission `json:"transmissions"`
-	FuelTypes     []models.FuelType     `json:"fuelTypes"`
-	Drivetrains   []models.Drivetrain   `json:"drivetrains"`
+	BodyTypes     []ReferenceOption `json:"bodyTypes"`
+	Transmissions []ReferenceOption `json:"transmissions"`
+	FuelTypes     []ReferenceOption `json:"fuelTypes"`
+	Drivetrains   []ReferenceOption `json:"drivetrains"`
 }
 
 // GetReferenceData handles GET /api/reference-data
 func (h *ReferenceHandler) GetReferenceData(w http.ResponseWriter, r *http.Request) {
+	// Get language parameter (default to "en")
+	lang := r.URL.Query().Get("lang")
+	if lang == "" {
+		lang = "en"
+	}
+
 	// Get body types
-	bodyTypes, err := h.getBodyTypes()
+	bodyTypes, err := h.getBodyTypes(lang)
 	if err != nil {
 		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
 			Success: false,
@@ -46,7 +58,7 @@ func (h *ReferenceHandler) GetReferenceData(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Get transmissions
-	transmissions, err := h.getTransmissions()
+	transmissions, err := h.getTransmissions(lang)
 	if err != nil {
 		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
 			Success: false,
@@ -56,7 +68,7 @@ func (h *ReferenceHandler) GetReferenceData(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Get fuel types
-	fuelTypes, err := h.getFuelTypes()
+	fuelTypes, err := h.getFuelTypes(lang)
 	if err != nil {
 		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
 			Success: false,
@@ -66,7 +78,7 @@ func (h *ReferenceHandler) GetReferenceData(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Get drivetrains
-	drivetrains, err := h.getDrivetrains()
+	drivetrains, err := h.getDrivetrains(lang)
 	if err != nil {
 		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
 			Success: false,
@@ -86,78 +98,94 @@ func (h *ReferenceHandler) GetReferenceData(w http.ResponseWriter, r *http.Reque
 	})
 }
 
-func (h *ReferenceHandler) getBodyTypes() ([]models.BodyType, error) {
-	query := "SELECT id, name, created_at FROM body_types ORDER BY name"
+func (h *ReferenceHandler) getBodyTypes(lang string) ([]ReferenceOption, error) {
+	nameCol := "name_en"
+	if lang == "th" {
+		nameCol = "name_th"
+	}
+	query := "SELECT code, " + nameCol + " FROM body_types ORDER BY " + nameCol
 	rows, err := h.db.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var bodyTypes []models.BodyType
+	var bodyTypes []ReferenceOption
 	for rows.Next() {
-		var bt models.BodyType
-		if err := rows.Scan(&bt.ID, &bt.Name, &bt.CreatedAt); err != nil {
+		var opt ReferenceOption
+		if err := rows.Scan(&opt.Code, &opt.Label); err != nil {
 			return nil, err
 		}
-		bodyTypes = append(bodyTypes, bt)
+		bodyTypes = append(bodyTypes, opt)
 	}
 	return bodyTypes, nil
 }
 
-func (h *ReferenceHandler) getTransmissions() ([]models.Transmission, error) {
-	query := "SELECT id, name, created_at FROM transmissions ORDER BY name"
+func (h *ReferenceHandler) getTransmissions(lang string) ([]ReferenceOption, error) {
+	nameCol := "name_en"
+	if lang == "th" {
+		nameCol = "name_th"
+	}
+	query := "SELECT code, " + nameCol + " FROM transmissions ORDER BY " + nameCol
 	rows, err := h.db.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var transmissions []models.Transmission
+	var transmissions []ReferenceOption
 	for rows.Next() {
-		var t models.Transmission
-		if err := rows.Scan(&t.ID, &t.Name, &t.CreatedAt); err != nil {
+		var opt ReferenceOption
+		if err := rows.Scan(&opt.Code, &opt.Label); err != nil {
 			return nil, err
 		}
-		transmissions = append(transmissions, t)
+		transmissions = append(transmissions, opt)
 	}
 	return transmissions, nil
 }
 
-func (h *ReferenceHandler) getFuelTypes() ([]models.FuelType, error) {
-	query := "SELECT id, name, created_at FROM fuel_types ORDER BY name"
+func (h *ReferenceHandler) getFuelTypes(lang string) ([]ReferenceOption, error) {
+	labelCol := "label_en"
+	if lang == "th" {
+		labelCol = "label_th"
+	}
+	query := "SELECT code, " + labelCol + " FROM fuel_types ORDER BY " + labelCol
 	rows, err := h.db.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var fuelTypes []models.FuelType
+	var fuelTypes []ReferenceOption
 	for rows.Next() {
-		var ft models.FuelType
-		if err := rows.Scan(&ft.ID, &ft.Name, &ft.CreatedAt); err != nil {
+		var opt ReferenceOption
+		if err := rows.Scan(&opt.Code, &opt.Label); err != nil {
 			return nil, err
 		}
-		fuelTypes = append(fuelTypes, ft)
+		fuelTypes = append(fuelTypes, opt)
 	}
 	return fuelTypes, nil
 }
 
-func (h *ReferenceHandler) getDrivetrains() ([]models.Drivetrain, error) {
-	query := "SELECT id, name, created_at FROM drivetrains ORDER BY name"
+func (h *ReferenceHandler) getDrivetrains(lang string) ([]ReferenceOption, error) {
+	nameCol := "name_en"
+	if lang == "th" {
+		nameCol = "name_th"
+	}
+	query := "SELECT code, " + nameCol + " FROM drivetrains ORDER BY " + nameCol
 	rows, err := h.db.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var drivetrains []models.Drivetrain
+	var drivetrains []ReferenceOption
 	for rows.Next() {
-		var d models.Drivetrain
-		if err := rows.Scan(&d.ID, &d.Name, &d.CreatedAt); err != nil {
+		var opt ReferenceOption
+		if err := rows.Scan(&opt.Code, &opt.Label); err != nil {
 			return nil, err
 		}
-		drivetrains = append(drivetrains, d)
+		drivetrains = append(drivetrains, opt)
 	}
 	return drivetrains, nil
 }

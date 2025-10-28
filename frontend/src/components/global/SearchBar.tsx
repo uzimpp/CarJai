@@ -12,7 +12,7 @@ type SearchBarProps = {
 export default function SearchBar({
   className = "",
   placeholder = "Search cars...",
-  actionPath = "/buy",
+  actionPath = "/browse",
 }: SearchBarProps) {
   const router = useRouter();
   const [queryText, setQueryText] = useState("");

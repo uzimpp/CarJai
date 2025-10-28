@@ -23,7 +23,7 @@ function SigninForm() {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && !isLoading) {
-      router.push("/buy");
+      router.push("/browse");
     }
   }, [isAuthenticated, isLoading, router]);
 
@@ -84,7 +84,7 @@ function SigninForm() {
     try {
       const result = await signin(formData);
       if (result.success) {
-        router.push("/buy");
+        router.push("/browse");
       }
     } finally {
       setIsSubmitting(false);

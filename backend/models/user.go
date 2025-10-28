@@ -12,6 +12,7 @@ type User struct {
 	Name         string    `json:"name" db:"name"`
 	PasswordHash string    `json:"-" db:"password_hash"`
 	CreatedAt    time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // UserSession represents an active user session
@@ -78,6 +79,7 @@ type UserPublic struct {
 	Username  string    `json:"username"`
 	Name      string    `json:"name"`
 	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // UserMeResponse represents the response payload for GET /api/auth/me
@@ -126,6 +128,7 @@ func (u *User) ToPublic() UserPublic {
 		Username:  u.Username,
 		Name:      u.Name,
 		CreatedAt: u.CreatedAt,
+		UpdatedAt: u.UpdatedAt,
 	}
 }
 

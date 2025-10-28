@@ -1,4 +1,5 @@
-import type { Seller, SellerContact } from "@/constants/user";
+import type { Seller, SellerContact } from "@/types/user";
+import type { CarListing } from "@/types/car";
 
 // Public seller API - uses relative paths to flow through Next rewrites
 export const sellerAPI = {
@@ -27,5 +28,23 @@ export const sellerAPI = {
       return { success: false, contacts: [] };
     }
     return res.json();
+  },
+
+  async getSellerCars(id: string): Promise<{
+    success: boolean;
+    cars: CarListing[];
+  }> {
+    const res = await fetch(`/api/sellers/${id}/cars`, {
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    });
+    if (!res.ok) {
+      return { success: false, cars: [] };
+    }
+    const data = await res.json();
+    return {
+      success: Boolean(data?.success),
+      cars: (data?.cars || []) as CarListing[],
+    };
   },
 };

@@ -6,8 +6,8 @@ import {
   GoogleAuthRequest,
   GoogleAuthResponse,
   MeResponse,
-} from "@/constants/user";
-import { apiCall } from "./apiCall";
+} from "@/types/user";
+import { apiCall } from "@/lib/apiCall";
 
 // Authentication API functions
 export const authAPI = {

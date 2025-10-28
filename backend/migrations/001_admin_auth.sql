@@ -1,7 +1,6 @@
--- Admin Authentication Schema for CarJai
--- This file contains the database schema for admin authentication system
+-- Admin authentication schema
 
--- Create admins table
+-- Admins
 CREATE TABLE admins (
     id SERIAL PRIMARY KEY,
     username VARCHAR(100) UNIQUE NOT NULL,
@@ -11,7 +10,7 @@ CREATE TABLE admins (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Create admin_sessions table for session management
+-- Admin sessions
 CREATE TABLE admin_sessions (
     id SERIAL PRIMARY KEY,
     admin_id INTEGER REFERENCES admins (id) ON DELETE CASCADE,
@@ -22,7 +21,7 @@ CREATE TABLE admin_sessions (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Create admin_ip_whitelist table for IP restrictions
+-- Admin IP whitelist
 CREATE TABLE admin_ip_whitelist (
     id SERIAL PRIMARY KEY,
     admin_id INTEGER REFERENCES admins (id) ON DELETE CASCADE,
@@ -31,7 +30,7 @@ CREATE TABLE admin_ip_whitelist (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Create indexes for performance optimization
+-- Indexes
 CREATE INDEX idx_admin_sessions_token ON admin_sessions (token);
 
 CREATE INDEX idx_admin_sessions_admin_id ON admin_sessions (admin_id);
@@ -42,9 +41,7 @@ CREATE INDEX idx_admin_ip_whitelist_admin_id ON admin_ip_whitelist (admin_id);
 
 CREATE INDEX idx_admin_ip_whitelist_ip ON admin_ip_whitelist (ip_address);
 
--- Create index for cleanup of expired sessions
-CREATE INDEX idx_admin_sessions_cleanup ON admin_sessions (expires_at);
--- Create function to cleanup expired sessions
+-- Expired session cleanup function
 CREATE OR REPLACE FUNCTION cleanup_expired_admin_sessions()
 RETURNS INTEGER AS $$
 DECLARE
@@ -56,7 +53,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Create trigger to automatically cleanup expired sessions on insert
+-- Cleanup trigger (on insert)
 CREATE OR REPLACE FUNCTION trigger_cleanup_expired_sessions()
 RETURNS TRIGGER AS $$
 BEGIN

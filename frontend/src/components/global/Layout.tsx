@@ -120,7 +120,7 @@ export default function ConditionalLayout({
             shouldShowStepIndicator || shouldShowNavbar ? headerHeight : 0
           }px`,
           marginBottom: shouldShowFooter
-            ? `calc(${footerHeight}px - 12rem)`
+            ? `calc(${footerHeight}px - 5rem)`
             : 0,
         }}
       >

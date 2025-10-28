@@ -70,9 +70,9 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 	userSessionRepo := models.NewUserSessionRepository(database)
 	carRepo := models.NewCarRepository(database)
 	carImageRepo := models.NewCarImageRepository(database)
-	carDetailsRepo := models.NewCarDetailsRepository(database)
 	inspectionRepo := models.NewInspectionRepository(database)
-
+	carColorRepo := models.NewCarColorRepository(database)
+	carFuelRepo := models.NewCarFuelRepository(database)
 	// Create JWT managers
 	userJWTManager := utils.NewJWTManager(
 		appConfig.UserJWTSecret,
@@ -99,10 +99,16 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 	// Set profile service on user service (to avoid circular dependency)
 	userService.SetProfileService(profileService)
 
-	// Create car service
-	carService := services.NewCarService(carRepo, carImageRepo, carDetailsRepo, inspectionRepo, profileService)
+	// Create car service with all repositories
+	carService := services.NewCarService(
+		carRepo,
+		carImageRepo,
+		inspectionRepo,
+		carColorRepo,
+		carFuelRepo,
+	)
 
-	// 👇 เพิ่มการสร้าง ScraperService เข้าไป
+	// Create scraper service
 	scraperService := services.NewScraperService()
 
 	return &ServiceContainer{
@@ -119,6 +125,7 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 			adminRepo,
 			sessionRepo,
 			ipWhitelistRepo,
+			carRepo,
 			utils.AppLogger,
 		),
 		OCR:      services.NewOCRService(appConfig.AigenAPIKey),
@@ -129,6 +136,7 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 }
 
 func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sql.DB) *http.ServeMux {
+	adminPrefix := appConfig.AdminRoutePrefix
 	mux := http.NewServeMux()
 
 	// Root endpoint (only for exact match)
@@ -141,20 +149,15 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 	mux.Handle("/api/profile/",
 		routes.ProfileRoutes(services.Profile, services.User, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/sellers/",
-		routes.PublicSellerRoutes(services.Profile, appConfig.CORSAllowedOrigins))
+		routes.PublicSellerRoutes(services.Profile, services.Car, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/cars",
-		routes.CarRoutes(services.Car, services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
+		routes.CarRoutes(services.Car, services.User, services.OCR, services.Scraper, services.UserJWT, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/cars/",
-		routes.CarRoutes(services.Car, services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
-	adminPrefix := appConfig.AdminRoutePrefix
+		routes.CarRoutes(services.Car, services.User, services.OCR, services.Scraper, services.UserJWT, appConfig.CORSAllowedOrigins))
 	mux.Handle(adminPrefix+"/",
 		routes.AdminRoutes(services.Admin, services.AdminJWT, adminPrefix, appConfig.CORSAllowedOrigins, appConfig.AdminIPWhitelist))
-	mux.Handle("/api/ocr/",
-		routes.OCRRoutes(services.OCR, services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
 	mux.Handle("/health/",
 		routes.HealthRoutes(db, appConfig.CORSAllowedOrigins))
-	mux.Handle("/api/scrape/",
-		routes.ScrapeRoutes(services.Scraper, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/reference-data",
 		routes.ReferenceRoutes(db, appConfig.CORSAllowedOrigins))
 

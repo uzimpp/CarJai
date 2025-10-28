@@ -7,7 +7,7 @@ import {
   AdminSession,
   AdminIPWhitelist,
   AdminSigninRequest,
-} from "@/constants/admin";
+} from "@/types/admin";
 import { adminAuthAPI } from "@/lib/adminAuth";
 import { mutualLogout } from "@/lib/mutualLogout";
 
@@ -25,12 +25,6 @@ export function useAdminAuth() {
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  // Initialize admin auth state - validate with backend first (cookie-based)
-  useEffect(() => {
-    if (!mounted) return; // Wait for mounted state
-    validateSession();
-  }, [mounted]);
 
   const fetchIPWhitelist = useCallback(async () => {
     try {
@@ -69,7 +63,7 @@ export function useAdminAuth() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fetchIPWhitelist]);
 
   useEffect(() => {
     if (mounted) {

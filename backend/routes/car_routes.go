@@ -14,118 +14,196 @@ import (
 func CarRoutes(
 	carService *services.CarService,
 	userService *services.UserService,
+	ocrService *services.OCRService,
+	scraperService *services.ScraperService,
 	userJWT *utils.JWTManager,
 	corsOrigins []string,
-) http.Handler {
-	mux := http.NewServeMux()
-	handler := handlers.NewCarHandler(carService, userService)
+) *http.ServeMux {
+	// Create handler instance
+	carHandler := handlers.NewCarHandler(carService, userService, ocrService, scraperService)
 
-	// Apply CORS middleware
-	corsMiddleware := middleware.CORSMiddleware(corsOrigins)
-
-	// Apply user authentication middleware
+	// Create auth middleware
 	authMiddleware := middleware.NewUserAuthMiddleware(userService)
 
-	// Public routes (no authentication required)
-	// GET /api/cars/{id} - Get car details with images
-	mux.HandleFunc("/api/cars/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodOptions {
-			corsMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.WriteHeader(http.StatusOK)
-			})).ServeHTTP(w, r)
-			return
-		}
+	// Create router
+	router := http.NewServeMux()
 
-		path := r.URL.Path
+	// Public search endpoint (GET)
+	router.HandleFunc("/api/cars/search",
+		middleware.CORSMiddleware(corsOrigins)(
+			middleware.SecurityHeadersMiddleware(
+				middleware.GeneralRateLimit()(
+					middleware.LoggingMiddleware(
+						carHandler.SearchCars,
+					),
+				),
+			),
+		),
+	)
 
-		// GET /api/cars/images/{id} - Get image data (public)
-		if strings.HasPrefix(path, "/api/cars/images/") && r.Method == http.MethodGet {
-			corsMiddleware(http.HandlerFunc(handler.GetCarImage)).ServeHTTP(w, r)
-			return
-		}
+	// Get current user's cars (GET) - authenticated
+	router.HandleFunc("/api/cars/my",
+		middleware.CORSMiddleware(corsOrigins)(
+			middleware.SecurityHeadersMiddleware(
+				middleware.GeneralRateLimit()(
+					middleware.LoggingMiddleware(
+						authMiddleware.RequireAuth(
+							carHandler.GetMyCars,
+						),
+					),
+				),
+			),
+		),
+	)
 
-		// DELETE /api/cars/images/{id} - Delete image (requires auth)
-		if strings.HasPrefix(path, "/api/cars/images/") && r.Method == http.MethodDelete {
-			corsMiddleware(authMiddleware.RequireAuth(handler.DeleteCarImage)).ServeHTTP(w, r)
-			return
-		}
+	// Upload vehicle registration book (POST) - authenticated
+	router.HandleFunc("/api/cars/book",
+		middleware.CORSMiddleware(corsOrigins)(
+			middleware.SecurityHeadersMiddleware(
+				middleware.GeneralRateLimit()(
+					middleware.LoggingMiddleware(
+						authMiddleware.RequireAuth(
+							carHandler.UploadBook,
+						),
+					),
+				),
+			),
+		),
+	)
 
-		// Extract ID from path
-		idPart := strings.TrimPrefix(path, "/api/cars/")
+	// Image management by image ID (GET public, DELETE authenticated)
+	router.HandleFunc("/api/cars/images/",
+		middleware.CORSMiddleware(corsOrigins)(
+			middleware.SecurityHeadersMiddleware(
+				middleware.GeneralRateLimit()(
+					middleware.LoggingMiddleware(
+						func(w http.ResponseWriter, r *http.Request) {
+							carHandler.HandleImageByID(w, r, authMiddleware)
+						},
+					),
+				),
+			),
+		),
+	)
 
-		// POST /api/cars/{id}/images - Upload images (requires auth)
-		if strings.HasSuffix(path, "/images") && r.Method == http.MethodPost {
-			corsMiddleware(authMiddleware.RequireAuth(handler.UploadCarImages)).ServeHTTP(w, r)
-			return
-		}
+	// Base /api/cars endpoint (POST) - create car - authenticated
+	router.HandleFunc("/api/cars",
+		middleware.CORSMiddleware(corsOrigins)(
+			middleware.SecurityHeadersMiddleware(
+				middleware.GeneralRateLimit()(
+					middleware.LoggingMiddleware(
+						authMiddleware.RequireAuth(
+							carHandler.CreateCar,
+						),
+					),
+				),
+			),
+		),
+	)
 
-		// If path contains only ID (no trailing segments)
-		if !strings.Contains(idPart, "/") || idPart == "" {
-			switch r.Method {
-			case http.MethodGet:
-				// GET /api/cars/{id} - Get single car (public)
-				corsMiddleware(http.HandlerFunc(handler.GetCar)).ServeHTTP(w, r)
-			case http.MethodPut:
-				// PUT /api/cars/{id} - Update car (requires auth)
-				corsMiddleware(authMiddleware.RequireAuth(handler.UpdateCar)).ServeHTTP(w, r)
-			case http.MethodDelete:
-				// DELETE /api/cars/{id} - Delete car (requires auth)
-				corsMiddleware(authMiddleware.RequireAuth(handler.DeleteCar)).ServeHTTP(w, r)
-			default:
-				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			}
-			return
-		}
+	// Car-specific routes with dynamic ID
+	router.HandleFunc("/api/cars/",
+		middleware.CORSMiddleware(corsOrigins)(
+			middleware.SecurityHeadersMiddleware(
+				middleware.GeneralRateLimit()(
+					middleware.LoggingMiddleware(
+						func(w http.ResponseWriter, r *http.Request) {
+							handleCarRoutes(w, r, carHandler, authMiddleware)
+						},
+					),
+				),
+			),
+		),
+	)
 
-		http.Error(w, "Not found", http.StatusNotFound)
-	})
+	return router
+}
 
-	// Public search endpoint
-	// GET /api/cars/search - Search/filter active cars (public)
-	mux.HandleFunc("/api/cars/search", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodOptions {
-			corsMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.WriteHeader(http.StatusOK)
-			})).ServeHTTP(w, r)
-			return
-		}
-		if r.Method == http.MethodGet {
-			corsMiddleware(http.HandlerFunc(handler.SearchCars)).ServeHTTP(w, r)
-			return
-		}
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-	})
+// handleCarRoutes handles all /api/cars/{id} and /api/cars/{id}/* routes
+func handleCarRoutes(
+	w http.ResponseWriter,
+	r *http.Request,
+	handler *handlers.CarHandler,
+	authMiddleware *middleware.UserAuthMiddleware,
+) {
+	path := r.URL.Path
 
-	// Protected routes (require authentication)
-	// POST /api/cars - Create new car listing
-	mux.HandleFunc("/api/cars", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodOptions {
-			corsMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.WriteHeader(http.StatusOK)
-			})).ServeHTTP(w, r)
-			return
-		}
-		if r.Method == http.MethodPost {
-			corsMiddleware(authMiddleware.RequireAuth(handler.CreateCar)).ServeHTTP(w, r)
-			return
-		}
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-	})
+	// /api/cars/{id}/book - Upload registration book to existing car (authenticated)
+	if strings.HasSuffix(path, "/book") {
+		authMiddleware.RequireAuth(handler.UploadBook)(w, r)
+		return
+	}
 
-	// GET /api/cars/my - Get current user's cars
-	mux.HandleFunc("/api/cars/my", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodOptions {
-			corsMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.WriteHeader(http.StatusOK)
-			})).ServeHTTP(w, r)
-			return
-		}
-		if r.Method == http.MethodGet {
-			corsMiddleware(authMiddleware.RequireAuth(handler.GetMyCars)).ServeHTTP(w, r)
-			return
-		}
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-	})
+	// /api/cars/{id}/images - Upload images (authenticated)
+	if strings.Contains(path, "/images") && !strings.Contains(path, "/images/order") {
+		authMiddleware.RequireAuth(handler.UploadCarImages)(w, r)
+		return
+	}
 
-	return mux
+	// /api/cars/{id}/images/order - Reorder images (authenticated)
+	if strings.HasSuffix(path, "/images/order") {
+		authMiddleware.RequireAuth(handler.ReorderImages)(w, r)
+		return
+	}
+
+	// /api/cars/{id}/status - Update status (authenticated)
+	if strings.HasSuffix(path, "/status") {
+		authMiddleware.RequireAuth(handler.UpdateStatus)(w, r)
+		return
+	}
+
+	// /api/cars/{id}/inspection - Upload inspection (authenticated)
+	if strings.HasSuffix(path, "/inspection") {
+		authMiddleware.RequireAuth(handler.UploadInspection)(w, r)
+		return
+	}
+
+	// /api/cars/{id}/draft - Auto-save draft (authenticated)
+	if strings.HasSuffix(path, "/draft") {
+		authMiddleware.RequireAuth(handler.AutoSaveDraft)(w, r)
+		return
+	}
+
+	// /api/cars/{id}/review - Review publish readiness (authenticated)
+	if strings.HasSuffix(path, "/review") {
+		authMiddleware.RequireAuth(handler.Review)(w, r)
+		return
+	}
+
+	// /api/cars/{id}/discard - Discard draft (authenticated; alias for delete)
+	if strings.HasSuffix(path, "/discard") {
+		authMiddleware.RequireAuth(handler.DiscardCar)(w, r)
+		return
+	}
+
+	// /api/cars/{id}/restore-progress - Restore progress from another car (authenticated)
+	if strings.HasSuffix(path, "/restore-progress") {
+		authMiddleware.RequireAuth(handler.RestoreProgress)(w, r)
+		return
+	}
+
+	// /api/cars/{id}/redirect-to-draft - Redirect to existing draft and delete current car (authenticated)
+	if strings.HasSuffix(path, "/redirect-to-draft") {
+		authMiddleware.RequireAuth(handler.RedirectToDraft)(w, r)
+		return
+	}
+
+	// General car CRUD: /api/cars/{id}
+	idPart := strings.TrimPrefix(path, "/api/cars/")
+	if !strings.Contains(idPart, "/") || idPart == "" {
+		// Route to appropriate handler based on auth requirements
+		switch r.Method {
+		case http.MethodGet:
+			// Public: Get single car
+			handler.GetCar(w, r)
+		case http.MethodPut, http.MethodPatch, http.MethodDelete:
+			// Authenticated: Update/Delete car
+			authMiddleware.RequireAuth(handler.HandleCarCRUD)(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+		return
+	}
+
+	http.Error(w, "Not found", http.StatusNotFound)
 }

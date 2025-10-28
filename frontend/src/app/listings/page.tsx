@@ -4,23 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import { apiCall } from "@/lib/apiCall";
-import Image from "next/image";
 import Link from "next/link";
-
-interface CarListing {
-  cid: number;
-  brandName?: string;
-  modelName?: string;
-  year?: number;
-  price: number;
-  mileage?: number;
-  status: string;
-  province?: string;
-  color?: string;
-  images?: Array<{ id: number }>;
-  createdAt?: string;
-  updatedAt?: string;
-}
+import { CarListing } from "@/types/car";
+import CarCard from "@/components/car/CarCard";
 
 export default function MyListingsPage() {
   const router = useRouter();
@@ -95,7 +81,7 @@ export default function MyListingsPage() {
         // Update the listing in state
         setListings((prev) =>
           prev.map((listing) =>
-            listing.cid === carId ? { ...listing, status: "active" } : listing
+            listing.id === carId ? { ...listing, status: "active" } : listing
           )
         );
         alert("Listing published successfully!");
@@ -123,7 +109,7 @@ export default function MyListingsPage() {
       if (result.success) {
         setListings((prev) =>
           prev.map((listing) =>
-            listing.cid === carId ? { ...listing, status: "draft" } : listing
+            listing.id === carId ? { ...listing, status: "draft" } : listing
           )
         );
         alert("Listing unpublished successfully!");
@@ -149,7 +135,7 @@ export default function MyListingsPage() {
       );
 
       if (result.success) {
-        setListings((prev) => prev.filter((listing) => listing.cid !== carId));
+        setListings((prev) => prev.filter((listing) => listing.id !== carId));
         alert("Listing deleted successfully!");
       } else {
         alert(result.message || "Failed to delete listing");
@@ -328,108 +314,15 @@ export default function MyListingsPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-(--space-l)">
             {filteredListings.map((listing) => (
-              <div
-                key={listing.cid}
-                className="bg-white rounded-4xl shadow-[var(--shadow-lg)] overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
-              >
-                {/* Image */}
-                <div className="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200">
-                  {listing.images && listing.images.length > 0 ? (
-                    <Image
-                      src={`/api/cars/images/${listing.images[0].id}`}
-                      alt={`${listing.brandName} ${listing.modelName}`}
-                      fill
-                      className="object-cover"
-                      unoptimized
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-full">
-                      <span className="text-6xl">🚗</span>
-                    </div>
-                  )}
-                  {/* Status Badge */}
-                  <div className="absolute top-(--space-s) right-(--space-s)">
-                    <span
-                      className={`px-(--space-s) py-(--space-xs) rounded-full text--1 bold shadow-md ${
-                        listing.status === "active"
-                          ? "bg-green-600 text-white"
-                          : "bg-orange-500 text-white"
-                      }`}
-                    >
-                      {listing.status === "active" ? "Published" : "Draft"}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div className="p-(--space-l)">
-                  <h3 className="text-2 bold text-gray-900 mb-(--space-xs) line-height-11">
-                    {listing.brandName || "Unknown"}{" "}
-                    {listing.modelName || "Model"}
-                  </h3>
-
-                  <div className="flex items-baseline gap-(--space-xs) mb-(--space-m)">
-                    <span className="text-3 bold text-maroon">
-                      ฿{listing.price ? listing.price.toLocaleString() : "0"}
-                    </span>
-                  </div>
-
-                  {/* Details */}
-                  <div className="space-y-(--space-xs) mb-(--space-l)">
-                    {listing.year && (
-                      <div className="flex items-center gap-(--space-xs) text--1 text-gray-600">
-                        <span>📅</span>
-                        <span>Year: {listing.year}</span>
-                      </div>
-                    )}
-                    {listing.mileage && listing.mileage > 0 && (
-                      <div className="flex items-center gap-(--space-xs) text--1 text-gray-600">
-                        <span>🛣️</span>
-                        <span>
-                          Mileage: {listing.mileage.toLocaleString()} km
-                        </span>
-                      </div>
-                    )}
-                    {listing.province && (
-                      <div className="flex items-center gap-(--space-xs) text--1 text-gray-600">
-                        <span>📍</span>
-                        <span>{listing.province}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex gap-(--space-xs) pt-(--space-s) border-t border-gray-100">
-                    {listing.status === "draft" ? (
-                      <button
-                        onClick={() => handlePublish(listing.cid)}
-                        className="flex-1 px-(--space-s) py-(--space-xs) text-white bg-gradient-to-r from-green-600 to-green-700 rounded-xl hover:shadow-md transition-all medium text--1"
-                      >
-                        Publish
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleUnpublish(listing.cid)}
-                        className="flex-1 px-(--space-s) py-(--space-xs) text-orange-700 bg-orange-100 rounded-xl hover:bg-orange-200 transition-all medium text--1"
-                      >
-                        Unpublish
-                      </button>
-                    )}
-                    <Link
-                      href={`/car/${listing.cid}`}
-                      className="flex-1 px-(--space-s) py-(--space-xs) text-blue-700 bg-blue-100 rounded-xl hover:bg-blue-200 transition-all medium text--1 text-center"
-                    >
-                      View
-                    </Link>
-                    <button
-                      onClick={() => handleDelete(listing.cid)}
-                      className="px-(--space-s) py-(--space-xs) text-red-700 bg-red-100 rounded-xl hover:bg-red-200 transition-all medium text--1"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <CarCard
+                key={listing.id}
+                car={listing}
+                variant="listing"
+                showActions
+                onDelete={(id) => handleDelete(id)}
+                onPublish={(id) => handlePublish(id)}
+                onUnpublish={(id) => handleUnpublish(id)}
+              />
             ))}
           </div>
         )}

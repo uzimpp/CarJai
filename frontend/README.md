@@ -1,26 +1,14 @@
 # CarJai Frontend - Next.js Application
 
-A modern, responsive frontend application for CarJai built with Next.js 14, featuring user authentication, admin dashboard, and document verification capabilities.
+A modern car marketplace frontend built with Next.js 14, featuring user authentication, admin dashboard, and car listing management.
 
 ## 🚀 Features
 
-### Authentication & User Management
-- **🔐 Dual Authentication** - Separate sign in systems for users and admins
-- **👤 User Registration & Sign In** - Complete user account management
-- **🛡️ Protected Routes** - Secure route protection with authentication guards
-- **🔄 Session Management** - Automatic token refresh and session handling
-
-### Admin Dashboard
-- **📊 Admin Panel** - Comprehensive admin dashboard for system management
-- **🛡️ IP Whitelist Management** - Admin IP address management interface
-- **👥 User Management** - User account administration and monitoring
-- **📈 System Monitoring** - Real-time system health and metrics
-
-### Document Verification
-- **📄 OCR Integration** - AI-powered document scanning and verification
-- **🔍 Document Upload** - Secure document upload with validation
-- **✅ Verification Workflow** - Complete document verification process
-- **📋 Document Management** - Document history and status tracking
+- **🔐 Dual Authentication** - Separate user and admin sign-in systems
+- **🚗 Car Marketplace** - Browse, search, and manage car listings
+- **👤 User Profiles** - Buyer and seller profile management
+- **📊 Admin Dashboard** - System administration and IP whitelist management
+- **🛡️ Protected Routes** - Secure authentication guards
 
 
 ## 🏗️ Project Structure
@@ -74,41 +62,37 @@ frontend/
 └── tsconfig.json
 ```
 
-## 📱 Pages & Routes
+## 📱 Key Pages
 
-### Public Pages
 - `/` - Home page
-- `/about-us` - About us page
 - `/signin` - User sign in
-- `/signup` - User registration
-- `/privacy` - Privacy policy
-- `/terms` - Terms of service
-
-### User Pages
-- `/buy` - Car marketplace (requires user auth)
-- `/verify-document` - Document verification (requires user auth)
-
-### Admin Pages
+- `/signup` - User registration  
+- `/buy` - Car marketplace
 - `/admin/signin` - Admin sign in
-- `/admin/dashboard` - Admin dashboard (requires admin auth)
+- `/admin/dashboard` - Admin dashboard
 
-### Code Quality
-- **TypeScript** - Full type safety
-- **ESLint** - Code linting and formatting
-- **Prettier** - Code formatting
-- **Tailwind CSS** - CSS framework
+## 🛠️ Tech Stack
 
-### Docker
+- **Next.js 14** - React framework
+- **TypeScript** - Type safety
+- **Tailwind CSS** - Styling
+- **ESLint/Prettier** - Code quality
+
+## 🚀 Quick Start
+
 ```bash
-# Build Docker image
-docker build -t carjai-frontend .
+# Install dependencies
+npm install
 
-# Run container
-docker run -p 3000:3000 carjai-frontend
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
 ```
 
-### Environment Variables for Production
+## 🔧 Environment Variables
+
 ```env
-NEXT_PUBLIC_API_URL=https://api.carjai.com
-NODE_ENV=production
+NEXT_PUBLIC_API_URL=http://localhost:8080
 ```

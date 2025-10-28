@@ -12,11 +12,12 @@ import (
 // PublicSellerRoutes sets up public seller routes (no auth required)
 func PublicSellerRoutes(
 	profileService *services.ProfileService,
+	carService *services.CarService,
 	allowedOrigins []string,
 ) *http.ServeMux {
 
 	// Create handler instance
-	publicSellerHandler := handlers.NewPublicSellerHandler(profileService)
+	publicSellerHandler := handlers.NewPublicSellerHandler(profileService, carService)
 
 	// Create router
 	router := http.NewServeMux()

@@ -1,0 +1,1220 @@
+openapi: 3.0.3
+info:
+  title: CarJai API
+  description: CarJai platform API for car buying and selling
+  version: 1.0.0
+  contact:
+    name: CarJai Team
+servers:
+  - url: http://localhost:8080
+    description: Development server
+
+security:
+  - CookieAuth: []
+
+paths:
+  # Health Check
+  /health/:
+    get:
+      tags:
+        - Health
+      summary: Basic health check
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "healthy"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  version:
+                    type: string
+                    example: "1.0.0"
+
+  # User Authentication
+  /api/auth/signup:
+    post:
+      tags:
+        - Authentication
+      summary: User registration
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - email
+                - password
+                - name
+              properties:
+                username:
+                  type: string
+                  maxLength: 20
+                  example: "user123"
+                email:
+                  type: string
+                  format: email
+                  example: "user@example.com"
+                password:
+                  type: string
+                  minLength: 8
+                  example: "secure_password"
+                name:
+                  type: string
+                  maxLength: 100
+                  example: "John Doe"
+      responses:
+        '201':
+          description: User created successfully
+        '400':
+          description: Bad request
+
+  /api/auth/signin:
+    post:
+      tags:
+        - Authentication
+      summary: User sign in
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "user@example.com"
+                password:
+                  type: string
+                  example: "secure_password"
+      responses:
+        '200':
+          description: Sign in successful
+        '401':
+          description: Invalid credentials
+
+  /api/auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user information
+      responses:
+        '200':
+          description: User information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  username:
+                    type: string
+                  email:
+                    type: string
+                  name:
+                    type: string
+        '401':
+          description: Unauthorized
+
+  /api/auth/signout:
+    post:
+      tags:
+        - Authentication
+      summary: User sign out
+      responses:
+        '200':
+          description: Sign out successful
+
+  /api/auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh user authentication token
+      responses:
+        '200':
+          description: Token refreshed successfully
+        '401':
+          description: Unauthorized
+
+  /api/auth/change-password:
+    post:
+      tags:
+        - Authentication
+      summary: Change user password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - current_password
+                - new_password
+              properties:
+                current_password:
+                  type: string
+                  example: "current_password"
+                new_password:
+                  type: string
+                  minLength: 8
+                  example: "new_password"
+      responses:
+        '200':
+          description: Password changed successfully
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+
+  # Car Management
+  /api/cars/search:
+    get:
+      tags:
+        - Cars
+      summary: Search cars
+      security: []
+      parameters:
+        - name: q
+          in: query
+          description: Search query
+          schema:
+            type: string
+        - name: body_type
+          in: query
+          description: Body type filter
+          schema:
+            type: string
+        - name: min_price
+          in: query
+          description: Minimum price
+          schema:
+            type: integer
+        - name: max_price
+          in: query
+          description: Maximum price
+          schema:
+            type: integer
+        - name: page
+          in: query
+          description: Page number
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          description: Items per page
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cars:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Car'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+  /api/cars:
+    post:
+      tags:
+        - Cars
+      summary: Create new car
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CarCreate'
+      responses:
+        '201':
+          description: Car created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Car'
+        '400':
+          description: Bad request
+
+  /api/cars/my:
+    get:
+      tags:
+        - Cars
+      summary: Get current user's cars
+      responses:
+        '200':
+          description: User's cars
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Car'
+
+  /api/cars/{id}:
+    get:
+      tags:
+        - Cars
+      summary: Get single car
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Car details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Car'
+        '404':
+          description: Car not found
+
+    put:
+      tags:
+        - Cars
+      summary: Update car
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CarUpdate'
+      responses:
+        '200':
+          description: Car updated successfully
+        '404':
+          description: Car not found
+
+    delete:
+      tags:
+        - Cars
+      summary: Delete car
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Car deleted successfully
+        '404':
+          description: Car not found
+
+  /api/cars/{id}/images:
+    post:
+      tags:
+        - Cars
+      summary: Upload car images
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        '200':
+          description: Images uploaded successfully
+
+  /api/cars/{id}/status:
+    put:
+      tags:
+        - Cars
+      summary: Update car status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [draft, active, sold, deleted]
+      responses:
+        '200':
+          description: Status updated successfully
+
+  /api/cars/{id}/book:
+    post:
+      tags:
+        - Cars
+      summary: Upload registration book to existing car
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                book_file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Book uploaded successfully
+
+  /api/cars/{id}/images/order:
+    put:
+      tags:
+        - Cars
+      summary: Reorder car images
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                imageIds:
+                  type: array
+                  items:
+                    type: integer
+      responses:
+        '200':
+          description: Images reordered successfully
+
+  /api/cars/{id}/inspection:
+    post:
+      tags:
+        - Cars
+      summary: Upload inspection results via URL
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - url
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  example: "https://example.com/inspection"
+      responses:
+        '200':
+          description: Inspection uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                  message:
+                    type: string
+                  code:
+                    type: string
+                  action:
+                    type: string
+                    enum: [stay, redirect]
+                  redirectToCarID:
+                    type: integer
+                    nullable: true
+
+  /api/cars/{id}/draft:
+    patch:
+      tags:
+        - Cars
+      summary: Auto-save car draft
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CarUpdate'
+      responses:
+        '200':
+          description: Draft saved successfully
+
+  /api/cars/{id}/review:
+    get:
+      tags:
+        - Cars
+      summary: Review car publish readiness
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Review results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ready:
+                    type: boolean
+                  issues:
+                    type: array
+                    items:
+                      type: string
+
+  /api/cars/{id}/discard:
+    post:
+      tags:
+        - Cars
+      summary: Discard car draft
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Car discarded successfully
+
+  /api/cars/{id}/restore-progress:
+    post:
+      tags:
+        - Cars
+      summary: Restore progress from another car
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sourceCarId:
+                  type: integer
+      responses:
+        '200':
+          description: Progress restored successfully
+
+  /api/cars/{id}/redirect-to-draft:
+    post:
+      tags:
+        - Cars
+      summary: Redirect to existing draft and delete current car
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                targetCarId:
+                  type: integer
+      responses:
+        '200':
+          description: Redirected to draft successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  redirectToCarId:
+                    type: integer
+
+  /api/cars/book:
+    post:
+      tags:
+        - Cars
+      summary: Upload vehicle registration book
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                book_file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Book uploaded successfully
+
+  /api/cars/images/{image_id}:
+    get:
+      tags:
+        - Cars
+      summary: Get car image
+      security: []
+      parameters:
+        - name: image_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Image data
+          content:
+            image/*:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Image not found
+
+    delete:
+      tags:
+        - Cars
+      summary: Delete car image
+      parameters:
+        - name: image_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Image deleted successfully
+        '404':
+          description: Image not found
+
+  # Seller Information
+  /api/sellers/{id}:
+    get:
+      tags:
+        - Sellers
+      summary: Get seller information
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Seller information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Seller'
+        '404':
+          description: Seller not found
+
+  /api/sellers/{id}/contacts:
+    get:
+      tags:
+        - Sellers
+      summary: Get seller contacts
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Seller contacts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  contacts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        contact_type:
+                          type: string
+                        value:
+                          type: string
+                        label:
+                          type: string
+        '404':
+          description: Seller not found
+
+  /api/sellers/{id}/cars:
+    get:
+      tags:
+        - Sellers
+      summary: Get seller's cars
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Seller's cars
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  cars:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Car'
+        '404':
+          description: Seller not found
+
+  # Profile Management
+  /api/profile/self:
+    get:
+      tags:
+        - Profile
+      summary: Get current user profile
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  username:
+                    type: string
+                  email:
+                    type: string
+                  name:
+                    type: string
+                  created_at:
+                    type: string
+                    format: date-time
+
+    patch:
+      tags:
+        - Profile
+      summary: Update current user profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  maxLength: 100
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Profile updated successfully
+
+  /api/profile/buyer:
+    get:
+      tags:
+        - Profile
+      summary: Get buyer profile
+      responses:
+        '200':
+          description: Buyer profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  province:
+                    type: string
+                  budget_min:
+                    type: integer
+                  budget_max:
+                    type: integer
+
+    put:
+      tags:
+        - Profile
+      summary: Create or update buyer profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                province:
+                  type: string
+                  maxLength: 100
+                budget_min:
+                  type: integer
+                  minimum: 0
+                budget_max:
+                  type: integer
+                  minimum: 0
+      responses:
+        '200':
+          description: Buyer profile updated successfully
+
+  /api/profile/seller:
+    get:
+      tags:
+        - Profile
+      summary: Get seller profile
+      responses:
+        '200':
+          description: Seller profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  display_name:
+                    type: string
+                  about:
+                    type: string
+                  map_link:
+                    type: string
+
+    put:
+      tags:
+        - Profile
+      summary: Create or update seller profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - display_name
+              properties:
+                display_name:
+                  type: string
+                  maxLength: 50
+                about:
+                  type: string
+                  maxLength: 200
+                map_link:
+                  type: string
+      responses:
+        '200':
+          description: Seller profile updated successfully
+
+  # Reference Data
+  /api/reference-data:
+    get:
+      tags:
+        - Reference
+      summary: Get reference data
+      security: []
+      parameters:
+        - name: lang
+          in: query
+          description: Language preference
+          schema:
+            type: string
+            enum: [en, th]
+            default: en
+      responses:
+        '200':
+          description: Reference data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/ReferenceData'
+
+  # Admin Authentication
+  /admin/auth/signin:
+    post:
+      tags:
+        - Admin
+      summary: Admin sign in
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  example: "admin"
+                password:
+                  type: string
+                  example: "admin_password"
+      responses:
+        '200':
+          description: Admin sign in successful
+        '401':
+          description: Invalid credentials
+
+  /admin/auth/me:
+    get:
+      tags:
+        - Admin
+      summary: Get current admin information
+      responses:
+        '200':
+          description: Admin information
+        '401':
+          description: Unauthorized
+
+  /admin/auth/signout:
+    post:
+      tags:
+        - Admin
+      summary: Admin sign out
+      responses:
+        '200':
+          description: Admin sign out successful
+
+  /admin/auth/refresh:
+    post:
+      tags:
+        - Admin
+      summary: Refresh admin authentication token
+      responses:
+        '200':
+          description: Token refreshed successfully
+        '401':
+          description: Unauthorized
+
+  /admin/ip-whitelist:
+    get:
+      tags:
+        - Admin
+      summary: View whitelisted IP addresses
+      responses:
+        '200':
+          description: IP whitelist
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    ip_address:
+                      type: string
+                    description:
+                      type: string
+                    created_at:
+                      type: string
+                      format: date-time
+
+  /admin/ip-whitelist/add:
+    post:
+      tags:
+        - Admin
+      summary: Add IP address to whitelist
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - ip_address
+              properties:
+                ip_address:
+                  type: string
+                  example: "10.0.0.100/32"
+                description:
+                  type: string
+                  example: "Office IP"
+      responses:
+        '200':
+          description: IP address added successfully
+        '400':
+          description: Bad request
+
+  /admin/ip-whitelist/remove:
+    delete:
+      tags:
+        - Admin
+      summary: Remove IP address from whitelist
+      parameters:
+        - name: ip
+          in: query
+          required: true
+          schema:
+            type: string
+          example: "10.0.0.100/32"
+      responses:
+        '200':
+          description: IP address removed successfully
+        '404':
+          description: IP address not found
+
+components:
+  securitySchemes:
+    CookieAuth:
+      type: apiKey
+      in: cookie
+      name: jwt
+      description: JWT token stored in HTTP cookie
+
+  schemas:
+    Car:
+      type: object
+      properties:
+        id:
+          type: integer
+        seller_id:
+          type: integer
+        brand_name:
+          type: string
+        model_name:
+          type: string
+        submodel_name:
+          type: string
+        year:
+          type: integer
+        mileage:
+          type: integer
+        price:
+          type: integer
+        status:
+          type: string
+          enum: [draft, active, sold, deleted]
+        created_at:
+          type: string
+          format: date-time
+
+    CarCreate:
+      type: object
+      required:
+        - model_name
+        - mileage
+        - price
+      properties:
+        model_name:
+          type: string
+        submodel_name:
+          type: string
+        mileage:
+          type: integer
+        price:
+          type: integer
+        description:
+          type: string
+        body_type_code:
+          type: string
+        transmission_code:
+          type: string
+        drivetrain_code:
+          type: string
+
+    CarUpdate:
+      type: object
+      properties:
+        model_name:
+          type: string
+        submodel_name:
+          type: string
+        mileage:
+          type: integer
+        price:
+          type: integer
+        description:
+          type: string
+        status:
+          type: string
+          enum: [draft, active, sold, deleted]
+
+    Seller:
+      type: object
+      properties:
+        id:
+          type: integer
+        display_name:
+          type: string
+        about:
+          type: string
+        map_link:
+          type: string
+
+    ReferenceData:
+      type: object
+      properties:
+        body_types:
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+              name_th:
+                type: string
+              name_en:
+                type: string
+        transmissions:
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+              name_th:
+                type: string
+              name_en:
+                type: string
+        fuel_types:
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+              label_th:
+                type: string
+              label_en:
+                type: string
+        drivetrains:
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+              name_th:
+                type: string
+              name_en:
+                type: string
+        colors:
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+              label_th:
+                type: string
+              label_en:
+                type: string
+        provinces:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              name_th:
+                type: string
+              name_en:
+                type: string
+              region_th:
+                type: string
+              region_en:
+                type: string
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        pages:
+          type: integer
