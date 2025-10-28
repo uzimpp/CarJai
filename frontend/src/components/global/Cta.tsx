@@ -15,7 +15,7 @@ export default function Cta() {
         </div>
         <div className="flex flex-col sm:flex-row gap-(--space-s) justify-center">
           <Link
-            href="/buy"
+            href="/browse"
             className="px-(--space-l) py-(--space-s) bg-maroon hover:bg-red text-white font-bold rounded-full transition-all shadow-lg hover:shadow-xl hover:scale-105 flex items-center justify-center gap-2"
           >
             <svg

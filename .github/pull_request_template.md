@@ -22,4 +22,4 @@
 - [ ] Focused, well-described PR
 - [ ] All tests passing
 - [ ] Code review completed
-- [ ] Documentation updated
+- [ ] Documentation updated (APIs in /backend/docs/swagger.yaml, Testing, Readme, etc.)

@@ -8,9 +8,9 @@ import {
   SignupRequest,
   UserRoles,
   UserProfiles,
-} from "@/constants/user";
+} from "@/types/user";
 import { authAPI } from "@/lib/userAuth";
-import { mutualLogout } from "@/lib/mutualLogout";
+import { mutualLogout } from "../lib/mutualLogout";
 
 interface AuthState {
   user: User | null;

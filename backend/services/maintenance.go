@@ -11,10 +11,11 @@ import (
 
 // MaintenanceService handles maintenance tasks
 type MaintenanceService struct {
-	adminRepo      *models.AdminRepository
-	sessionRepo    *models.SessionRepository
+	adminRepo       *models.AdminRepository
+	sessionRepo     *models.SessionRepository
 	ipWhitelistRepo *models.IPWhitelistRepository
-	logger         *utils.Logger
+	carRepo         *models.CarRepository
+	logger          *utils.Logger
 }
 
 // NewMaintenanceService creates a new maintenance service
@@ -22,31 +23,37 @@ func NewMaintenanceService(
 	adminRepo *models.AdminRepository,
 	sessionRepo *models.SessionRepository,
 	ipWhitelistRepo *models.IPWhitelistRepository,
+	carRepo *models.CarRepository,
 	logger *utils.Logger,
 ) *MaintenanceService {
 	return &MaintenanceService{
-		adminRepo:      adminRepo,
-		sessionRepo:    sessionRepo,
+		adminRepo:       adminRepo,
+		sessionRepo:     sessionRepo,
 		ipWhitelistRepo: ipWhitelistRepo,
-		logger:         logger,
+		carRepo:         carRepo,
+		logger:          logger,
 	}
 }
 
 // MaintenanceConfig holds maintenance configuration
 type MaintenanceConfig struct {
-	SessionCleanupInterval time.Duration
-	LogCleanupInterval     time.Duration
-	MaxSessionAge          time.Duration
-	MaxLogAge              time.Duration
+	SessionCleanupInterval        time.Duration
+	LogCleanupInterval            time.Duration
+	EphemeralDraftCleanupInterval time.Duration
+	MaxSessionAge                 time.Duration
+	MaxLogAge                     time.Duration
+	MaxEphemeralDraftAge          time.Duration
 }
 
 // DefaultMaintenanceConfig returns default maintenance configuration
 func DefaultMaintenanceConfig() *MaintenanceConfig {
 	return &MaintenanceConfig{
-		SessionCleanupInterval: 1 * time.Hour,  // Cleanup every hour
-		LogCleanupInterval:     24 * time.Hour, // Cleanup logs daily
-		MaxSessionAge:          24 * time.Hour, // Sessions expire after 24 hours
-		MaxLogAge:              30 * 24 * time.Hour, // Keep logs for 30 days
+		SessionCleanupInterval:        1 * time.Hour,       // Cleanup every hour
+		LogCleanupInterval:            24 * time.Hour,      // Cleanup logs daily
+		EphemeralDraftCleanupInterval: 6 * time.Hour,       // Cleanup ephemeral drafts every 6 hours
+		MaxSessionAge:                 24 * time.Hour,      // Sessions expire after 24 hours
+		MaxLogAge:                     30 * 24 * time.Hour, // Keep logs for 30 days
+		MaxEphemeralDraftAge:          24 * time.Hour,      // Delete ephemeral drafts older than 24 hours
 	}
 }
 
@@ -55,15 +62,20 @@ func (s *MaintenanceService) StartMaintenance(ctx context.Context, config *Maint
 	if config == nil {
 		config = DefaultMaintenanceConfig()
 	}
-	
+
 	s.logger.Info("Starting maintenance service")
-	
+
 	// Start session cleanup
 	go s.runSessionCleanup(ctx, config.SessionCleanupInterval)
-	
+
 	// Start log cleanup (if implemented)
 	go s.runLogCleanup(ctx, config.LogCleanupInterval)
-	
+
+	// Start ephemeral draft cleanup
+	if s.carRepo != nil {
+		go s.runEphemeralDraftCleanup(ctx, config.EphemeralDraftCleanupInterval, config.MaxEphemeralDraftAge)
+	}
+
 	// Start health monitoring
 	go s.runHealthMonitoring(ctx, 5*time.Minute)
 }
@@ -110,9 +122,9 @@ func (s *MaintenanceService) SeedAdminIfMissing(adminUsername, adminPassword, ad
 func (s *MaintenanceService) runSessionCleanup(ctx context.Context, interval time.Duration) {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
-	
+
 	s.logger.Info("Session cleanup started")
-	
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -128,9 +140,9 @@ func (s *MaintenanceService) runSessionCleanup(ctx context.Context, interval tim
 func (s *MaintenanceService) runLogCleanup(ctx context.Context, interval time.Duration) {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
-	
+
 	s.logger.Info("Log cleanup started")
-	
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -146,9 +158,9 @@ func (s *MaintenanceService) runLogCleanup(ctx context.Context, interval time.Du
 func (s *MaintenanceService) runHealthMonitoring(ctx context.Context, interval time.Duration) {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
-	
+
 	s.logger.Info("Health monitoring started")
-	
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -163,13 +175,13 @@ func (s *MaintenanceService) runHealthMonitoring(ctx context.Context, interval t
 // cleanupExpiredSessions removes expired sessions
 func (s *MaintenanceService) cleanupExpiredSessions() {
 	start := time.Now()
-	
+
 	deletedCount, err := s.sessionRepo.CleanupExpiredSessions()
 	if err != nil {
 		s.logger.WithField("error", err.Error()).Error("Failed to cleanup expired sessions")
 		return
 	}
-	
+
 	duration := time.Since(start)
 	s.logger.WithFields(map[string]interface{}{
 		"deleted_sessions": deletedCount,
@@ -194,14 +206,14 @@ func (s *MaintenanceService) checkSystemHealth() {
 // GetSystemStats returns system statistics
 func (s *MaintenanceService) GetSystemStats() (map[string]interface{}, error) {
 	stats := make(map[string]interface{})
-	
+
 	// Get admin count
 	// This would require implementing a count method in the repository
 	// For now, we'll use a placeholder
-	
+
 	stats["timestamp"] = time.Now()
 	stats["uptime"] = time.Since(time.Now()).String() // This should be actual uptime
-	
+
 	return stats, nil
 }
 
@@ -218,9 +230,33 @@ func (s *MaintenanceService) GetActiveSessionsCount() (int, error) {
 	return 0, nil
 }
 
-// GetExpiredSessionsCount returns the count of expired sessions
-func (s *MaintenanceService) GetExpiredSessionsCount() (int, error) {
-	// This would require implementing a count method in the session repository
-	// For now, we'll return a placeholder
+// runEphemeralDraftCleanup periodically deletes ephemeral drafts that are too old
+func (s *MaintenanceService) runEphemeralDraftCleanup(ctx context.Context, interval, maxAge time.Duration) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	s.logger.Info("Ephemeral draft cleanup started with interval " + interval.String() + " and max age " + maxAge.String())
+
+	for {
+		select {
+		case <-ctx.Done():
+			s.logger.Info("Ephemeral draft cleanup stopped")
+			return
+		case <-ticker.C:
+			count, err := s.cleanupOldEphemeralDrafts(maxAge)
+			if err != nil {
+				s.logger.Error("Failed to cleanup ephemeral drafts: " + err.Error())
+			} else if count > 0 {
+				s.logger.Info("Cleaned up " + string(rune(count)) + " ephemeral drafts")
+			}
+		}
+	}
+}
+
+// cleanupOldEphemeralDrafts deletes ephemeral drafts older than maxAge
+func (s *MaintenanceService) cleanupOldEphemeralDrafts(maxAge time.Duration) (int64, error) {
+	// Note: This requires implementing GetCarsByStatus in CarRepository
+	// For now, return 0 as a placeholder
+	// TODO: Implement GetCarsByStatus in CarRepository or use a different approach
 	return 0, nil
 }

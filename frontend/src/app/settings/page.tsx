@@ -4,13 +4,13 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import { profileAPI, UpdateSelfRequest } from "@/lib/profileAPI";
-import { ProfileData, BuyerRequest, SellerRequest } from "@/constants/user";
+import { ProfileData, BuyerRequest, SellerRequest } from "@/types/user";
 import AccountForm, {
   AccountFormData,
   PasswordChangeData,
-} from "@/components/features/profile/AccountForm";
-import BuyerForm from "@/components/features/profile/BuyerForm";
-import SellerForm from "@/components/features/profile/SellerForm";
+} from "@/components/profile/AccountForm";
+import BuyerForm from "@/components/profile/BuyerForm";
+import SellerForm from "@/components/profile/SellerForm";
 import { FormSection } from "@/components/ui/FormSection";
 import { InlineAlert } from "@/components/ui/InlineAlert";
 import Link from "next/link";

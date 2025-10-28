@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { Seller, SellerContact } from "@/constants/user";
+import { Seller, SellerContact } from "@/types/user";
+import type { CarListing } from "@/types/car";
 import { sellerAPI } from "@/lib/sellerAPI";
+import CarCard from "@/components/car/CarCard";
 
 export default function SellerPage() {
   const params = useParams<{ id: string }>();
@@ -13,6 +15,7 @@ export default function SellerPage() {
   const [seller, setSeller] = useState<Seller | null>(null);
   const [contacts, setContacts] = useState<SellerContact[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [cars, setCars] = useState<CarListing[]>([]);
   const [notFoundState, setNotFoundState] = useState(false);
 
   useEffect(() => {
@@ -26,12 +29,20 @@ export default function SellerPage() {
         if (!mounted) return;
         setSeller(sellerRes.data.seller);
         try {
-          const contactsRes = await sellerAPI.getSellerContacts(String(id));
+          const [contactsRes, carsRes] = await Promise.all([
+            sellerAPI.getSellerContacts(String(id)),
+            sellerAPI.getSellerCars(String(id)),
+          ]);
           if (!mounted) return;
           setContacts(contactsRes.contacts || []);
+          const activeCars = ((carsRes.cars || []) as CarListing[]).filter(
+            (c) => c.status === "active"
+          );
+          setCars(activeCars);
         } catch {
           if (!mounted) return;
           setContacts([]);
+          setCars([]);
         }
       } catch {
         if (!mounted) return;
@@ -68,10 +79,10 @@ export default function SellerPage() {
             The seller you are looking for does not exist or is unavailable.
           </p>
           <Link
-            href="/buy"
+            href="/browse"
             className="inline-flex items-center px-(--space-m) py-(--space-2xs) text-0 font-medium rounded-lg text-white bg-maroon hover:bg-red transition-colors"
           >
-            Go to Buy
+            Go to Browse
           </Link>
         </div>
       </div>
@@ -197,9 +208,15 @@ export default function SellerPage() {
               <h2 className="text-2 font-bold text-gray-900 mb-(--space-m)">
                 Cars from {seller.displayName}
               </h2>
-              <p className="text-0 text-gray-600">
-                Car listings coming soon...
-              </p>
+              {cars.length === 0 ? (
+                <p className="text-0 text-gray-600">No active cars.</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-(--space-m)">
+                  {cars.map((car) => (
+                    <CarCard key={car.id} car={car} variant="seller" />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

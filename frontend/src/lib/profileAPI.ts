@@ -5,8 +5,8 @@ import {
   BuyerResponse,
   SellerRequest,
   SellerResponse,
-} from "@/constants/user";
-import { apiCall } from "./apiCall";
+} from "@/types/user";
+import { apiCall } from "@/lib/apiCall";
 
 // Request type for updating user account fields
 export interface UpdateSelfRequest {

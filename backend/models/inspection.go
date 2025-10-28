@@ -6,51 +6,44 @@ import (
 	"time"
 )
 
+// InspectionUploadResponse for POST /api/cars/{id}/inspection
+type InspectionUploadResponse struct {
+	Success bool              `json:"success"`
+	Data    *InspectionResult `json:"data,omitempty"`
+	Message string            `json:"message,omitempty"`
+	Code    string            `json:"code,omitempty"`
+}
+
 // InspectionResult represents an inspection result record
 type InspectionResult struct {
-	IRID        int        `json:"irid" db:"irid"`
-	CarID       int        `json:"carId" db:"car_id"`
-	OverallPass *bool      `json:"overallPass" db:"overall_pass"`
-	InspectedAt *time.Time `json:"inspectedAt" db:"inspected_at"`
-	Station     *string    `json:"station" db:"station"`
+	ID      int     `json:"id" db:"id"`
+	CarID   int     `json:"carId" db:"car_id"`
+	Station *string `json:"station" db:"station"`
 
 	// Basic test results
-	BrakeResult        *string `json:"brakeResult" db:"brake_result"`
-	HandbrakeResult    *string `json:"handbrakeResult" db:"handbrake_result"`
-	AlignmentResult    *string `json:"alignmentResult" db:"alignment_result"`
-	NoiseResult        *string `json:"noiseResult" db:"noise_result"`
-	EmissionResult     *string `json:"emissionResult" db:"emission_result"`
-	HornResult         *string `json:"hornResult" db:"horn_result"`
-	SpeedometerResult  *string `json:"speedometerResult" db:"speedometer_result"`
-	HighLowBeamResult  *string `json:"highLowBeamResult" db:"high_low_beam_result"`
-	SignalLightsResult *string `json:"signalLightsResult" db:"signal_lights_result"`
-	OtherLightsResult  *string `json:"otherLightsResult" db:"other_lights_result"`
-	DifferenceResult   *string `json:"differenceResult" db:"difference_result"`
-
-	// Performance metrics
-	BrakePerformance     *string `json:"brakePerformance" db:"brake_performance"`
-	HandbrakePerformance *string `json:"handbrakePerformance" db:"handbrake_performance"`
-	EmissionCO           *string `json:"emissionCo" db:"emission_co"`
-	NoiseLevel           *string `json:"noiseLevel" db:"noise_level"`
-	WheelAlignment       *string `json:"wheelAlignment" db:"wheel_alignment"`
-	ChassisCondition     *string `json:"chassisCondition" db:"chassis_condition"`
+	OverallPass        *bool `json:"overallPass" db:"overall_pass"`
+	BrakeResult        *bool `json:"brakeResult" db:"brake_result"`
+	HandbrakeResult    *bool `json:"handbrakeResult" db:"handbrake_result"`
+	AlignmentResult    *bool `json:"alignmentResult" db:"alignment_result"`
+	NoiseResult        *bool `json:"noiseResult" db:"noise_result"`
+	EmissionResult     *bool `json:"emissionResult" db:"emission_result"`
+	HornResult         *bool `json:"hornResult" db:"horn_result"`
+	SpeedometerResult  *bool `json:"speedometerResult" db:"speedometer_result"`
+	HighLowBeamResult  *bool `json:"highLowBeamResult" db:"high_low_beam_result"`
+	SignalLightsResult *bool `json:"signalLightsResult" db:"signal_lights_result"`
+	OtherLightsResult  *bool `json:"otherLightsResult" db:"other_lights_result"`
+	WindshieldResult   *bool `json:"windshieldResult" db:"windshield_result"`
+	SteeringResult     *bool `json:"steeringResult" db:"steering_result"`
+	WheelsTiresResult  *bool `json:"wheelsTiresResult" db:"wheels_tires_result"`
+	FuelTankResult     *bool `json:"fuelTankResult" db:"fuel_tank_result"`
+	ChassisResult      *bool `json:"chassisResult" db:"chassis_result"`
+	BodyResult         *bool `json:"bodyResult" db:"body_result"`
+	DoorsFloorResult   *bool `json:"doorsFloorResult" db:"doors_floor_result"`
+	SeatbeltResult     *bool `json:"seatbeltResult" db:"seatbelt_result"`
+	WiperResult        *bool `json:"wiperResult" db:"wiper_result"`
 
 	CreatedAt time.Time `json:"createdAt" db:"created_at"`
 	UpdatedAt time.Time `json:"updatedAt" db:"updated_at"`
-}
-
-// CreateInspectionRequest represents the request to create an inspection result
-// This is embedded in CreateCarRequest but separated here for clarity
-type CreateInspectionRequest struct {
-	OverallResult          *string `json:"overallResult"`
-	BrakeResult            *string `json:"brakeResult"`
-	WheelAlignmentResult   *string `json:"wheelAlignmentResult"`
-	EmissionResult         *string `json:"emissionResult"`
-	ChassisConditionResult *string `json:"chassisConditionResult"`
-	BrakePerformance       *string `json:"brakePerformance"`
-	HandbrakePerformance   *string `json:"handbrakePerformance"`
-	EmissionValue          *string `json:"emissionValue"`
-	NoiseLevel             *string `json:"noiseLevel"`
 }
 
 // InspectionRepository handles inspection-related database operations
@@ -66,28 +59,26 @@ func NewInspectionRepository(db *Database) *InspectionRepository {
 // CreateInspectionResult creates a new inspection result
 func (r *InspectionRepository) CreateInspectionResult(inspection *InspectionResult) error {
 	query := `
-		INSERT INTO inspection_results (
-			car_id, overall_pass, inspected_at, station,
+		INSERT INTO car_inspection_results (
+			car_id, station, overall_pass,
 			brake_result, handbrake_result, alignment_result, noise_result, emission_result,
 			horn_result, speedometer_result, high_low_beam_result, signal_lights_result,
-			other_lights_result, difference_result,
-			brake_performance, handbrake_performance, emission_co, noise_level,
-			wheel_alignment, chassis_condition
+			other_lights_result, windshield_result, steering_result, wheels_tires_result,
+			fuel_tank_result, chassis_result, body_result, doors_floor_result, seatbelt_result, wiper_result
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
-			$16, $17, $18, $19, $20, $21
+			$16, $17, $18, $19, $20, $21, $22
 		)
-		RETURNING irid, created_at, updated_at`
+		RETURNING id, created_at, updated_at`
 
 	err := r.db.DB.QueryRow(query,
-		inspection.CarID, inspection.OverallPass, inspection.InspectedAt, inspection.Station,
+		inspection.CarID, inspection.Station, inspection.OverallPass,
 		inspection.BrakeResult, inspection.HandbrakeResult, inspection.AlignmentResult,
 		inspection.NoiseResult, inspection.EmissionResult, inspection.HornResult,
 		inspection.SpeedometerResult, inspection.HighLowBeamResult, inspection.SignalLightsResult,
-		inspection.OtherLightsResult, inspection.DifferenceResult,
-		inspection.BrakePerformance, inspection.HandbrakePerformance, inspection.EmissionCO,
-		inspection.NoiseLevel, inspection.WheelAlignment, inspection.ChassisCondition,
-	).Scan(&inspection.IRID, &inspection.CreatedAt, &inspection.UpdatedAt)
+		inspection.OtherLightsResult, inspection.WindshieldResult, inspection.SteeringResult, inspection.WheelsTiresResult,
+		inspection.FuelTankResult, inspection.ChassisResult, inspection.BodyResult, inspection.DoorsFloorResult, inspection.SeatbeltResult, inspection.WiperResult,
+	).Scan(&inspection.ID, &inspection.CreatedAt, &inspection.UpdatedAt)
 
 	if err != nil {
 		return fmt.Errorf("failed to create inspection result: %w", err)
@@ -100,25 +91,23 @@ func (r *InspectionRepository) CreateInspectionResult(inspection *InspectionResu
 func (r *InspectionRepository) GetInspectionByCarID(carID int) (*InspectionResult, error) {
 	inspection := &InspectionResult{}
 	query := `
-		SELECT irid, car_id, overall_pass, inspected_at, station,
+		SELECT id, car_id, station, overall_pass,
 			brake_result, handbrake_result, alignment_result, noise_result, emission_result,
 			horn_result, speedometer_result, high_low_beam_result, signal_lights_result,
-			other_lights_result, difference_result,
-			brake_performance, handbrake_performance, emission_co, noise_level,
-			wheel_alignment, chassis_condition, created_at, updated_at
-		FROM inspection_results
+			other_lights_result, windshield_result, steering_result, wheels_tires_result,
+			fuel_tank_result, chassis_result, body_result, doors_floor_result, seatbelt_result, wiper_result,
+			created_at, updated_at
+		FROM car_inspection_results
 		WHERE car_id = $1
 		ORDER BY created_at DESC
 		LIMIT 1`
 
 	err := r.db.DB.QueryRow(query, carID).Scan(
-		&inspection.IRID, &inspection.CarID, &inspection.OverallPass, &inspection.InspectedAt,
-		&inspection.Station, &inspection.BrakeResult, &inspection.HandbrakeResult,
-		&inspection.AlignmentResult, &inspection.NoiseResult, &inspection.EmissionResult,
-		&inspection.HornResult, &inspection.SpeedometerResult, &inspection.HighLowBeamResult,
-		&inspection.SignalLightsResult, &inspection.OtherLightsResult, &inspection.DifferenceResult,
-		&inspection.BrakePerformance, &inspection.HandbrakePerformance, &inspection.EmissionCO,
-		&inspection.NoiseLevel, &inspection.WheelAlignment, &inspection.ChassisCondition,
+		&inspection.ID, &inspection.CarID, &inspection.Station, &inspection.OverallPass,
+		&inspection.BrakeResult, &inspection.HandbrakeResult, &inspection.AlignmentResult, &inspection.NoiseResult, &inspection.EmissionResult,
+		&inspection.HornResult, &inspection.SpeedometerResult, &inspection.HighLowBeamResult, &inspection.SignalLightsResult,
+		&inspection.OtherLightsResult, &inspection.WindshieldResult, &inspection.SteeringResult, &inspection.WheelsTiresResult,
+		&inspection.FuelTankResult, &inspection.ChassisResult, &inspection.BodyResult, &inspection.DoorsFloorResult, &inspection.SeatbeltResult, &inspection.WiperResult,
 		&inspection.CreatedAt, &inspection.UpdatedAt,
 	)
 
@@ -135,24 +124,22 @@ func (r *InspectionRepository) GetInspectionByCarID(carID int) (*InspectionResul
 // UpdateInspectionResult updates an inspection result
 func (r *InspectionRepository) UpdateInspectionResult(inspection *InspectionResult) error {
 	query := `
-		UPDATE inspection_results SET
-			overall_pass = $2, inspected_at = $3, station = $4,
-			brake_result = $5, handbrake_result = $6, alignment_result = $7,
-			noise_result = $8, emission_result = $9, horn_result = $10,
-			speedometer_result = $11, high_low_beam_result = $12, signal_lights_result = $13,
-			other_lights_result = $14, difference_result = $15,
-			brake_performance = $16, handbrake_performance = $17, emission_co = $18,
-			noise_level = $19, wheel_alignment = $20, chassis_condition = $21
-		WHERE irid = $1`
+		UPDATE car_inspection_results SET
+			station = $2, overall_pass = $3,
+			brake_result = $4, handbrake_result = $5, alignment_result = $6,
+			noise_result = $7, emission_result = $8, horn_result = $9,
+			speedometer_result = $10, high_low_beam_result = $11, signal_lights_result = $12,
+			other_lights_result = $13, windshield_result = $14, steering_result = $15, wheels_tires_result = $16,
+			fuel_tank_result = $17, chassis_result = $18, body_result = $19, doors_floor_result = $20, seatbelt_result = $21, wiper_result = $22
+		WHERE id = $1`
 
 	result, err := r.db.DB.Exec(query,
-		inspection.IRID, inspection.OverallPass, inspection.InspectedAt, inspection.Station,
+		inspection.ID, inspection.Station, inspection.OverallPass,
 		inspection.BrakeResult, inspection.HandbrakeResult, inspection.AlignmentResult,
 		inspection.NoiseResult, inspection.EmissionResult, inspection.HornResult,
 		inspection.SpeedometerResult, inspection.HighLowBeamResult, inspection.SignalLightsResult,
-		inspection.OtherLightsResult, inspection.DifferenceResult,
-		inspection.BrakePerformance, inspection.HandbrakePerformance, inspection.EmissionCO,
-		inspection.NoiseLevel, inspection.WheelAlignment, inspection.ChassisCondition,
+		inspection.OtherLightsResult, inspection.WindshieldResult, inspection.SteeringResult, inspection.WheelsTiresResult,
+		inspection.FuelTankResult, inspection.ChassisResult, inspection.BodyResult, inspection.DoorsFloorResult, inspection.SeatbeltResult, inspection.WiperResult,
 	)
 
 	if err != nil {
@@ -173,7 +160,7 @@ func (r *InspectionRepository) UpdateInspectionResult(inspection *InspectionResu
 
 // DeleteInspectionByCarID deletes all inspection results for a car
 func (r *InspectionRepository) DeleteInspectionByCarID(carID int) error {
-	query := `DELETE FROM inspection_results WHERE car_id = $1`
+	query := `DELETE FROM car_inspection_results WHERE car_id = $1`
 
 	_, err := r.db.DB.Exec(query, carID)
 	if err != nil {

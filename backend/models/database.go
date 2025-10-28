@@ -358,10 +358,10 @@ func (r *UserRepository) CreateUser(user *User) error {
 	query := `
 		INSERT INTO users (email, username, name, password_hash)
 		VALUES ($1, $2, $3, $4)
-		RETURNING id, created_at`
+		RETURNING id, created_at, updated_at`
 
 	err := r.db.DB.QueryRow(query, user.Email, user.Username, user.Name, user.PasswordHash).Scan(
-		&user.ID, &user.CreatedAt,
+		&user.ID, &user.CreatedAt, &user.UpdatedAt,
 	)
 
 	if err != nil {
@@ -375,12 +375,12 @@ func (r *UserRepository) CreateUser(user *User) error {
 func (r *UserRepository) GetUserByEmail(email string) (*User, error) {
 	user := &User{}
 	query := `
-		SELECT id, email, username, name, password_hash, created_at
+		SELECT id, email, username, name, password_hash, created_at, updated_at
 		FROM users
 		WHERE email = $1`
 
 	err := r.db.DB.QueryRow(query, email).Scan(
-		&user.ID, &user.Email, &user.Username, &user.Name, &user.PasswordHash, &user.CreatedAt,
+		&user.ID, &user.Email, &user.Username, &user.Name, &user.PasswordHash, &user.CreatedAt, &user.UpdatedAt,
 	)
 
 	if err != nil {
@@ -397,12 +397,12 @@ func (r *UserRepository) GetUserByEmail(email string) (*User, error) {
 func (r *UserRepository) GetUserByUsername(username string) (*User, error) {
 	user := &User{}
 	query := `
-		SELECT id, email, username, name, password_hash, created_at
+		SELECT id, email, username, name, password_hash, created_at, updated_at
 		FROM users
 		WHERE username = $1`
 
 	err := r.db.DB.QueryRow(query, username).Scan(
-		&user.ID, &user.Email, &user.Username, &user.Name, &user.PasswordHash, &user.CreatedAt,
+		&user.ID, &user.Email, &user.Username, &user.Name, &user.PasswordHash, &user.CreatedAt, &user.UpdatedAt,
 	)
 
 	if err != nil {
@@ -419,12 +419,12 @@ func (r *UserRepository) GetUserByUsername(username string) (*User, error) {
 func (r *UserRepository) GetUserByID(id int) (*User, error) {
 	user := &User{}
 	query := `
-		SELECT id, email, username, name, password_hash, created_at
+		SELECT id, email, username, name, password_hash, created_at, updated_at
 		FROM users
 		WHERE id = $1`
 
 	err := r.db.DB.QueryRow(query, id).Scan(
-		&user.ID, &user.Email, &user.Username, &user.Name, &user.PasswordHash, &user.CreatedAt,
+		&user.ID, &user.Email, &user.Username, &user.Name, &user.PasswordHash, &user.CreatedAt, &user.UpdatedAt,
 	)
 
 	if err != nil {
@@ -474,12 +474,12 @@ func (r *UserRepository) UpdateUser(userID int, username, name *string) (*User, 
 	}
 
 	query += strings.Join(updates, ", ")
-	query += fmt.Sprintf(" WHERE id = $%d RETURNING id, email, username, name, password_hash, created_at", argNum)
+	query += fmt.Sprintf(" WHERE id = $%d RETURNING id, email, username, name, password_hash, created_at, updated_at", argNum)
 	args = append(args, userID)
 
 	user := &User{}
 	err := r.db.DB.QueryRow(query, args...).Scan(
-		&user.ID, &user.Email, &user.Username, &user.Name, &user.PasswordHash, &user.CreatedAt,
+		&user.ID, &user.Email, &user.Username, &user.Name, &user.PasswordHash, &user.CreatedAt, &user.UpdatedAt,
 	)
 
 	if err != nil {
