@@ -15,7 +15,7 @@ import (
 func AdminRoutes(
 	adminService *services.AdminService,
 	jwtManager *utils.JWTManager,
-	// เพิ่ม ExtractionService เข้ามาเพื่อสร้าง Handler สำหรับการนำเข้าข้อมูล
+	// เพิ่ม ExtractionService เข้ามา
 	extractionService *services.ExtractionService,
 	adminPrefix string,
 	allowedOrigins []string,
@@ -27,23 +27,41 @@ func AdminRoutes(
 	// Create handler instances
 	adminAuthHandler := handlers.NewAdminAuthHandler(adminService, jwtManager, authMiddleware)
 	adminIPHandler := handlers.NewAdminIPHandler(adminService)
-	// สร้าง Handler ใหม่สำหรับ Extraction
+	// สร้าง Handler สำหรับ Extraction
 	adminExtractionHandler := handlers.NewAdminExtractionHandler(extractionService)
 
 	// Create router
 	router := http.NewServeMux()
-	// กำหนด basePath ให้เป็น adminPrefix ที่ตัด "/" ท้ายออก
 	basePath := strings.TrimSuffix(adminPrefix, "/")
 
-	// --- Admin Authentication Routes ---
+	// --- Middleware Chain Helper (for brevity) ---
+	applyAdminAuthMiddleware := func(handler http.HandlerFunc) http.HandlerFunc {
+		// Middleware chain for fully protected admin routes requiring authentication and IP whitelist
+		return middleware.CORSMiddleware(allowedOrigins)(
+			middleware.SecurityHeadersMiddleware(
+				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
+					middleware.GeneralRateLimit()( // Add general rate limit
+						middleware.AdminLoggingMiddleware( // Use Admin logging
+							authMiddleware.RequireAuth(
+								authMiddleware.RequireIPWhitelist(
+									handler,
+								),
+							),
+						),
+					),
+				),
+			),
+		)
+	}
 
-	// Admin authentication routes (POST) - Signin
+	// --- Admin Authentication Routes ---
+	// Signin needs special handling (LoginRateLimit, no auth required yet)
 	router.HandleFunc(basePath+"/auth/signin",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
-					middleware.LoginRateLimit()(
-						middleware.LoggingMiddleware( // ใช้ LoggingMiddleware
+					middleware.LoginRateLimit()( // Specific rate limit for login
+						middleware.LoggingMiddleware( // Use general logging for potentially unauthenticated requests
 							adminAuthHandler.Signin,
 						),
 					),
@@ -51,161 +69,54 @@ func AdminRoutes(
 			),
 		),
 	)
+	// Other auth routes use the standard protected middleware chain
+	router.HandleFunc(basePath+"/auth/signout", applyAdminAuthMiddleware(adminAuthHandler.Signout))
+	router.HandleFunc(basePath+"/auth/me", applyAdminAuthMiddleware(adminAuthHandler.Me))
+	router.HandleFunc(basePath+"/auth/refresh", applyAdminAuthMiddleware(adminAuthHandler.RefreshToken))
 
-	// Admin authentication routes (POST) - Signout (Protected)
-	router.HandleFunc(basePath+"/auth/signout",
-		middleware.CORSMiddleware(allowedOrigins)(
-			middleware.SecurityHeadersMiddleware(
-				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
-					middleware.AdminLoggingMiddleware( // ใช้ AdminLoggingMiddleware
-						authMiddleware.RequireAuth(
-							authMiddleware.RequireIPWhitelist(
-								adminAuthHandler.Signout,
-							),
-						),
-					),
-				),
-			),
-		),
-	)
+	// --- Admin IP Whitelist Management Routes ---
+	router.HandleFunc(basePath+"/ip-whitelist", applyAdminAuthMiddleware(adminIPHandler.GetWhitelistedIPs))
+	router.HandleFunc(basePath+"/ip-whitelist/add", applyAdminAuthMiddleware(adminIPHandler.AddIPToWhitelist))
+	router.HandleFunc(basePath+"/ip-whitelist/remove", applyAdminAuthMiddleware(adminIPHandler.RemoveIPFromWhitelist))
 
-	// Admin authentication routes (GET) - Me (Protected)
-	router.HandleFunc(basePath+"/auth/me",
-		middleware.CORSMiddleware(allowedOrigins)(
-			middleware.SecurityHeadersMiddleware(
-				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
-					middleware.AdminLoggingMiddleware(
-						authMiddleware.RequireAuth(
-							authMiddleware.RequireIPWhitelist(
-								adminAuthHandler.Me,
-							),
-						),
-					),
-				),
-			),
-		),
-	)
+	// --- Market Price Import/Extract Route (POST PDF) ---
+	// Endpoint นี้ทำหน้าที่ Extract อย่างเดียว, ใช้ applyAdminAuthMiddleware
+	router.HandleFunc(basePath+"/market-price/import", applyAdminAuthMiddleware(adminExtractionHandler.HandleImportMarketPrices))
 
-	// Admin authentication routes (POST) - RefreshToken (Protected)
-	router.HandleFunc(basePath+"/auth/refresh",
-		middleware.CORSMiddleware(allowedOrigins)(
-			middleware.SecurityHeadersMiddleware(
-				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
-					middleware.AdminLoggingMiddleware(
-						authMiddleware.RequireAuth(
-							authMiddleware.RequireIPWhitelist(
-								adminAuthHandler.RefreshToken,
-							),
-						),
-					),
-				),
-			),
-		),
-	)
+	// --- Market Price Commit Route (POST JSON) ---
+	// Endpoint ใหม่สำหรับรับ JSON และบันทึกลง DB, ใช้ applyAdminAuthMiddleware
+	router.HandleFunc(basePath+"/market-price/commit", applyAdminAuthMiddleware(adminExtractionHandler.HandleCommitMarketPrices))
 
-	// --- Admin IP Whitelist Management Routes (Protected) ---
-
-	// Admin IP whitelist management routes (GET)
-	router.HandleFunc(basePath+"/ip-whitelist",
-		middleware.CORSMiddleware(allowedOrigins)(
-			middleware.SecurityHeadersMiddleware(
-				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
-					middleware.AdminLoggingMiddleware(
-						authMiddleware.RequireAuth(
-							authMiddleware.RequireIPWhitelist(
-								adminIPHandler.GetWhitelistedIPs,
-							),
-						),
-					),
-				),
-			),
-		),
-	)
-
-	// Admin IP whitelist management routes (POST)
-	router.HandleFunc(basePath+"/ip-whitelist/add",
-		middleware.CORSMiddleware(allowedOrigins)(
-			middleware.SecurityHeadersMiddleware(
-				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
-					middleware.AdminLoggingMiddleware(
-						authMiddleware.RequireAuth(
-							authMiddleware.RequireIPWhitelist(
-								adminIPHandler.AddIPToWhitelist,
-							),
-						),
-					),
-				),
-			),
-		),
-	)
-
-	// Admin IP whitelist management routes (DELETE)
-	router.HandleFunc(basePath+"/ip-whitelist/remove",
-		middleware.CORSMiddleware(allowedOrigins)(
-			middleware.SecurityHeadersMiddleware(
-				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
-					middleware.AdminLoggingMiddleware(
-						authMiddleware.RequireAuth(
-							authMiddleware.RequireIPWhitelist(
-								adminIPHandler.RemoveIPFromWhitelist,
-							),
-						),
-					),
-				),
-			),
-		),
-	)
-
-	// --- *** Market Price Import Route (New) *** ---
-	// Admin Market Price Import route (POST)
-	router.HandleFunc(basePath+"/market-price/import",
-		middleware.CORSMiddleware(allowedOrigins)(
-			middleware.SecurityHeadersMiddleware(
-				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
-					middleware.GeneralRateLimit()( // เพิ่ม Rate Limit สำหรับ API ทั่วไปของแอดมิน
-						middleware.AdminLoggingMiddleware(
-							authMiddleware.RequireAuth(
-								authMiddleware.RequireIPWhitelist(
-									adminExtractionHandler.HandleImportMarketPrices, // Handler สำหรับนำเข้าข้อมูลราคาตลาด
-								),
-							),
-						),
-					),
-				),
-			),
-		),
-	)
-	// --- *** สิ้นสุด Route ใหม่ *** ---
-
-	// Health check for admin (GET)
+	// --- Health Check & Root ---
+	// Health check and Root only need Global IP Whitelist and general logging
 	router.HandleFunc(basePath+"/health",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
-				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)( // เช็ค Global IP Whitelist เท่านั้น
-					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-						w.WriteHeader(http.StatusOK)
-						fmt.Fprintln(w, "Admin OK")
-					}),
+				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
+					middleware.LoggingMiddleware( // Use general logging
+						func(w http.ResponseWriter, r *http.Request) {
+							w.WriteHeader(http.StatusOK)
+							fmt.Fprintln(w, "Admin OK")
+						},
+					),
 				),
 			),
 		),
 	)
-
-	// Route for any other admin paths (GET) - สำหรับให้ frontend ของ admin ทำ routing ต่อไป
 	router.HandleFunc(basePath+"/",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
-					func(w http.ResponseWriter, r *http.Request) {
-						// ตอบกลับ OK สำหรับ path ที่ตรงกับ root ของ admin api
-						if r.URL.Path == basePath+"/" {
-							w.WriteHeader(http.StatusOK)
-							w.Write([]byte("Admin API Root"))
-							return
-						}
-						// ถ้า path ไม่ตรงกับ route ที่กำหนดไว้ทั้งหมด (แต่ยังขึ้นต้นด้วย basePath) จะตอบกลับ 404
-						http.NotFound(w, r)
-					},
+					middleware.LoggingMiddleware( // Use general logging
+						func(w http.ResponseWriter, r *http.Request) {
+							if r.URL.Path == basePath+"/" {
+								w.WriteHeader(http.StatusOK)
+								w.Write([]byte("Admin API Root"))
+							} else {
+								http.NotFound(w, r) // Return 404 for other unmatched paths under /admin/
+							}
+						},
+					),
 				),
 			),
 		),
