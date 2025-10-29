@@ -47,45 +47,36 @@ func (s *FavouriteService) GetFavouriteListings(userID int) ([]models.CarListing
 		return []models.CarListingWithImages{}, nil
 	}
 
-	// Build listings in the same shape used elsewhere
-	var listings []models.CarListingWithImages
-	for _, id := range ids {
-		carWithImages, err := s.carService.GetCarWithImages(id)
-		if err != nil {
-			return nil, err
-		}
-		// Get brand/model from details
-		details, err := s.carService.detailsRepo.GetCarDetailsByCarID(id)
-		var brandName, modelName *string
-		if err == nil && details != nil {
-			brandName = details.BrandName
-			modelName = details.ModelName
-		}
-
-		listing := models.CarListingWithImages{
-			CID:             carWithImages.Car.CID,
-			SellerID:        carWithImages.Car.SellerID,
-			Year:            carWithImages.Car.Year,
-			Mileage:         carWithImages.Car.Mileage,
-			Price:           carWithImages.Car.Price,
-			Province:        carWithImages.Car.Province,
-			ConditionRating: carWithImages.Car.ConditionRating,
-			BodyTypeID:      carWithImages.Car.BodyTypeID,
-			TransmissionID:  carWithImages.Car.TransmissionID,
-			FuelTypeID:      carWithImages.Car.FuelTypeID,
-			DrivetrainID:    carWithImages.Car.DrivetrainID,
-			Seats:           carWithImages.Car.Seats,
-			Doors:           carWithImages.Car.Doors,
-			Color:           carWithImages.Car.Color,
-			Status:          carWithImages.Car.Status,
-			CreatedAt:       carWithImages.Car.CreatedAt,
-			UpdatedAt:       carWithImages.Car.UpdatedAt,
-			BrandName:       brandName,
-			ModelName:       modelName,
-			Images:          carWithImages.Images,
-		}
-		listings = append(listings, listing)
-	}
+    // Build listings in the same shape used elsewhere
+    var listings []models.CarListingWithImages
+    for _, id := range ids {
+        carWithImages, err := s.carService.GetCarWithImages(id)
+        if err != nil {
+            return nil, err
+        }
+        listing := models.CarListingWithImages{
+            ID:               carWithImages.Car.ID,
+            SellerID:         carWithImages.Car.SellerID,
+            Year:             carWithImages.Car.Year,
+            Mileage:          carWithImages.Car.Mileage,
+            Price:            carWithImages.Car.Price,
+            ProvinceID:       carWithImages.Car.ProvinceID,
+            ConditionRating:  carWithImages.Car.ConditionRating,
+            BodyTypeCode:     carWithImages.Car.BodyTypeCode,
+            TransmissionCode: carWithImages.Car.TransmissionCode,
+            DrivetrainCode:   carWithImages.Car.DrivetrainCode,
+            Seats:            carWithImages.Car.Seats,
+            Doors:            carWithImages.Car.Doors,
+            Status:           carWithImages.Car.Status,
+            CreatedAt:        carWithImages.Car.CreatedAt,
+            UpdatedAt:        carWithImages.Car.UpdatedAt,
+            BrandName:        carWithImages.Car.BrandName,
+            ModelName:        carWithImages.Car.ModelName,
+            SubmodelName:     carWithImages.Car.SubmodelName,
+            Images:           carWithImages.Images,
+        }
+        listings = append(listings, listing)
+    }
 
 	return listings, nil
 }
