@@ -546,28 +546,72 @@ paths:
           description: Car discarded successfully
 
   /api/cars/{id}/restore-progress:
-    post:
+    get:
       tags:
         - Cars
-      summary: Restore progress from another car
+      summary: Get car data for restoring progress (owner only)
+      description: Returns car data with images and inspection for the specified car. Only the car owner can access this endpoint.
       parameters:
         - name: id
           in: path
           required: true
           schema:
             type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                sourceCarId:
-                  type: integer
+          description: Car ID
+        - name: lang
+          in: query
+          description: Language preference for labels
+          schema:
+            type: string
+            enum: [en, th]
+            default: en
       responses:
         '200':
-          description: Progress restored successfully
+          description: Car data retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      car:
+                        $ref: '#/components/schemas/CarDisplay'
+                      images:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                            carId:
+                              type: integer
+                            imageType:
+                              type: string
+                            imageSize:
+                              type: integer
+                            displayOrder:
+                              type: integer
+                            uploadedAt:
+                              type: string
+                              format: date-time
+                            url:
+                              type: string
+                              example: "/api/cars/images/123"
+                      inspection:
+                        $ref: '#/components/schemas/InspectionResult'
+        '400':
+          description: Bad request - Invalid car ID
+        '401':
+          description: Unauthorized - Authentication required
+        '403':
+          description: Forbidden - Only car owner can access this endpoint
+        '500':
+          description: Internal server error
 
   /api/cars/{id}/redirect-to-draft:
     post:
@@ -1206,6 +1250,176 @@ components:
                 type: string
               region_en:
                 type: string
+
+    CarDisplay:
+      type: object
+      description: Display-ready car object with translated labels
+      properties:
+        id:
+          type: integer
+        sellerId:
+          type: integer
+        year:
+          type: integer
+          nullable: true
+        mileage:
+          type: integer
+          nullable: true
+        price:
+          type: integer
+          nullable: true
+        status:
+          type: string
+          enum: [draft, active, sold, deleted]
+        createdAt:
+          type: string
+          format: date-time
+        bodyType:
+          type: string
+          nullable: true
+          description: Translated body type label
+        transmission:
+          type: string
+          nullable: true
+          description: Translated transmission label
+        drivetrain:
+          type: string
+          nullable: true
+          description: Translated drivetrain label
+        fuelTypes:
+          type: array
+          items:
+            type: string
+          description: Array of translated fuel type labels
+        colors:
+          type: array
+          items:
+            type: string
+          description: Array of translated color labels
+        brandName:
+          type: string
+          nullable: true
+        modelName:
+          type: string
+          nullable: true
+        submodelName:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        chassisNumber:
+          type: string
+          nullable: true
+        licensePlate:
+          type: string
+          description: Constructed license plate string
+        prefix:
+          type: string
+          nullable: true
+        number:
+          type: string
+          nullable: true
+        province:
+          type: string
+          nullable: true
+          description: Translated province name
+        seats:
+          type: integer
+          nullable: true
+        doors:
+          type: integer
+          nullable: true
+        engineCc:
+          type: integer
+          nullable: true
+        conditionRating:
+          type: integer
+          nullable: true
+        isFlooded:
+          type: boolean
+        isHeavilyDamaged:
+          type: boolean
+
+    InspectionResult:
+      type: object
+      description: Vehicle inspection results
+      properties:
+        id:
+          type: integer
+        carId:
+          type: integer
+        station:
+          type: string
+          nullable: true
+        overallPass:
+          type: boolean
+          nullable: true
+        brakeResult:
+          type: boolean
+          nullable: true
+        handbrakeResult:
+          type: boolean
+          nullable: true
+        alignmentResult:
+          type: boolean
+          nullable: true
+        noiseResult:
+          type: boolean
+          nullable: true
+        emissionResult:
+          type: boolean
+          nullable: true
+        hornResult:
+          type: boolean
+          nullable: true
+        speedometerResult:
+          type: boolean
+          nullable: true
+        highLowBeamResult:
+          type: boolean
+          nullable: true
+        signalLightsResult:
+          type: boolean
+          nullable: true
+        otherLightsResult:
+          type: boolean
+          nullable: true
+        windshieldResult:
+          type: boolean
+          nullable: true
+        steeringResult:
+          type: boolean
+          nullable: true
+        wheelsTiresResult:
+          type: boolean
+          nullable: true
+        fuelTankResult:
+          type: boolean
+          nullable: true
+        chassisResult:
+          type: boolean
+          nullable: true
+        bodyResult:
+          type: boolean
+          nullable: true
+        doorsFloorResult:
+          type: boolean
+          nullable: true
+        seatbeltResult:
+          type: boolean
+          nullable: true
+        wiperResult:
+          type: boolean
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
 
     Pagination:
       type: object

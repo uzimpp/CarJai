@@ -119,7 +119,7 @@ export default function CarCard({
       </Link>
       {/* Actions */}
       {showActions ? (
-        <div className="flex gap-(--space-xs) pt-(--space-s) border-t border-gray-100">
+        <div className="flex gap-(--space-xs) p-(--space-s) border-t border-gray-100">
           {isActive
             ? onUnpublish && (
                 <button
