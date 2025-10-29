@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/uzimpp/CarJai/backend/utils" // *** ต้องเพิ่ม ***
-	// *** Note: หาก WriteError เรียกใช้ models.AdminErrorResponse, คุณอาจต้อง import models ในไฟล์นี้ด้วย ***
+	"github.com/uzimpp/CarJai/backend/utils" // *** Must be added ***
+	// *** Note: If WriteError uses models.AdminErrorResponse, you might need to import models in this file as well ***
 )
 
 // CORSMiddleware handles Cross-Origin Resource Sharing
@@ -27,8 +27,8 @@ func CORSMiddleware(allowedOrigins []string) func(http.HandlerFunc) http.Handler
 
 			// Reject unauthorized origins immediately
 			if !allowed {
-				// *** แก้ไข: ใช้ utils.WriteError แทน http.Error ***
-				// นี่คือจุดที่ทำให้เกิด HTML Error
+				// *** Fix: Use utils.WriteError instead of http.Error ***
+				// This is the point that caused the HTML Error
 				utils.WriteError(w, http.StatusForbidden, "CORS: Origin not allowed")
 				return
 			}

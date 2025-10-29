@@ -3,7 +3,7 @@
 import React, { useState, ChangeEvent, FormEvent } from 'react';
 import ConditionalLayout from '@/components/global/Layout';
 
-// Interface MarketPrice (ชื่อ field ตรงกับ JSON จาก Backend)
+// Interface MarketPrice
 interface MarketPrice {
   brand: string;
   model_trim: string;
@@ -41,12 +41,10 @@ export default function UploadMarketPricePage() {
   const [extractedJson, setExtractedJson] = useState<string | null>(null); // Keep as string for textarea
   const [parsedData, setParsedData] = useState<MarketPrice[] | null>(null); // Store parsed data for commit
 
-  // *** เพิ่ม: State สำหรับ Commit Process ***
   const [isCommitting, setIsCommitting] = useState<boolean>(false);
   const [commitStatus, setCommitStatus] = useState<StatusResponse | null>(null);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    // Reset states when file changes
     setSelectedFile(null);
     setUploadStatus(null);
     setExtractedJson(null);
@@ -123,7 +121,6 @@ export default function UploadMarketPricePage() {
     }
   };
 
-  // *** เพิ่ม: ฟังก์ชัน Handle Commit ***
   const handleCommit = async () => {
       if (!parsedData || parsedData.length === 0) {
           setCommitStatus({ message: '', error: 'No data available to commit.' });

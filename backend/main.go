@@ -52,7 +52,7 @@ type ServiceContainer struct {
 	Car         *services.CarService
 	Maintenance *services.MaintenanceService
 	OCR         *services.OCRService
-	Scraper     *services.ScraperService // + เพิ่มส่วนนี้
+	Scraper     *services.ScraperService 
 	Extraction  *services.ExtractionService
 	UserJWT     *utils.JWTManager
 	AdminJWT    *utils.JWTManager
@@ -163,8 +163,8 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 		routes.CarRoutes(services.Car, services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
 	adminPrefix := appConfig.AdminRoutePrefix
 	mux.Handle(adminPrefix+"/", // Handle all paths under /admin/
-		routes.AdminRoutes( // *** อัปเดตการเรียกใช้ให้ตรงกับ signature ใหม่ใน admin_routes.go ***
-			services.Admin, // ยังคงส่ง AdminService สำหรับ middleware
+		routes.AdminRoutes( 
+			services.Admin, 
 			services.AdminJWT,
 			services.Extraction,
 			adminPrefix,

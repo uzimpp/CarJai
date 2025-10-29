@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"context"
-	"encoding/json" // *** เพิ่ม import นี้ ***
+	"encoding/json" // *** Added this import ***
 	"fmt"
 	"io"
 	"log"
@@ -36,32 +36,70 @@ func (h *AdminExtractionHandler) HandleImportMarketPrices(w http.ResponseWriter,
 
 	// --- File Upload Handling ---
 	err := r.ParseMultipartForm(50 << 20) // 50 MB
-	if err != nil { log.Printf("Error parsing multipart form: %v", err); utils.WriteError(w, http.StatusBadRequest, "Error processing uploaded file: "+err.Error()); return }
-	file, fileHeader, err := r.FormFile("marketPricePdf"); if err != nil { log.Printf("Error retrieving file from form: %v", err); utils.WriteError(w, http.StatusBadRequest, "PDF file ('marketPricePdf' field) is required."); return }
+	if err != nil {
+		log.Printf("Error parsing multipart form: %v", err)
+		utils.WriteError(w, http.StatusBadRequest, "Error processing uploaded file: "+err.Error())
+		return
+	}
+	file, fileHeader, err := r.FormFile("marketPricePdf")
+	if err != nil {
+		log.Printf("Error retrieving file from form: %v", err)
+		utils.WriteError(w, http.StatusBadRequest, "PDF file ('marketPricePdf' field) is required.")
+		return
+	}
 	defer file.Close()
-	if fileHeader.Header.Get("Content-Type") != "application/pdf" && filepath.Ext(fileHeader.Filename) != ".pdf" { log.Printf("Invalid file type uploaded: %s", fileHeader.Header.Get("Content-Type")); utils.WriteError(w, http.StatusBadRequest, "Invalid file type. Only PDF is allowed."); return }
-	tempDir := os.TempDir(); tempFileName := fmt.Sprintf("market_price_upload_%d%s", time.Now().UnixNano(), filepath.Ext(fileHeader.Filename)); tempFilePath := filepath.Join(tempDir, tempFileName)
+	if fileHeader.Header.Get("Content-Type") != "application/pdf" && filepath.Ext(fileHeader.Filename) != ".pdf" {
+		log.Printf("Invalid file type uploaded: %s", fileHeader.Header.Get("Content-Type"))
+		utils.WriteError(w, http.StatusBadRequest, "Invalid file type. Only PDF is allowed.")
+		return
+	}
+	tempDir := os.TempDir()
+	tempFileName := fmt.Sprintf("market_price_upload_%d%s", time.Now().UnixNano(), filepath.Ext(fileHeader.Filename))
+	tempFilePath := filepath.Join(tempDir, tempFileName)
 	log.Printf("Saving uploaded PDF to temporary file: %s", tempFilePath)
-	tempFile, err := os.Create(tempFilePath); if err != nil { log.Printf("Error creating temporary file: %v", err); utils.WriteError(w, http.StatusInternalServerError, "Failed to save uploaded file."); return }
-	_, err = io.Copy(tempFile, file); closeErr := tempFile.Close()
-	defer func() { log.Printf("Attempting to delete temporary file: %s", tempFilePath); deleteErr := os.Remove(tempFilePath); if deleteErr != nil { log.Printf("Warning: Failed to delete temporary file %s: %v", tempFilePath, deleteErr) } }()
-	if err != nil { log.Printf("Error copying uploaded file content: %v", err); utils.WriteError(w, http.StatusInternalServerError, "Failed to save uploaded file content."); return }
-	if closeErr != nil { log.Printf("Warning: Error closing temporary file after copy: %v", closeErr) }
+	tempFile, err := os.Create(tempFilePath)
+	if err != nil {
+		log.Printf("Error creating temporary file: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "Failed to save uploaded file.")
+		return
+	}
+	_, err = io.Copy(tempFile, file)
+	closeErr := tempFile.Close()
+	defer func() {
+		log.Printf("Attempting to delete temporary file: %s", tempFilePath)
+		deleteErr := os.Remove(tempFilePath)
+		if deleteErr != nil {
+			log.Printf("Warning: Failed to delete temporary file %s: %v", tempFilePath, deleteErr)
+		}
+	}()
+	if err != nil {
+		log.Printf("Error copying uploaded file content: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "Failed to save uploaded file content.")
+		return
+	}
+	if closeErr != nil {
+		log.Printf("Warning: Error closing temporary file after copy: %v", closeErr)
+	}
 	// --- End File Upload Handling ---
 
-	// --- เรียก Extraction Service แบบ Synchronous ---
+	// --- Call Extraction Service Synchronously ---
 	log.Printf("Starting synchronous extraction for file: %s", tempFilePath)
-	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Minute); defer cancel()
+	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Minute)
+	defer cancel()
 	extractedData, extractErr := h.ExtractionService.ExtractMarketPricesFromPDF(ctx, tempFilePath)
-	if extractErr != nil { log.Printf("ERROR during synchronous market price extraction from %s: %v", tempFilePath, extractErr); utils.WriteError(w, http.StatusInternalServerError, fmt.Sprintf("Extraction failed: %v", extractErr)); return }
+	if extractErr != nil {
+		log.Printf("ERROR during synchronous market price extraction from %s: %v", tempFilePath, extractErr)
+		utils.WriteError(w, http.StatusInternalServerError, fmt.Sprintf("Extraction failed: %v", extractErr))
+		return
+	}
 	log.Printf("Synchronous extraction from %s completed. Found %d records.", tempFilePath, len(extractedData))
 
-	// --- ตอบกลับ Client ด้วย Status 200 OK และข้อมูล JSON ที่ Extract ได้ ---
+	// --- Respond to Client with Status 200 OK and Extracted JSON Data ---
 	utils.WriteJSON(w, http.StatusOK, extractedData)
 	log.Println("Admin ImportMarketPrices request processed, extraction complete, JSON response sent.")
 }
 
-// --- Handler ใหม่: รับ JSON และบันทึกลง Database ---
+// --- New Handler: Receive JSON and Save to Database ---
 // HandleCommitMarketPrices receives extracted market price data as JSON and commits it to the database.
 func (h *AdminExtractionHandler) HandleCommitMarketPrices(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {

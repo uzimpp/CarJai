@@ -15,7 +15,7 @@ import (
 func AdminRoutes(
 	adminService *services.AdminService,
 	jwtManager *utils.JWTManager,
-	// เพิ่ม ExtractionService เข้ามา
+	// Add ExtractionService
 	extractionService *services.ExtractionService,
 	adminPrefix string,
 	allowedOrigins []string,
@@ -27,7 +27,7 @@ func AdminRoutes(
 	// Create handler instances
 	adminAuthHandler := handlers.NewAdminAuthHandler(adminService, jwtManager, authMiddleware)
 	adminIPHandler := handlers.NewAdminIPHandler(adminService)
-	// สร้าง Handler สำหรับ Extraction
+	// Create Handler for Extraction
 	adminExtractionHandler := handlers.NewAdminExtractionHandler(extractionService)
 
 	// Create router
@@ -80,11 +80,11 @@ func AdminRoutes(
 	router.HandleFunc(basePath+"/ip-whitelist/remove", applyAdminAuthMiddleware(adminIPHandler.RemoveIPFromWhitelist))
 
 	// --- Market Price Import/Extract Route (POST PDF) ---
-	// Endpoint นี้ทำหน้าที่ Extract อย่างเดียว, ใช้ applyAdminAuthMiddleware
+	// This endpoint only use for extract data
 	router.HandleFunc(basePath+"/market-price/import", applyAdminAuthMiddleware(adminExtractionHandler.HandleImportMarketPrices))
 
 	// --- Market Price Commit Route (POST JSON) ---
-	// Endpoint ใหม่สำหรับรับ JSON และบันทึกลง DB, ใช้ applyAdminAuthMiddleware
+	// This endpoint receive JSON and insert to DB
 	router.HandleFunc(basePath+"/market-price/commit", applyAdminAuthMiddleware(adminExtractionHandler.HandleCommitMarketPrices))
 
 	// --- Health Check & Root ---
