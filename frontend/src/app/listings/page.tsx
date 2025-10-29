@@ -173,160 +173,156 @@ export default function MyListingsPage() {
   const activeCount = listings.filter((l) => l.status === "active").length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white to-gray-50 p-(--space-s-m)">
-      <div className="max-w-[1400px] mx-auto">
-        {/* Header */}
-        <div className="mb-(--space-xl)">
+    <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full">
+      {/* Header */}
+      <div className="mb-(--space-xl)">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-5 bold text-gray-900 mb-(--space-2xs) line-height-11">
+              My Listings
+            </h1>
+            <p className="text-1 text-gray-600 line-height-12">
+              Manage your car listings and track their status
+            </p>
+          </div>
+          <Link
+            href="/sell"
+            className="px-(--space-l) py-(--space-s) text-white bg-gradient-to-r from-maroon to-red rounded-3xl hover:shadow-lg transition-all bold text-0 shadow-md"
+          >
+            + Add New Listing
+          </Link>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-(--space-m) mb-(--space-xl)">
+        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-l) border-2 border-gray-100">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-5 bold text-gray-900 mb-(--space-2xs) line-height-11">
-                My Listings
-              </h1>
-              <p className="text-1 text-gray-600 line-height-12">
-                Manage your car listings and track their status
+              <p className="text-0 text-gray-600 mb-(--space-3xs)">
+                Total Listings
               </p>
+              <p className="text-4 bold text-gray-900">{listings.length}</p>
             </div>
-            <Link
-              href="/sell"
-              className="px-(--space-l) py-(--space-s) text-white bg-gradient-to-r from-maroon to-red rounded-3xl hover:shadow-lg transition-all bold text-0 shadow-md"
-            >
-              + Add New Listing
-            </Link>
-          </div>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-(--space-m) mb-(--space-xl)">
-          <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-l) border-2 border-gray-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-0 text-gray-600 mb-(--space-3xs)">
-                  Total Listings
-                </p>
-                <p className="text-4 bold text-gray-900">{listings.length}</p>
-              </div>
-              <div className="w-14 h-14 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl flex items-center justify-center">
-                <span className="text-2xl">📋</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-l) border-2 border-green-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-0 text-gray-600 mb-(--space-3xs)">
-                  Published
-                </p>
-                <p className="text-4 bold text-green-600">{activeCount}</p>
-              </div>
-              <div className="w-14 h-14 bg-gradient-to-br from-green-100 to-green-200 rounded-2xl flex items-center justify-center">
-                <span className="text-2xl">✅</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-l) border-2 border-orange-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-0 text-gray-600 mb-(--space-3xs)">Drafts</p>
-                <p className="text-4 bold text-orange-600">{draftCount}</p>
-              </div>
-              <div className="w-14 h-14 bg-gradient-to-br from-orange-100 to-orange-200 rounded-2xl flex items-center justify-center">
-                <span className="text-2xl">📝</span>
-              </div>
+            <div className="w-14 h-14 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl flex items-center justify-center">
+              <span className="text-2xl">📋</span>
             </div>
           </div>
         </div>
 
-        {/* Filter Tabs */}
-        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-xs) mb-(--space-l) inline-flex gap-(--space-xs)">
-          <button
-            onClick={() => setFilter("all")}
-            className={`px-(--space-l) py-(--space-s) rounded-2xl transition-all medium text-0 ${
-              filter === "all"
-                ? "bg-gradient-to-r from-maroon to-red text-white shadow-md"
-                : "text-gray-600 hover:bg-gray-100"
-            }`}
-          >
-            All ({listings.length})
-          </button>
-          <button
-            onClick={() => setFilter("active")}
-            className={`px-(--space-l) py-(--space-s) rounded-2xl transition-all medium text-0 ${
-              filter === "active"
-                ? "bg-gradient-to-r from-green-600 to-green-700 text-white shadow-md"
-                : "text-gray-600 hover:bg-gray-100"
-            }`}
-          >
-            Published ({activeCount})
-          </button>
-          <button
-            onClick={() => setFilter("draft")}
-            className={`px-(--space-l) py-(--space-s) rounded-2xl transition-all medium text-0 ${
-              filter === "draft"
-                ? "bg-gradient-to-r from-orange-600 to-orange-700 text-white shadow-md"
-                : "text-gray-600 hover:bg-gray-100"
-            }`}
-          >
-            Drafts ({draftCount})
-          </button>
+        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-l) border-2 border-green-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-0 text-gray-600 mb-(--space-3xs)">Published</p>
+              <p className="text-4 bold text-green-600">{activeCount}</p>
+            </div>
+            <div className="w-14 h-14 bg-gradient-to-br from-green-100 to-green-200 rounded-2xl flex items-center justify-center">
+              <span className="text-2xl">✅</span>
+            </div>
+          </div>
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="mb-(--space-l) p-(--space-m) bg-red-50 border-2 border-red-200 rounded-3xl text-red-700 text-0">
-            {error}
-          </div>
-        )}
-
-        {/* Listings Grid */}
-        {isLoadingListings ? (
-          <div className="flex items-center justify-center py-(--space-3xl)">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-maroon mx-auto"></div>
-              <p className="mt-(--space-m) text-gray-600 medium text-1">
-                Loading listings...
-              </p>
+        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-l) border-2 border-orange-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-0 text-gray-600 mb-(--space-3xs)">Drafts</p>
+              <p className="text-4 bold text-orange-600">{draftCount}</p>
+            </div>
+            <div className="w-14 h-14 bg-gradient-to-br from-orange-100 to-orange-200 rounded-2xl flex items-center justify-center">
+              <span className="text-2xl">📝</span>
             </div>
           </div>
-        ) : filteredListings.length === 0 ? (
-          <div className="text-center py-(--space-3xl)">
-            <div className="inline-flex items-center justify-center w-24 h-24 bg-gray-100 rounded-full mb-(--space-l)">
-              <span className="text-5xl">🚗</span>
-            </div>
-            <h2 className="text-3 bold text-gray-900 mb-(--space-s)">
-              No Listings Found
-            </h2>
-            <p className="text-1 text-gray-600 mb-(--space-l)">
-              {filter === "all"
-                ? "You haven't created any listings yet."
-                : filter === "active"
-                ? "You don't have any published listings."
-                : "You don't have any draft listings."}
-            </p>
-            <Link
-              href="/sell"
-              className="inline-block px-(--space-xl) py-(--space-m) text-white bg-gradient-to-r from-maroon to-red rounded-3xl hover:shadow-xl transition-all bold text-1 shadow-lg"
-            >
-              Create Your First Listing
-            </Link>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-(--space-l)">
-            {filteredListings.map((listing) => (
-              <CarCard
-                key={listing.id}
-                car={listing}
-                variant="listing"
-                showActions
-                onDelete={(id) => handleDelete(id)}
-                onPublish={(id) => handlePublish(id)}
-                onUnpublish={(id) => handleUnpublish(id)}
-              />
-            ))}
-          </div>
-        )}
+        </div>
       </div>
+
+      {/* Filter Tabs */}
+      <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-xs) mb-(--space-l) inline-flex gap-(--space-xs)">
+        <button
+          onClick={() => setFilter("all")}
+          className={`px-(--space-l) py-(--space-s) rounded-2xl transition-all medium text-0 ${
+            filter === "all"
+              ? "bg-gradient-to-r from-maroon to-red text-white shadow-md"
+              : "text-gray-600 hover:bg-gray-100"
+          }`}
+        >
+          All ({listings.length})
+        </button>
+        <button
+          onClick={() => setFilter("active")}
+          className={`px-(--space-l) py-(--space-s) rounded-2xl transition-all medium text-0 ${
+            filter === "active"
+              ? "bg-gradient-to-r from-green-600 to-green-700 text-white shadow-md"
+              : "text-gray-600 hover:bg-gray-100"
+          }`}
+        >
+          Published ({activeCount})
+        </button>
+        <button
+          onClick={() => setFilter("draft")}
+          className={`px-(--space-l) py-(--space-s) rounded-2xl transition-all medium text-0 ${
+            filter === "draft"
+              ? "bg-gradient-to-r from-orange-600 to-orange-700 text-white shadow-md"
+              : "text-gray-600 hover:bg-gray-100"
+          }`}
+        >
+          Drafts ({draftCount})
+        </button>
+      </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="mb-(--space-l) p-(--space-m) bg-red-50 border-2 border-red-200 rounded-3xl text-red-700 text-0">
+          {error}
+        </div>
+      )}
+
+      {/* Listings Grid */}
+      {isLoadingListings ? (
+        <div className="flex items-center justify-center py-(--space-3xl)">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-maroon mx-auto"></div>
+            <p className="mt-(--space-m) text-gray-600 medium text-1">
+              Loading listings...
+            </p>
+          </div>
+        </div>
+      ) : filteredListings.length === 0 ? (
+        <div className="text-center py-(--space-3xl)">
+          <div className="inline-flex items-center justify-center w-24 h-24 bg-gray-100 rounded-full mb-(--space-l)">
+            <span className="text-5xl">🚗</span>
+          </div>
+          <h2 className="text-3 bold text-gray-900 mb-(--space-s)">
+            No Listings Found
+          </h2>
+          <p className="text-1 text-gray-600 mb-(--space-l)">
+            {filter === "all"
+              ? "You haven't created any listings yet."
+              : filter === "active"
+              ? "You don't have any published listings."
+              : "You don't have any draft listings."}
+          </p>
+          <Link
+            href="/sell"
+            className="inline-block px-(--space-xl) py-(--space-m) text-white bg-gradient-to-r from-maroon to-red rounded-3xl hover:shadow-xl transition-all bold text-1 shadow-lg"
+          >
+            Create Your First Listing
+          </Link>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-(--space-l)">
+          {filteredListings.map((listing) => (
+            <CarCard
+              key={listing.id}
+              car={listing}
+              variant="listing"
+              showActions
+              onDelete={(id) => handleDelete(id)}
+              onPublish={(id) => handlePublish(id)}
+              onUnpublish={(id) => handleUnpublish(id)}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

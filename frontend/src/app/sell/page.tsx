@@ -31,7 +31,7 @@ export default function SellLanding() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">

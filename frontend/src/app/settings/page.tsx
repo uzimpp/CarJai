@@ -156,7 +156,7 @@ export default function SettingsPage() {
 
   if (!profileData) {
     return (
-      <div className="min-h-screen px-(--space-m) py-(--space-xl) max-w-[1200px] mx-auto">
+      <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full">
         <div className="rounded-xl border border-red-200 bg-red-50 p-(--space-l)">
           <h1 className="text-2 font-bold text-red-800 mb-(--space-s)">
             Unable to load settings
@@ -179,7 +179,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen px-(--space-m) py-(--space-xl) max-w-[1200px] mx-auto">
+    <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full">
       {/* Header */}
       <div className="mb-(--space-xl)">
         <h1 className="text-5 font-bold text-black mb-(--space-2xs)">

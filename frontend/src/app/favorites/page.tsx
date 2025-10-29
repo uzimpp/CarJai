@@ -43,7 +43,7 @@ export default function FavoritesPage() {
   }
 
   return (
-    <div className="!pb-(--space-l) px-(--space-m) py-(--space-s) max-w-[1536px] mx-auto w-full">
+    <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full">
       <h1 className="text-2 font-bold text-maroon mb-(--space-m)">
         My Favorites
       </h1>
