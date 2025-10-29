@@ -45,6 +45,7 @@ export default function UploadMarketPricePage() {
   const [commitStatus, setCommitStatus] = useState<StatusResponse | null>(null);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    // Reset states when file changes
     setSelectedFile(null);
     setUploadStatus(null);
     setExtractedJson(null);
