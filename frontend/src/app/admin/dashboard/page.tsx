@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useState } from "react";
 import { adminAuthAPI } from "@/lib/adminAuth";
+import Link from "next/link"; 
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -130,6 +131,16 @@ export default function AdminDashboard() {
                   : "Active"}
               </span>
             )}
+
+            {/* === ปุ่มใหม่ที่เพิ่มเข้ามา === */}
+            <Link
+              href="/admin/upload-price"
+              className="px-(--space-s) py-(--space-3xs) bg-white/15 hover:bg-white/25 rounded-full text-white transition-colors"
+            >
+              Upload Price
+            </Link>
+            {/* ======================== */}
+
             <button
               onClick={() => validateSession()}
               className="px-(--space-s) py-(--space-3xs) bg-white/15 hover:bg-white/25 rounded-full text-white transition-colors"
@@ -318,7 +329,7 @@ export default function AdminDashboard() {
                     {adminUser?.last_login_at
                       ? new Date(adminUser.last_login_at).toLocaleString()
                       : "No data"}
-                  </dd>
+                  </dd> 
                 </div>
                 <div>
                   <dt className="text--1 text-gray-500">Account Created</dt>
