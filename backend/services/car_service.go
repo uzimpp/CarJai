@@ -954,6 +954,9 @@ func (s *CarService) TranslateCarForDisplay(car *models.Car, lang string) (*Tran
 			ConditionRating:  car.ConditionRating,
 			IsFlooded:        car.IsFlooded,
 			IsHeavilyDamaged: car.IsHeavilyDamaged,
+			// Initialize slice fields as empty slices to avoid null in JSON
+			FuelTypes: []string{},
+			Colors:    []string{},
 		},
 	}
 
@@ -1093,60 +1096,4 @@ func (s *CarService) TranslateCarForDisplay(car *models.Car, lang string) (*Tran
 		}
 	}
 	return display, nil
-}
-
-// RestoreProgressFromCar transfers all progress data from source car to target car
-func (s *CarService) RestoreProgressFromCar(sourceCarID int, targetCarID int) error {
-	// Get source car data
-	sourceCar, err := s.carRepo.GetCarByID(sourceCarID)
-	if err != nil {
-		return fmt.Errorf("failed to get source car: %w", err)
-	}
-
-	// Get target car data
-	targetCar, err := s.carRepo.GetCarByID(targetCarID)
-	if err != nil {
-		return fmt.Errorf("failed to get target car: %w", err)
-	}
-
-	// Transfer basic car data (excluding chassis number and status)
-	targetCar.BrandName = sourceCar.BrandName
-	targetCar.ModelName = sourceCar.ModelName
-	targetCar.SubmodelName = sourceCar.SubmodelName
-	targetCar.Year = sourceCar.Year
-	targetCar.Mileage = sourceCar.Mileage
-	targetCar.EngineCC = sourceCar.EngineCC
-	targetCar.Seats = sourceCar.Seats
-	targetCar.Doors = sourceCar.Doors
-	targetCar.BodyTypeCode = sourceCar.BodyTypeCode
-	targetCar.TransmissionCode = sourceCar.TransmissionCode
-	targetCar.DrivetrainCode = sourceCar.DrivetrainCode
-	targetCar.Description = sourceCar.Description
-	targetCar.Price = sourceCar.Price
-	targetCar.ConditionRating = sourceCar.ConditionRating
-	targetCar.IsFlooded = sourceCar.IsFlooded
-	targetCar.IsHeavilyDamaged = sourceCar.IsHeavilyDamaged
-	targetCar.Prefix = sourceCar.Prefix
-	targetCar.Number = sourceCar.Number
-	targetCar.ProvinceID = sourceCar.ProvinceID
-
-	// Update target car in database
-	if err := s.carRepo.UpdateCar(targetCar); err != nil {
-		return fmt.Errorf("failed to update target car: %w", err)
-	}
-
-	// Transfer fuel types
-	if sourceFuels, err := s.fuelRepo.GetCarFuels(sourceCarID); err == nil && len(sourceFuels) > 0 {
-		if err := s.fuelRepo.SetCarFuels(targetCarID, sourceFuels); err != nil {
-			return fmt.Errorf("failed to transfer fuel types: %w", err)
-		}
-	}
-
-	// Transfer colors
-	if sourceColors, err := s.colorRepo.GetCarColors(sourceCarID); err == nil && len(sourceColors) > 0 {
-		if err := s.colorRepo.SetCarColors(targetCarID, sourceColors); err != nil {
-			return fmt.Errorf("failed to transfer colors: %w", err)
-		}
-	}
-	return nil
 }

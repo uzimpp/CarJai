@@ -1457,15 +1457,6 @@ func (h *CarHandler) RedirectToDraft(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Transfer progress from current car to target car
-	if err := h.carService.RestoreProgressFromCar(carID, req.TargetCarID); err != nil {
-		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
-			Success: false,
-			Error:   fmt.Sprintf("Failed to transfer progress: %v", err),
-		})
-		return
-	}
-
 	// Delete the current car (even if it has progress, user chose to redirect)
 	if err := h.carService.DeleteCar(carID, userID, false); err != nil {
 		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
