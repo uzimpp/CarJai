@@ -1045,6 +1045,72 @@ paths:
         '404':
           description: IP address not found
 
+  # --- NEW: Admin Market Price Management ---
+  /admin/market-price/import:
+    post:
+      tags:
+        - Admin
+      summary: Upload market price PDF for extraction
+      description: Uploads a PDF file. The service extracts the data and returns it as a JSON array without saving it to the database.
+      security:
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                marketPricePdf:
+                  type: string
+                  format: binary
+                  description: The market price PDF file to upload.
+      responses:
+        '200':
+          description: Extraction successful. Returns array of extracted data.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MarketPrice'
+        '400':
+          description: Bad request (e.g., no file, invalid file type)
+        '401':
+          description: Unauthorized
+        '500':
+          description: Extraction failed on the server
+
+  /admin/market-price/commit:
+    post:
+      tags:
+        - Admin
+      summary: Commit extracted market price JSON to database
+      description: Receives a JSON array of market price data (e.g., from the /import endpoint) and upserts it into the database.
+      security:
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/MarketPrice'
+      responses:
+        '200':
+          description: Commit successful. Returns insert/update counts.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommitResponse'
+        '400':
+          description: Bad request (e.g., invalid JSON, empty array)
+        '401':
+          description: Unauthorized
+        '500':
+          description: Database commit failed
+
 components:
   securitySchemes:
     CookieAuth:
@@ -1218,3 +1284,51 @@ components:
           type: integer
         pages:
           type: integer
+
+    # --- NEW: Schemas for Market Price ---
+    MarketPrice:
+      type: object
+      description: Represents a single market price entry
+      properties:
+        brand:
+          type: string
+          example: "TOYOTA"
+        model_trim:
+          type: string
+          example: "VIOS 1.5 E"
+        year_start:
+          type: integer
+          example: 2018
+        year_end:
+          type: integer
+          example: 2020
+        price_min_thb:
+          type: integer
+          format: int64
+          example: 350000
+        price_max_thb:
+          type: integer
+          format: int64
+          example: 400000
+        created_at:
+          type: string
+          format: date-time
+          description: Set by the backend upon extraction/commit
+        updated_at:
+          type: string
+          format: date-time
+          description: Set by the backend upon extraction/commit
+
+    CommitResponse:
+      type: object
+      description: Response after committing market prices to the database
+      properties:
+        message:
+          type: string
+          example: "Market prices committed successfully."
+        inserted_count:
+          type: integer
+          example: 150
+        updated_count:
+          type: integer
+          example: 10
