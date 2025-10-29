@@ -70,8 +70,10 @@ export default function ProgressRestoreModal({
     setError("");
 
     try {
-      const result = await carsAPI.restoreProgress(targetCarId, source.id);
-      if (result.success) {
+      // Restore progress from source car to target car (copies all data including inspection)
+      const result = await carsAPI.restoreProgress(targetCarId);
+      if (result.success && result.data) {
+        // The data has been copied to target car, reload to show it
         onSuccess();
         onClose();
       } else {

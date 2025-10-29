@@ -1,9 +1,11 @@
 package middleware
 
 import (
-	"log"
 	"net/http"
 	"strings"
+
+	"github.com/uzimpp/CarJai/backend/utils" // *** Must be added ***
+	// *** Note: If WriteError uses models.AdminErrorResponse, you might need to import models in this file as well ***
 )
 
 // CORSMiddleware handles Cross-Origin Resource Sharing
@@ -22,11 +24,12 @@ func CORSMiddleware(allowedOrigins []string) func(http.HandlerFunc) http.Handler
 
 			// Check if origin is allowed (from array), with normalization and simple wildcard support
 			allowed := isOriginAllowed(allowedOrigins, origin)
-			log.Printf("CORS check: origin=%s allowed=%v allowedOrigins=%v", origin, allowed, allowedOrigins)
 
 			// Reject unauthorized origins immediately
 			if !allowed {
-				http.Error(w, "CORS: Origin not allowed", http.StatusForbidden)
+				// *** Fix: Use utils.WriteError instead of http.Error ***
+				// This is the point that caused the HTML Error
+				utils.WriteError(w, http.StatusForbidden, "CORS: Origin not allowed")
 				return
 			}
 
