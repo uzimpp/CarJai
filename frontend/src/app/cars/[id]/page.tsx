@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { carsAPI, type Car } from "@/lib/carsAPI";
+import { carsAPI } from "@/lib/carsAPI";
+import type { Car } from "@/types/car";
 import { useUserAuth } from "@/hooks/useUserAuth";
 
 interface RecentViewRequest {
@@ -103,6 +104,8 @@ export default function CarDetailPage() {
     );
   }
 
+  const carData = car.car;
+
   const nextImage = () => {
     if (car?.images && car.images.length > 1) {
       setCurrentImageIndex((prev) => (prev + 1) % car.images!.length);
@@ -139,7 +142,7 @@ export default function CarDetailPage() {
                 <>
                   <Image
                     src={`/api/cars/images/${car.images[currentImageIndex].id}`}
-                    alt={`${car.brandName || "Car"} ${car.modelName || ""}`}
+                    alt={`${carData.brandName || "Car"} ${carData.modelName || ""}`}
                     fill
                     className="object-cover"
                     unoptimized
@@ -201,18 +204,18 @@ export default function CarDetailPage() {
             {/* Title and Price */}
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                {car.brandName || "Unknown"} {car.modelName || "Car"} {car.year && `(${car.year})`}
+                {carData.brandName || "Unknown"} {carData.modelName || "Car"} {carData.year && `(${carData.year})`}
               </h1>
               <div className="flex items-center gap-4 mb-4">
-                {car.price && (
+                {carData.price && (
                   <span className="text-3xl font-bold text-maroon">
-                    ฿{car.price.toLocaleString()}
+                    ฿{carData.price.toLocaleString()}
                   </span>
                 )}
-                {car.conditionRating && (
+                {carData.conditionRating && (
                   <div className="flex items-center gap-1">
                     <span className="text-yellow-500">⭐</span>
-                    <span className="font-semibold">{car.conditionRating}/5</span>
+                    <span className="font-semibold">{carData.conditionRating}/5</span>
                   </div>
                 )}
               </div>
@@ -220,28 +223,28 @@ export default function CarDetailPage() {
 
             {/* Key Details */}
             <div className="grid grid-cols-2 gap-4">
-              {car.year && (
+              {carData.year && (
                 <div className="bg-white p-4 rounded-lg">
                   <span className="text-gray-600 text-sm">Year</span>
-                  <p className="font-semibold">{car.year}</p>
+                  <p className="font-semibold">{carData.year}</p>
                 </div>
               )}
-              {car.mileage && (
+              {carData.mileage && (
                 <div className="bg-white p-4 rounded-lg">
                   <span className="text-gray-600 text-sm">Mileage</span>
-                  <p className="font-semibold">{car.mileage.toLocaleString()} km</p>
+                  <p className="font-semibold">{carData.mileage.toLocaleString()} km</p>
                 </div>
               )}
-              {car.color && (
+              {carData.colors && carData.colors.length > 0 && (
                 <div className="bg-white p-4 rounded-lg">
                   <span className="text-gray-600 text-sm">Color</span>
-                  <p className="font-semibold">{car.color}</p>
+                  <p className="font-semibold">{carData.colors.join(", ")}</p>
                 </div>
               )}
-              {car.seats && (
+              {carData.seats && (
                 <div className="bg-white p-4 rounded-lg">
                   <span className="text-gray-600 text-sm">Seats</span>
-                  <p className="font-semibold">{car.seats}</p>
+                  <p className="font-semibold">{carData.seats}</p>
                 </div>
               )}
             </div>
@@ -251,7 +254,7 @@ export default function CarDetailPage() {
               <h3 className="text-lg font-semibold mb-4">Contact Seller</h3>
               <div className="space-y-3">
                 <Link
-                  href={`/seller/${car.sellerId}`}
+                  href={`/seller/${carData.sellerId}`}
                   className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                 >
                   <div className="w-12 h-12 bg-maroon text-white rounded-full flex items-center justify-center font-semibold">

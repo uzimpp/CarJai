@@ -163,8 +163,6 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 		routes.AdminRoutes(services.Admin, services.AdminJWT, adminPrefix, appConfig.CORSAllowedOrigins, appConfig.AdminIPWhitelist))
 	mux.Handle("/health/",
 		routes.HealthRoutes(db, appConfig.CORSAllowedOrigins))
-	mux.Handle("/api/scrape/",
-		routes.ScrapeRoutes(services.Scraper, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/recent-views",
 		routes.RecentViewsRoutes(services.RecentViews, services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/recent-views/",

@@ -119,7 +119,7 @@ export default function HistoryPage() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Viewing History</h1>
-          <p className="text-gray-600">Cars you've recently viewed</p>
+          <p className="text-gray-600">Cars you&apos;ve recently viewed</p>
         </div>
 
         {recentViews.length === 0 ? (
