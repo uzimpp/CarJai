@@ -160,8 +160,7 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 	mux.Handle("/api/cars",
 		routes.CarRoutes(services.Car, services.User, services.OCR, services.Scraper, services.UserJWT, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/cars/",
-		routes.CarRoutes(services.Car, services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
-	adminPrefix := appConfig.AdminRoutePrefix
+		routes.CarRoutes(services.Car, services.User, services.OCR, services.Scraper, services.UserJWT, appConfig.CORSAllowedOrigins))
 	mux.Handle(adminPrefix+"/", // Handle all paths under /admin/
 		routes.AdminRoutes( 
 			services.Admin, 
@@ -172,8 +171,6 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 			appConfig.AdminIPWhitelist,
 		),
 	)
-	mux.Handle("/api/ocr/",
-		routes.OCRRoutes(services.OCR, services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
 	mux.Handle("/health/",
 		routes.HealthRoutes(db, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/reference-data",
