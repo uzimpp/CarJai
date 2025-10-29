@@ -7,7 +7,7 @@ import { Car, ShoppingCart, User, Camera, CheckCircle, Search, Phone, Sparkles, 
 interface Step {
   id: number;
   title: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string; size?: number }>;
   description: string;
   visual: string;
   badge?: string;
@@ -29,7 +29,7 @@ export default function CarJaiGuides() {
       id: 1,
       title: 'Create Your Account',
       icon: User,
-      description: 'Sign up with your email and password. Once you\'re in, you can start listing your car right away!',
+      description: 'Sign up with your email and password. Once you&apos;re in, you can start listing your car right away!',
       visual: '📝'
     },
     {
@@ -43,7 +43,7 @@ export default function CarJaiGuides() {
       id: 3,
       title: 'Snap a Photo of Your Registration',
       icon: Sparkles,
-      description: 'Take a clear picture of your car\'s registration book. Our smart system will automatically fill in the details for you!',
+      description: 'Take a clear picture of your car&apos;s registration book. Our smart system will automatically fill in the details for you!',
       badge: 'OPTIONAL',
       tip: 'This saves you tons of typing - but you can skip it and enter details manually',
       visual: '📸'
@@ -52,7 +52,7 @@ export default function CarJaiGuides() {
       id: 4,
       title: 'Add Inspection Report',
       icon: Shield,
-      description: 'Have an inspection QR code? Paste the link and we\'ll pull in the official inspection data. This builds trust with buyers!',
+      description: 'Have an inspection QR code? Paste the link and we&apos;ll pull in the official inspection data. This builds trust with buyers!',
       badge: 'OPTIONAL',
       visual: '✅'
     },
@@ -60,7 +60,7 @@ export default function CarJaiGuides() {
       id: 5,
       title: 'Tell Us About Your Car',
       icon: Car,
-      description: 'Fill in the details - price, year, mileage, color, and condition. Don\'t worry, most fields are optional!',
+      description: 'Fill in the details - price, year, mileage, color, and condition. Don&apos;t worry, most fields are optional!',
       visual: '🚗'
     },
     {
@@ -103,7 +103,7 @@ export default function CarJaiGuides() {
       id: 1,
       title: 'Search for Your Dream Car',
       icon: Search,
-      description: 'Use filters to narrow down by price, location, year, body type, and more. Find exactly what you\'re looking for!',
+      description: 'Use filters to narrow down by price, location, year, body type, and more. Find exactly what you&apos;re looking for!',
       visual: '🔍'
     },
     {
@@ -329,7 +329,7 @@ export default function CarJaiGuides() {
                 </p>
                 <p className="flex items-start gap-3">
                   <span className="text-green-700 font-bold">✓</span>
-                  <span>Check the car's VIN and registration documents</span>
+                  <span>Check the car&apos;s VIN and registration documents</span>
                 </p>
                 <p className="flex items-start gap-3">
                   <span className="text-green-700 font-bold">✓</span>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useUserAuth } from "@/hooks/useUserAuth";
 
 export default function PostSignupNextPage() {
@@ -94,9 +95,9 @@ export default function PostSignupNextPage() {
         {/* Secondary links */}
         <div className="mt-10 text-center text-gray-600">
           Head back to the{" "}
-          <a href="/" className="text-red-900 hover:underline font-semibold">
+          <Link href="/" className="text-red-900 hover:underline font-semibold">
             home page
-          </a>.
+          </Link>.
         </div>
       </div>
     </div>
