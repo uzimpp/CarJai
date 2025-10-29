@@ -160,7 +160,7 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 	mux.Handle("/api/cars",
 		routes.CarRoutes(services.Car, services.User, services.Profile, services.OCR, services.Scraper, services.UserJWT, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/cars/",
-		routes.CarRoutes(services.Car, services.User, services.OCR, services.Scraper, services.UserJWT, appConfig.CORSAllowedOrigins))
+		routes.CarRoutes(services.Car, services.User, services.Profile, services.OCR, services.Scraper, services.UserJWT, appConfig.CORSAllowedOrigins))
 	mux.Handle(adminPrefix+"/", // Handle all paths under /admin/
 		routes.AdminRoutes( 
 			services.Admin, 
