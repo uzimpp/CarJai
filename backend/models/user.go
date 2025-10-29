@@ -244,3 +244,47 @@ func (s *Seller) IsComplete() bool {
 	}
 	return false
 }
+
+// RecentView represents a user's car viewing history entry
+type RecentView struct {
+	RVID     int       `json:"rvid" db:"rvid"`
+	UserID   int       `json:"user_id" db:"user_id"`
+	CarID    int       `json:"car_id" db:"car_id"`
+	ViewedAt time.Time `json:"viewed_at" db:"viewed_at"`
+}
+
+// RecentViewWithCarDetails represents a recent view with car information
+type RecentViewWithCarDetails struct {
+	RVID              int       `json:"rvid" db:"rvid"`
+	UserID            int       `json:"user_id" db:"user_id"`
+	CarID             int       `json:"car_id" db:"car_id"`
+	ViewedAt          time.Time `json:"viewed_at" db:"viewed_at"`
+	Year              *int      `json:"year" db:"year"`
+	Mileage           *int      `json:"mileage" db:"mileage"`
+	Price             int       `json:"price" db:"price"`
+	Province          *string   `json:"province" db:"province"`
+	ConditionRating   *int      `json:"condition_rating" db:"condition_rating"`
+	Color             *string   `json:"color" db:"color"`
+	Status            string    `json:"status" db:"status"`
+	BrandName         *string   `json:"brand_name" db:"brand_name"`
+	ModelName         *string   `json:"model_name" db:"model_name"`
+	SellerDisplayName string    `json:"seller_display_name" db:"seller_display_name"`
+}
+
+// RecentViewRequest represents the request payload for recording a car view
+type RecentViewRequest struct {
+	CarID int `json:"car_id" validate:"required,min=1"`
+}
+
+// RecentViewsResponse represents the response for getting recent views
+type RecentViewsResponse struct {
+	Success bool                       `json:"success"`
+	Data    []RecentViewWithCarDetails `json:"data"`
+	Message string                     `json:"message,omitempty"`
+}
+
+// RecordViewResponse represents the response for recording a view
+type RecordViewResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+}
