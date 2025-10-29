@@ -845,8 +845,8 @@ func (s *CarService) GetColorLabelsByCodes(codes []string, lang string) ([]strin
 // This struct matches the frontend expectations for the display block in GET /api/cars/:id
 type TranslatedCarDisplay struct {
 	// Inspection results as display-ready strings
-	CarDisplay *CarDisplay `json:"car,omitempty"`
-	ImagesDisplay *ImagesDisplay `json:"images,omitempty"`
+	CarDisplay        *CarDisplay        `json:"car,omitempty"`
+	ImagesDisplay     *ImagesDisplay     `json:"images,omitempty"`
 	InspectionDisplay *InspectionDisplay `json:"inspection,omitempty"`
 }
 
@@ -854,11 +854,11 @@ type ImagesDisplay struct {
 	Images []ImageMetadata `json:"images,omitempty"`
 }
 type ImageMetadata struct {
-	ID int `json:"id"`
+	ID  int    `json:"id"`
 	URL string `json:"url"`
 }
 type CarDisplay struct {
-		// Core fields (unchanged from Car model)
+	// Core fields (unchanged from Car model)
 	ID        int       `json:"id"`
 	SellerID  int       `json:"sellerId"`
 	Year      *int      `json:"year"`
@@ -897,6 +897,7 @@ type CarDisplay struct {
 	IsFlooded        bool `json:"isFlooded"`
 	IsHeavilyDamaged bool `json:"isHeavilyDamaged"`
 }
+
 // InspectionDisplay contains stringified inspection results for UI consumption
 type InspectionDisplay struct {
 	Station            string `json:"station,omitempty"`
@@ -932,27 +933,27 @@ func (s *CarService) TranslateCarForDisplay(car *models.Car, lang string) (*Tran
 
 	display := &TranslatedCarDisplay{
 		CarDisplay: &CarDisplay{
-		// Copy core fields
-		ID:               car.ID,
-		SellerID:         car.SellerID,
-		Year:             car.Year,
-		Mileage:          car.Mileage,
-		Price:            car.Price,
-		Status:           car.Status,
-		CreatedAt:        car.CreatedAt,
-		BrandName:        car.BrandName,
-		ModelName:        car.ModelName,
-		SubmodelName:     car.SubmodelName,
-		Description:      car.Description,
-		ChassisNumber:    car.ChassisNumber,
-		Prefix:           car.Prefix,
-		Number:           car.Number,
-		Seats:            car.Seats,
-		Doors:            car.Doors,
-		EngineCC:         car.EngineCC,
-		ConditionRating:  car.ConditionRating,
-		IsFlooded:        car.IsFlooded,
-		IsHeavilyDamaged: car.IsHeavilyDamaged,
+			// Copy core fields
+			ID:               car.ID,
+			SellerID:         car.SellerID,
+			Year:             car.Year,
+			Mileage:          car.Mileage,
+			Price:            car.Price,
+			Status:           car.Status,
+			CreatedAt:        car.CreatedAt,
+			BrandName:        car.BrandName,
+			ModelName:        car.ModelName,
+			SubmodelName:     car.SubmodelName,
+			Description:      car.Description,
+			ChassisNumber:    car.ChassisNumber,
+			Prefix:           car.Prefix,
+			Number:           car.Number,
+			Seats:            car.Seats,
+			Doors:            car.Doors,
+			EngineCC:         car.EngineCC,
+			ConditionRating:  car.ConditionRating,
+			IsFlooded:        car.IsFlooded,
+			IsHeavilyDamaged: car.IsHeavilyDamaged,
 		},
 	}
 

@@ -17,15 +17,17 @@ import (
 type CarHandler struct {
 	carService     *services.CarService
 	userService    *services.UserService
+	profileService *services.ProfileService
 	ocrService     *services.OCRService
 	scraperService *services.ScraperService
 }
 
 // NewCarHandler creates a new car handler
-func NewCarHandler(carService *services.CarService, userService *services.UserService, ocrService *services.OCRService, scraperService *services.ScraperService) *CarHandler {
+func NewCarHandler(carService *services.CarService, userService *services.UserService, profileService *services.ProfileService, ocrService *services.OCRService, scraperService *services.ScraperService) *CarHandler {
 	return &CarHandler{
 		carService:     carService,
 		userService:    userService,
+		profileService: profileService,
 		ocrService:     ocrService,
 		scraperService: scraperService,
 	}
@@ -120,6 +122,22 @@ func (h *CarHandler) GetCar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if user is authenticated and is the owner
+	// var isOwner bool
+	// if userID, ok := r.Context().Value("userID").(int); ok {
+	// 	isOwner = (carWithImages.Car.SellerID == userID)
+	// }
+
+	// Only allow access to active cars for public users
+	// Owners can access their cars regardless of status (draft, sold, deleted)
+	if carWithImages.Car.Status != "active" {
+		utils.RespondJSON(w, http.StatusNotFound, models.UserErrorResponse{
+			Success: false,
+			Error:   "Car not found",
+		})
+		return
+	}
+
 	// Enrich with labels and flatten into car payload
 	lang := r.URL.Query().Get("lang")
 	if lang == "" {
@@ -145,13 +163,20 @@ func (h *CarHandler) GetCar(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Return flattened response with complete metadata + URLs
+	// Get seller contacts
+	var sellerContacts []models.SellerContact
+	if contacts, err := h.profileService.GetSellerContacts(carWithImages.Car.SellerID); err == nil {
+		sellerContacts = contacts
+	}
+
+	// Return flattened response with complete metadata + URLs + seller contacts
 	resp := map[string]interface{}{
 		"success": true,
 		"data": map[string]interface{}{
-			"car":        display.CarDisplay,
-			"images":     enrichedImages,           // Complete metadata + URL for <img src="">
-			"inspection": carWithImages.Inspection, // Complete InspectionResult
+			"car":            display.CarDisplay,
+			"images":         enrichedImages,           // Complete metadata + URL for <img src="">
+			"inspection":     carWithImages.Inspection, // Complete InspectionResult
+			"sellerContacts": sellerContacts,           // Seller contact information
 		},
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)
@@ -1242,10 +1267,10 @@ func (h *CarHandler) UploadInspection(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// RestoreProgress handles POST /api/cars/{id}/restore-progress
+// RestoreProgress handles GET /api/cars/{id}/restore-progress
 func (h *CarHandler) RestoreProgress(w http.ResponseWriter, r *http.Request) {
 	// Check method
-	if r.Method != http.MethodPost {
+	if r.Method != http.MethodGet {
 		utils.RespondJSON(w, http.StatusMethodNotAllowed, models.UserErrorResponse{
 			Success: false,
 			Error:   "Method not allowed",
@@ -1253,7 +1278,7 @@ func (h *CarHandler) RestoreProgress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get user from context
+	// Get user from context (set by auth middleware)
 	userID, ok := r.Context().Value("userID").(int)
 	if !ok {
 		utils.RespondJSON(w, http.StatusUnauthorized, models.UserErrorResponse{
@@ -1273,93 +1298,59 @@ func (h *CarHandler) RestoreProgress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse request body
-	var req struct {
-		SourceCarID int `json:"sourceCarId"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid request body",
-		})
-		return
-	}
-
-	// Validate source car ID
-	if req.SourceCarID <= 0 {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Source car ID is required",
-		})
-		return
-	}
-
-	// Check ownership of both cars
-	targetCar, err := h.carService.GetCarByID(carID)
+	// Get the car data with images and inspection
+	carWithImages, err := h.carService.GetCarWithImages(carID)
 	if err != nil {
-		utils.RespondJSON(w, http.StatusNotFound, models.UserErrorResponse{
+		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
 			Success: false,
-			Error:   "Target car not found",
+			Error:   fmt.Sprintf("Failed to get restored car data: %v", err),
 		})
 		return
 	}
 
-	if targetCar.SellerID != userID {
-		utils.RespondJSON(w, http.StatusForbidden, models.UserErrorResponse{
-			Success: false,
-			Error:   "You can only restore progress to your own cars",
-		})
-		return
-	}
-
-	sourceCar, err := h.carService.GetCarByID(req.SourceCarID)
-	if err != nil {
-		utils.RespondJSON(w, http.StatusNotFound, models.UserErrorResponse{
-			Success: false,
-			Error:   "Source car not found",
-		})
-		return
-	}
-
-	if sourceCar.SellerID != userID {
+	// Check ownership - user can only restore progress from their own car
+	if carWithImages.Car.SellerID != userID {
 		utils.RespondJSON(w, http.StatusForbidden, models.UserErrorResponse{
 			Success: false,
 			Error:   "You can only restore progress from your own cars",
 		})
 		return
 	}
-
-	// Check that target car is a draft
-	if targetCar.Status != "draft" {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Can only restore progress to draft cars",
-		})
-		return
+	// Enrich with labels and flatten into car payload
+	lang := r.URL.Query().Get("lang")
+	if lang == "" {
+		lang = "en"
 	}
 
-	// Check that source car is a draft
-	if sourceCar.Status != "draft" {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Can only restore progress from draft cars",
-		})
-		return
+	var display *services.TranslatedCarDisplay
+	if d, err := h.carService.TranslateCarForDisplay(&carWithImages.Car, lang); err == nil {
+		display = d
 	}
 
-	// Restore progress from source to target
-	if err := h.carService.RestoreProgressFromCar(req.SourceCarID, carID); err != nil {
-		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
-			Success: false,
-			Error:   fmt.Sprintf("Failed to restore progress: %v", err),
-		})
-		return
+	// Enrich images with URLs for display
+	enrichedImages := make([]map[string]interface{}, len(carWithImages.Images))
+	for i, img := range carWithImages.Images {
+		enrichedImages[i] = map[string]interface{}{
+			"id":           img.ID,
+			"carId":        img.CarID,
+			"imageType":    img.ImageType,
+			"imageSize":    img.ImageSize,
+			"displayOrder": img.DisplayOrder,
+			"uploadedAt":   img.UploadedAt,
+			"url":          fmt.Sprintf("/api/cars/images/%d", img.ID), // Add URL for display
+		}
 	}
 
-	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{
+	// Return flattened response with complete metadata + URLs + seller contacts
+	resp := map[string]interface{}{
 		"success": true,
-		"message": "Progress restored successfully",
-	})
+		"data": map[string]interface{}{
+			"car":        display.CarDisplay,
+			"images":     enrichedImages,           // Complete metadata + URL for <img src="">
+			"inspection": carWithImages.Inspection, // Complete InspectionResult
+		},
+	}
+	utils.WriteJSON(w, http.StatusOK, resp)
 }
 
 // RedirectToDraft handles POST /api/cars/{id}/redirect-to-draft

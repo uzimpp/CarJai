@@ -43,7 +43,7 @@ export default function CarImageUploader({
   useEffect(() => {
     const loadExistingImages = async () => {
       try {
-        const result = await carsAPI.getById(carId);
+        const result = await carsAPI.restoreProgress(carId);
         if (result.success && result.data.images) {
           const existingImages: ImagePreview[] = result.data.images
             .slice()
@@ -289,6 +289,15 @@ export default function CarImageUploader({
       onDrop={handleDrop}
       className="w-full max-w-6xl pb-4 space-y-6"
     >
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept="image/*"
+        onChange={(e) => handleFiles(e.target.files)}
+        className="hidden"
+      />
       {/* Error Message */}
       {error && <InlineAlert type="error">{error}</InlineAlert>}
 
@@ -317,123 +326,124 @@ export default function CarImageUploader({
             )}
             {/* Add More tile trigger (desktop) */}
           </div>
+        </div>
+      )}
+      {/* Grid with Add More tile */}
+      <p className="text-sm text-gray-600 mb-4">
+        💡 Images are saved automatically. Drag to reorder (first image will be
+        the main image)
+      </p>
 
-          {/* Grid with Add More tile */}
-          <p className="text-sm text-gray-600 mb-4">
-            💡 Images are saved automatically. Drag to reorder (first image will
-            be the main image)
-          </p>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {images.map((img: ImagePreview, index: number) => (
+          <div
+            key={`${img.preview}-${index}`}
+            draggable
+            onDragStart={() => handleDragStart(index)}
+            onDragOver={(e: DragEvent<HTMLDivElement>) =>
+              handleDragOver(e, index)
+            }
+            onDragEnd={handleDragEnd}
+            className={`relative group cursor-move border-2 rounded-lg overflow-hidden transition-all ${
+              draggedIndex === index
+                ? "border-red-500 shadow-lg opacity-50"
+                : "border-gray-200 hover:border-red-300"
+            }`}
+          >
+            {/* Order Badge */}
+            <div className="absolute top-2 left-2 z-10 px-2 py-1 bg-red-600 text-white text-xs font-bold rounded">
+              {index + 1}
+              {index === 0 && " (Main)"}
+            </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {images.map((img: ImagePreview, index: number) => (
-              <div
-                key={`${img.preview}-${index}`}
-                draggable
-                onDragStart={() => handleDragStart(index)}
-                onDragOver={(e: DragEvent<HTMLDivElement>) =>
-                  handleDragOver(e, index)
-                }
-                onDragEnd={handleDragEnd}
-                className={`relative group cursor-move border-2 rounded-lg overflow-hidden transition-all ${
-                  draggedIndex === index
-                    ? "border-red-500 shadow-lg opacity-50"
-                    : "border-gray-200 hover:border-red-300"
-                }`}
-              >
-                {/* Order Badge */}
-                <div className="absolute top-2 left-2 z-10 px-2 py-1 bg-red-600 text-white text-xs font-bold rounded">
-                  {index + 1}
-                  {index === 0 && " (Main)"}
-                </div>
-
-                {/* Status Badge */}
-                {img.status === "uploading" && (
-                  <div className="absolute top-2 right-12 z-10 px-2 py-1 bg-blue-500 text-white text-xs font-bold rounded">
-                    ⏳
-                  </div>
-                )}
-                {img.status === "uploaded" && (
-                  <div className="absolute top-2 right-12 z-10 px-2 py-1 bg-green-500 text-white text-xs font-bold rounded">
-                    ✓
-                  </div>
-                )}
-                {img.status === "failed" && (
-                  <div className="absolute top-2 right-12 z-10 px-2 py-1 bg-red-500 text-white text-xs font-bold rounded">
-                    ✗
-                  </div>
-                )}
-
-                {/* Remove Button */}
-                <button
-                  onClick={() => removeImage(index)}
-                  className="absolute top-2 right-2 z-10 p-1.5 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700"
-                  title="Remove this image"
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-
-                {/* Image Preview */}
-                <Image
-                  src={img.preview}
-                  alt={`Preview ${index + 1}`}
-                  className="w-full h-48 object-cover"
-                  width={300}
-                  height={192}
-                  unoptimized
-                />
-
-                {/* File Info */}
-                {img.file && (
-                  <div className="p-2 bg-gray-50">
-                    <p
-                      className="text-xs text-gray-600 truncate"
-                      title={img.file.name}
-                    >
-                      {img.file.name}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {(img.file.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
-                  </div>
-                )}
+            {/* {img.status === "uploading" && (
+              <div className="absolute top-2 right-12 z-10 px-2 py-1 bg-blue-500 text-white text-xs font-bold rounded">
+                ⏳
               </div>
-            ))}
-            {/* Add more tile */}
+            )}
+            {img.status === "uploaded" && (
+              <div className="absolute top-2 right-12 z-10 px-2 py-1 bg-green-500 text-white text-xs font-bold rounded">
+                ✓
+              </div>
+            )}
+            {img.status === "failed" && (
+              <div className="absolute top-2 right-12 z-10 px-2 py-1 bg-red-500 text-white text-xs font-bold rounded">
+                ✗
+              </div>
+            )} */}
+
+            {/* Remove Button */}
             <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="flex items-center justify-center aspect-square border-2 border-dashed rounded-lg text-gray-400 hover:text-red-600 hover:border-red-300 transition-colors"
-              title="Add more images"
+              onClick={() => removeImage(index)}
+              className="absolute top-2 right-2 z-10 p-1.5 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700"
+              title="Remove this image"
             >
               <svg
-                className="w-10 h-10"
-                viewBox="0 0 24 24"
+                className="w-4 h-4"
                 fill="none"
                 stroke="currentColor"
+                viewBox="0 0 24 24"
               >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeWidth={1.3}
-                  d="M12 4v16m8-8H4"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
                 />
               </svg>
             </button>
+
+            {/* Image Preview */}
+            <Image
+              src={img.preview}
+              alt={`Preview ${index + 1}`}
+              className="w-full h-48 object-cover"
+              width={300}
+              height={192}
+              unoptimized
+            />
+
+            {/* File Info */}
+            {img.file && (
+              <div className="p-2 bg-gray-50">
+                <p
+                  className="text-xs text-gray-600 truncate"
+                  title={img.file.name}
+                >
+                  {img.file.name}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {(img.file.size / 1024 / 1024).toFixed(2)} MB
+                </p>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        ))}
+        {/* Add more tile */}
+        <button
+          type="button"
+          onClick={() => {
+            console.log("Add more clicked");
+            fileInputRef.current?.click();
+          }}
+          className="flex items-center justify-center aspect-square border-2 border-dashed rounded-lg text-gray-400 hover:text-red-600 hover:border-red-300 transition-colors cursor-pointer"
+          title="Add more images"
+        >
+          <svg
+            className="w-10 h-10"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.3}
+              d="M12 4v16m8-8H4"
+            />
+          </svg>
+        </button>
+      </div>
 
       <p className="text-sm text-gray-500">Supports JPEG, PNG, WebP, GIF</p>
     </div>

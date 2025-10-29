@@ -105,7 +105,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="px-(--space-m) max-w-[1536px] mx-auto w-full">
+    <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full">
       {/* Header */}
       <section className="rounded-3xl bg-gradient-to-r from-maroon to-red text-white shadow-[var(--shadow-lg)] px-(--space-l) py-(--space-m)">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-(--space-s)">
