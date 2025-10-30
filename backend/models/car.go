@@ -744,15 +744,15 @@ func (r *CarRepository) GetFuelLabelsByCodes(codes []string, lang string) ([]str
 	return labels, nil
 }
 
-// GetColorLabelsByIDs returns display labels for color IDs
+// GetColorLabelsByCodes returns display labels for color codes
 func (r *CarRepository) GetColorLabelsByCodes(codes []string, lang string) ([]string, error) {
 	if len(codes) == 0 {
 		return []string{}, nil
 	}
 
-	nameCol := "name_en"
+	labelCol := "label_en"
 	if lang == "th" {
-		nameCol = "name_th"
+		labelCol = "label_th"
 	}
 
 	// Build placeholders for IN clause
@@ -763,8 +763,12 @@ func (r *CarRepository) GetColorLabelsByCodes(codes []string, lang string) ([]st
 		args[i] = code
 	}
 
-	query := fmt.Sprintf("SELECT %s FROM colors WHERE code IN (%s) ORDER BY code",
-		nameCol, strings.Join(placeholders, ","))
+	// Query both code and label to build a map
+	query := fmt.Sprintf(
+		"SELECT code, %s FROM colors WHERE code IN (%s)",
+		labelCol,
+		strings.Join(placeholders, ","),
+	)
 
 	rows, err := r.db.DB.Query(query, args...)
 	if err != nil {
@@ -772,13 +776,22 @@ func (r *CarRepository) GetColorLabelsByCodes(codes []string, lang string) ([]st
 	}
 	defer rows.Close()
 
-	var labels []string
+	// Build map of code -> label
+	codeToLabel := make(map[string]string)
 	for rows.Next() {
-		var label string
-		if err := rows.Scan(&label); err != nil {
+		var code, label string
+		if err := rows.Scan(&code, &label); err != nil {
 			return nil, err
 		}
-		labels = append(labels, label)
+		codeToLabel[code] = label
+	}
+
+	// Reconstruct labels in the order of input codes
+	labels := make([]string, 0, len(codes))
+	for _, code := range codes {
+		if label, ok := codeToLabel[code]; ok {
+			labels = append(labels, label)
+		}
 	}
 
 	return labels, nil

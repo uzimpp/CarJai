@@ -68,7 +68,7 @@ export default function SellWithIdPage() {
       }
 
       try {
-        const result = await carsAPI.getById(carId);
+        const result = await carsAPI.restoreProgress(carId);
         if (!result.success) {
           setError("Car not found. Please start a new draft.");
           suppressAutoDiscardRef.current = true; // Don't discard non-existent cars
@@ -119,7 +119,7 @@ export default function SellWithIdPage() {
       isHydratingRef.current = true;
 
       try {
-        const res = await carsAPI.getById(carId);
+        const res = await carsAPI.restoreProgress(carId);
         if (!res.success) return;
 
         const car = res.data.car; // Access car data from nested structure
@@ -163,6 +163,8 @@ export default function SellWithIdPage() {
           ...(car.province && { province: car.province }),
           ...(car.prefix && { prefix: car.prefix }),
           ...(car.number && { number: car.number }),
+          ...(car.chassisNumber && { chassisNumber: car.chassisNumber }),
+          ...(car.licensePlate && { licensePlate: car.licensePlate }),
           // Colors from car
           ...(Array.isArray((car as unknown as { colors?: string[] }).colors) &&
             ((car as unknown as { colors?: string[] }).colors?.length ?? 0) >
@@ -465,26 +467,6 @@ export default function SellWithIdPage() {
     window.location.reload();
   };
 
-  // Handle duplicate conflict modal actions
-  const handleRedirectToExisting = async () => {
-    if (!conflictExistingCarId) return;
-
-    try {
-      const redirectResult = await carsAPI.redirectToDraft(
-        carId,
-        conflictExistingCarId
-      );
-      if (redirectResult.success) {
-        router.replace(`/sell/${redirectResult.redirectToCarId}`);
-      }
-    } catch (err) {
-      setError(`Failed to redirect to existing draft: ${err}`);
-    } finally {
-      setShowDuplicateConflictModal(false);
-      setConflictExistingCarId(null);
-    }
-  };
-
   const handleCreateNewListing = () => {
     // User chose to start fresh - continue with current car
     setShowDuplicateConflictModal(false);
@@ -624,7 +606,7 @@ export default function SellWithIdPage() {
   }
 
   return (
-    <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8">
+    <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full">
       <div className="max-w-4xl mx-auto">
         {/* Header with discard button */}
         <div className="flex justify-between items-center mb-8">
@@ -906,7 +888,7 @@ export default function SellWithIdPage() {
         {/* Duplicate Conflict Modal */}
         <DuplicateConflictModal
           isOpen={showDuplicateConflictModal}
-          onRedirect={handleRedirectToExisting}
+          onRedirect={handleProgressRestore}
           onCreateNew={handleCreateNewListing}
         />
       </div>
