@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -68,6 +69,14 @@ func (s *ScraperService) ScrapeInspectionData(url string) (map[string]string, er
 		chromedp.Flag("no-sandbox", true), // สำคัญมากสำหรับการรันใน Docker
 		chromedp.Flag("disable-dev-shm-usage", true),
 	)
+
+	execPath := os.Getenv("CHROME_PATH")
+	if execPath == "" {
+		execPath = os.Getenv("CHROME_BIN")
+	}
+	if execPath != "" {
+		opts = append(opts, chromedp.ExecPath(execPath))
+	}
 
 	// สร้าง Context สำหรับ Browser instance พร้อม Options
 	allocCtx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
