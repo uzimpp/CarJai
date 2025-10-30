@@ -51,7 +51,7 @@ export default function SellerWelcomePage() {
             Welcome, Car Seller! 🚗
           </h1>
           <p className="text-gray-600 text-lg">
-            Ready to start selling? Here's what you can do:
+            Ready to start selling? Here&apos;s what you can do:
           </p>
         </div>
 

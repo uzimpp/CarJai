@@ -51,7 +51,7 @@ export default function BuyerWelcomePage() {
             Welcome, Car Buyer! 🚗
           </h1>
           <p className="text-gray-600 text-lg">
-            Ready to find your perfect car? Here's what you can do:
+            Ready to find your perfect car? Here&apos;s what you can do:
           </p>
         </div>
 
