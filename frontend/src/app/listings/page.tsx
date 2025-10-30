@@ -13,7 +13,6 @@ export default function MyListingsPage() {
   const { isAuthenticated, isLoading, roles, profiles } = useUserAuth();
   const [listings, setListings] = useState<CarListing[]>([]);
   const [isLoadingListings, setIsLoadingListings] = useState(true);
-  const [error, setError] = useState("");
   const [filter, setFilter] = useState<"all" | "draft" | "active">("all");
 
   // Redirect logic for seller guard
@@ -52,12 +51,8 @@ export default function MyListingsPage() {
         if (result.success && result.data) {
           setListings(result.data);
         } else {
-          setError(result.message || "Failed to load listings");
         }
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "An unexpected error occurred"
-        );
       } finally {
         setIsLoadingListings(false);
       }
@@ -268,13 +263,6 @@ export default function MyListingsPage() {
           Drafts ({draftCount})
         </button>
       </div>
-
-      {/* Error Message */}
-      {error && (
-        <div className="mb-(--space-l) p-(--space-m) bg-red-50 border-2 border-red-200 rounded-3xl text-red-700 text-0">
-          {error}
-        </div>
-      )}
 
       {/* Listings Grid */}
       {isLoadingListings ? (
