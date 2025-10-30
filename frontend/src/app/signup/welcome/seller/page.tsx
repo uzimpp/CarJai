@@ -1,19 +1,12 @@
 "use client";
 
-import { useState } from 'react';
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useUserAuth } from "@/hooks/useUserAuth";
 
 export default function SellerWelcomePage() {
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const router = useRouter();
-  const { roles, profiles, isLoading, isAuthenticated } = useUserAuth();
-
-  const handleNavigation = (path: string, label: string) => {
-    setSelectedOption(label);
-    router.push(path);
-  };
+  const { user, isLoading, isAuthenticated, roles, profiles } = useUserAuth();
 
   if (isLoading) {
     return (
@@ -55,21 +48,11 @@ export default function SellerWelcomePage() {
           </p>
         </div>
 
-        {selectedOption && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-900 text-sm">
-            Selected: <strong>{selectedOption}</strong>
-          </div>
-        )}
-
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Complete Profile */}
-          <button
-            type="button"
-            onClick={() => handleNavigation(
-              profiles?.sellerComplete ? "/settings" : "/signup/role/seller", 
-              profiles?.sellerComplete ? "Manage Profile" : "Complete Profile"
-            )}
-            className="group rounded-2xl border-2 border-gray-200 bg-white p-8 shadow-sm hover:shadow-lg hover:border-red-800 transition-all hover:-translate-y-1 text-left"
+          <Link
+            href={profiles?.sellerComplete ? "/settings" : "/signup/role/seller"}
+            className="group rounded-2xl border-2 border-gray-200 bg-white p-8 shadow-sm hover:shadow-lg hover:border-red-800 transition-all hover:-translate-y-1 text-left inline-block w-full"
           >
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-2xl">
@@ -95,13 +78,12 @@ export default function SellerWelcomePage() {
                 Required to start selling
               </div>
             )}
-          </button>
+          </Link>
 
           {/* Start Selling */}
-          <button
-            type="button"
-            onClick={() => handleNavigation("/sell", "Start Selling")}
-            className="group rounded-2xl border-2 border-gray-200 bg-white p-8 shadow-sm hover:shadow-lg hover:border-red-800 transition-all hover:-translate-y-1 text-left"
+          <Link
+            href="/sell"
+            className="group rounded-2xl border-2 border-gray-200 bg-white p-8 shadow-sm hover:shadow-lg hover:border-red-800 transition-all hover:-translate-y-1 text-left inline-block w-full"
           >
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-2xl">
@@ -124,13 +106,12 @@ export default function SellerWelcomePage() {
                 Complete profile first
               </div>
             )}
-          </button>
+          </Link>
 
           {/* Selling Guides */}
-          <button
-            type="button"
-            onClick={() => handleNavigation("/guides?tab=seller", "Selling Guides")}
-            className="group rounded-2xl border-2 border-gray-200 bg-white p-8 shadow-sm hover:shadow-lg hover:border-red-800 transition-all hover:-translate-y-1 text-left"
+          <Link
+            href="/guides/seller"
+            className="group rounded-2xl border-2 border-gray-200 bg-white p-8 shadow-sm hover:shadow-lg hover:border-red-800 transition-all hover:-translate-y-1 text-left inline-block w-full"
           >
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-2xl">
@@ -148,14 +129,14 @@ export default function SellerWelcomePage() {
               <li>• Photography tips</li>
               <li>• Pricing strategies</li>
             </ul>
-          </button>
+          </Link>
         </div>
 
         {/* Additional Options */}
         <div className="mt-12 text-center">
           <Link 
             href="/"
-            className="inline-block text-red-800 hover:underline font-semibold"
+            className="text-red-800 hover:text-red-900 hover:underline"
           >
             Back to Home
           </Link>

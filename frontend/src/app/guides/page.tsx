@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Car, ShoppingCart, User, Camera, CheckCircle, Search, Phone, Sparkles, Shield } from 'lucide-react';
 
 interface Step {
@@ -22,7 +22,6 @@ interface StepCardProps {
 
 export default function CarJaiGuides() {
   const [activeTab, setActiveTab] = useState('seller');
-  const router = useRouter();
 
   const sellerSteps: Step[] = [
     {
@@ -170,10 +169,6 @@ export default function CarJaiGuides() {
     );
   };
 
-  const handleUnderstandClick = () => {
-    router.push('/');
-  };
-
   return (
     <div className="px-4 pt-4 pb-4">
       {/* Header matching CarJai style */}
@@ -193,7 +188,7 @@ export default function CarJaiGuides() {
         <div className="flex gap-4 mb-8">
           <button
             onClick={() => setActiveTab('seller')}
-            className={`flex-1 py-5 px-6 rounded-xl font-semibold text-lg transition-all flex items-center justify-center ${
+            className={`flex-1 py-5 px-6 rounded-xl font-semibold text-lg transition-all flex items-center justify-center hover:shadow-lg hover:scale-105 ${
               activeTab === 'seller'
                 ? 'bg-gradient-to-r from-red-900 to-red-800 text-white shadow-lg'
                 : 'bg-white text-gray-700 hover:bg-gray-50 shadow-md'
@@ -204,7 +199,7 @@ export default function CarJaiGuides() {
           </button>
           <button
             onClick={() => setActiveTab('buyer')}
-            className={`flex-1 py-5 px-6 rounded-xl font-semibold text-lg transition-all flex items-center justify-center ${
+            className={`flex-1 py-5 px-6 rounded-xl font-semibold text-lg transition-all flex items-center justify-center hover:shadow-lg hover:scale-105 ${
               activeTab === 'buyer'
                 ? 'bg-gradient-to-r from-green-700 to-green-600 text-white shadow-lg'
                 : 'bg-white text-gray-700 hover:bg-gray-50 shadow-md'
@@ -265,12 +260,12 @@ export default function CarJaiGuides() {
             </div>
 
             <div className="mt-8 text-center">
-              <button 
-                onClick={handleUnderstandClick}
-                className="bg-gradient-to-r from-red-900 to-red-800 text-white px-12 py-4 rounded-xl font-semibold text-lg hover:shadow-lg transition-all hover:scale-105"
+              <Link 
+                href="/"
+                className="inline-block bg-gradient-to-r from-red-900 to-red-800 text-white px-12 py-4 rounded-xl font-semibold text-lg hover:shadow-lg transition-all hover:scale-105"
               >
                 I Understand It
-              </button>
+              </Link>
             </div>
           </div>
         )}
@@ -343,12 +338,12 @@ export default function CarJaiGuides() {
             </div>
 
             <div className="mt-8 text-center">
-              <button 
-                onClick={handleUnderstandClick}
-                className="bg-gradient-to-r from-green-700 to-green-600 text-white px-12 py-4 rounded-xl font-semibold text-lg hover:shadow-lg transition-all hover:scale-105"
+              <Link 
+                href="/"
+                className="inline-block bg-gradient-to-r from-green-700 to-green-600 text-white px-12 py-4 rounded-xl font-semibold text-lg hover:shadow-lg transition-all hover:scale-105"
               >
                 I Understand It
-              </button>
+              </Link>
             </div>
           </div>
         )}

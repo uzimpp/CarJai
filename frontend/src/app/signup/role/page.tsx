@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import Link from "next/link";
 
-export default function RoleSelectionPage() {
+function RoleSelectionContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isAuthenticated, isLoading, roles } = useUserAuth();
@@ -265,5 +265,20 @@ export default function RoleSelectionPage() {
           You can add or switch roles later in your settings
         </p> */}
     </div>
+  );
+}
+
+export default function RoleSelectionPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <RoleSelectionContent />
+    </Suspense>
   );
 }
