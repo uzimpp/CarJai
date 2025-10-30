@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { carsAPI } from "@/lib/carsAPI";
-import Link from "next/link";
 import SearchFilters, {
   SearchFiltersData,
 } from "@/components/search/SearchFilters";
@@ -121,9 +120,7 @@ export default function BrowsePage() {
               {/* Car Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
                 {cars.map((car) => (
-                  <Link key={car.id} href={`/car/${car.id}`}>
-                    <CarCard car={car} variant="browse" />
-                  </Link>
+                    <CarCard key={car.id} car={car} variant="browse" />
                 ))}
               </div>
 

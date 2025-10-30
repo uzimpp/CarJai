@@ -48,7 +48,7 @@ export default function SellWithIdPage() {
     useState(false);
   const [showDuplicateConflictModal, setShowDuplicateConflictModal] =
     useState(false);
-  const [conflictExistingCarId, setConflictExistingCarId] = useState<
+  const [_conflictExistingCarId, setConflictExistingCarId] = useState<
     number | null
   >(null);
 
