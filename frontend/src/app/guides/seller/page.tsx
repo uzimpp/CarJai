@@ -2,8 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Car, User, Camera, CheckCircle, Sparkles, Shield, DollarSign, Edit, TrendingUp, Users } from 'lucide-react';
+import { Car, User, Camera, CheckCircle, Sparkles, Shield, DollarSign, TrendingUp, Users } from 'lucide-react';
 
 interface Step {
   id: number;
@@ -22,8 +21,6 @@ interface StepCardProps {
 }
 
 export default function SellerGuides() {
-  const router = useRouter();
-
   const sellerSteps: Step[] = [
     {
       id: 1,

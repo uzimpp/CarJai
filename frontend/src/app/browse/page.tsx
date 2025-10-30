@@ -120,7 +120,7 @@ export default function BrowsePage() {
               {/* Car Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
                 {cars.map((car) => (
-                    <CarCard car={car} variant="browse" />
+                    <CarCard key={car.id} car={car} variant="browse" />
                 ))}
               </div>
 

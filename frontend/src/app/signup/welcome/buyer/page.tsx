@@ -1,12 +1,10 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useUserAuth } from "@/hooks/useUserAuth";
 
 export default function BuyerWelcomePage() {
-  const router = useRouter();
-  const { user, isLoading, isAuthenticated, roles } = useUserAuth();
+  const { isLoading, isAuthenticated, roles } = useUserAuth();
 
   if (isLoading) {
     return (
