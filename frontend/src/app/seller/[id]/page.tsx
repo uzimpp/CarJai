@@ -177,7 +177,7 @@ export default function SellerPage() {
   };
 
   return (
-    <div className="!pb-(--space-l) px-(--space-m) py-(--space-s) max-w-[1536px] mx-auto w-full">
+    <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full">
       {/* Hero */}
       <div className="bg-maroon text-white rounded-4xl">
         <div className="max-w-[1200px] mx-auto px-(--space-m) py-(--space-xl)">

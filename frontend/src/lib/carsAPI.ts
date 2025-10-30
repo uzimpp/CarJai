@@ -63,7 +63,7 @@ export const carsAPI = {
     });
   },
 
-  // Get single car details (car + images + inspection)
+  // Get single car details (car + images + inspection + seller contacts)
   async getById(carId: number): Promise<{
     success: boolean;
     data: Car;
@@ -262,25 +262,18 @@ export const carsAPI = {
     });
   },
 
-  // Restore progress from another car
-  async restoreProgress(
-    targetCarId: number,
-    sourceCarId: number
-  ): Promise<{ success: boolean; message: string }> {
-    return apiCall(`/api/cars/${targetCarId}/restore-progress`, {
-      method: "POST",
-      body: JSON.stringify({ sourceCarId }),
-    });
-  },
-
-  // Redirect to existing draft and delete current car
-  async redirectToDraft(
-    currentCarId: number,
-    targetCarId: number
-  ): Promise<{ success: boolean; message: string; redirectToCarId: number }> {
-    return apiCall(`/api/cars/${currentCarId}/redirect-to-draft`, {
-      method: "POST",
-      body: JSON.stringify({ targetCarId }),
+  // Restore progress (Car + Images + Inspection)
+  async restoreProgress(carId: number): Promise<{
+    success: boolean;
+    message?: string;
+    data: Car & { sellerContacts?: null };
+  }> {
+    return apiCall<{
+      success: boolean;
+      data: Car & { sellerContacts?: null };
+      message?: string;
+    }>(`/api/cars/${carId}/restore-progress`, {
+      method: "GET",
     });
   },
 };
