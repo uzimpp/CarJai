@@ -30,6 +30,7 @@ export interface Car {
   car: CarData;
   images: ImageMetadata[];
   inspection: InspectionData;
+  sellerContacts?: SellerContact[];
 }
 // For full car data matching with the DB attributes - Updated to receive display labels
 export interface CarData {

@@ -2,7 +2,7 @@ import Cta from "@/components/global/Cta";
 
 export default function AboutUs() {
   return (
-    <div className="!pb-(--space-l) px-(--space-m) py-(--space-s) max-w-[1536px] mx-auto">
+    <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full">
       {/* Hero Section */}
       <section className="text-center mb-(--space-2xl)">
         <div className="relative">
@@ -11,10 +11,9 @@ export default function AboutUs() {
           </h1>
           <div className="w-24 h-1 bg-gradient-to-r from-maroon to-red mx-auto mb-(--space-m)"></div>
           <p className="text-2 text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            Trusted second-hand car marketplace, where
-            every transaction is built on{" "}
-            <span className="font-bold text-maroon">transparency</span>,
-            <span className="font-bold text-maroon"> trust</span>, and
+            Trusted second-hand car marketplace, where every transaction is
+            built on <span className="font-bold text-maroon">transparency</span>
+            ,<span className="font-bold text-maroon"> trust</span>, and
             <span className="font-bold text-maroon"> genuine care</span>.
           </p>
         </div>

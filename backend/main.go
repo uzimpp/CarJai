@@ -53,7 +53,8 @@ type ServiceContainer struct {
 	Favourite   *services.FavouriteService
 	Maintenance *services.MaintenanceService
 	OCR         *services.OCRService
-	Scraper     *services.ScraperService // + เพิ่มส่วนนี้
+	Scraper     *services.ScraperService 
+	Extraction  *services.ExtractionService
 	UserJWT     *utils.JWTManager
 	AdminJWT    *utils.JWTManager
 }
@@ -115,6 +116,10 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 	// Create scraper service
 	scraperService := services.NewScraperService()
 
+	extractionService := services.NewExtractionService(db)
+
+	
+
 	return &ServiceContainer{
 		Admin: services.NewAdminService(
 			adminRepo,
@@ -135,6 +140,7 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 		),
 		OCR:      services.NewOCRService(appConfig.AigenAPIKey),
 		Scraper:  scraperService,
+		Extraction:  extractionService,
 		UserJWT:  userJWTManager,
 		AdminJWT: adminJWTManager,
 	}
@@ -148,6 +154,7 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Hello from CarJai Backend!")
 	})
+
 	// Mount all routes
 	mux.Handle("/api/auth/",
 		routes.UserAuthRoutes(services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
@@ -156,17 +163,25 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 	mux.Handle("/api/sellers/",
 		routes.PublicSellerRoutes(services.Profile, services.Car, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/cars",
-		routes.CarRoutes(services.Car, services.User, services.OCR, services.Scraper, services.UserJWT, appConfig.CORSAllowedOrigins))
+		routes.CarRoutes(services.Car, services.User, services.Profile, services.OCR, services.Scraper, services.UserJWT, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/cars/",
-		routes.CarRoutes(services.Car, services.User, services.OCR, services.Scraper, services.UserJWT, appConfig.CORSAllowedOrigins))
+		routes.CarRoutes(services.Car, services.User, services.Profile, services.OCR, services.Scraper, services.UserJWT, appConfig.CORSAllowedOrigins))
 
 	// Favourite routes
 	mux.Handle("/api/favorites",
 		routes.FavouritesRoutes(services.Favourite, services.User, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/favorites/",
 		routes.FavouritesRoutes(services.Favourite, services.User, appConfig.CORSAllowedOrigins))
-	mux.Handle(adminPrefix+"/",
-		routes.AdminRoutes(services.Admin, services.AdminJWT, adminPrefix, appConfig.CORSAllowedOrigins, appConfig.AdminIPWhitelist))
+	mux.Handle(adminPrefix+"/", // Handle all paths under /admin/
+		routes.AdminRoutes( 
+			services.Admin, 
+			services.AdminJWT,
+			services.Extraction,
+			adminPrefix,
+			appConfig.CORSAllowedOrigins,
+			appConfig.AdminIPWhitelist,
+		),
+	)
 	mux.Handle("/health/",
 		routes.HealthRoutes(db, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/reference-data",

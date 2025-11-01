@@ -1,7 +1,9 @@
 package routes
 
 import (
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/uzimpp/CarJai/backend/handlers"
 	"github.com/uzimpp/CarJai/backend/middleware"
@@ -13,28 +15,53 @@ import (
 func AdminRoutes(
 	adminService *services.AdminService,
 	jwtManager *utils.JWTManager,
+	// Add ExtractionService
+	extractionService *services.ExtractionService,
 	adminPrefix string,
 	allowedOrigins []string,
 	allowedIPs []string,
 ) *http.ServeMux {
-
 	// Create middleware instances
 	authMiddleware := middleware.NewAuthMiddleware(adminService, jwtManager)
 
 	// Create handler instances
 	adminAuthHandler := handlers.NewAdminAuthHandler(adminService, jwtManager, authMiddleware)
 	adminIPHandler := handlers.NewAdminIPHandler(adminService)
+	// Create Handler for Extraction
+	adminExtractionHandler := handlers.NewAdminExtractionHandler(extractionService)
 
 	// Create router
 	router := http.NewServeMux()
+	basePath := strings.TrimSuffix(adminPrefix, "/")
 
-	// Admin authentication routes (POST)
-	router.HandleFunc(adminPrefix+"/auth/signin",
+	// --- Middleware Chain Helper (for brevity) ---
+	applyAdminAuthMiddleware := func(handler http.HandlerFunc) http.HandlerFunc {
+		// Middleware chain for fully protected admin routes requiring authentication and IP whitelist
+		return middleware.CORSMiddleware(allowedOrigins)(
+			middleware.SecurityHeadersMiddleware(
+				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
+					middleware.GeneralRateLimit()( // Add general rate limit
+						middleware.AdminLoggingMiddleware( // Use Admin logging
+							authMiddleware.RequireAuth(
+								authMiddleware.RequireIPWhitelist(
+									handler,
+								),
+							),
+						),
+					),
+				),
+			),
+		)
+	}
+
+	// --- Admin Authentication Routes ---
+	// Signin needs special handling (LoginRateLimit, no auth required yet)
+	router.HandleFunc(basePath+"/auth/signin",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
-					middleware.LoginRateLimit()(
-						middleware.LoggingMiddleware(
+					middleware.LoginRateLimit()( // Specific rate limit for login
+						middleware.LoggingMiddleware( // Use general logging for potentially unauthenticated requests
 							adminAuthHandler.Signin,
 						),
 					),
@@ -42,126 +69,54 @@ func AdminRoutes(
 			),
 		),
 	)
+	// Other auth routes use the standard protected middleware chain
+	router.HandleFunc(basePath+"/auth/signout", applyAdminAuthMiddleware(adminAuthHandler.Signout))
+	router.HandleFunc(basePath+"/auth/me", applyAdminAuthMiddleware(adminAuthHandler.Me))
+	router.HandleFunc(basePath+"/auth/refresh", applyAdminAuthMiddleware(adminAuthHandler.RefreshToken))
 
-	// Admin authentication routes (POST)
-	router.HandleFunc(adminPrefix+"/auth/signout",
-		middleware.CORSMiddleware(allowedOrigins)(
-			middleware.SecurityHeadersMiddleware(
-				middleware.AdminLoggingMiddleware(
-					authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
-						middleware.GeneralRateLimit()(
-							authMiddleware.RequireAuth(
-								authMiddleware.RequireIPWhitelist(
-									adminAuthHandler.Signout,
-								),
-							),
-						),
-					),
-				),
-			),
-		),
-	)
+	// --- Admin IP Whitelist Management Routes ---
+	router.HandleFunc(basePath+"/ip-whitelist", applyAdminAuthMiddleware(adminIPHandler.GetWhitelistedIPs))
+	router.HandleFunc(basePath+"/ip-whitelist/add", applyAdminAuthMiddleware(adminIPHandler.AddIPToWhitelist))
+	router.HandleFunc(basePath+"/ip-whitelist/remove", applyAdminAuthMiddleware(adminIPHandler.RemoveIPFromWhitelist))
 
-	// Admin authentication routes (GET)
-	router.HandleFunc(adminPrefix+"/auth/me",
-		middleware.CORSMiddleware(allowedOrigins)(
-			middleware.SecurityHeadersMiddleware(
-				middleware.AdminLoggingMiddleware(
-					authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
-						authMiddleware.RequireAuth(
-							authMiddleware.RequireIPWhitelist(
-								adminAuthHandler.Me,
-							),
-						),
-					),
-				),
-			),
-		),
-	)
+	// --- Market Price Import/Extract Route (POST PDF) ---
+	// This endpoint only use for extract data
+	router.HandleFunc(basePath+"/market-price/import", applyAdminAuthMiddleware(adminExtractionHandler.HandleImportMarketPrices))
 
-	// Admin authentication routes (POST)
-	router.HandleFunc(adminPrefix+"/auth/refresh",
-		middleware.CORSMiddleware(allowedOrigins)(
-			middleware.SecurityHeadersMiddleware(
-				middleware.AdminLoggingMiddleware(
-					authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
-						authMiddleware.RequireAuth(
-							authMiddleware.RequireIPWhitelist(
-								adminAuthHandler.RefreshToken,
-							),
-						),
-					),
-				),
-			),
-		),
-	)
+	// --- Market Price Commit Route (POST JSON) ---
+	// This endpoint receive JSON and insert to DB
+	router.HandleFunc(basePath+"/market-price/commit", applyAdminAuthMiddleware(adminExtractionHandler.HandleCommitMarketPrices))
 
-	// Admin IP whitelist management routes (GET)
-	router.HandleFunc(adminPrefix+"/ip-whitelist",
+	// --- Health Check & Root ---
+	// Health check and Root only need Global IP Whitelist and general logging
+	router.HandleFunc(basePath+"/health",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
-					middleware.AdminLoggingMiddleware(
-						authMiddleware.RequireAuth(
-							authMiddleware.RequireIPWhitelist(
-								adminIPHandler.GetWhitelistedIPs,
-							),
-						),
+					middleware.LoggingMiddleware( // Use general logging
+						func(w http.ResponseWriter, r *http.Request) {
+							w.WriteHeader(http.StatusOK)
+							fmt.Fprintln(w, "Admin OK")
+						},
 					),
 				),
 			),
 		),
 	)
-
-	// Admin IP whitelist management routes (POST)
-	router.HandleFunc(adminPrefix+"/ip-whitelist/add",
+	router.HandleFunc(basePath+"/",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
-					middleware.AdminLoggingMiddleware(
-						authMiddleware.RequireAuth(
-							authMiddleware.RequireIPWhitelist(
-								adminIPHandler.AddIPToWhitelist,
-							),
-						),
+					middleware.LoggingMiddleware( // Use general logging
+						func(w http.ResponseWriter, r *http.Request) {
+							if r.URL.Path == basePath+"/" {
+								w.WriteHeader(http.StatusOK)
+								w.Write([]byte("Admin API Root"))
+							} else {
+								http.NotFound(w, r) // Return 404 for other unmatched paths under /admin/
+							}
+						},
 					),
-				),
-			),
-		),
-	)
-
-	// Admin IP whitelist management routes (DELETE)
-	router.HandleFunc(adminPrefix+"/ip-whitelist/remove",
-		middleware.CORSMiddleware(allowedOrigins)(
-			middleware.SecurityHeadersMiddleware(
-				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
-					middleware.AdminLoggingMiddleware(
-						authMiddleware.RequireAuth(
-							authMiddleware.RequireIPWhitelist(
-								adminIPHandler.RemoveIPFromWhitelist,
-							),
-						),
-					),
-				),
-			),
-		),
-	)
-
-	// Route for any other admin paths (GET)
-	router.HandleFunc(adminPrefix+"/",
-		middleware.CORSMiddleware(allowedOrigins)(
-			middleware.SecurityHeadersMiddleware(
-				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
-					func(w http.ResponseWriter, r *http.Request) {
-						// Return 404 for unmatched API routes, but allow frontend routing
-						if r.URL.Path != "/" {
-							http.NotFound(w, r)
-							return
-						}
-						// For root admin path, return success (frontend will handle routing)
-						w.WriteHeader(http.StatusOK)
-						w.Write([]byte("Admin API is running"))
-					},
 				),
 			),
 		),
