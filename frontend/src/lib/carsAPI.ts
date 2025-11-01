@@ -276,4 +276,23 @@ export const carsAPI = {
       method: "GET",
     });
   },
+
+  /**
+   * Fetches the estimated price for a car.
+   * Returns null data if estimation is unavailable (success: false).
+   */
+  async getPriceEstimate(carId: number): Promise<{
+    success: boolean;
+    data: { estimatedPrice: number } | null;
+    message?: string;
+  }> {
+    return apiCall<{
+      success: boolean;
+      data: { estimatedPrice: number } | null;
+      message?: string;
+    }>(`/api/cars/${carId}/estimate`, {
+      method: "GET",
+    });
+  },
+
 };

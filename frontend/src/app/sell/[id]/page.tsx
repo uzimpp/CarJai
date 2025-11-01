@@ -52,6 +52,10 @@ export default function SellWithIdPage() {
     number | null
   >(null);
 
+  const [estimatedPrice, setEstimatedPrice] = useState<number | null>(null);
+  const [isEstimating, setIsEstimating] = useState(false);
+  const [estimationError, setEstimationError] = useState<string | null>(null);
+
   // Update hasProgressRef whenever hasProgress changes
   useEffect(() => {
     hasProgressRef.current = hasProgress;
@@ -245,29 +249,36 @@ export default function SellWithIdPage() {
   }, [carId, isAuthenticated, isLoading]);
 
   // Auto-discard when navigating away from this draft page (client-side routing only)
-  useEffect(() => {
-    // Skip on first mount to avoid false positive from Strict Mode
-    if (!initializedPathRef.current) {
-      initializedPathRef.current = true;
-      return;
-    }
+useEffect(() => {
+    const fetchEstimate = async () => {
+      // Reset state on each attempt
+      setEstimatedPrice(null);
+      setEstimationError(null);
 
-    // Check if we're still on this draft's page
-    const stillOnThisDraft = pathname && pathname.startsWith(`/sell/${carId}`);
+      if (currentStep === "pricing" && carId) {
+        setIsEstimating(true);
+        try {
+          const result = await carsAPI.getPriceEstimate(carId);
+          if (result.success && result.data && result.data.estimatedPrice > 0) {
+            setEstimatedPrice(result.data.estimatedPrice);
+          } else if (!result.success && result.message) {
+            // ถ้า API ล้มเหลว (เช่น ข้อมูลไม่พอ) ให้แสดง message
+            setEstimationError(result.message);
+          } else {
+            // กรณีอื่นๆ ที่ไม่สำเร็จ
+            setEstimationError("Price estimation is currently unavailable.");
+          }
+        } catch (err) {
+          console.error("Failed to fetch price estimate:", err);
+          setEstimationError("Failed to load estimation data.");
+        } finally {
+          setIsEstimating(false);
+        }
+      }
+    };
 
-    // If navigating away and no progress, discard
-    if (
-      !stillOnThisDraft &&
-      carId &&
-      !isNaN(carId) &&
-      !hasProgressRef.current &&
-      !suppressAutoDiscardRef.current
-    ) {
-      carsAPI.discardDraft(carId).catch(() => {
-        // Ignore errors - backend cleanup will handle orphans
-      });
-    }
-  }, [pathname, carId]);
+    fetchEstimate();
+  }, [currentStep, carId]); 
 
   // Handle book upload (Step 1)
   const handleBookUpload = async (file: File) => {
@@ -815,6 +826,37 @@ export default function SellWithIdPage() {
                 Set your asking price, upload 5-12 high-quality images, write a
                 description, and disclose any damage history.
               </p>
+
+              {isEstimating && (
+                <div className="mb-4 text-sm text-gray-500">
+                  Loading estimated price...
+                </div>
+              )}
+              {estimatedPrice && !isEstimating && (
+                <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-md">
+                  <h4 className="text-lg font-semibold text-green-800">
+                    Estimated Price: ฿{estimatedPrice.toLocaleString()}
+                  </h4>
+                  <p className="text-sm text-green-700 mt-1">
+                    This is an estimate based on our formula and market data. It
+                    is intended to help you set a price, but you are free to set
+                    any price you wish.
+                  </p>
+                </div>
+              )}
+
+              {estimationError && !isEstimating && !estimatedPrice && (
+                <div className="mb-6 p-3 bg-gray-100 border border-gray-200 rounded-md">
+                  <p className="text-sm text-gray-600">
+                    <span className="font-medium">Note:</span> Could not
+                    calculate estimated price.{" "}
+                    <span className="text-gray-500">
+                      (Reason: {estimationError})
+                    </span>
+                  </p>
+                </div>
+              )}
+
               <Step3PricingForm
                 carId={carId}
                 formData={formData}
