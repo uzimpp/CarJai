@@ -95,17 +95,17 @@ func (s *CarService) EstimateCarPrice(carID int) (int64, error) {
 		return 0, fmt.Errorf("car not found: %w", err)
 	}
 
-	// 2. Check for required fields for estimation
-	if car.BrandName == nil || car.ModelName == nil || car.Year == nil {
-		return 0, fmt.Errorf("estimation unavailable: missing brand, model, or year")
+	// 2. Check for required fields for estimation 
+	if car.BrandName == nil || car.SubmodelName == nil || car.Year == nil {
+		return 0, fmt.Errorf("estimation unavailable: missing brand, submodel, or year")
 	}
 
-	// 3. Get base market price
-	marketPrice, err := s.marketPriceRepo.GetMarketPrice(*car.BrandName, *car.ModelName, *car.Year)
+	// 3. Get base market price 
+	marketPrice, err := s.marketPriceRepo.GetMarketPrice(*car.BrandName, *car.SubmodelName, *car.Year)
 	if err != nil {
-		// If no market price is found, we can't estimate
 		return 0, fmt.Errorf("estimation unavailable: %w", err)
 	}
+
 
 	// 4. Calculate base price (average of min/max)
 	basePrice := (marketPrice.PriceMinTHB + marketPrice.PriceMaxTHB) / 2
@@ -114,6 +114,7 @@ func (s *CarService) EstimateCarPrice(carID int) (int64, error) {
 	}
 
 	// 5. Calculate Condition Score (Adjustment Factor)
+	// ... (ส่วนที่เหลือของฟังก์ชันเหมือนเดิมครับ) ...
 	adjustmentFactor := 1.0
 
 	// Adjust based on ConditionRating (1-5, 3 is average)

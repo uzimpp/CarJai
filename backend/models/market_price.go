@@ -29,21 +29,23 @@ func NewMarketPriceRepository(db *Database) *MarketPriceRepository {
 
 // GetMarketPrice finds the average market price for a given brand, model, and year
 // We assume model_trim in market_price maps to model_name in cars
-func (r *MarketPriceRepository) GetMarketPrice(brand, model string, year int) (*MarketPrice, error) {
+func (r *MarketPriceRepository) GetMarketPrice(brand, submodel string, year int) (*MarketPrice, error) { 
 	mp := &MarketPrice{}
+
 	query := `
 		SELECT price_min_thb, price_max_thb
 		FROM market_price
 		WHERE
 			brand ILIKE $1 AND
-			model_trim ILIKE $2 AND
+			RTRIM(model_trim) ILIKE $2 AND 
 			$3 BETWEEN year_start AND year_end
 		LIMIT 1`
 
-	err := r.db.DB.QueryRow(query, brand, model, year).Scan(&mp.PriceMinTHB, &mp.PriceMaxTHB)
+
+	err := r.db.DB.QueryRow(query, brand, submodel, year).Scan(&mp.PriceMinTHB, &mp.PriceMaxTHB)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("market price not found for %s %s (%d)", brand, model, year)
+			return nil, fmt.Errorf("market price not found for %s %s (%d)", brand, submodel, year)
 		}
 		return nil, fmt.Errorf("failed to get market price: %w", err)
 	}
