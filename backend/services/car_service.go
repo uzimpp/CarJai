@@ -6,6 +6,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"time"
+	"math"
 
 	"github.com/uzimpp/CarJai/backend/models"
 	"github.com/uzimpp/CarJai/backend/utils"
@@ -63,6 +64,7 @@ type CarService struct {
 	inspectionRepo *models.InspectionRepository
 	colorRepo      *models.CarColorRepository
 	fuelRepo       *models.CarFuelRepository
+	marketPriceRepo   *models.MarketPriceRepository
 }
 
 // NewCarService creates a new car service
@@ -72,6 +74,7 @@ func NewCarService(
 	inspectionRepo *models.InspectionRepository,
 	colorRepo *models.CarColorRepository,
 	fuelRepo *models.CarFuelRepository,
+	marketPriceRepo *models.MarketPriceRepository,
 ) *CarService {
 	return &CarService{
 		carRepo:        carRepo,
@@ -79,7 +82,76 @@ func NewCarService(
 		inspectionRepo: inspectionRepo,
 		colorRepo:      colorRepo,
 		fuelRepo:       fuelRepo,
+		marketPriceRepo:   marketPriceRepo,
 	}
+}
+
+// --- EstimateCarPrice ---
+// EstimateCarPrice calculates an estimated price based on market data and car condition
+func (s *CarService) EstimateCarPrice(carID int) (int64, error) {
+	// 1. Get car data
+	car, err := s.carRepo.GetCarByID(carID)
+	if err != nil {
+		return 0, fmt.Errorf("car not found: %w", err)
+	}
+
+	// 2. Check for required fields for estimation
+	if car.BrandName == nil || car.ModelName == nil || car.Year == nil {
+		return 0, fmt.Errorf("estimation unavailable: missing brand, model, or year")
+	}
+
+	// 3. Get base market price
+	marketPrice, err := s.marketPriceRepo.GetMarketPrice(*car.BrandName, *car.ModelName, *car.Year)
+	if err != nil {
+		// If no market price is found, we can't estimate
+		return 0, fmt.Errorf("estimation unavailable: %w", err)
+	}
+
+	// 4. Calculate base price (average of min/max)
+	basePrice := (marketPrice.PriceMinTHB + marketPrice.PriceMaxTHB) / 2
+	if basePrice <= 0 {
+		return 0, fmt.Errorf("invalid base price from market data")
+	}
+
+	// 5. Calculate Condition Score (Adjustment Factor)
+	adjustmentFactor := 1.0
+
+	// Adjust based on ConditionRating (1-5, 3 is average)
+	if car.ConditionRating != nil {
+		// +/- 5% per rating point from 3
+		// Rating 5: +10%, 4: +5%, 3: 0%, 2: -5%, 1: -10%
+		adjustmentFactor += (float64(*car.ConditionRating) - 3.0) * 0.05
+	}
+
+	// Adjust based on Mileage
+	if car.Mileage != nil {
+		carAge := time.Now().Year() - *car.Year + 1 // +1 to avoid division by zero
+		if carAge <= 0 { carAge = 1 }
+		
+		mileagePerYear := float64(*car.Mileage) / float64(carAge)
+		
+		if mileagePerYear < 15000 { // Low mileage
+			adjustmentFactor += 0.05
+		} else if mileagePerYear > 30000 { // High mileage
+			adjustmentFactor -= 0.05
+		}
+	}
+
+	// Major penalties
+	if car.IsFlooded {
+		adjustmentFactor -= 0.30 // 30% penalty
+	}
+	if car.IsHeavilyDamaged {
+		adjustmentFactor -= 0.40 // 40% penalty
+	}
+
+	// 6. Calculate final price
+	finalPrice := float64(basePrice) * adjustmentFactor
+
+	// Round to nearest 1,000 THB
+	estimatedPrice := int64(math.Round(finalPrice/1000) * 1000)
+
+	return estimatedPrice, nil
 }
 
 // CreateCar creates a new empty draft car (ephemeral)
