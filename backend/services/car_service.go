@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 	"math"
+	"database/sql"
 
 	"github.com/uzimpp/CarJai/backend/models"
 	"github.com/uzimpp/CarJai/backend/utils"
@@ -95,58 +96,101 @@ func (s *CarService) EstimateCarPrice(carID int) (int64, error) {
 		return 0, fmt.Errorf("car not found: %w", err)
 	}
 
-	// 2. Check for required fields for estimation 
+	insp, err := s.inspectionRepo.GetInspectionByCarID(carID)
+	if err != nil && err != sql.ErrNoRows {
+		return 0, fmt.Errorf("failed to check inspection data: %w", err)
+	}
+
+
+	// 3. Check for required fields for estimation
 	if car.BrandName == nil || car.SubmodelName == nil || car.Year == nil {
 		return 0, fmt.Errorf("estimation unavailable: missing brand, submodel, or year")
 	}
 
-	// 3. Get base market price 
+	// 4. Get base market price
 	marketPrice, err := s.marketPriceRepo.GetMarketPrice(*car.BrandName, *car.SubmodelName, *car.Year)
 	if err != nil {
 		return 0, fmt.Errorf("estimation unavailable: %w", err)
 	}
 
-
-	// 4. Calculate base price (average of min/max)
+	// 5. Calculate base price (average of min/max)
 	basePrice := (marketPrice.PriceMinTHB + marketPrice.PriceMaxTHB) / 2
 	if basePrice <= 0 {
 		return 0, fmt.Errorf("invalid base price from market data")
 	}
 
-	// 5. Calculate Condition Score (Adjustment Factor)
-	// ... (ส่วนที่เหลือของฟังก์ชันเหมือนเดิมครับ) ...
+	// 6. Calculate Condition Score (Adjustment Factor)
 	adjustmentFactor := 1.0
 
-	// Adjust based on ConditionRating (1-5, 3 is average)
+
 	if car.ConditionRating != nil {
-		// +/- 5% per rating point from 3
-		// Rating 5: +10%, 4: +5%, 3: 0%, 2: -5%, 1: -10%
 		adjustmentFactor += (float64(*car.ConditionRating) - 3.0) * 0.05
 	}
 
-	// Adjust based on Mileage
 	if car.Mileage != nil {
-		carAge := time.Now().Year() - *car.Year + 1 // +1 to avoid division by zero
-		if carAge <= 0 { carAge = 1 }
-		
+		carAge := time.Now().Year() - *car.Year + 1
+		if carAge <= 0 {
+			carAge = 1
+		}
 		mileagePerYear := float64(*car.Mileage) / float64(carAge)
-		
-		if mileagePerYear < 15000 { // Low mileage
+
+		if mileagePerYear < 15000 {
 			adjustmentFactor += 0.05
-		} else if mileagePerYear > 30000 { // High mileage
+		} else if mileagePerYear > 30000 {
 			adjustmentFactor -= 0.05
 		}
 	}
 
-	// Major penalties
 	if car.IsFlooded {
-		adjustmentFactor -= 0.30 // 30% penalty
+		adjustmentFactor -= 0.30
 	}
 	if car.IsHeavilyDamaged {
-		adjustmentFactor -= 0.40 // 40% penalty
+		adjustmentFactor -= 0.40
 	}
 
-	// 6. Calculate final price
+	if insp != nil {
+
+		inspectionFields := []*bool{
+			insp.OverallPass,
+			insp.BrakeResult,
+			insp.HandbrakeResult,
+			insp.AlignmentResult,
+			insp.NoiseResult,
+			insp.EmissionResult,
+			insp.HornResult,
+			insp.SpeedometerResult,
+			insp.HighLowBeamResult,
+			insp.SignalLightsResult,
+			insp.OtherLightsResult,
+			insp.WindshieldResult,
+			insp.SteeringResult,
+			insp.WheelsTiresResult,
+			insp.FuelTankResult,
+			insp.ChassisResult,
+			insp.BodyResult,
+			insp.DoorsFloorResult,
+			insp.SeatbeltResult,
+			insp.WiperResult,
+		}
+
+		failedCount := 0
+		for _, field := range inspectionFields {
+			if field == nil || *field == false {
+				failedCount++
+			}
+		}
+
+		if failedCount == 0 {
+			adjustmentFactor += 0.20
+		} else {
+			penalty := float64(failedCount) * 0.01
+			adjustmentFactor -= penalty
+		}
+	}
+
+
+
+	// 8. Calculate final price
 	finalPrice := float64(basePrice) * adjustmentFactor
 
 	// Round to nearest 1,000 THB
