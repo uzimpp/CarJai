@@ -64,10 +64,34 @@ export default function AccountBtn({
                   Dashboard
                 </Link>
                 <Link
-                  href="/admin/dashboard#ip"
+                  href="/admin/users"
                   className="block px-4 py-2 text-sm hover:bg-maroon/30"
                 >
-                  IP Whitelist
+                  Users
+                </Link>
+                <Link
+                  href="/admin/cars"
+                  className="block px-4 py-2 text-sm hover:bg-maroon/30"
+                >
+                  Cars
+                </Link>
+                <Link
+                  href="/admin/reports"
+                  className="block px-4 py-2 text-sm hover:bg-maroon/30"
+                >
+                  Reports
+                </Link>
+                <Link
+                  href="/admin/market-price"
+                  className="block px-4 py-2 text-sm hover:bg-maroon/30"
+                >
+                  Upload Market Price
+                </Link>
+                <Link
+                  href="/admin/ip-whitelists"
+                  className="block px-4 py-2 text-sm hover:bg-maroon/30"
+                >
+                  IP Whitelists
                 </Link>
               </div>
               <div className="border-t border-white/5">

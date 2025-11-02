@@ -66,12 +66,12 @@ export default function NavBar() {
         )}
 
         <nav className="flex flex-row gap-x-(--space-m-l) items-center">
-          <Link
+          {/* <Link
             href="/"
             className="text-0 text-gray-700 hover:text-maroon transition-colors font-medium"
           >
             Home
-          </Link>
+          </Link> */}
           <Link
             href="/browse"
             className="text-0 text-gray-700 hover:text-maroon transition-colors font-medium"

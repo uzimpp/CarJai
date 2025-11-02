@@ -21,9 +21,13 @@ export default function BuyerWelcomePage() {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h2>
-          <p className="text-gray-600 mb-6">You need to be a registered buyer to access this page.</p>
-          <Link 
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            Access Denied
+          </h2>
+          <p className="text-gray-600 mb-6">
+            You need to be a registered buyer to access this page.
+          </p>
+          <Link
             href="/signup/role/buyer"
             className="inline-block bg-red-800 text-white px-6 py-3 rounded-lg hover:bg-red-900 transition-colors"
           >
@@ -96,7 +100,7 @@ export default function BuyerWelcomePage() {
 
         {/* Additional Options */}
         <div className="mt-12 text-center">
-          <Link 
+          <Link
             href="/"
             className="text-red-800 hover:text-red-900 hover:underline"
           >

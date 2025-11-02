@@ -22,7 +22,7 @@ export default function SellerProfilePage() {
   const handleSubmit = async (data: SellerRequest) => {
     try {
       setError(null);
-       await profileAPI.upsertSellerProfile(data);
+      await profileAPI.upsertSellerProfile(data);
       // Redirect to welcome page after successful profile creation
       router.push("/signup/welcome/seller");
     } catch (err) {

@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { useRef, useState, useEffect } from "react";
 import NavBar from "@/components/global/NavBar";
+import SideBar from "@/components/global/SideBar";
 import Footer from "@/components/global/Footer";
 import Signup from "@/components/auth/Signup";
 import { Fragment } from "react";
@@ -20,6 +21,7 @@ export default function ConditionalLayout({
   const [headerHeight, setHeaderHeight] = useState(0);
   const footerRef = useRef<HTMLElement>(null);
   const [footerHeight, setFooterHeight] = useState(0);
+  const [sidebarWidth, setSidebarWidth] = useState(256); // Default to 256px (w-64)
 
   // Determine current step based on pathname
   const getCurrentStep = () => {
@@ -30,10 +32,19 @@ export default function ConditionalLayout({
   };
   const currentStep = getCurrentStep();
 
+  // Check if we're on an admin page (excluding signin)
+  const isAdminPage =
+    pathname.startsWith("/admin") && pathname !== "/admin/signin";
+
   // Define pages where only navbar should appear (no footer)
   const hideFooterPages = [
     "/admin/dashboard",
     "/admin/signin",
+    "/admin/users",
+    "/admin/cars",
+    "/admin/reports",
+    "/admin/upload-price",
+    "/admin/ip-whitelists",
     "/signin",
     "/signup",
     "/signup/role",
@@ -46,6 +57,11 @@ export default function ConditionalLayout({
   const hideNavbarPages = [
     "/admin/signin",
     "/admin/dashboard",
+    "/admin/users",
+    "/admin/cars",
+    "/admin/reports",
+    "/admin/upload-price",
+    "/admin/ip-whitelists",
     "/signin",
     "/signup",
     "/signup/role",
@@ -61,9 +77,10 @@ export default function ConditionalLayout({
     "/signup/role/seller",
   ];
 
-  const shouldShowNavbar = !hideNavbarPages.includes(pathname);
-  const shouldShowFooter = !hideFooterPages.includes(pathname);
+  const shouldShowNavbar = !hideNavbarPages.includes(pathname) && !isAdminPage;
+  const shouldShowFooter = !hideFooterPages.includes(pathname) && !isAdminPage;
   const shouldShowStepIndicator = showStepIndicator.includes(pathname);
+  const shouldShowSidebar = isAdminPage;
 
   // Measure navbar height
   useEffect(() => {
@@ -103,9 +120,13 @@ export default function ConditionalLayout({
 
   return (
     <Fragment>
+      {/* Admin Sidebar */}
+      {shouldShowSidebar && <SideBar onWidthChange={setSidebarWidth} />}
+
       <header
         className="fixed top-0 left-0 right-0 z-100"
         ref={headRef as React.RefObject<HTMLHeadElement>}
+        style={shouldShowSidebar ? { marginLeft: `${sidebarWidth}px` } : {}}
       >
         <div className="max-w-[1536px] w-full mx-auto">
           {shouldShowNavbar && <NavBar />}
@@ -119,9 +140,8 @@ export default function ConditionalLayout({
           paddingTop: `${
             shouldShowStepIndicator || shouldShowNavbar ? headerHeight : 0
           }px`,
-          marginBottom: shouldShowFooter
-            ? `calc(${footerHeight}px - 5rem)`
-            : 0,
+          marginBottom: shouldShowFooter ? `calc(${footerHeight}px - 5rem)` : 0,
+          marginLeft: shouldShowSidebar ? `${sidebarWidth}px` : 0,
         }}
       >
         {children}
@@ -130,6 +150,7 @@ export default function ConditionalLayout({
       <footer
         className="z-0 fixed bottom-0 left-0 right-0 w-full bg-[#181414]"
         ref={footerRef as React.RefObject<HTMLElement>}
+        style={shouldShowSidebar ? { marginLeft: `${sidebarWidth}px` } : {}}
       >
         {shouldShowFooter && <Footer />}
       </footer>
