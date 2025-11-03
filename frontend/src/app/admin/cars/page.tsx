@@ -64,7 +64,7 @@ export default function AdminCarsPage() {
       </section>
 
       {/* Main Content */}
-      <main>
+      <div>
         {/* Stats */}
         <div className="mb-(--space-l)">
           <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m)">
@@ -75,13 +75,13 @@ export default function AdminCarsPage() {
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-green-600">
-                  {cars.filter((c) => c.status === "active").length}
+                  {cars?.length > 0 ? cars?.filter((c) => c.status === "active").length : 0}
                 </div>
                 <div className="text--1 text-gray-600">Active Listings</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-orange-600">
-                  {cars.filter((c) => c.status === "draft").length}
+                  {cars?.length > 0 ? cars?.filter((c) => c.status === "draft").length : 0}
                 </div>
                 <div className="text--1 text-gray-600">Draft Listings</div>
               </div>
@@ -101,7 +101,7 @@ export default function AdminCarsPage() {
           <div className="bg-red-50 border border-red-200 rounded-xl p-(--space-m) text-center">
             <p className="text-red-600">{error}</p>
           </div>
-        ) : cars.length === 0 ? (
+        ) : cars?.length === 0 || cars === null ? (
           <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-l) text-center">
             <p className="text-gray-600">No cars found in the system</p>
           </div>
@@ -109,7 +109,7 @@ export default function AdminCarsPage() {
           <>
             {/* Cars Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-(--space-m) mb-(--space-l)">
-              {cars.map((car) => (
+              {cars?.map((car) => (
                 <CarCard key={car.id} car={car} variant="browse" />
               ))}
             </div>
@@ -140,7 +140,7 @@ export default function AdminCarsPage() {
             )}
           </>
         )}
-      </main>
+      </div>
     </div>
   );
 }

@@ -39,11 +39,12 @@ export default function ConditionalLayout({
   // Define pages where only navbar should appear (no footer)
   const hideFooterPages = [
     "/admin/dashboard",
+    "/admin/account",
     "/admin/signin",
     "/admin/users",
     "/admin/cars",
     "/admin/reports",
-    "/admin/upload-price",
+    "/admin/market-price",
     "/admin/ip-whitelists",
     "/signin",
     "/signup",
@@ -57,10 +58,11 @@ export default function ConditionalLayout({
   const hideNavbarPages = [
     "/admin/signin",
     "/admin/dashboard",
+    "/admin/account",
     "/admin/users",
     "/admin/cars",
     "/admin/reports",
-    "/admin/upload-price",
+    "/admin/market-price",
     "/admin/ip-whitelists",
     "/signin",
     "/signup",

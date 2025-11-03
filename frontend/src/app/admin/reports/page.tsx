@@ -189,7 +189,7 @@ export default function AdminReportsPage() {
       </section>
 
       {/* Main Content */}
-      <main>
+      <div>
         {/* Stats */}
         <div className="mb-(--space-l)">
           <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m)">
@@ -479,7 +479,7 @@ export default function AdminReportsPage() {
             ))}
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }
