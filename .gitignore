@@ -22,5 +22,4 @@ env
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-# Ignore compiled backend binary
-backend/main
+
