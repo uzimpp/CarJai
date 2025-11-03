@@ -19,7 +19,8 @@ func RespondJSON(w http.ResponseWriter, statusCode int, data interface{}) {
 	WriteJSON(w, statusCode, data)
 }
 
-// WriteAdminError writes a standardized admin JSON error response.
+// WriteError writes a standardized admin JSON error response.
+// Note: This function is primarily used for Admin API errors.
 func WriteError(w http.ResponseWriter, statusCode int, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
@@ -33,9 +34,15 @@ func WriteError(w http.ResponseWriter, statusCode int, message string) {
 	json.NewEncoder(w).Encode(response)
 }
 
+// WriteJSONError writes a simple JSON error response (e.g., for non-admin/user API)
 func WriteJSONError(w http.ResponseWriter, status int, message string) {
-	WriteJSON(w, status, map[string]interface{}{
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+
+	response := map[string]interface{}{
 		"success": false,
 		"message": message,
-	})
+	}
+
+	json.NewEncoder(w).Encode(response)
 }

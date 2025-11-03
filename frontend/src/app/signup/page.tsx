@@ -27,7 +27,7 @@ export default function SignupPage() {
     if (isAuthenticated && !isLoading) {
       // If user already has a role, redirect them appropriately
       // This handles users who already completed signup coming back to this page
-      router.push("/signup/role");
+      router.push("/signup/role?from=signup");
     }
   }, [isAuthenticated, isLoading, router]);
 
@@ -129,7 +129,7 @@ export default function SignupPage() {
       if (result.success) {
         // Account created successfully, wait a moment for state to update, then redirect
         setTimeout(() => {
-          router.push("/signup/role");
+          router.push("/signup/role?from=signup");
         }, 100);
       } else if (result.error?.includes("already exists")) {
         router.push("/signin?message=account_exists");

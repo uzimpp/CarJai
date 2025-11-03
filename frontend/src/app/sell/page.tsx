@@ -31,7 +31,7 @@ export default function SellLanding() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
@@ -83,7 +83,7 @@ export default function SellLanding() {
               disabled={loading}
               className="w-full bg-maroon text-white py-4 px-6 rounded-lg font-semibold text-lg hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {loading ? "Creating draft..." : "Start Selling"}
+              {loading ? "Start Selling" : "Start Selling"}
             </button>
 
             <p className="text-sm text-gray-500 text-center">
@@ -99,7 +99,6 @@ export default function SellLanding() {
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             Your Drafts
           </h3>
-          ... draft list ...
         </div> */}
       </div>
     </div>

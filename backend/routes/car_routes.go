@@ -14,13 +14,14 @@ import (
 func CarRoutes(
 	carService *services.CarService,
 	userService *services.UserService,
+	profileService *services.ProfileService,
 	ocrService *services.OCRService,
 	scraperService *services.ScraperService,
 	userJWT *utils.JWTManager,
 	corsOrigins []string,
 ) *http.ServeMux {
 	// Create handler instance
-	carHandler := handlers.NewCarHandler(carService, userService, ocrService, scraperService)
+	carHandler := handlers.NewCarHandler(carService, userService, profileService, ocrService, scraperService)
 
 	// Create auth middleware
 	authMiddleware := middleware.NewUserAuthMiddleware(userService)
