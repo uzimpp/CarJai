@@ -50,18 +50,21 @@ export default function AccountBtn({
           <Fragment>
             <button
               onClick={() => setOpen((v) => !v)}
-              className={`flex items-center gap-x-(--space-2xs) px-(--space-s) py-(--space-2xs) bg-black text-white rounded-full hover:opacity-90 ${
+              className={`flex items-center gap-x-(--space-2xs) px-(--space-s) py-(--space-2xs) text-white rounded-full hover:opacity-90 ${
                 isAuthedAdmin ? "bg-black" : "bg-maroon"
               }`}
             >
               <span className="text-0 hidden sm:block">
                 {isAuthedAdmin
-                  ? adminUser?.name || adminUser?.username
-                  : user?.name || user?.username}
+                  ? adminUser?.username
+                  : user?.username}
               </span>
             </button>
             {open && (
-              <div className="absolute right-0 mt-[var(--space-s-m)] p-(--space-2xs) w-60 rounded-xl shadow-[var(--shadow-md)] text-0 bg-black text-white overflow-hidden z-50">
+              <div
+                className={`absolute right-0 mt-[var(--space-s-m)] p-(--space-2xs) w-70 rounded-xl shadow-[var(--shadow-md)] text-0  overflow-hidden z-50
+                  ${isAuthedAdmin ? "bg-black text-white" : "bg-white text-black"}`}
+              >
                 {/* <div className="border-b border-white/5 bg-black/95">
                 <div className="text--1 text-white/80">
                   {isAuthedAdmin ? "Administrator" : "User"}
@@ -84,7 +87,7 @@ export default function AccountBtn({
                   {isAuthedUser && roles && (
                     <Fragment>
                       {!roles.buyer && !roles.seller && (
-                        <div className="px-(--space-xs) py-(--space-2xs) rounded-lg bg-amber-50 border-y border-amber-200">
+                        <div className="px-(--space-xs) py-(--space-2xs) rounded-lg bg-amber-50 ring-1 ring-amber-100">
                           <Link
                             href={"/signup/role"}
                             onClick={() => setOpen(false)}
