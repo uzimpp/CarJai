@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  createContext,
-  useState,
-  useEffect,
-  useCallback,
-  useRef,
-} from "react";
+import { createContext, useState, useEffect, useCallback, useRef } from "react";
 import { usePathname } from "next/navigation";
 import {
   User,
@@ -36,6 +30,7 @@ interface AuthActions {
   ) => Promise<{ success: boolean; error?: string }>;
   signout: () => Promise<void>;
   clearError: () => void;
+  validateSession: () => Promise<void>;
 }
 
 interface AuthErrorWithField {
@@ -54,6 +49,7 @@ export const UserAuthContext = createContext<UserAuthContextType | undefined>(
 export function UserAuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const lastPathname = useRef<string>("");
+  const [mounted, setMounted] = useState(false);
   const [state, setState] = useState<AuthState>({
     user: null,
     token: null,
@@ -64,7 +60,18 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
   });
   const [error, setError] = useState<AuthErrorWithField | null>(null);
 
+  // Handle SSR - only run on client side
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const validateSession = useCallback(async () => {
+    // Don't validate on server side
+    if (typeof window === "undefined") {
+      setState((prev) => ({ ...prev, isLoading: false }));
+      return;
+    }
+
     try {
       const response = await authAPI.getCurrentUser();
       if (response.success) {
@@ -91,13 +98,17 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Initial validation on mount
+  // Initial validation on mount (only on client)
   useEffect(() => {
-    validateSession();
-  }, [validateSession]);
+    if (mounted) {
+      validateSession();
+    }
+  }, [mounted, validateSession]);
 
   // Only re-validate when transitioning between protected and public areas
   useEffect(() => {
+    if (!mounted) return;
+
     const prevPathname = lastPathname.current;
     lastPathname.current = pathname;
 
@@ -118,7 +129,7 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
     if (wasProtectedRoute !== isProtectedRoute) {
       validateSession();
     }
-  }, [pathname, validateSession]);
+  }, [pathname, mounted, validateSession]);
 
   // Clear error helper
   const clearError = useCallback(() => {
@@ -197,11 +208,13 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
     <UserAuthContext.Provider
       value={{
         ...state,
+        isLoading: state.isLoading || !mounted, // Show loading until mounted
         error,
         signin,
         signup,
         signout,
         clearError,
+        validateSession,
       }}
     >
       {children}

@@ -22,7 +22,8 @@ export default function SellWithIdPage() {
   const params = useParams();
   const pathname = usePathname();
   const carId = parseInt(params.id as string);
-  const { isAuthenticated, isLoading, roles, profiles } = useUserAuth();
+  const { isAuthenticated, isLoading, roles, profiles, validateSession } =
+    useUserAuth();
 
   // Progress tracking
   const [hasProgress, setHasProgress] = useState(false);
@@ -85,6 +86,13 @@ export default function SellWithIdPage() {
       validateCarExists();
     }
   }, [carId, isAuthenticated, isLoading, router]);
+
+  // If authenticated but roles are missing, try refreshing the session
+  useEffect(() => {
+    if (isAuthenticated && !isLoading && !roles?.seller) {
+      validateSession();
+    }
+  }, [isAuthenticated, isLoading, roles, validateSession]);
 
   // Auth guard - redirect if not seller
   useEffect(() => {

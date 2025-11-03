@@ -1,10 +1,19 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { useUserAuth } from "@/hooks/useUserAuth";
 
 export default function SellerWelcomePage() {
-  const { isLoading, isAuthenticated, roles, profiles } = useUserAuth();
+  const { isLoading, isAuthenticated, roles, profiles, validateSession } =
+    useUserAuth();
+
+  // If authenticated but roles are missing, try refreshing the session
+  useEffect(() => {
+    if (isAuthenticated && !isLoading && !roles?.seller) {
+      validateSession();
+    }
+  }, [isAuthenticated, isLoading, roles, validateSession]);
 
   if (isLoading) {
     return (

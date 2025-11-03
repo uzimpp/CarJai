@@ -6,7 +6,15 @@ import { useUserAuth } from "@/hooks/useUserAuth";
 
 export default function FavoritesPage() {
   const router = useRouter();
-  const { isAuthenticated, isLoading, roles, profiles } = useUserAuth();
+  const { isAuthenticated, isLoading, roles, profiles, validateSession } =
+    useUserAuth();
+
+  // If authenticated but roles are missing, try refreshing the session
+  useEffect(() => {
+    if (isAuthenticated && !isLoading && !roles?.buyer) {
+      validateSession();
+    }
+  }, [isAuthenticated, isLoading, roles, validateSession]);
 
   useEffect(() => {
     if (!isLoading) {

@@ -10,10 +10,18 @@ import CarCard from "@/components/car/CarCard";
 
 export default function MyListingsPage() {
   const router = useRouter();
-  const { isAuthenticated, isLoading, roles, profiles } = useUserAuth();
+  const { isAuthenticated, isLoading, roles, profiles, validateSession } =
+    useUserAuth();
   const [listings, setListings] = useState<CarListing[]>([]);
   const [isLoadingListings, setIsLoadingListings] = useState(true);
   const [filter, setFilter] = useState<"all" | "draft" | "active">("all");
+
+  // If authenticated but roles are missing, try refreshing the session
+  useEffect(() => {
+    if (isAuthenticated && !isLoading && !roles?.seller) {
+      validateSession();
+    }
+  }, [isAuthenticated, isLoading, roles, validateSession]);
 
   // Redirect logic for seller guard
   useEffect(() => {
