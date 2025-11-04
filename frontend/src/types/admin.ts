@@ -31,8 +31,9 @@ interface AdminMeResponse {
 
 interface AdminIPWhitelistResponse {
   success: boolean;
-  data: AdminIPWhitelist[];
-  message: string;
+  data?: AdminIPWhitelist[];
+  message?: string;
+  would_block_session?: boolean; // Warning: deletion would affect current session
 }
 
 interface AdminAuthResponse {

@@ -2,6 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  CheckCircleIcon,
+  ExclamationCircleIcon,
+  InformationCircleIcon,
+  XCircleIcon,
+} from "@heroicons/react/24/outline";
 
 interface Toast {
   id: string;
@@ -15,46 +22,144 @@ interface ToastContainerProps {
   onRemove: (id: string) => void;
 }
 
-function ToastContainer({ toasts, onRemove }: ToastContainerProps) {
+function ToastItem({
+  toast,
+  onRemove,
+  isMobile,
+}: {
+  toast: Toast;
+  onRemove: (id: string) => void;
+  isMobile: boolean;
+}) {
+  const handleRemove = () => {
+    onRemove(toast.id);
+  };
+
+  const getToastStyles = () => {
+    switch (toast.type) {
+      case "success":
+        return {
+          bg: "bg-green-50",
+          border: "border-green-200",
+          text: "text-green-800",
+          iconBg: "bg-green-100",
+          iconColor: "text-green-600",
+          icon: <CheckCircleIcon className="w-6 h-6" />,
+        };
+      case "error":
+        return {
+          bg: "bg-red-50",
+          border: "border-red-200",
+          text: "text-red-800",
+          iconBg: "bg-red-100",
+          iconColor: "text-red-600",
+          icon: <XCircleIcon className="w-6 h-6" />,
+        };
+      case "warning":
+        return {
+          bg: "bg-yellow-60",
+          border: "border-yellow-200",
+          text: "text-yellow-800",
+          iconBg: "bg-yellow-100",
+          iconColor: "text-yellow-600",
+          icon: <ExclamationCircleIcon className="w-6 h-6" />,
+        };
+      default:
+        return {
+          bg: "bg-blue-50",
+          border: "border-blue-200",
+          text: "text-blue-800",
+          iconBg: "bg-blue-100",
+          iconColor: "text-blue-600",
+          icon: <InformationCircleIcon className="w-6 h-6" />,
+        };
+    }
+  };
+
+  const styles = getToastStyles();
+
+  // Animation variants based on screen size
+  const variants = {
+    initial: isMobile ? { opacity: 0, y: 100 } : { opacity: 0, x: 100 },
+    animate: {
+      opacity: 1,
+      x: 0,
+      y: 0,
+    },
+    exit: isMobile ? { opacity: 0, y: 100 } : { opacity: 0, x: 100 },
+  };
+
   return (
-    <div className="fixed bottom-4 right-4 z-[100] flex flex-col gap-2">
-      {toasts.map((toast) => (
-        <div
-          key={toast.id}
-          className={`min-w-[300px] max-w-md rounded-lg shadow-[var(--shadow-lg)] p-(--space-m) animate-in slide-in-from-bottom-2 duration-300 ${
-            toast.type === "success"
-              ? "bg-green-50 border border-green-200 text-green-800"
-              : toast.type === "error"
-              ? "bg-red-50 border border-red-200 text-red-800"
-              : toast.type === "warning"
-              ? "bg-yellow-50 border border-yellow-200 text-yellow-800"
-              : "bg-blue-50 border border-blue-200 text-blue-800"
-          }`}
+    <motion.div
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      variants={variants}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      className={`w-full max-w-md rounded-3xl shadow-lg p-(--space-s-m) ${styles.bg} ${styles.text} border border-white/20`}
+    >
+      <div className="flex items-center gap-x-(--space-s)">
+        {/* Icon */}
+        <div className={`rounded-full`}>{styles.icon}</div>
+
+        {/* Message */}
+        <p className="text-0 font-medium flex-1 pt-0.5">{toast.message}</p>
+
+        {/* Close Button */}
+        <button
+          onClick={handleRemove}
+          className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors p-1 rounded hover:bg-black/5"
+          aria-label="Close"
         >
-          <div className="flex items-start justify-between gap-2">
-            <p className="text-0 font-medium flex-1">{toast.message}</p>
-            <button
-              onClick={() => onRemove(toast.id)}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
-              aria-label="Close"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.4}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+function ToastContainer({ toasts, onRemove }: ToastContainerProps) {
+  // Only show the most recent toast (no stacking)
+  const currentToast = toasts.length > 0 ? toasts[toasts.length - 1] : null;
+
+  // Detect mobile screen size
+  const [mobileState, setMobileState] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setMobileState(window.innerWidth < 768);
+    };
+    // Check on mount
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, [window.innerWidth]);
+
+  return (
+    <div className="fixed bottom-(--space-s-m) left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-(--space-s-m) md:bottom-(--space-s-m) z-[100] pointer-events-none w-full max-w-md md:px-0 md:w-auto">
+      <AnimatePresence mode="wait">
+        {currentToast && (
+          <div key={currentToast.id} className="pointer-events-auto">
+            <ToastItem
+              toast={currentToast}
+              onRemove={onRemove}
+              isMobile={mobileState}
+            />
           </div>
-        </div>
-      ))}
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -76,7 +181,8 @@ export function useToast() {
     const id = Math.random().toString(36).substring(7);
     const newToast: Toast = { id, message, type, duration };
 
-    setToasts((prev) => [...prev, newToast]);
+    // Replace existing toast instead of stacking
+    setToasts([newToast]);
 
     if (duration > 0) {
       setTimeout(() => {

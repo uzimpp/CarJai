@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  createContext,
-  useState,
-  useEffect,
-  useCallback,
-  useRef,
-} from "react";
+import { createContext, useState, useEffect, useCallback, useRef } from "react";
 import { usePathname } from "next/navigation";
 import {
   AdminUser,
@@ -51,7 +45,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const fetchIPWhitelist = useCallback(async () => {
     try {
       const data = await adminAuthAPI.getIPWhitelist();
-      if (data.success) {
+      if (data.success && data.data) {
         setIpWhitelist(data.data);
       }
     } catch {
@@ -136,7 +130,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         if (sessionResponse.success) {
           setAdminSession(sessionResponse.data.session);
         }
-        if (whitelistData.success) {
+        if (whitelistData.success && whitelistData.data) {
           setIpWhitelist(whitelistData.data);
         }
       } catch {

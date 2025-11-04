@@ -77,6 +77,7 @@ func AdminRoutes(
 	// --- Admin IP Whitelist Management Routes ---
 	router.HandleFunc(basePath+"/ip-whitelist", applyAdminAuthMiddleware(adminIPHandler.GetWhitelistedIPs))
 	router.HandleFunc(basePath+"/ip-whitelist/add", applyAdminAuthMiddleware(adminIPHandler.AddIPToWhitelist))
+	router.HandleFunc(basePath+"/ip-whitelist/check", applyAdminAuthMiddleware(adminIPHandler.CheckIPDeletionImpact))
 	router.HandleFunc(basePath+"/ip-whitelist/remove", applyAdminAuthMiddleware(adminIPHandler.RemoveIPFromWhitelist))
 
 	// --- Market Price Import/Extract Route (POST PDF) ---

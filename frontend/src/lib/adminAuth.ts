@@ -50,6 +50,16 @@ export const adminAuthAPI = {
     });
   },
 
+  // Check if deleting an IP would affect the current session
+  async checkIPDeletionImpact(
+    ip_address: string
+  ): Promise<AdminIPWhitelistResponse> {
+    const qs = `?ip=${encodeURIComponent(ip_address)}`;
+    return apiCall<AdminIPWhitelistResponse>(`/admin/ip-whitelist/check${qs}`, {
+      method: "GET",
+    });
+  },
+
   // Remove IP from whitelist (backend expects DELETE with ?ip= query)
   async removeIP(ip_address: string): Promise<AdminActionResponse> {
     const qs = `?ip=${encodeURIComponent(ip_address)}`;
