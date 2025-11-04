@@ -59,8 +59,13 @@ export default function HistoryPage() {
         setError(response.message || 'Failed to fetch viewing history');
       }
     } catch (err) {
+      if (err instanceof Error && err.message.toLowerCase().includes('not authenticated')) {
+        setError('Please sign in to view your viewing history.');
+        return;
+      }
       setError('Failed to fetch viewing history');
-      console.error('Error fetching recent views:', err);
+      // Use warn to avoid noisy stack traces in console
+      console.warn('Error fetching recent views:', err);
     } finally {
       setLoading(false);
     }
@@ -86,7 +91,7 @@ export default function HistoryPage() {
   };
 
   const handleCarClick = (carId: number) => {
-    router.push(`/buy/${carId}`);
+    router.push(`/car/${carId}`);
   };
 
   if (authLoading || loading) {
@@ -133,7 +138,7 @@ export default function HistoryPage() {
             <h3 className="text-lg font-medium text-gray-900 mb-2">No viewing history</h3>
             <p className="text-gray-500 mb-6">Start browsing cars to see your viewing history here.</p>
             <button
-              onClick={() => router.push('/buy')}
+              onClick={() => router.push('/browse')}
               className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
             >
               Browse Cars

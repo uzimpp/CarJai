@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/uzimpp/CarJai/backend/middleware"
 	"github.com/uzimpp/CarJai/backend/models"
 	"github.com/uzimpp/CarJai/backend/services"
 	"github.com/uzimpp/CarJai/backend/utils"
@@ -30,7 +31,7 @@ func (h *RecentViewsHandler) RecordView(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Get user ID from context (set by auth middleware)
-	userID, ok := r.Context().Value("user_id").(int)
+	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
 		utils.WriteError(w, http.StatusUnauthorized, "User not authenticated")
 		return
@@ -79,7 +80,7 @@ func (h *RecentViewsHandler) GetRecentViews(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Get user ID from context (set by auth middleware)
-	userID, ok := r.Context().Value("user_id").(int)
+	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
 		utils.WriteError(w, http.StatusUnauthorized, "User not authenticated")
 		return
