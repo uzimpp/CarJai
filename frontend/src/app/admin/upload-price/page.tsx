@@ -6,13 +6,15 @@ import ConditionalLayout from '@/components/global/Layout';
 // Interface MarketPrice
 interface MarketPrice {
   brand: string;
-  model_trim: string;
+  // V16: เปลี่ยน model_trim เป็น model และ sub_model ให้ตรงกับ Go struct
+  model: string;
+  sub_model: string;
   year_start: number;
   year_end: number;
   price_min_thb: number;
   price_max_thb: number;
-  created_at?: string; // Optional in frontend display
-  updated_at?: string; // Optional in frontend display
+  created_at?: string; 
+  updated_at?: string; 
 }
 
 // Type for status messages
@@ -33,6 +35,15 @@ interface CommitSuccessResponse {
     updated_count: number;
 }
 
+// --- V16: Add POC Response Interface ---
+// Interface ใหม่สำหรับรับค่าจาก Backend
+interface ExtractionPOCResponse {
+  detected_headers: string[];
+  debug_log: string[];
+  final_prices: MarketPrice[];
+}
+// --- End V16 ---
+
 
 export default function UploadMarketPricePage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -44,13 +55,23 @@ export default function UploadMarketPricePage() {
   const [isCommitting, setIsCommitting] = useState<boolean>(false);
   const [commitStatus, setCommitStatus] = useState<StatusResponse | null>(null);
 
+  // --- V16: Add State for POC Data ---
+  const [debugHeaders, setDebugHeaders] = useState<string[] | null>(null);
+  const [debugLog, setDebugLog] = useState<string[] | null>(null);
+  // --- End V16 ---
+
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     // Reset states when file changes
     setSelectedFile(null);
     setUploadStatus(null);
     setExtractedJson(null);
     setParsedData(null);
-    setCommitStatus(null); // Reset commit status as well
+    setCommitStatus(null); 
+    
+    // V16: Reset POC states
+    setDebugHeaders(null);
+    setDebugLog(null);
+    // --- End V16 ---
 
     if (event.target.files && event.target.files[0]) {
       if (event.target.files[0].type === 'application/pdf') {
@@ -74,7 +95,12 @@ export default function UploadMarketPricePage() {
     setUploadStatus(null);
     setExtractedJson(null);
     setParsedData(null);
-    setCommitStatus(null); // Clear previous commit status
+    setCommitStatus(null); 
+    // V16: Reset POC states
+    setDebugHeaders(null);
+    setDebugLog(null);
+    // --- End V16 ---
+    
     const formData = new FormData();
     formData.append('marketPricePdf', selectedFile!);
 
@@ -88,13 +114,19 @@ export default function UploadMarketPricePage() {
       const contentType = response.headers.get("content-type");
 
       if (response.ok && response.status === 200 && contentType && contentType.includes("application/json")) {
-        const result: MarketPrice[] = await response.json();
-        setExtractedJson(JSON.stringify(result, null, 2));
-        setParsedData(result); // Store parsed data
-        setUploadStatus({ message: `Successfully extracted ${result.length} records. Review data below and confirm import.`, error: undefined });
-        // Optional: Clear file input after successful extraction
-        // const fileInput = document.getElementById('pdf-upload') as HTMLInputElement;
-        // if (fileInput) fileInput.value = '';
+        // --- V16: Handle new POC Response ---
+        const result: ExtractionPOCResponse = await response.json();
+        
+        // 1. เก็บผลลัพธ์สุดท้าย (เหมือนเดิม)
+        setExtractedJson(JSON.stringify(result.final_prices, null, 2));
+        setParsedData(result.final_prices); 
+        
+        // 2. เก็บข้อมูล POC ใหม่
+        setDebugHeaders(result.detected_headers);
+        setDebugLog(result.debug_log);
+
+        setUploadStatus({ message: `Successfully extracted ${result.final_prices.length} records. Review data below and confirm import.`, error: undefined });
+        // --- End V16 ---
 
       } else { // Handle extraction errors
         let errorMessage = `Extraction failed with status ${response.status}`;
@@ -150,7 +182,13 @@ export default function UploadMarketPricePage() {
               setExtractedJson(null);
               setParsedData(null);
               setSelectedFile(null);
-              setUploadStatus(null); // Clear extraction status too
+              setUploadStatus(null); 
+              
+              // V16: Clear POC data
+              setDebugHeaders(null);
+              setDebugLog(null);
+              // --- End V16 ---
+
               const fileInput = document.getElementById('pdf-upload') as HTMLInputElement;
               if (fileInput) fileInput.value = '';
 
@@ -227,6 +265,56 @@ export default function UploadMarketPricePage() {
               {isLoading ? 'Extracting...' : 'Upload and Extract Data'}
             </button>
           </form>
+
+          {/* --- V16: POC Debug Output --- */}
+          {/* ส่วนนี้คือ "หลักฐาน" ที่คุณต้องการครับ */}
+          {debugHeaders && (
+            <div className="mt-6 p-4 border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-gray-700 rounded-md">
+              <h4 className="text-md font-semibold text-blue-800 dark:text-blue-300 mb-2">
+                🕵️‍♂️ Detected Model Headers
+              </h4>
+              
+              {/* ***
+                *** นี่คือบรรทัดที่แก้ไขครับ (เดิมมี "Model" ตรงๆ)
+                ***
+              */}
+              <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                นี่คือ {'"Model"'} ที่ Parser ตรวจพบว่าเป็น Header (เช่น AUDI A3)
+              </p>
+
+              <ul className="list-disc list-inside pl-2">
+                {debugHeaders.length > 0 ? (
+                  debugHeaders.map((header, index) => (
+                    <li key={index} className="text-sm text-gray-800 dark:text-gray-200 font-mono">
+                      {header}
+                    </li>
+                  ))
+                ) : (
+                  <li className="text-sm text-gray-500 dark:text-gray-400 italic">
+                    No Model Headers were detected (e.g., AION, TESLA).
+                  </li>
+                )}
+              </ul>
+            </div>
+          )}
+
+          {debugLog && (
+             <div className="mt-4 p-4 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 rounded-md">
+               <h4 className="text-md font-semibold text-gray-800 dark:text-gray-300 mb-2">
+                 ⚙️ Parser Debug Log
+               </h4>
+               <textarea
+                id="debug-log-output"
+                readOnly
+                value={debugLog.join('\n')}
+                rows={10}
+                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 text-xs font-mono"
+                style={{ resize: 'vertical' }}
+              />
+             </div>
+          )}
+          {/* --- End V16 --- */}
+
 
           {/* Extracted JSON Display Area & Commit Section */}
           {extractedJson && (
