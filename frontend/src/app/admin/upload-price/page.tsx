@@ -3,10 +3,9 @@
 import React, { useState, ChangeEvent, FormEvent } from 'react';
 import ConditionalLayout from '@/components/global/Layout';
 
-// Interface MarketPrice
+// Interface MarketPrice (ยังคงเดิม)
 interface MarketPrice {
   brand: string;
-  // V16: เปลี่ยน model_trim เป็น model และ sub_model ให้ตรงกับ Go struct
   model: string;
   sub_model: string;
   year_start: number;
@@ -17,29 +16,29 @@ interface MarketPrice {
   updated_at?: string; 
 }
 
-// Type for status messages
+// Type for status messages (ยังคงเดิม)
 interface StatusResponse {
   message: string;
   error?: string;
 }
-// Type for JSON error structure from Go backend's utils.WriteError
+// Type for JSON error structure (ยังคงเดิม)
 interface GoErrorResponse {
 	success: boolean;
 	error: string;
 	code: number;
 }
-// Type for successful Commit response
+// Type for successful Commit response (ยังคงเดิม)
 interface CommitSuccessResponse {
     message: string;
     inserted_count: number;
     updated_count: number;
 }
 
-// --- V16: Add POC Response Interface ---
-// Interface ใหม่สำหรับรับค่าจาก Backend
+// --- V16: Interface POC Response (ยังคงเดิม) ---
+// เรายังต้องรับค่ำนี้จาก Backend แต่เราจะไม่แสดงผลทุกฟิลด์
 interface ExtractionPOCResponse {
-  detected_headers: string[];
-  debug_log: string[];
+  detected_headers: string[]; // (ไม่ได้ใช้)
+  debug_log: string[];        // (ไม่ได้ใช้)
   final_prices: MarketPrice[];
 }
 // --- End V16 ---
@@ -55,10 +54,7 @@ export default function UploadMarketPricePage() {
   const [isCommitting, setIsCommitting] = useState<boolean>(false);
   const [commitStatus, setCommitStatus] = useState<StatusResponse | null>(null);
 
-  // --- V16: Add State for POC Data ---
-  const [debugHeaders, setDebugHeaders] = useState<string[] | null>(null);
-  const [debugLog, setDebugLog] = useState<string[] | null>(null);
-  // --- End V16 ---
+  // --- (ลบ useState ของ debugHeaders และ debugLog ออกแล้ว) ---
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     // Reset states when file changes
@@ -68,10 +64,7 @@ export default function UploadMarketPricePage() {
     setParsedData(null);
     setCommitStatus(null); 
     
-    // V16: Reset POC states
-    setDebugHeaders(null);
-    setDebugLog(null);
-    // --- End V16 ---
+    // --- (ลบการ Reset POC states ออกแล้ว) ---
 
     if (event.target.files && event.target.files[0]) {
       if (event.target.files[0].type === 'application/pdf') {
@@ -96,10 +89,8 @@ export default function UploadMarketPricePage() {
     setExtractedJson(null);
     setParsedData(null);
     setCommitStatus(null); 
-    // V16: Reset POC states
-    setDebugHeaders(null);
-    setDebugLog(null);
-    // --- End V16 ---
+    
+    // --- (ลบการ Reset POC states ออกแล้ว) ---
     
     const formData = new FormData();
     formData.append('marketPricePdf', selectedFile!);
@@ -121,9 +112,7 @@ export default function UploadMarketPricePage() {
         setExtractedJson(JSON.stringify(result.final_prices, null, 2));
         setParsedData(result.final_prices); 
         
-        // 2. เก็บข้อมูล POC ใหม่
-        setDebugHeaders(result.detected_headers);
-        setDebugLog(result.debug_log);
+        // --- (ลบการ Set state ของ POC ออกแล้ว) ---
 
         setUploadStatus({ message: `Successfully extracted ${result.final_prices.length} records. Review data below and confirm import.`, error: undefined });
         // --- End V16 ---
@@ -184,10 +173,7 @@ export default function UploadMarketPricePage() {
               setSelectedFile(null);
               setUploadStatus(null); 
               
-              // V16: Clear POC data
-              setDebugHeaders(null);
-              setDebugLog(null);
-              // --- End V16 ---
+              // --- (ลบการ Clear POC data ออกแล้ว) ---
 
               const fileInput = document.getElementById('pdf-upload') as HTMLInputElement;
               if (fileInput) fileInput.value = '';
@@ -266,54 +252,7 @@ export default function UploadMarketPricePage() {
             </button>
           </form>
 
-          {/* --- V16: POC Debug Output --- */}
-          {/* ส่วนนี้คือ "หลักฐาน" ที่คุณต้องการครับ */}
-          {debugHeaders && (
-            <div className="mt-6 p-4 border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-gray-700 rounded-md">
-              <h4 className="text-md font-semibold text-blue-800 dark:text-blue-300 mb-2">
-                🕵️‍♂️ Detected Model Headers
-              </h4>
-              
-              {/* ***
-                *** นี่คือบรรทัดที่แก้ไขครับ (เดิมมี "Model" ตรงๆ)
-                ***
-              */}
-              <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
-                นี่คือ {'"Model"'} ที่ Parser ตรวจพบว่าเป็น Header (เช่น AUDI A3)
-              </p>
-
-              <ul className="list-disc list-inside pl-2">
-                {debugHeaders.length > 0 ? (
-                  debugHeaders.map((header, index) => (
-                    <li key={index} className="text-sm text-gray-800 dark:text-gray-200 font-mono">
-                      {header}
-                    </li>
-                  ))
-                ) : (
-                  <li className="text-sm text-gray-500 dark:text-gray-400 italic">
-                    No Model Headers were detected (e.g., AION, TESLA).
-                  </li>
-                )}
-              </ul>
-            </div>
-          )}
-
-          {debugLog && (
-             <div className="mt-4 p-4 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 rounded-md">
-               <h4 className="text-md font-semibold text-gray-800 dark:text-gray-300 mb-2">
-                 ⚙️ Parser Debug Log
-               </h4>
-               <textarea
-                id="debug-log-output"
-                readOnly
-                value={debugLog.join('\n')}
-                rows={10}
-                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 text-xs font-mono"
-                style={{ resize: 'vertical' }}
-              />
-             </div>
-          )}
-          {/* --- End V16 --- */}
+          {/* --- (ลบส่วนแสดงผล POC Debug Output ออกแล้ว) --- */}
 
 
           {/* Extracted JSON Display Area & Commit Section */}
