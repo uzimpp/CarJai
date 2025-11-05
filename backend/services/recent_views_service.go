@@ -23,7 +23,7 @@ func NewRecentViewsService(db *sql.DB) *RecentViewsService {
 func (s *RecentViewsService) RecordView(userID, carID int) error {
 	// Check if car exists and is active
 	var carExists bool
-	err := s.db.QueryRow("SELECT EXISTS(SELECT 1 FROM cars WHERE cid = $1 AND status = 'active')", carID).Scan(&carExists)
+    err := s.db.QueryRow("SELECT EXISTS(SELECT 1 FROM cars WHERE id = $1 AND status = 'active')", carID).Scan(&carExists)
 	if err != nil {
 		return fmt.Errorf("failed to check car existence: %w", err)
 	}
@@ -31,20 +31,34 @@ func (s *RecentViewsService) RecordView(userID, carID int) error {
 		return fmt.Errorf("car not found or not active")
 	}
 
-	// Insert or update recent view (ON CONFLICT DO UPDATE to handle the unique constraint)
-	query := `
-		INSERT INTO recent_views (user_id, car_id, viewed_at) 
-		VALUES ($1, $2, NOW())
-		ON CONFLICT (user_id, car_id, DATE_TRUNC('minute', viewed_at))
-		DO UPDATE SET viewed_at = NOW()
-	`
-	
-	_, err = s.db.Exec(query, userID, carID)
-	if err != nil {
-		return fmt.Errorf("failed to record view: %w", err)
-	}
+    // Update-first approach to avoid ON CONFLICT on expression index
+    // If a view exists within the last minute, update its timestamp, otherwise insert a new row
+    updateQuery := `
+        UPDATE recent_views
+        SET viewed_at = NOW()
+        WHERE user_id = $1 AND car_id = $2 AND viewed_at >= NOW() - INTERVAL '1 minute'
+    `
+    result, err := s.db.Exec(updateQuery, userID, carID)
+    if err != nil {
+        return fmt.Errorf("failed to update recent view: %w", err)
+    }
 
-	return nil
+    rowsAffected, err := result.RowsAffected()
+    if err != nil {
+        return fmt.Errorf("failed to get rows affected for recent view update: %w", err)
+    }
+
+    if rowsAffected == 0 {
+        insertQuery := `
+            INSERT INTO recent_views (user_id, car_id, viewed_at)
+            VALUES ($1, $2, NOW())
+        `
+        if _, err := s.db.Exec(insertQuery, userID, carID); err != nil {
+            return fmt.Errorf("failed to insert recent view: %w", err)
+        }
+    }
+
+    return nil
 }
 
 // GetUserRecentViews retrieves a user's recent car views with car details
@@ -58,16 +72,19 @@ func (s *RecentViewsService) GetUserRecentViews(userID, limit int) ([]models.Rec
 			c.year,
 			c.mileage,
 			c.price,
-			c.province,
+			p.name_en as province,
 			c.condition_rating,
-			c.color,
+			col.label_en as color,
 			c.status,
 			cd.brand_name,
 			cd.model_name,
 			s.display_name as seller_display_name
 		FROM recent_views rv
-		JOIN cars c ON rv.car_id = c.cid
-		LEFT JOIN car_details cd ON c.cid = cd.car_id
+        JOIN cars c ON rv.car_id = c.id
+		LEFT JOIN car_details cd ON c.id = cd.car_id
+		LEFT JOIN provinces p ON c.province_id = p.id
+		LEFT JOIN car_colors cc ON cc.car_id = c.id AND cc.position = 0
+		LEFT JOIN colors col ON cc.color_code = col.code
 		JOIN sellers s ON c.seller_id = s.id
 		WHERE rv.user_id = $1
 		ORDER BY rv.viewed_at DESC
