@@ -27,12 +27,10 @@ type MarketPrice struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// --- V16: Add POC Response Struct ---
-// Struct ใหม่สำหรับส่งข้อมูลดีบักกลับไปที่ Frontend
 type ExtractionPOCResponse struct {
-	DetectedHeaders []string      `json:"detected_headers"` // เก็บ Model Headers ที่เจอ
-	DebugLog        []string      `json:"debug_log"`        // เก็บ Log การตัดสินใจ
-	FinalPrices     []MarketPrice `json:"final_prices"`     // เก็บผลลัพธ์ (ของเดิม)
+	DetectedHeaders []string      `json:"detected_headers"` 
+	DebugLog        []string      `json:"debug_log"`       
+	FinalPrices     []MarketPrice `json:"final_prices"`    
 }
 
 // --- Service Struct and Constructor ---
@@ -82,13 +80,12 @@ var junkSet = map[string]bool{
 	"JOHN COOPER WORKS (JCW)": true, "C-SERIES": true, "EX-SERIES": true, "S-SERIES": true,
 	"V-SERIES": true, "XC-SERIES": true,
 }
-// --- V17 FIX: เพิ่ม Set สำหรับ Brand ที่ไม่มีการแยกรุ่นย่อย ---
+
 var singleModelBrands = map[string]bool{
 	"AION": true, "TESLA": true, "NETA": true, "XPENG": true, "ZEEKR": true, "LEAPMOTOR": true,
 	"AVATR": true, "DEEPAL": true, "DENZA": true, "ORA": true,
-	// (เพิ่ม Brand อื่นๆ ที่มีโครงสร้าง Model/SubModel แบบเดียวกับ AION ได้ที่นี่)
+
 }
-// --- END V17 FIX ---
 
 var (
 	dataRegex             = regexp.MustCompile(`^(.+?)\s+(\d{4}\s*-\s*\d{4})\s+(.+)$`)
@@ -172,34 +169,25 @@ func parsePriceRange(priceStr string) (int64, int64, error) {
 	return minPrice, maxPrice, nil
 }
 
-// --- V17 FIX: เพิ่มฟังก์ชัน Helper สำหรับแยก Model/SubModel ---
 func splitModelSubModel(fullSubModel string, brand string) (string, string) {
-	// 1. ตรวจสอบ Brand ที่ไม่ต้องแยก (AION, TESLA, etc.)
 	if _, isSingleModel := singleModelBrands[brand]; isSingleModel {
 		return fullSubModel, "" // e.g., Model: "AION ES", SubModel: ""
 	}
 
-	// 2. Logic การแยกแบบปกติ (สำหรับ AUDI, BMW, etc.)
 	parts := strings.Fields(fullSubModel)
 	if len(parts) <= 1 {
 		return fullSubModel, "" // e.g., "A3" -> Model: "A3", SubModel: ""
 	}
 
-	// 3. Logic การแยก: คำแรกคือ Model ที่เหลือคือ SubModel
-	// "A1 1.4" -> "A1", "1.4"
-	// "X2 SDRIVE 20I (F39)" -> "X2", "SDRIVE 20I (F39)"
-	// "D-MAX (SPACE CAB)" -> "D-MAX", "(SPACE CAB)"
 	return parts[0], strings.Join(parts[1:], " ")
 }
 
-// --- END V17 FIX ---
 
-// --- Extract Function (V16: Modified for POC) ---
-// V16: เปลี่ยน return type เป็น (ExtractionPOCResponse, error)
+// --- Extract Function ---
+
 func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, filePath string) (ExtractionPOCResponse, error) {
 	log.Printf("Starting market price extraction from PDF: %s", filePath)
 
-	// V16: สร้าง Struct ที่จะส่งกลับ
 	var pocResponse ExtractionPOCResponse
 	pocResponse.DebugLog = append(pocResponse.DebugLog, "Extraction service started.")
 
@@ -216,9 +204,9 @@ func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, file
 	log.Println("pdftotext command executed successfully.")
 	fullText := out.String()
 
-	var tempPrices []MarketPrice // Buffer สำหรับ Brand ที่อยู่ท้ายหน้า
+	var tempPrices []MarketPrice
 	var currentBrand string
-	var currentModel string // V17: ตัวแปรนี้จะถูกใช้โดย (Junk) State 1->3 เท่านั้น
+	var currentModel string 
 	currentPage := 1
 	currentState := ExpectingHeaderOrSubModel
 	var tempSubModel string
@@ -246,7 +234,7 @@ func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, file
 		// --- Brand check ---
 		potentialBrand := line
 		if _, isBrand := brandSet[potentialBrand]; isBrand {
-			// (Logic การรวม Brand เช่น LAND ROVER ไม่เปลี่ยนแปลง)
+
 			isLikelyContinuation := !strings.Contains(potentialBrand, " ") && len(strings.Fields(potentialBrand)) == 1
 			if currentBrand != "" && isLikelyContinuation && brandSet[currentBrand+" "+potentialBrand] {
 				currentBrand = currentBrand + " " + potentialBrand
@@ -263,20 +251,16 @@ func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, file
 				pocResponse.DebugLog = append(pocResponse.DebugLog, flushMsg)
 
 				for i := range tempPrices {
-					tempPrices[i].Brand = currentBrand // 1. ตั้ง Brand
+					tempPrices[i].Brand = currentBrand 
 
-					// --- V17 FIX: ใช้ Logic แยกใหม่ ที่นี่ ---
-					// tempPrices[i].SubModel ยังคงเป็น "AION ES" หรือ "A1 1.4"
 					finalModel, finalSubModel := splitModelSubModel(tempPrices[i].SubModel, currentBrand)
 					tempPrices[i].Model = finalModel
 					tempPrices[i].SubModel = finalSubModel
-					// --- END V17 FIX ---
 
 					pocResponse.FinalPrices = append(pocResponse.FinalPrices, tempPrices[i])
 				}
 				tempPrices = nil // Clear the temp buffer
 			}
-			// --- End V16 FIX ---
 
 			currentState = ExpectingHeaderOrSubModel
 			tempSubModel = ""
@@ -295,7 +279,6 @@ func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, file
 			continue
 		}
 
-		// --- Rule 1: "มีครบทั้งหมด" (dataRegex) ---
 		carMatches := dataRegex.FindStringSubmatch(line)
 		if len(carMatches) == 4 {
 			extractedSubModel := strings.TrimSpace(carMatches[1])
@@ -307,20 +290,18 @@ func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, file
 
 			if extractedSubModel != "" && errYear == nil && errPrice == nil {
 				now := time.Now()
-				
-				// V17: เราไม่ใช้ logic 'tempLine' หรือ 'finalModel' จาก 'currentModel' ที่นี่อีกแล้ว
+
 				if tempLine != "" {
 					if _, isJunk := junkSet[tempLine]; isJunk {
 						pocResponse.DebugLog = append(pocResponse.DebugLog, fmt.Sprintf("Page ~%d, Line %d: (Junk Case) Discarding Junk Header '%s' before dataRegex.", currentPage, lineNum+1, tempLine))
 					}
-					// ไม่ว่าจะเป็น Junk หรือไม่ เราก็ไม่ควรตั้งเป็น Header
 					tempLine = ""
 				}
 
 				marketPrice := MarketPrice{
-					Brand:     currentBrand, // อาจจะว่าง
-					Model:     "",           // V17: จะถูกเขียนทับ
-					SubModel:  "",           // V17: จะถูกเขียนทับ
+					Brand:     currentBrand,
+					Model:     "",           
+					SubModel:  "",          
 					YearStart: yearStart,
 					YearEnd:   yearEnd,
 					PriceMin:  priceMin,
@@ -329,22 +310,15 @@ func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, file
 					UpdatedAt: now,
 				}
 
-				// --- V17 FIX: ใช้ Logic แยกใหม่ ที่นี่ ---
 				finalModelToUse, finalSubModelToUse := splitModelSubModel(extractedSubModel, currentBrand)
 				marketPrice.Model = finalModelToUse
 				marketPrice.SubModel = finalSubModelToUse
-				// --- END V17 FIX ---
 
-				// --- V16 FIX (Hold-and-Flush Logic) ---
 				if currentBrand == "" {
-					// Brand ไม่มา (TESLA), เก็บใน temp
 					tempPrices = append(tempPrices, marketPrice)
 				} else {
-					// Brand มาแล้ว (AUDI),
-					// V17: ไม่ต้องทำ Logic เพิ่ม
 					pocResponse.FinalPrices = append(pocResponse.FinalPrices, marketPrice)
 				}
-				// --- End V16 FIX ---
 
 				currentState = ExpectingHeaderOrSubModel
 				tempSubModel = ""
@@ -372,7 +346,6 @@ func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, file
 					tempYearStart = yearStart
 					tempYearEnd = yearEnd
 					currentState = ExpectingPrice
-					// V17: เราลบ (Header: '%s') ออกจาก Log นี้ เพราะ currentModel ไม่น่าเชื่อถือ
 					pocResponse.DebugLog = append(pocResponse.DebugLog, fmt.Sprintf("Page ~%d, Line %d: State 1 -> 2. '%s' was SubModel-L1. Got Year. Waiting for Price.", currentPage, lineNum+1, tempSubModel))
 				}
 			} else if !priceRegex.MatchString(line) {
@@ -381,8 +354,7 @@ func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, file
 					tempLine = line
 					currentState = ExpectingYearOrSubModel // Back to State 1
 				} else {
-					// V16: นี่คือจุดที่ตรวจพบ Model Header! (V17: เรายังคงเก็บ Logic นี้ไว้สำหรับ Debugging Headers)
-					currentModel = tempLine // V17: นี่คือ "Junk" Header จากสารบัญ
+					currentModel = tempLine 
 					tempSubModel = line
 					currentState = ExpectingYear
 
@@ -416,9 +388,9 @@ func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, file
 				now := time.Now()
 
 				marketPrice := MarketPrice{
-					Brand:     currentBrand,  // อาจจะว่าง
-					Model:     "",            // V17: จะถูกเขียนทับ
-					SubModel:  "",            // V17: จะถูกเขียนทับ
+					Brand:     currentBrand, 
+					Model:     "",         
+					SubModel:  "",        
 					YearStart: tempYearStart,
 					YearEnd:   tempYearEnd,
 					PriceMin:  priceMin,
@@ -427,24 +399,15 @@ func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, file
 					UpdatedAt: now,
 				}
 
-				// --- V17 FIX: ใช้ Logic แยกใหม่ ที่นี่ ---
-				// 'tempSubModel' คือ "AION ES" หรือ "A1 1.4"
 				finalModel, finalSubModel := splitModelSubModel(tempSubModel, currentBrand)
 				marketPrice.Model = finalModel
 				marketPrice.SubModel = finalSubModel
-				// --- END V17 FIX ---
 
-				// --- V16 FIX (Hold-and-Flush Logic) ---
 				if currentBrand == "" {
-					// Brand ไม่มา (AION), เก็บใน temp
 					tempPrices = append(tempPrices, marketPrice)
 				} else {
-					// Brand มาแล้ว (AUDI)
-					// V17: ไม่ต้องทำ Logic เพิ่ม
 					pocResponse.FinalPrices = append(pocResponse.FinalPrices, marketPrice)
 				}
-				// --- End V16 FIX ---
-
 				currentState = ExpectingHeaderOrSubModel
 				tempSubModel = ""
 				tempLine = ""
@@ -460,12 +423,10 @@ func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, file
 	log.Printf("PDF parsing finished. Found %d records.", len(pocResponse.FinalPrices))
 	pocResponse.DebugLog = append(pocResponse.DebugLog, fmt.Sprintf("PDF parsing finished. Found %d records.", len(pocResponse.FinalPrices)))
 
-	// V16: คืนค่า Struct ใหม่
 	return pocResponse, nil
 }
 
 // --- Commit Function ---
-// (No changes to Commit function)
 func (s *ExtractionService) CommitMarketPrices(ctx context.Context, pricesToCommit []MarketPrice) (insertedCount int, updatedCount int, err error) {
 	if len(pricesToCommit) == 0 {
 		log.Println("No records received to commit.")
@@ -539,18 +500,16 @@ func (s *ExtractionService) CommitMarketPrices(ctx context.Context, pricesToComm
 	return
 }
 
-// --- Import Function (V16: Fixed breaking change) ---
+// --- Import Function ---
 func (s *ExtractionService) ImportMarketPricesFromPDF(ctx context.Context, filePath string) (insertedCount int, updatedCount int, err error) {
 	log.Printf("Starting market price import (Extraction + DB) from PDF: %s", filePath)
 
-	// V16: รับค่าเป็น pocResponse
 	pocResponse, extractErr := s.ExtractMarketPricesFromPDF(ctx, filePath)
 	if extractErr != nil {
 		err = fmt.Errorf("extraction failed during import: %w", extractErr)
 		return
 	}
 
-	// V16: ใช้ pocResponse.FinalPrices ในการ Commit
 	if len(pocResponse.FinalPrices) == 0 {
 		log.Println("No records found in PDF to import.")
 		return 0, 0, nil
