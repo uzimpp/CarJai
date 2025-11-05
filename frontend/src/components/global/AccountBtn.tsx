@@ -75,6 +75,7 @@ export default function AccountBtn({
                     <Fragment>
                       {adminMenuItems.map((item: any) => (
                         <Link
+                          key={item.label}
                           href={item.href}
                           className="flex items-center gap-(--space-xs) px-(--space-xs) py-(--space-2xs) rounded-lg  hover:bg-maroon/30"
                         >

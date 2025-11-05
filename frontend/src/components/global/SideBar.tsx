@@ -43,7 +43,7 @@ export default function SideBar({ onWidthChange }: SideBarProps) {
   return (
     <aside
       ref={sidebarRef}
-      className={`fixed left-0 top-0 h-full bg-black shadow-lg transition-all duration-700 ease-in-outz-40 overflow-visible flex flex-col p-(--space-xs) gap-y-(--space-xs) text-white`}
+      className={`fixed left-0 top-0 h-full bg-black shadow-lg transition-all duration-700 ease-in-out z-40 overflow-visible flex flex-col p-(--space-xs) gap-y-(--space-xs) text-white`}
     >
       {/* Logo Section */}
       <div className={`flex items-center gap-x-(--space-xs)`}>

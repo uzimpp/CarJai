@@ -62,6 +62,33 @@ interface AdminSigninRequest {
   password: string;
 }
 
+type UserType = "admin" | "user";
+type UserRole = "Admin" | "Buyer" | "Seller" | "No role";
+
+interface AdminManagedUser {
+  id: number;
+  type: UserType;
+  // User-only fields (users have email, updated_at, created_at)
+  email?: string | null; // Only for users
+  updated_at?: string; // Only for users - when profile was last updated
+  // Common fields (both admins and users have these)
+  username: string;
+  name: string;
+  created_at: string;
+  // UI fields (derived from data, not in database)
+  role: UserRole;
+  roles?: {
+    buyer: boolean;
+    seller: boolean;
+  };
+}
+
+interface AdminUpdateUserRequest {
+  name?: string;
+  username?: string;
+  email?: string; // Only for users
+}
+
 export type {
   AdminUser,
   AdminSession,
@@ -72,4 +99,8 @@ export type {
   AdminAuthError,
   AdminSigninRequest,
   AdminActionResponse,
+  AdminManagedUser,
+  AdminUpdateUserRequest,
+  UserType,
+  UserRole,
 };
