@@ -103,14 +103,15 @@ func (s *CarService) EstimateCarPrice(carID int) (int64, error) {
 
 
 	// 3. Check for required fields for estimation
-	if car.BrandName == nil || car.SubmodelName == nil || car.Year == nil {
-		return 0, fmt.Errorf("estimation unavailable: missing brand, submodel, or year")
+
+	if car.BrandName == nil || car.ModelName == nil || car.SubmodelName == nil || car.Year == nil {
+		return 0, fmt.Errorf("estimation unavailable: missing brand, model, submodel, or year")
 	}
 
 	// 4. Get base market price
-	marketPrice, err := s.marketPriceRepo.GetMarketPrice(*car.BrandName, *car.SubmodelName, *car.Year)
+	marketPrice, err := s.marketPriceRepo.GetMarketPrice(*car.BrandName, *car.ModelName, *car.SubmodelName, *car.Year)
 	if err != nil {
-		return 0, fmt.Errorf("estimation unavailable: %w", err)
+		return 0, fmt.Errorf("estimation unavailable: no matching market data found")
 	}
 
 	// 5. Calculate base price (average of min/max)

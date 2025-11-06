@@ -4,17 +4,21 @@ package models
 import (
 	"database/sql"
 	"fmt"
+	"time" 
 )
 
 // MarketPrice represents a row in the market_price table
 type MarketPrice struct {
-	ID          int    `json:"id" db:"id"`
-	Brand       string `json:"brand" db:"brand"`
-	ModelTrim   string `json:"modelTrim" db:"model_trim"`
-	YearStart   int    `json:"yearStart" db:"year_start"`
-	YearEnd     int    `json:"yearEnd" db:"year_end"`
-	PriceMinTHB int64  `json:"priceMinThb" db:"price_min_thb"`
-	PriceMaxTHB int64  `json:"priceMaxThb" db:"price_max_thb"`
+	ID          int       `json:"id" db:"id"`
+	Brand       string    `json:"brand" db:"brand"`
+	Model       string    `json:"model" db:"model"`      
+	SubModel    string    `json:"sub_model" db:"sub_model"` 
+	YearStart   int       `json:"year_start" db:"year_start"`
+	YearEnd     int       `json:"year_end" db:"year_end"`
+	PriceMinTHB int64     `json:"price_min_thb" db:"price_min_thb"`
+	PriceMaxTHB int64     `json:"price_max_thb" db:"price_max_thb"`
+	CreatedAt   time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // MarketPriceRepository handles market_price table operations
@@ -28,24 +32,33 @@ func NewMarketPriceRepository(db *Database) *MarketPriceRepository {
 }
 
 // GetMarketPrice finds the average market price for a given brand, model, and year
-// We assume model_trim in market_price maps to model_name in cars
-func (r *MarketPriceRepository) GetMarketPrice(brand, submodel string, year int) (*MarketPrice, error) { 
+func (r *MarketPriceRepository) GetMarketPrice(brand string, model string, submodel string, year int) (*MarketPrice, error) {
 	mp := &MarketPrice{}
 
 	query := `
-		SELECT price_min_thb, price_max_thb
+		SELECT 
+			id, brand, model, sub_model, 
+			year_start, year_end, 
+			price_min_thb, price_max_thb, 
+			created_at, updated_at
 		FROM market_price
 		WHERE
 			brand ILIKE $1 AND
-			RTRIM(model_trim) ILIKE $2 AND 
-			$3 BETWEEN year_start AND year_end
+			model ILIKE $2 AND
+			sub_model ILIKE $3 AND 
+			$4 BETWEEN year_start AND year_end
 		LIMIT 1`
 
+	err := r.db.DB.QueryRow(query, brand, model, submodel, year).Scan(
+		&mp.ID, &mp.Brand, &mp.Model, &mp.SubModel,
+		&mp.YearStart, &mp.YearEnd,
+		&mp.PriceMinTHB, &mp.PriceMaxTHB,
+		&mp.CreatedAt, &mp.UpdatedAt,
+	)
 
-	err := r.db.DB.QueryRow(query, brand, submodel, year).Scan(&mp.PriceMinTHB, &mp.PriceMaxTHB)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("market price not found for %s %s (%d)", brand, submodel, year)
+			return nil, fmt.Errorf("market price not found for %s %s %s (%d)", brand, model, submodel, year)
 		}
 		return nil, fmt.Errorf("failed to get market price: %w", err)
 	}
