@@ -1155,6 +1155,116 @@ paths:
         '500':
           description: Database commit failed
 
+  # Favorites
+  /api/favorites/my:
+    get:
+      tags:
+        - Favorites
+      summary: Get current user's favourite listings
+      operationId: getMyFavourites
+      security:
+        - CookieAuth: []
+      responses:
+        '200':
+          description: Favourite car listings with images
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CarListingWithImagesResponse'
+              examples:
+                sample:
+                  value:
+                    success: true
+                    data:
+                      - id: 101
+                        sellerId: 5
+                        year: 2019
+                        mileage: 35000
+                        price: 420000
+                        provinceId: 10
+                        conditionRating: 4
+                        bodyTypeCode: "SEDAN"
+                        transmissionCode: "AT"
+                        drivetrainCode: "FWD"
+                        seats: 5
+                        doors: 4
+                        status: "active"
+                        createdAt: "2024-12-01T10:00:00Z"
+                        updatedAt: "2024-12-10T10:00:00Z"
+                        brandName: "TOYOTA"
+                        modelName: "COROLLA"
+                        submodelName: "1.8E"
+                        images:
+                          - id: 1
+                            carId: 101
+                            imageType: "image/jpeg"
+                            imageSize: 204800
+                            displayOrder: 1
+                            uploadedAt: "2024-12-01T11:00:00Z"
+        '401':
+          description: Unauthorized - Authentication required
+
+  /api/favorites/{carId}:
+    post:
+      tags:
+        - Favorites
+      summary: Add a car to favourites
+      operationId: addFavourite
+      security:
+        - CookieAuth: []
+      parameters:
+        - name: carId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Favourite added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicResponse'
+              examples:
+                success:
+                  value:
+                    success: true
+                    message: "Car 101 added to favourites"
+        '400':
+          description: Bad request - Invalid car ID or car not active
+        '401':
+          description: Unauthorized - Authentication required
+
+    delete:
+      tags:
+        - Favorites
+      summary: Remove a car from favourites
+      operationId: removeFavourite
+      security:
+        - CookieAuth: []
+      parameters:
+        - name: carId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Favourite removed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicResponse'
+              examples:
+                success:
+                  value:
+                    success: true
+                    message: "Car 101 removed from favourites"
+        '401':
+          description: Unauthorized - Authentication required
+        '404':
+          description: Favourite not found
+
 components:
   securitySchemes:
     CookieAuth:
@@ -1498,6 +1608,107 @@ components:
           type: integer
         pages:
           type: integer
+
+    # --- Favorites: Basic and Listing Schemas ---
+    BasicResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+
+    CarImageMetadata:
+      type: object
+      description: Image metadata without binary data
+      properties:
+        id:
+          type: integer
+        carId:
+          type: integer
+        imageType:
+          type: string
+          description: MIME type (e.g., image/jpeg)
+        imageSize:
+          type: integer
+        displayOrder:
+          type: integer
+        uploadedAt:
+          type: string
+          format: date-time
+
+    CarListingWithImages:
+      type: object
+      description: Compact car listing with images for favourites
+      properties:
+        id:
+          type: integer
+        sellerId:
+          type: integer
+        year:
+          type: integer
+          nullable: true
+        mileage:
+          type: integer
+          nullable: true
+        price:
+          type: integer
+          nullable: true
+        provinceId:
+          type: integer
+          nullable: true
+        conditionRating:
+          type: integer
+          nullable: true
+        bodyTypeCode:
+          type: string
+          nullable: true
+        transmissionCode:
+          type: string
+          nullable: true
+        drivetrainCode:
+          type: string
+          nullable: true
+        seats:
+          type: integer
+          nullable: true
+        doors:
+          type: integer
+          nullable: true
+        status:
+          type: string
+          enum: [draft, active, sold, deleted]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        brandName:
+          type: string
+          nullable: true
+        modelName:
+          type: string
+          nullable: true
+        submodelName:
+          type: string
+          nullable: true
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/CarImageMetadata'
+
+    CarListingWithImagesResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CarListingWithImages'
+        message:
+          type: string
 
     # --- NEW: Schemas for Market Price ---
     MarketPrice:
