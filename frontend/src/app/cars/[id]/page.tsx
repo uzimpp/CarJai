@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { carsAPI } from "@/lib/carsAPI";
+import { apiCall } from "@/lib/apiCall";
 import type { Car } from "@/types/car";
 import { useUserAuth } from "@/hooks/useUserAuth";
 
@@ -15,7 +16,7 @@ interface RecentViewRequest {
 export default function CarDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { user, isLoading: authLoading } = useUserAuth();
+  const { user, roles, isLoading: authLoading } = useUserAuth();
   const [car, setCar] = useState<Car | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,22 +27,22 @@ export default function CarDetailPage() {
   // Record view when component mounts and user is authenticated
   useEffect(() => {
     const recordView = async () => {
-      if (!user || !carId) return;
+      // Wait until auth loading finishes to avoid premature calls
+      if (authLoading) return;
+      // Only buyers should record recent views
+      if (!user || !roles?.buyer || !carId) return;
 
       try {
-        const response = await fetch("/api/recent-views/record", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({
-            car_id: parseInt(carId),
-          } as RecentViewRequest),
-        });
+        const resp = await apiCall<{ success: boolean; message?: string }>(
+          "/api/recent-views/record",
+          {
+            method: "POST",
+            body: JSON.stringify({ car_id: parseInt(carId) } as RecentViewRequest),
+          }
+        );
 
-        if (!response.ok) {
-          console.warn("Failed to record car view:", response.statusText);
+        if (!resp.success) {
+          console.warn("Failed to record car view:", resp.message || "unknown error");
         }
       } catch (error) {
         console.warn("Error recording car view:", error);
@@ -49,7 +50,7 @@ export default function CarDetailPage() {
     };
 
     recordView();
-  }, [user, carId]);
+  }, [authLoading, user, carId]);
 
   // Fetch car details
   useEffect(() => {

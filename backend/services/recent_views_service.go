@@ -63,33 +63,32 @@ func (s *RecentViewsService) RecordView(userID, carID int) error {
 
 // GetUserRecentViews retrieves a user's recent car views with car details
 func (s *RecentViewsService) GetUserRecentViews(userID, limit int) ([]models.RecentViewWithCarDetails, error) {
-	query := `
-		SELECT 
-			rv.rvid,
-			rv.user_id,
-			rv.car_id,
-			rv.viewed_at,
-			c.year,
-			c.mileage,
-			c.price,
-			p.name_en as province,
-			c.condition_rating,
-			col.label_en as color,
-			c.status,
-			cd.brand_name,
-			cd.model_name,
-			s.display_name as seller_display_name
-		FROM recent_views rv
+    query := `
+        SELECT 
+            rv.rvid,
+            rv.user_id,
+            rv.car_id,
+            rv.viewed_at,
+            c.year,
+            c.mileage,
+            c.price,
+            p.name_en as province,
+            c.condition_rating,
+            col.label_en as color,
+            c.status,
+            c.brand_name,
+            c.model_name,
+            s.display_name as seller_display_name
+        FROM recent_views rv
         JOIN cars c ON rv.car_id = c.id
-		LEFT JOIN car_details cd ON c.id = cd.car_id
-		LEFT JOIN provinces p ON c.province_id = p.id
-		LEFT JOIN car_colors cc ON cc.car_id = c.id AND cc.position = 0
-		LEFT JOIN colors col ON cc.color_code = col.code
-		JOIN sellers s ON c.seller_id = s.id
-		WHERE rv.user_id = $1
-		ORDER BY rv.viewed_at DESC
-		LIMIT $2
-	`
+        LEFT JOIN provinces p ON c.province_id = p.id
+        LEFT JOIN car_colors cc ON cc.car_id = c.id AND cc.position = 0
+        LEFT JOIN colors col ON cc.color_code = col.code
+        JOIN sellers s ON c.seller_id = s.id
+        WHERE rv.user_id = $1
+        ORDER BY rv.viewed_at DESC
+        LIMIT $2
+    `
 
 	rows, err := s.db.Query(query, userID, limit)
 	if err != nil {

@@ -9,6 +9,13 @@ CREATE TABLE recent_views (
     viewed_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+-- CREATE TABLE recent_views (
+--     user_id INT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+--     car_id INT NOT NULL REFERENCES cars (id) ON DELETE CASCADE,
+--     last_viewed_at timestamptz NOT NULL DEFAULT now(),
+--     PRIMARY KEY (user_id, car_id)
+-- );
+
 -- Create indexes for performance optimization
 CREATE INDEX idx_recent_views_user_id ON recent_views (user_id);
 CREATE INDEX idx_recent_views_car_id ON recent_views (car_id);

@@ -7,13 +7,14 @@ import Link from "next/link";
 import { Car, InspectionData } from "@/types/car";
 import { SellerContact } from "@/types/user";
 import { carsAPI } from "@/lib/carsAPI";
+import { apiCall } from "@/lib/apiCall";
 import { useUserAuth } from "@/hooks/useUserAuth";
 
 export default function CarListingPage() {
   const params = useParams();
   const router = useRouter();
   const carId = Number(params.id);
-  const { user, isLoading: authLoading } = useUserAuth();
+  const { user, roles, isLoading: authLoading } = useUserAuth();
 
   const [car, setCar] = useState<Car | null>(null);
   const [contacts, setContacts] = useState<SellerContact[]>([]);
@@ -63,17 +64,19 @@ export default function CarListingPage() {
   useEffect(() => {
     const recordView = async () => {
       if (authLoading) return;
-      if (!user || !carId || isNaN(carId)) return;
+      // Only buyers should record recent views
+      if (!user || !roles?.buyer || !carId || isNaN(carId)) return;
 
       try {
-        const res = await fetch("/api/recent-views/record", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ car_id: carId }),
-        });
-        if (!res.ok) {
-          console.warn("Failed to record car view:", res.statusText);
+        const resp = await apiCall<{ success: boolean; message?: string }>(
+          "/api/recent-views/record",
+          {
+            method: "POST",
+            body: JSON.stringify({ car_id: carId }),
+          }
+        );
+        if (!resp.success) {
+          console.warn("Failed to record car view:", resp.message || "unknown error");
         }
       } catch (err) {
         console.warn("Error recording car view:", err);
@@ -81,7 +84,7 @@ export default function CarListingPage() {
     };
 
     recordView();
-  }, [authLoading, user, carId]);
+  }, [authLoading, user, roles, carId]);
 
   const getContactIcon = (contactType: string) => {
     switch (contactType.toLowerCase()) {

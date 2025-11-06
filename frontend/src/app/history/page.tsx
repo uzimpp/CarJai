@@ -32,7 +32,7 @@ export default function HistoryPage() {
   const [recentViews, setRecentViews] = useState<RecentView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { user, isLoading: authLoading } = useUserAuth();
+  const { user, roles, isLoading: authLoading } = useUserAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -41,10 +41,16 @@ export default function HistoryPage() {
       return;
     }
 
-    if (user) {
+    // Only buyers can access viewing history
+    if (!authLoading && user && !roles?.buyer) {
+      setError('Viewing history is available for buyers only.');
+      return;
+    }
+
+    if (user && roles?.buyer) {
       fetchRecentViews();
     }
-  }, [user, authLoading, router]);
+  }, [user, roles, authLoading, router]);
 
   const fetchRecentViews = async () => {
     try {
@@ -58,13 +64,15 @@ export default function HistoryPage() {
       } else {
         setError(response.message || 'Failed to fetch viewing history');
       }
-    } catch (err) {
-      if (err instanceof Error && err.message.toLowerCase().includes('not authenticated')) {
+    } catch (err: any) {
+      const msg = (err?.message || '').toLowerCase();
+      if (msg.includes('not authenticated') || msg.includes('unauthorized') || msg.includes('401')) {
         setError('Please sign in to view your viewing history.');
-        return;
+      } else if (msg.includes('forbidden') || msg.includes('403')) {
+        setError('Viewing history is available for buyers only.');
+      } else {
+        setError('Failed to fetch viewing history');
       }
-      setError('Failed to fetch viewing history');
-      // Use warn to avoid noisy stack traces in console
       console.warn('Error fetching recent views:', err);
     } finally {
       setLoading(false);
