@@ -11,14 +11,15 @@ import (
 
 // RecentViewsRoutes sets up recent views routes
 func RecentViewsRoutes(
-	recentViewsService *services.RecentViewsService,
-	userService *services.UserService,
-	userJWTManager *utils.JWTManager,
-	allowedOrigins []string,
+    recentViewsService *services.RecentViewsService,
+    profileService *services.ProfileService,
+    userService *services.UserService,
+    userJWTManager *utils.JWTManager,
+    allowedOrigins []string,
 ) *http.ServeMux {
 
-	// Create handler instance
-	recentViewsHandler := handlers.NewRecentViewsHandler(recentViewsService)
+    // Create handler instance
+    recentViewsHandler := handlers.NewRecentViewsHandler(recentViewsService, profileService)
 
 	// Create router
 	router := http.NewServeMux()
