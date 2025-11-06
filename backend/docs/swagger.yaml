@@ -187,55 +187,152 @@ paths:
     get:
       tags:
         - Cars
-      summary: Search cars
+      summary: Search cars with filters
+      description: Search and filter cars by various criteria. All filters are optional and can be combined.
       security: []
       parameters:
         - name: q
           in: query
-          description: Search query
+          description: Search query (brand, model, description)
           schema:
             type: string
-        - name: body_type
+          example: "Toyota"
+        - name: bodyType
           in: query
-          description: Body type filter
+          description: Body type code filter
           schema:
             type: string
-        - name: min_price
+            enum: [PICKUP, VAN, CITYCAR, DAILY, SUV, SPORTLUX]
+          example: "SUV"
+        - name: transmission
           in: query
-          description: Minimum price
+          description: Transmission type code filter
+          schema:
+            type: string
+            enum: [MANUAL, AT]
+          example: "AT"
+        - name: drivetrain
+          in: query
+          description: Drivetrain type code filter
+          schema:
+            type: string
+            enum: [FWD, RWD, AWD, 4WD]
+          example: "AWD"
+        - name: fuelTypes
+          in: query
+          description: Fuel type codes filter (can specify multiple)
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [GASOLINE, DIESEL, ELECTRIC, HYBRID, LPG, CNG]
+          style: form
+          explode: true
+          example: ["GASOLINE", "HYBRID"]
+        - name: colors
+          in: query
+          description: Color codes filter (can specify multiple)
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+          example: ["WHITE", "BLACK"]
+        - name: provinceId
+          in: query
+          description: Province ID filter
           schema:
             type: integer
-        - name: max_price
+          example: 10
+        - name: minPrice
           in: query
-          description: Maximum price
+          description: Minimum price (Baht)
           schema:
             type: integer
+          example: 300000
+        - name: maxPrice
+          in: query
+          description: Maximum price (Baht)
+          schema:
+            type: integer
+          example: 1500000
+        - name: minYear
+          in: query
+          description: Minimum year
+          schema:
+            type: integer
+          example: 2015
+        - name: maxYear
+          in: query
+          description: Maximum year
+          schema:
+            type: integer
+          example: 2024
         - name: page
           in: query
-          description: Page number
+          description: Page number for pagination
           schema:
             type: integer
             default: 1
+          example: 1
         - name: limit
           in: query
           description: Items per page
           schema:
             type: integer
             default: 20
+            maximum: 100
+          example: 20
       responses:
         '200':
-          description: Search results
+          description: Search results with pagination
           content:
             application/json:
               schema:
                 type: object
                 properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      cars:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Car'
+                      total:
+                        type: integer
+                        description: Total number of matching cars
+                        example: 30
+                      page:
+                        type: integer
+                        description: Current page number
+                        example: 1
+                      limit:
+                        type: integer
+                        description: Items per page
+                        example: 20
+              example:
+                success: true
+                data:
                   cars:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Car'
-                  pagination:
-                    $ref: '#/components/schemas/Pagination'
+                    - id: 1
+                      sellerId: 1
+                      brandName: "TOYOTA"
+                      modelName: "Camry"
+                      year: 2020
+                      price: 850000
+                      mileage: 45000
+                      provinceId: 10
+                      bodyTypeCode: "DAILY"
+                      transmissionCode: "AT"
+                      drivetrainCode: "FWD"
+                      status: "active"
+                  total: 30
+                  page: 1
+                  limit: 20
 
   /api/cars:
     post:
@@ -937,19 +1034,21 @@ paths:
     get:
       tags:
         - Reference
-      summary: Get reference data
+      summary: Get reference data for dropdowns and filters
+      description: Returns all reference data needed for car search filters. Labels are returned in the requested language (en or th).
       security: []
       parameters:
         - name: lang
           in: query
-          description: Language preference
+          description: Language preference for labels
           schema:
             type: string
             enum: [en, th]
             default: en
+          example: "en"
       responses:
         '200':
-          description: Reference data
+          description: Reference data with localized labels
           content:
             application/json:
               schema:
@@ -957,8 +1056,50 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
                   data:
                     $ref: '#/components/schemas/ReferenceData'
+              example:
+                success: true
+                data:
+                  bodyTypes:
+                    - code: "PICKUP"
+                      label: "Pickup"
+                    - code: "SUV"
+                      label: "SUV"
+                    - code: "CITYCAR"
+                      label: "City Car"
+                  transmissions:
+                    - code: "MANUAL"
+                      label: "Manual"
+                    - code: "AT"
+                      label: "Automatic"
+                  fuelTypes:
+                    - code: "GASOLINE"
+                      label: "Gasoline"
+                    - code: "DIESEL"
+                      label: "Diesel"
+                    - code: "HYBRID"
+                      label: "Hybrid"
+                  drivetrains:
+                    - code: "FWD"
+                      label: "FWD"
+                    - code: "AWD"
+                      label: "AWD"
+                    - code: "4WD"
+                      label: "4WD"
+                  colors:
+                    - code: "WHITE"
+                      label: "White"
+                    - code: "BLACK"
+                      label: "Black"
+                    - code: "GRAY"
+                      label: "Gray"
+                  provinces:
+                    - id: 10
+                      label: "Chiang Mai"
+                    - id: 19
+                      label: "Bangkok"
 
   # Admin Authentication
   /admin/auth/signin:
@@ -1245,77 +1386,86 @@ components:
 
     ReferenceData:
       type: object
+      description: Reference data for dropdowns and filters (returned based on language preference)
       properties:
-        body_types:
+        bodyTypes:
           type: array
+          description: Available body types
           items:
             type: object
             properties:
               code:
                 type: string
-              name_th:
+                example: "SUV"
+              label:
                 type: string
-              name_en:
-                type: string
+                description: Localized label based on language parameter
+                example: "SUV"
         transmissions:
           type: array
+          description: Available transmission types
           items:
             type: object
             properties:
               code:
                 type: string
-              name_th:
+                example: "AT"
+              label:
                 type: string
-              name_en:
-                type: string
-        fuel_types:
+                description: Localized label based on language parameter
+                example: "Automatic"
+        fuelTypes:
           type: array
+          description: Available fuel types
           items:
             type: object
             properties:
               code:
                 type: string
-              label_th:
+                example: "GASOLINE"
+              label:
                 type: string
-              label_en:
-                type: string
+                description: Localized label based on language parameter
+                example: "Gasoline"
         drivetrains:
           type: array
+          description: Available drivetrain types
           items:
             type: object
             properties:
               code:
                 type: string
-              name_th:
+                example: "AWD"
+              label:
                 type: string
-              name_en:
-                type: string
+                description: Localized label based on language parameter
+                example: "AWD"
         colors:
           type: array
+          description: Available colors
           items:
             type: object
             properties:
               code:
                 type: string
-              label_th:
+                example: "WHITE"
+              label:
                 type: string
-              label_en:
-                type: string
+                description: Localized label based on language parameter
+                example: "White"
         provinces:
           type: array
+          description: Available provinces (71 provinces in Thailand)
           items:
             type: object
             properties:
               id:
                 type: integer
-              name_th:
+                example: 10
+              label:
                 type: string
-              name_en:
-                type: string
-              region_th:
-                type: string
-              region_en:
-                type: string
+                description: Localized province name based on language parameter
+                example: "Chiang Mai"
 
     CarDisplay:
       type: object
