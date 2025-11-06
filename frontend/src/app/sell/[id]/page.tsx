@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useRouter, useParams, usePathname } from "next/navigation";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import { carsAPI } from "@/lib/carsAPI";
-// import { referenceAPI } from "@/lib/referenceAPI"; // not used
+import { referenceAPI } from "@/lib/referenceAPI"; // Import referenceAPI
 import { debounce } from "@/utils/debounce";
 import Step1DocumentsForm from "@/components/car/Step1DocumentsForm";
 import Step2DetailsForm from "@/components/car/Step2DetailsForm";
@@ -16,8 +16,8 @@ import type { CarFormData, InspectionResult } from "@/types/car";
 import type { Step } from "@/types/selling";
 
 export default function SellWithIdPage() {
-  const hasHydratedRef = useRef(false); // Track if initial hydration has completed
-  const isHydratingRef = useRef(false); // Track if we're currently hydrating
+  const hasHydratedRef = useRef(false);
+  const isHydratingRef = useRef(false);
   const router = useRouter();
   const params = useParams();
   const pathname = usePathname();
@@ -55,6 +55,16 @@ export default function SellWithIdPage() {
   const [estimatedPrice, setEstimatedPrice] = useState<number | null>(null);
   const [isEstimating, setIsEstimating] = useState(false);
   const [estimationError, setEstimationError] = useState<string | null>(null);
+
+  // --- New States for Cascading Dropdowns ---
+  const [brandOptions, setBrandOptions] = useState<string[]>([]);
+  const [modelOptions, setModelOptions] = useState<string[]>([]);
+  const [subModelOptions, setSubModelOptions] = useState<string[]>([]);
+  
+  const [isBrandLoading, setIsBrandLoading] = useState(false);
+  const [isModelLoading, setIsModelLoading] = useState(false);
+  const [isSubModelLoading, setIsSubModelLoading] = useState(false);
+  // --- End New States ---
 
   // Update hasProgressRef whenever hasProgress changes
   useEffect(() => {
@@ -248,6 +258,76 @@ export default function SellWithIdPage() {
     hydrate();
   }, [carId, isAuthenticated, isLoading]);
 
+  // --- New useEffects for Cascading Dropdowns ---
+
+  // Fetch Brands on load
+  useEffect(() => {
+    const fetchBrands = async () => {
+      if (isLoading || !isAuthenticated) return;
+      setIsBrandLoading(true);
+      try {
+        const res = await referenceAPI.getBrands();
+        if (res.success) {
+          setBrandOptions(res.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch brands:", err);
+      } finally {
+        setIsBrandLoading(false);
+      }
+    };
+    fetchBrands();
+  }, [isLoading, isAuthenticated]);
+
+  // Fetch Models when Brand changes
+  useEffect(() => {
+    const fetchModels = async () => {
+      const brand = formData.brandName;
+      if (!brand) {
+        setModelOptions([]);
+        return;
+      }
+      setIsModelLoading(true);
+      try {
+        const res = await referenceAPI.getModels(brand);
+        if (res.success) {
+          setModelOptions(res.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch models:", err);
+      } finally {
+        setIsModelLoading(false);
+      }
+    };
+    fetchModels();
+  }, [formData.brandName]);
+
+  // Fetch SubModels when Brand or Model changes
+  useEffect(() => {
+    const fetchSubModels = async () => {
+      const brand = formData.brandName;
+      const model = formData.modelName;
+      if (!brand || !model) {
+        setSubModelOptions([]);
+        return;
+      }
+      setIsSubModelLoading(true);
+      try {
+        const res = await referenceAPI.getSubModels(brand, model);
+        if (res.success) {
+          setSubModelOptions(res.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch sub-models:", err);
+      } finally {
+        setIsSubModelLoading(false);
+      }
+    };
+    fetchSubModels();
+  }, [formData.brandName, formData.modelName]);
+
+  // --- End New useEffects ---
+
   // Auto-discard when navigating away from this draft page (client-side routing only)
 useEffect(() => {
     const fetchEstimate = async () => {
@@ -262,10 +342,8 @@ useEffect(() => {
           if (result.success && result.data && result.data.estimatedPrice > 0) {
             setEstimatedPrice(result.data.estimatedPrice);
           } else if (!result.success && result.message) {
-            // ถ้า API ล้มเหลว (เช่น ข้อมูลไม่พอ) ให้แสดง message
             setEstimationError(result.message);
           } else {
-            // กรณีอื่นๆ ที่ไม่สำเร็จ
             setEstimationError("Price estimation is currently unavailable.");
           }
         } catch (err) {
@@ -287,7 +365,6 @@ useEffect(() => {
     try {
       const result = await carsAPI.uploadBook(carId, file);
       if (result.success) {
-        // Strict type matching - only pick fields that exist in both types
         const extracted: Partial<CarFormData> = {
           ...(result.data.brandName && { brandName: result.data.brandName }),
           ...(result.data.year && { year: result.data.year }),
@@ -302,7 +379,6 @@ useEffect(() => {
         );
       }
     } catch (err) {
-      // Surface meaningful error
       const message =
         err instanceof Error ? err.message : "Failed to upload book";
       setError(message);
@@ -318,11 +394,9 @@ useEffect(() => {
       const result = await carsAPI.uploadInspection(carId, url);
 
       if (result.success) {
-        // Merge inspection result into formData
         const inspectionData = result.data as unknown as InspectionResult;
         setFormData((prev) => ({
           ...prev,
-          // Inspection metadata
           chassisNumber: inspectionData.chassisNumber,
           licensePlate: inspectionData.licensePlate,
           colors: inspectionData.colors,
@@ -330,7 +404,6 @@ useEffect(() => {
           number: inspectionData.number,
           provinceTh: inspectionData.provinceTh,
           mileage: inspectionData.mileage,
-          // Inspection station and results
           station: inspectionData.station,
           overallPass: inspectionData.overallPass,
           brakeResult: inspectionData.brakeResult,
@@ -355,18 +428,15 @@ useEffect(() => {
         }));
         setHasProgress(true);
       } else {
-        // Handle duplicate chassis conflict
         if (
           result.code === "CAR_DUPLICATE_OWN_DRAFT" &&
           result.redirectToCarID
         ) {
-          // Show modal asking user to choose: redirect or create new
           setConflictExistingCarId(result.redirectToCarID);
           setShowDuplicateConflictModal(true);
           return;
         }
 
-        // Handle other duplicate scenarios with user-friendly errors
         if (result.code === "CAR_DUPLICATE_OWN_ACTIVE") {
           setError(
             "You already have an active listing for this vehicle. Please check your listings page."
@@ -398,7 +468,6 @@ useEffect(() => {
 
   // Helper to filter out read-only fields before saving
   const sanitizeForSave = useCallback((data: Partial<CarFormData>) => {
-    // Define editable fields (fields we want to keep)
     const editableFields = new Set<keyof CarFormData>([
       "brandName",
       "modelName",
@@ -420,7 +489,6 @@ useEffect(() => {
       "images",
     ]);
 
-    // Return only editable fields
     const sanitized: Partial<CarFormData> = {};
     for (const [key, value] of Object.entries(data)) {
       if (editableFields.has(key as keyof CarFormData)) {
@@ -442,15 +510,15 @@ useEffect(() => {
         } catch {
           // Silent fail for autosave
         }
-      }, 1500), // 1.5 seconds debounce
+      }, 1500), 
     [carId, sanitizeForSave]
   );
 
   // Trigger autosave when form data changes (but not during initial hydration)
   useEffect(() => {
     if (
-      hasHydratedRef.current && // Only autosave after initial hydration is complete
-      !isHydratingRef.current && // Don't autosave while hydrating
+      hasHydratedRef.current && 
+      !isHydratingRef.current && 
       (currentStep === "documents" ||
         currentStep === "specs" ||
         currentStep === "pricing" ||
@@ -464,9 +532,24 @@ useEffect(() => {
 
   // Handle form field changes
   const handleFormChange = useCallback((updates: Partial<CarFormData>) => {
+    
+    // --- New Logic for Cascading Dropdowns ---
+    if (updates.brandName !== undefined) {
+      // If brand changes, reset model and submodel
+      updates.modelName = "";
+      updates.submodelName = "";
+      setModelOptions([]);
+      setSubModelOptions([]);
+    } else if (updates.modelName !== undefined) {
+      // If only model changes, reset submodel
+      updates.submodelName = "";
+      setSubModelOptions([]);
+    }
+    // --- End New Logic ---
+
     setFormData((prev) => ({ ...prev, ...updates }));
     setHasProgress(true);
-  }, []);
+  }, []); // Empty dependency array is correct here
 
   // Handle progress restoration
   const handleProgressRestore = () => {
@@ -474,15 +557,12 @@ useEffect(() => {
   };
 
   const handleProgressRestoreSuccess = () => {
-    // Reload the page to show restored data
     window.location.reload();
   };
 
   const handleCreateNewListing = () => {
-    // User chose to start fresh - continue with current car
     setShowDuplicateConflictModal(false);
     setConflictExistingCarId(null);
-    // Clear the error so they can continue on this page
     setError("");
   };
 
@@ -524,7 +604,6 @@ useEffect(() => {
     setIsSubmitting(true);
 
     try {
-      // Ensure latest edits are saved before review
       if (Object.keys(formData).length > 0) {
         try {
           await carsAPI.autosaveDraft(carId, sanitizeForSave(formData));
@@ -567,7 +646,6 @@ useEffect(() => {
 
       if (result.success) {
         setCurrentStep("success");
-        // Redirect after short delay
         setTimeout(() => {
           router.push("/listings");
         }, 2000);
@@ -772,6 +850,15 @@ useEffect(() => {
                   setCurrentStep("specs");
                 }}
                 isSubmitting={isSubmitting}
+                
+                // --- Pass new props to Step1 form ---
+                brandOptions={brandOptions}
+                modelOptions={modelOptions}
+                subModelOptions={subModelOptions}
+                isBrandLoading={isBrandLoading}
+                isModelLoading={isModelLoading}
+                isSubModelLoading={isSubModelLoading}
+                // --- End new props ---
               />
             </div>
           )}
@@ -813,6 +900,15 @@ useEffect(() => {
                   setCurrentStep("documents");
                 }}
                 isSubmitting={isSubmitting}
+                
+                // --- Pass new props to Step2 form ---
+                brandOptions={brandOptions}
+                modelOptions={modelOptions}
+                subModelOptions={subModelOptions}
+                isBrandLoading={isBrandLoading}
+                isModelLoading={isModelLoading}
+                isSubModelLoading={isSubModelLoading}
+                // --- End new props ---
               />
             </div>
           )}
