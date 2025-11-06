@@ -34,10 +34,15 @@ func (h *FavouriteHandler) AddFavourite(w http.ResponseWriter, r *http.Request) 
         return
     }
 
-    // Enforce buyer-only access (sellers are forbidden)
-    isSeller, err := h.userService.IsSeller(userID)
-    if err != nil || isSeller {
-        utils.WriteError(w, http.StatusForbidden, "Only buyers can add favourites")
+    // Enforce buyer-only access directly
+    token, ok := middleware.GetTokenFromContext(r)
+    if !ok {
+        utils.WriteError(w, http.StatusUnauthorized, "Authentication required")
+        return
+    }
+    me, err := h.userService.GetCurrentUser(token)
+    if err != nil || !me.Data.Roles.Buyer {
+        utils.WriteError(w, http.StatusForbidden, "Access denied: buyer role required")
         return
     }
 
@@ -72,10 +77,15 @@ func (h *FavouriteHandler) RemoveFavourite(w http.ResponseWriter, r *http.Reques
         return
     }
 
-    // Enforce buyer-only access (sellers are forbidden)
-    isSeller, err := h.userService.IsSeller(userID)
-    if err != nil || isSeller {
-        utils.WriteError(w, http.StatusForbidden, "Only buyers can remove favourites")
+    // Enforce buyer-only access directly
+    token, ok := middleware.GetTokenFromContext(r)
+    if !ok {
+        utils.WriteError(w, http.StatusUnauthorized, "Authentication required")
+        return
+    }
+    me, err := h.userService.GetCurrentUser(token)
+    if err != nil || !me.Data.Roles.Buyer {
+        utils.WriteError(w, http.StatusForbidden, "Access denied: buyer role required")
         return
     }
 
@@ -113,10 +123,15 @@ func (h *FavouriteHandler) GetMyFavourites(w http.ResponseWriter, r *http.Reques
         return
     }
 
-    // Enforce buyer-only access (sellers are forbidden)
-    isSeller, err := h.userService.IsSeller(userID)
-    if err != nil || isSeller {
-        utils.WriteError(w, http.StatusForbidden, "Only buyers can access favourites")
+    // Enforce buyer-only access directly
+    token, ok := middleware.GetTokenFromContext(r)
+    if !ok {
+        utils.WriteError(w, http.StatusUnauthorized, "Authentication required")
+        return
+    }
+    me, err := h.userService.GetCurrentUser(token)
+    if err != nil || !me.Data.Roles.Buyer {
+        utils.WriteError(w, http.StatusForbidden, "Access denied: buyer role required")
         return
     }
 
