@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUserAuth } from '@/hooks/useUserAuth';
+import CarCard from '@/components/car/CarCard';
+import type { CarListing, Car } from '@/types/car';
 import { apiCall } from '@/lib/apiCall';
 
 interface RecentView {
@@ -20,6 +22,7 @@ interface RecentView {
   brand_name: string;
   model_name: string;
   seller_display_name: string;
+  image_id?: number; // optional main image id if available
 }
 
 interface RecentViewsResponse {
@@ -60,7 +63,34 @@ export default function HistoryPage() {
       });
 
       if (response.success) {
-        setRecentViews(response.data);
+        // Deduplicate by car_id, keeping latest view only (assumes API returns sorted by viewed_at desc)
+        const unique: RecentView[] = [];
+        const seen = new Set<number>();
+        for (const v of response.data) {
+          if (!seen.has(v.car_id)) {
+            unique.push(v);
+            seen.add(v.car_id);
+          }
+        }
+
+        // Enrich missing image_id by fetching the car details and using the first image
+        const enriched = await Promise.all(
+          unique.map(async (v) => {
+            if (v.image_id != null) return v;
+            try {
+              const carResp = await apiCall<{ success: boolean; data: Car }>(`/api/cars/${v.car_id}`, {
+                method: 'GET',
+              });
+              const firstImageId = carResp.success ? carResp.data?.images?.[0]?.id : undefined;
+              return { ...v, image_id: firstImageId };
+            } catch (e) {
+              // If fetching fails, return as-is without image
+              return v;
+            }
+          })
+        );
+
+        setRecentViews(enriched);
       } else {
         setError(response.message || 'Failed to fetch viewing history');
       }
@@ -127,15 +157,29 @@ export default function HistoryPage() {
     );
   }
 
+  // Map recent views to CarListing for reuse of browse card UI
+  const recentViewsAsListings: CarListing[] = recentViews.map((v) => ({
+    id: v.car_id,
+    sellerId: 0,
+    brandName: v.brand_name || undefined,
+    modelName: v.model_name || undefined,
+    year: v.year || undefined,
+    mileage: v.mileage || undefined,
+    price: v.price,
+    conditionRating: v.condition_rating || undefined,
+    status: v.status,
+    images: v.image_id != null ? [{ id: v.image_id }] : [],
+  }));
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Viewing History</h1>
-          <p className="text-gray-600">Cars you&apos;ve recently viewed</p>
+    <div className="py-(--space-xl)">
+      <div className="max-w-[1200px] mx-auto px-(--space-m)">
+        <div className="mb-(--space-l)">
+          <h1 className="text-3 font-bold text-gray-900 mb-(--space-xs)">Viewing History</h1>
+          <p className="text-0 text-gray-600">Cars you&apos;ve recently viewed</p>
         </div>
 
-        {recentViews.length === 0 ? (
+        {recentViewsAsListings.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-gray-400 mb-4">
               <svg className="mx-auto h-24 w-24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -153,72 +197,9 @@ export default function HistoryPage() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {recentViews.map((view) => (
-              <div
-                key={view.rvid}
-                onClick={() => handleCarClick(view.car_id)}
-                className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer overflow-hidden"
-              >
-                <div className="p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                        {view.brand_name} {view.model_name}
-                      </h3>
-                      <p className="text-sm text-gray-500">
-                        Viewed {formatDate(view.viewed_at)}
-                      </p>
-                    </div>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      view.status === 'active' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {view.status}
-                    </span>
-                  </div>
-
-                  <div className="space-y-2 mb-4">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Year:</span>
-                      <span className="text-sm font-medium">{view.year}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Mileage:</span>
-                      <span className="text-sm font-medium">{view.mileage.toLocaleString()} km</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Color:</span>
-                      <span className="text-sm font-medium">{view.color}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Province:</span>
-                      <span className="text-sm font-medium">{view.province}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Condition:</span>
-                      <span className="text-sm font-medium">{view.condition_rating}/10</span>
-                    </div>
-                  </div>
-
-                  <div className="border-t pt-4">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="text-2xl font-bold text-blue-600">
-                          {formatPrice(view.price)}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          by {view.seller_display_name}
-                        </p>
-                      </div>
-                      <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
-                        View Details
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-(--space-m)">
+            {recentViewsAsListings.map((car) => (
+              <CarCard key={`rv-${car.id}`} car={car} variant="browse" />
             ))}
           </div>
         )}
