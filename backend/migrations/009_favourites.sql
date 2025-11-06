@@ -1,12 +1,11 @@
 -- Create favourites table to store users' saved cars
 -- Aligns with existing schema: users.id (PK) and cars.id (PK)
 
-CREATE TABLE IF NOT EXISTS favourites (
-    fid SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    car_id INTEGER NOT NULL REFERENCES cars(id) ON DELETE CASCADE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE (user_id, car_id)
+CREATE TABLE favourites (
+    user_id INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    car_id INTEGER NOT NULL REFERENCES cars (id) ON DELETE CASCADE,
+    created_at timestamptz DEFAULT now(),
+    PRIMARY KEY (user_id, car_id)
 );
 
 -- Indexes for efficient lookups
