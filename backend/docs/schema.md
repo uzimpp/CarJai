@@ -198,7 +198,7 @@ erDiagram
     favourites {
         int user_id PK "PRIMARY KEY, REFERENCES users(id) ON DELETE CASCADE"
         int car_id PK "PRIMARY KEY, REFERENCES cars(id) ON DELETE CASCADE"
-        timestamptz created_at "DEFAULT now()"
+        timestamptz created_at "DEFAULT NOW()"
     }
 
     recent_views {
