@@ -1160,10 +1160,13 @@ paths:
     get:
       tags:
         - Favorites
-      summary: Get current user's favourite listings
+      summary: Get current user's favourite listings (buyer-only)
       operationId: getMyFavourites
       security:
         - CookieAuth: []
+      description: |
+        Buyer-only endpoint. Returns the authenticated buyer's favourite car listings with images.
+        Sellers are not allowed to use favourites and will receive 403.
       responses:
         '200':
           description: Favourite car listings with images
@@ -1203,15 +1206,20 @@ paths:
                             uploadedAt: "2024-12-01T11:00:00Z"
         '401':
           description: Unauthorized - Authentication required
+        '403':
+          description: Forbidden - Only buyers can access favourites
 
   /api/favorites/{carId}:
     post:
       tags:
         - Favorites
-      summary: Add a car to favourites
+      summary: Add a car to favourites (buyer-only)
       operationId: addFavourite
       security:
         - CookieAuth: []
+      description: |
+        Buyer-only endpoint. Adds the specified car to the authenticated buyer's favourites.
+        Sellers are not allowed to use favourites and will receive 403.
       parameters:
         - name: carId
           in: path
@@ -1234,14 +1242,19 @@ paths:
           description: Bad request - Invalid car ID or car not active
         '401':
           description: Unauthorized - Authentication required
+        '403':
+          description: Forbidden - Only buyers can add favourites
 
     delete:
       tags:
         - Favorites
-      summary: Remove a car from favourites
+      summary: Remove a car from favourites (buyer-only)
       operationId: removeFavourite
       security:
         - CookieAuth: []
+      description: |
+        Buyer-only endpoint. Removes the specified car from the authenticated buyer's favourites.
+        Sellers are not allowed to use favourites and will receive 403.
       parameters:
         - name: carId
           in: path
@@ -1264,6 +1277,8 @@ paths:
           description: Unauthorized - Authentication required
         '404':
           description: Favourite not found
+        '403':
+          description: Forbidden - Only buyers can remove favourites
 
 components:
   securitySchemes:

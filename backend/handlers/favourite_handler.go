@@ -13,25 +13,33 @@ import (
 
 // FavouriteHandler handles favourites endpoints
 type FavouriteHandler struct {
-	favouriteService *services.FavouriteService
+    favouriteService *services.FavouriteService
+    userService      *services.UserService
 }
 
-func NewFavouriteHandler(favService *services.FavouriteService) *FavouriteHandler {
-	return &FavouriteHandler{favouriteService: favService}
+func NewFavouriteHandler(favService *services.FavouriteService, userService *services.UserService) *FavouriteHandler {
+    return &FavouriteHandler{favouriteService: favService, userService: userService}
 }
 
 // AddFavourite handles POST /api/favorites/{carId}
 func (h *FavouriteHandler) AddFavourite(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
+    if r.Method != http.MethodPost {
+        http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+        return
+    }
 
-	userID, ok := middleware.GetUserIDFromContext(r)
-	if !ok {
-		utils.WriteError(w, http.StatusUnauthorized, "Authentication required")
-		return
-	}
+    userID, ok := middleware.GetUserIDFromContext(r)
+    if !ok {
+        utils.WriteError(w, http.StatusUnauthorized, "Authentication required")
+        return
+    }
+
+    // Enforce buyer-only access (sellers are forbidden)
+    isSeller, err := h.userService.IsSeller(userID)
+    if err != nil || isSeller {
+        utils.WriteError(w, http.StatusForbidden, "Only buyers can add favourites")
+        return
+    }
 
 	// Extract car ID from URL path
 	carID, err := extractIDFromPath(r.URL.Path, "/api/favorites/")
@@ -53,16 +61,23 @@ func (h *FavouriteHandler) AddFavourite(w http.ResponseWriter, r *http.Request) 
 
 // RemoveFavourite handles DELETE /api/favorites/{carId}
 func (h *FavouriteHandler) RemoveFavourite(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodDelete {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
+    if r.Method != http.MethodDelete {
+        http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+        return
+    }
 
-	userID, ok := middleware.GetUserIDFromContext(r)
-	if !ok {
-		utils.WriteError(w, http.StatusUnauthorized, "Authentication required")
-		return
-	}
+    userID, ok := middleware.GetUserIDFromContext(r)
+    if !ok {
+        utils.WriteError(w, http.StatusUnauthorized, "Authentication required")
+        return
+    }
+
+    // Enforce buyer-only access (sellers are forbidden)
+    isSeller, err := h.userService.IsSeller(userID)
+    if err != nil || isSeller {
+        utils.WriteError(w, http.StatusForbidden, "Only buyers can remove favourites")
+        return
+    }
 
 	carID, err := extractIDFromPath(r.URL.Path, "/api/favorites/")
 	if err != nil {
@@ -87,16 +102,23 @@ func (h *FavouriteHandler) RemoveFavourite(w http.ResponseWriter, r *http.Reques
 
 // GetMyFavourites handles GET /api/favorites/my
 func (h *FavouriteHandler) GetMyFavourites(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
+    if r.Method != http.MethodGet {
+        http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+        return
+    }
 
-	userID, ok := middleware.GetUserIDFromContext(r)
-	if !ok {
-		utils.WriteError(w, http.StatusUnauthorized, "Authentication required")
-		return
-	}
+    userID, ok := middleware.GetUserIDFromContext(r)
+    if !ok {
+        utils.WriteError(w, http.StatusUnauthorized, "Authentication required")
+        return
+    }
+
+    // Enforce buyer-only access (sellers are forbidden)
+    isSeller, err := h.userService.IsSeller(userID)
+    if err != nil || isSeller {
+        utils.WriteError(w, http.StatusForbidden, "Only buyers can access favourites")
+        return
+    }
 
 	listings, err := h.favouriteService.GetFavouriteListings(userID)
 	if err != nil {
