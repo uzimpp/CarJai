@@ -2,9 +2,8 @@ package handlers
 
 import (
 	"database/sql"
-	"fmt" // Added import
 	"net/http"
-	"strings" // Added import
+	"strings"
 
 	"github.com/uzimpp/CarJai/backend/models"
 	"github.com/uzimpp/CarJai/backend/utils"

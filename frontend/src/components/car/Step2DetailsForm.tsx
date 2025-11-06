@@ -9,6 +9,7 @@ import type { CarFormData } from "@/types/car";
 import { DAMAGE_OPTIONS } from "@/constants/car";
 import { referenceAPI } from "@/lib/referenceAPI";
 import type { ChoiceOption } from "@/components/ui/Choices";
+import ComboboxInput from "@/components/global/ComboboxInput"; // Import the new component
 
 interface Step2DetailsFormProps {
   formData: Partial<CarFormData>;
@@ -16,6 +17,14 @@ interface Step2DetailsFormProps {
   onContinue: () => void;
   onBack: () => void;
   isSubmitting: boolean;
+  
+  // Add new props for dropdowns
+  brandOptions: string[];
+  modelOptions: string[];
+  subModelOptions: string[];
+  isBrandLoading: boolean;
+  isModelLoading: boolean;
+  isSubModelLoading: boolean;
 }
 
 export default function Step2DetailsForm({
@@ -24,6 +33,13 @@ export default function Step2DetailsForm({
   onContinue,
   onBack,
   isSubmitting,
+  // Destructure new props
+  brandOptions,
+  modelOptions,
+  subModelOptions,
+  isBrandLoading,
+  isModelLoading,
+  isSubModelLoading,
 }: Step2DetailsFormProps) {
   // Fetch reference options
   const [bodyTypeOptions, setBodyTypeOptions] = useState<
@@ -80,6 +96,45 @@ export default function Step2DetailsForm({
 
   return (
     <div className="space-y-6">
+      
+      {/* --- Start: Added Brand/Model/Submodel Comboboxes --- */}
+      <FormSection
+        title="Vehicle Identity"
+        description="Confirm the vehicle model details."
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
+          <ComboboxInput
+            label="Brand"
+            value={formData.brandName || ""}
+            onChange={(value) => onChange({ brandName: value })}
+            options={brandOptions}
+            loading={isBrandLoading}
+            placeholder="Select or type Brand"
+          />
+
+          <ComboboxInput
+            label="Model Name"
+            value={formData.modelName || ""}
+            onChange={(value) => onChange({ modelName: value })}
+            options={modelOptions}
+            loading={isModelLoading}
+            disabled={!formData.brandName || isBrandLoading}
+            placeholder="Select or type Model"
+          />
+
+          <ComboboxInput
+            label="Submodel Name"
+            value={formData.submodelName || ""}
+            onChange={(value) => onChange({ submodelName: value })}
+            options={subModelOptions}
+            loading={isSubModelLoading}
+            disabled={!formData.brandName || !formData.modelName || isModelLoading}
+            placeholder="Select or type Submodel"
+          />
+        </div>
+      </FormSection>
+      {/* --- End: Added Comboboxes --- */}
+
       {/* Body Type Selection */}
       <FormSection
         title="Body Type"
@@ -168,6 +223,7 @@ export default function Step2DetailsForm({
       {/* Action Buttons */}
       <div className="flex justify-between pt-6 border-t">
         <button
+          type="button"
           onClick={onBack}
           disabled={isSubmitting}
           className="px-6 py-3 border border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
