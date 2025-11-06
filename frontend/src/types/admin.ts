@@ -89,6 +89,17 @@ interface AdminUpdateUserRequest {
   email?: string; // Only for users
 }
 
+interface AdminUpdateUserResponse {
+  success: boolean;
+  message: string;
+}
+
+interface AdminUpdateUserError {
+  success: false;
+  error: string;
+  code: number;
+}
+
 export type {
   AdminUser,
   AdminSession,
@@ -101,6 +112,8 @@ export type {
   AdminActionResponse,
   AdminManagedUser,
   AdminUpdateUserRequest,
+  AdminUpdateUserResponse,
+  AdminUpdateUserError,
   UserType,
   UserRole,
 };

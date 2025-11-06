@@ -146,12 +146,9 @@ export default function AdminDashboard() {
   return (
     <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full">
       {/* Header */}
-      <section className="rounded-3xl bg-gradient-to-r from-maroon to-red text-white shadow-[var(--shadow-lg)] p-(--space-s-m) mb-(--space-l)">
-        <div>
-          <h1 className="text-2 bold">Dashboard</h1>
-        </div>
-      </section>
-
+      <div>
+        <h1 className="text-3 bold">Dashboard</h1>
+      </div>
       {/* Main Content */}
       <main>
         {/* Stats Grid */}

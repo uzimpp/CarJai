@@ -100,6 +100,27 @@ func (h *AdminExtractionHandler) HandleImportMarketPrices(w http.ResponseWriter,
 }
 
 // --- New Handler: Receive JSON and Save to Database ---
+// HandleGetMarketPrices retrieves all market prices from the database.
+func (h *AdminExtractionHandler) HandleGetMarketPrices(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method Not Allowed")
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
+	defer cancel()
+
+	prices, err := h.ExtractionService.GetAllMarketPrices(ctx)
+	if err != nil {
+		log.Printf("ERROR fetching market prices: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to fetch market prices: %v", err))
+		return
+	}
+
+	log.Printf("Successfully retrieved %d market prices.", len(prices))
+	utils.WriteJSON(w, http.StatusOK, prices)
+}
+
 // HandleCommitMarketPrices receives extracted market price data as JSON and commits it to the database.
 func (h *AdminExtractionHandler) HandleCommitMarketPrices(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {

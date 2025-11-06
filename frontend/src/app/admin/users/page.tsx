@@ -2,10 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
-import type {
-  AdminManagedUser,
-  AdminUpdateUserRequest,
-} from "@/types/admin";
+import type { AdminManagedUser, AdminUpdateUserRequest } from "@/types/admin";
 import PaginateControl from "@/components/ui/PaginateControl";
 
 // Edit User Modal Component
@@ -218,7 +215,7 @@ export default function AdminUsersPage() {
     fetchUsers();
   }, [authLoading]);
 
-  // Filter users based on search and filters (client-side filtering for search/date)
+  // Filter users based on search and filters (client-side filtering for search/role)
   useEffect(() => {
     let filtered = [...users];
 
@@ -233,8 +230,13 @@ export default function AdminUsersPage() {
       );
     }
 
+    // Role filter
+    if (roleFilter !== "all") {
+      filtered = filtered.filter((user) => user.role === roleFilter);
+    }
+
     setFilteredUsers(filtered);
-  }, [users, searchQuery]);
+  }, [users, searchQuery, roleFilter]);
 
   // Show loading while authentication is being checked
   if (authLoading || isAuthenticated === null) {

@@ -80,6 +80,10 @@ func AdminRoutes(
 	router.HandleFunc(basePath+"/ip-whitelist/check", applyAdminAuthMiddleware(adminIPHandler.CheckIPDeletionImpact))
 	router.HandleFunc(basePath+"/ip-whitelist/remove", applyAdminAuthMiddleware(adminIPHandler.RemoveIPFromWhitelist))
 
+	// --- Market Price GET Route (GET all prices) ---
+	// This endpoint retrieves all market prices from the database
+	router.HandleFunc(basePath+"/market-price", applyAdminAuthMiddleware(adminExtractionHandler.HandleGetMarketPrices))
+
 	// --- Market Price Import/Extract Route (POST PDF) ---
 	// This endpoint only use for extract data
 	router.HandleFunc(basePath+"/market-price/import", applyAdminAuthMiddleware(adminExtractionHandler.HandleImportMarketPrices))

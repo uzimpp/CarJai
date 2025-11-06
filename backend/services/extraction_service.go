@@ -76,7 +76,9 @@ var (
 	motorcycleHeaderRegex = regexp.MustCompile(`(?i)รถจักรยานยนต์`)
 	pageSeparatorRegex    = regexp.MustCompile(`\f`)
 )
+
 type ParseState int
+
 const (
 	ExpectingModel ParseState = iota
 	ExpectingYear
@@ -178,8 +180,19 @@ func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, file
 	lines := strings.Split(fullText, "\n")
 
 	for lineNum, line := range lines {
-		if pageSeparatorRegex.MatchString(line) { currentPage++; currentState = ExpectingModel; tempModel = ""; continue }
-		line = strings.TrimSpace(line); if line == "" { continue }; if currentPage < 8 { continue } // Adjust page skip if needed
+		if pageSeparatorRegex.MatchString(line) {
+			currentPage++
+			currentState = ExpectingModel
+			tempModel = ""
+			continue
+		}
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		if currentPage < 8 {
+			continue
+		} // Adjust page skip if needed
 		potentialBrand := line
 		if _, isBrand := brandSet[potentialBrand]; isBrand {
 			isLikelyContinuation := !strings.Contains(potentialBrand, " ") && len(strings.Fields(potentialBrand)) == 1
@@ -190,11 +203,19 @@ func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, file
 				currentBrand = potentialBrand
 				log.Printf("Page ~%d: Switched brand to: %s", currentPage, currentBrand)
 			}
-			currentState = ExpectingModel; tempModel = ""; continue
+			currentState = ExpectingModel
+			tempModel = ""
+			continue
 		}
-		if currentBrand == "" { continue }
+		if currentBrand == "" {
+			continue
+		}
 		if headerRegex.MatchString(line) || skipLineRegex.MatchString(line) {
-			if currentState != ExpectingModel { log.Printf("Page ~%d, Line %d: Resetting state due to skip line: %s", currentPage, lineNum+1, line); currentState = ExpectingModel; tempModel = "" }
+			if currentState != ExpectingModel {
+				log.Printf("Page ~%d, Line %d: Resetting state due to skip line: %s", currentPage, lineNum+1, line)
+				currentState = ExpectingModel
+				tempModel = ""
+			}
 			continue
 		}
 		carMatches := dataRegex.FindStringSubmatch(line)
@@ -214,9 +235,11 @@ func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, file
 				priceMin, priceMax, errPrice := parsePriceRange(priceStr)
 				if errYear == nil && errPrice == nil {
 					now := time.Now()
-					marketPrice := MarketPrice{ Brand: currentBrand, ModelTrim: modelTrim, YearStart: yearStart, YearEnd: yearEnd, PriceMin: priceMin, PriceMax: priceMax, CreatedAt: now, UpdatedAt: now }
+					marketPrice := MarketPrice{Brand: currentBrand, ModelTrim: modelTrim, YearStart: yearStart, YearEnd: yearEnd, PriceMin: priceMin, PriceMax: priceMax, CreatedAt: now, UpdatedAt: now}
 					allPrices = append(allPrices, marketPrice)
-					currentState = ExpectingModel; tempModel = ""; continue
+					currentState = ExpectingModel
+					tempModel = ""
+					continue
 				} else {
 					log.Printf("Page ~%d, Line %d: Single-line regex matched but parsing failed (YearErr: %v, PriceErr: %v): %s", currentPage, lineNum+1, errYear, errPrice, line)
 				}
@@ -229,12 +252,15 @@ func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, file
 			if yearRegex.MatchString(line) || priceRegex.MatchString(line) {
 				log.Printf("Page ~%d, Line %d: WARNING - Expected model, but line looks like year/price. Skipping line: %s", currentPage, lineNum+1, line)
 			} else {
-				tempModel = line; currentState = ExpectingYear
+				tempModel = line
+				currentState = ExpectingYear
 			}
 		case ExpectingYear:
 			yearStart, yearEnd, errYear := parseYearRange(line)
 			if errYear == nil {
-				tempYearStart = yearStart; tempYearEnd = yearEnd; currentState = ExpectingPrice
+				tempYearStart = yearStart
+				tempYearEnd = yearEnd
+				currentState = ExpectingPrice
 			} else {
 				log.Printf("Page ~%d, Line %d: Expected year, got '%s'. Appending to model and expecting year again.", currentPage, lineNum+1, line)
 				tempModel += " " + line
@@ -243,12 +269,14 @@ func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, file
 			priceMin, priceMax, errPrice := parsePriceRange(line)
 			if errPrice == nil {
 				now := time.Now()
-				marketPrice := MarketPrice{ Brand: currentBrand, ModelTrim: tempModel, YearStart: tempYearStart, YearEnd: tempYearEnd, PriceMin: priceMin, PriceMax: priceMax, CreatedAt: now, UpdatedAt: now }
+				marketPrice := MarketPrice{Brand: currentBrand, ModelTrim: tempModel, YearStart: tempYearStart, YearEnd: tempYearEnd, PriceMin: priceMin, PriceMax: priceMax, CreatedAt: now, UpdatedAt: now}
 				allPrices = append(allPrices, marketPrice)
-				currentState = ExpectingModel; tempModel = "";
+				currentState = ExpectingModel
+				tempModel = ""
 			} else {
 				log.Printf("Page ~%d, Line %d: WARNING - Expected price, got '%s'. Resetting state.", currentPage, lineNum+1, line)
-				currentState = ExpectingModel; tempModel = "";
+				currentState = ExpectingModel
+				tempModel = ""
 			}
 		}
 	}
@@ -341,6 +369,50 @@ func (s *ExtractionService) CommitMarketPrices(ctx context.Context, pricesToComm
 	log.Printf("Database commit loop completed. Inserted: %d, Updated: %d", insertedCount, updatedCount)
 	// err is nil here if loop completed, commit happens in defer
 	return
+}
+
+// --- Fetch All Market Prices ---
+// GetAllMarketPrices retrieves all market prices from the database.
+func (s *ExtractionService) GetAllMarketPrices(ctx context.Context) ([]MarketPrice, error) {
+	log.Println("Fetching all market prices from database...")
+
+	query := `
+		SELECT brand, model_trim, year_start, year_end, price_min_thb, price_max_thb, created_at, updated_at
+		FROM market_price
+		ORDER BY brand, model_trim, year_start, year_end
+	`
+
+	rows, err := s.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query market prices: %w", err)
+	}
+	defer rows.Close()
+
+	var prices []MarketPrice
+	for rows.Next() {
+		var price MarketPrice
+		err := rows.Scan(
+			&price.Brand,
+			&price.ModelTrim,
+			&price.YearStart,
+			&price.YearEnd,
+			&price.PriceMin,
+			&price.PriceMax,
+			&price.CreatedAt,
+			&price.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan market price row: %w", err)
+		}
+		prices = append(prices, price)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating market price rows: %w", err)
+	}
+
+	log.Printf("Successfully fetched %d market prices from database.", len(prices))
+	return prices, nil
 }
 
 // --- Original Import Function (Calls Extract then Commit) ---
