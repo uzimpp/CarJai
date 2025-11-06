@@ -52,7 +52,7 @@ type ServiceContainer struct {
 	Car         *services.CarService
 	Maintenance *services.MaintenanceService
 	OCR         *services.OCRService
-	Scraper     *services.ScraperService 
+	Scraper     *services.ScraperService
 	Extraction  *services.ExtractionService
 	UserJWT     *utils.JWTManager
 	AdminJWT    *utils.JWTManager
@@ -116,8 +116,6 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 
 	extractionService := services.NewExtractionService(db)
 
-	
-
 	return &ServiceContainer{
 		Admin: services.NewAdminService(
 			adminRepo,
@@ -135,11 +133,11 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 			carRepo,
 			utils.AppLogger,
 		),
-		OCR:      services.NewOCRService(appConfig.AigenAPIKey),
-		Scraper:  scraperService,
+		OCR:         services.NewOCRService(appConfig.AigenAPIKey),
+		Scraper:     scraperService,
 		Extraction:  extractionService,
-		UserJWT:  userJWTManager,
-		AdminJWT: adminJWTManager,
+		UserJWT:     userJWTManager,
+		AdminJWT:    adminJWTManager,
 	}
 }
 
@@ -164,8 +162,8 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 	mux.Handle("/api/cars/",
 		routes.CarRoutes(services.Car, services.User, services.Profile, services.OCR, services.Scraper, services.UserJWT, appConfig.CORSAllowedOrigins))
 	mux.Handle(adminPrefix+"/", // Handle all paths under /admin/
-		routes.AdminRoutes( 
-			services.Admin, 
+		routes.AdminRoutes(
+			services.Admin,
 			services.AdminJWT,
 			services.Extraction,
 			adminPrefix,
@@ -175,7 +173,9 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 	)
 	mux.Handle("/health/",
 		routes.HealthRoutes(db, appConfig.CORSAllowedOrigins))
-	mux.Handle("/api/reference-data",
+	
+	// Add trailing slash to match sub-paths like /brands, /models
+	mux.Handle("/api/reference-data/",
 		routes.ReferenceRoutes(db, appConfig.CORSAllowedOrigins))
 
 	return mux

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"database/sql"
+	// "fmt" // Removed unused import
 	"net/http"
 	"strings"
 
@@ -237,7 +238,8 @@ func (h *ReferenceHandler) handleGetBrands(w http.ResponseWriter, r *http.Reques
 	}
 	defer rows.Close()
 
-	var brands []string
+	// Use make to ensure an empty slice [] is returned, not nil (which becomes null in JSON)
+	brands := make([]string, 0)
 	for rows.Next() {
 		var brand string
 		if err := rows.Scan(&brand); err != nil {
@@ -266,7 +268,8 @@ func (h *ReferenceHandler) handleGetModels(w http.ResponseWriter, r *http.Reques
 	}
 	defer rows.Close()
 
-	var modelsList []string
+	// Use make to ensure an empty slice [] is returned, not nil
+	modelsList := make([]string, 0)
 	for rows.Next() {
 		var model string
 		if err := rows.Scan(&model); err != nil {
@@ -296,7 +299,8 @@ func (h *ReferenceHandler) handleGetSubModels(w http.ResponseWriter, r *http.Req
 	}
 	defer rows.Close()
 
-	var subModels []string
+	// Use make to ensure an empty slice [] is returned, not nil
+	subModels := make([]string, 0)
 	for rows.Next() {
 		var subModel string
 		if err := rows.Scan(&subModel); err != nil {
