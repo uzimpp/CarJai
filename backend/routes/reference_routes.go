@@ -27,7 +27,24 @@ func ReferenceRoutes(db interface{}, corsOrigins []string) http.Handler {
 			return
 		}
 		if r.Method == http.MethodGet {
-			corsMiddleware(http.HandlerFunc(handler.GetReferenceData)).ServeHTTP(w, r)
+			// Point to the new "Super Handler"
+			corsMiddleware(http.HandlerFunc(handler.HandleReferenceData)).ServeHTTP(w, r)
+			return
+		}
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	})
+
+	// Add route for sub-paths (e.g., /api/reference-data/brands)
+	mux.HandleFunc("/api/reference-data/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodOptions {
+			corsMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			})).ServeHTTP(w, r)
+			return
+		}
+		if r.Method == http.MethodGet {
+			// Point to the new "Super Handler"
+			corsMiddleware(http.HandlerFunc(handler.HandleReferenceData)).ServeHTTP(w, r)
 			return
 		}
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
