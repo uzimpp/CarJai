@@ -83,7 +83,7 @@ export default function HistoryPage() {
               });
               const firstImageId = carResp.success ? carResp.data?.images?.[0]?.id : undefined;
               return { ...v, image_id: firstImageId };
-            } catch (e) {
+            } catch {
               // If fetching fails, return as-is without image
               return v;
             }
@@ -94,8 +94,8 @@ export default function HistoryPage() {
       } else {
         setError(response.message || 'Failed to fetch viewing history');
       }
-    } catch (err: any) {
-      const msg = (err?.message || '').toLowerCase();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message.toLowerCase() : '';
       if (msg.includes('not authenticated') || msg.includes('unauthorized') || msg.includes('401')) {
         setError('Please sign in to view your viewing history.');
       } else if (msg.includes('forbidden') || msg.includes('403')) {
@@ -107,29 +107,6 @@ export default function HistoryPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('th-TH', {
-      style: 'currency',
-      currency: 'THB',
-      minimumFractionDigits: 0,
-    }).format(price);
-  };
-
-  const handleCarClick = (carId: number) => {
-    router.push(`/car/${carId}`);
   };
 
   if (authLoading || loading) {
