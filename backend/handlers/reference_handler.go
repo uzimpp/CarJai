@@ -31,12 +31,20 @@ type ReferenceOption struct {
 	Label string `json:"label"`
 }
 
+// ProvinceOption represents a province with ID and name
+type ProvinceOption struct {
+	ID    int    `json:"id"`
+	Label string `json:"label"`
+}
+
 // ReferenceData contains all dropdown options
 type ReferenceData struct {
 	BodyTypes     []ReferenceOption `json:"bodyTypes"`
 	Transmissions []ReferenceOption `json:"transmissions"`
 	FuelTypes     []ReferenceOption `json:"fuelTypes"`
 	Drivetrains   []ReferenceOption `json:"drivetrains"`
+	Colors        []ReferenceOption `json:"colors"`
+	Provinces     []ProvinceOption  `json:"provinces"`
 }
 
 // GetReferenceData handles GET /api/reference-data
@@ -87,6 +95,26 @@ func (h *ReferenceHandler) GetReferenceData(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// Get colors
+	colors, err := h.getColors(lang)
+	if err != nil {
+		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
+			Success: false,
+			Error:   "Failed to fetch colors",
+		})
+		return
+	}
+
+	// Get provinces
+	provinces, err := h.getProvinces(lang)
+	if err != nil {
+		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
+			Success: false,
+			Error:   "Failed to fetch provinces",
+		})
+		return
+	}
+
 	utils.RespondJSON(w, http.StatusOK, ReferenceDataResponse{
 		Success: true,
 		Data: ReferenceData{
@@ -94,6 +122,8 @@ func (h *ReferenceHandler) GetReferenceData(w http.ResponseWriter, r *http.Reque
 			Transmissions: transmissions,
 			FuelTypes:     fuelTypes,
 			Drivetrains:   drivetrains,
+			Colors:        colors,
+			Provinces:     provinces,
 		},
 	})
 }
@@ -188,4 +218,50 @@ func (h *ReferenceHandler) getDrivetrains(lang string) ([]ReferenceOption, error
 		drivetrains = append(drivetrains, opt)
 	}
 	return drivetrains, nil
+}
+
+func (h *ReferenceHandler) getProvinces(lang string) ([]ProvinceOption, error) {
+	nameCol := "name_en"
+	if lang == "th" {
+		nameCol = "name_th"
+	}
+	query := "SELECT id, " + nameCol + " FROM provinces ORDER BY " + nameCol
+	rows, err := h.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var provinces []ProvinceOption
+	for rows.Next() {
+		var opt ProvinceOption
+		if err := rows.Scan(&opt.ID, &opt.Label); err != nil {
+			return nil, err
+		}
+		provinces = append(provinces, opt)
+	}
+	return provinces, nil
+}
+
+func (h *ReferenceHandler) getColors(lang string) ([]ReferenceOption, error) {
+	labelCol := "label_en"
+	if lang == "th" {
+		labelCol = "label_th"
+	}
+	query := "SELECT code, " + labelCol + " FROM colors ORDER BY " + labelCol
+	rows, err := h.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var colors []ReferenceOption
+	for rows.Next() {
+		var opt ReferenceOption
+		if err := rows.Scan(&opt.Code, &opt.Label); err != nil {
+			return nil, err
+		}
+		colors = append(colors, opt)
+	}
+	return colors, nil
 }

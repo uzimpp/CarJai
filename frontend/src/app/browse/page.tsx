@@ -33,6 +33,14 @@ export default function BrowsePage() {
         if (filters.maxPrice) params.maxPrice = filters.maxPrice;
         if (filters.minYear) params.minYear = filters.minYear;
         if (filters.maxYear) params.maxYear = filters.maxYear;
+        if (filters.bodyType) params.bodyType = filters.bodyType;
+        if (filters.transmission) params.transmission = filters.transmission;
+        if (filters.drivetrain) params.drivetrain = filters.drivetrain;
+        if (filters.fuelTypes && filters.fuelTypes.length > 0)
+          params.fuelTypes = filters.fuelTypes;
+        if (filters.colors && filters.colors.length > 0)
+          params.colors = filters.colors;
+        if (filters.provinceId) params.provinceId = filters.provinceId;
 
         const result = await carsAPI.search(params);
 

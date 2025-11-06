@@ -271,8 +271,26 @@ func (h *CarHandler) SearchCars(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Parse type filters
-	if bodyTypeCode := query.Get("bodyTypeCode"); bodyTypeCode != "" {
+	if bodyTypeCode := query.Get("bodyType"); bodyTypeCode != "" {
 		req.BodyTypeCode = &bodyTypeCode
+	}
+
+	if transmissionCode := query.Get("transmission"); transmissionCode != "" {
+		req.TransmissionCode = &transmissionCode
+	}
+
+	if drivetrainCode := query.Get("drivetrain"); drivetrainCode != "" {
+		req.DrivetrainCode = &drivetrainCode
+	}
+
+	// Parse fuel types (multiple values)
+	if fuelTypes := query["fuelTypes"]; len(fuelTypes) > 0 {
+		req.FuelTypeCodes = fuelTypes
+	}
+
+	// Parse colors (multiple values)
+	if colors := query["colors"]; len(colors) > 0 {
+		req.ColorCodes = colors
 	}
 
 	// Parse pagination
