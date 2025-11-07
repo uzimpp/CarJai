@@ -48,9 +48,7 @@ export default function SellWithIdPage() {
     useState(false);
   const [showDuplicateConflictModal, setShowDuplicateConflictModal] =
     useState(false);
-  const [_conflictExistingCarId, setConflictExistingCarId] = useState<
-    number | null
-  >(null);
+  const [, setConflictExistingCarId] = useState<number | null>(null);
 
   // Update hasProgressRef whenever hasProgress changes
   useEffect(() => {
