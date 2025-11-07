@@ -170,7 +170,7 @@ export default function AccountBtn({
 
                 {roles?.buyer && (
                   <Link
-                    href="/recent_views"
+                    href="/history"
                     onClick={() => setOpen(false)}
                     className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-maroon/10 hover:text-maroon transition-colors"
                   >

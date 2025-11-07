@@ -53,7 +53,8 @@ type ServiceContainer struct {
 	Favourite   *services.FavouriteService
 	Maintenance *services.MaintenanceService
 	OCR         *services.OCRService
-	Scraper     *services.ScraperService 
+	Scraper     *services.ScraperService
+	RecentViews *services.RecentViewsService
 	Extraction  *services.ExtractionService
 	UserJWT     *utils.JWTManager
 	AdminJWT    *utils.JWTManager
@@ -116,9 +117,11 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 	// Create scraper service
 	scraperService := services.NewScraperService()
 
-	extractionService := services.NewExtractionService(db)
+	// Create recent views service
+	recentViewsService := services.NewRecentViewsService(db)
 
-	
+	// Create extraction service
+	extractionService := services.NewExtractionService(db)
 
 	return &ServiceContainer{
 		Admin: services.NewAdminService(
@@ -138,11 +141,12 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 			carRepo,
 			utils.AppLogger,
 		),
-		OCR:      services.NewOCRService(appConfig.AigenAPIKey),
-		Scraper:  scraperService,
+		OCR:         services.NewOCRService(appConfig.AigenAPIKey),
+		Scraper:     scraperService,
+		RecentViews: recentViewsService,
 		Extraction:  extractionService,
-		UserJWT:  userJWTManager,
-		AdminJWT: adminJWTManager,
+		UserJWT:     userJWTManager,
+		AdminJWT:    adminJWTManager,
 	}
 }
 
@@ -184,6 +188,10 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 	)
 	mux.Handle("/health/",
 		routes.HealthRoutes(db, appConfig.CORSAllowedOrigins))
+    mux.Handle("/api/recent-views",
+        routes.RecentViewsRoutes(services.RecentViews, services.Profile, services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
+    mux.Handle("/api/recent-views/",
+        routes.RecentViewsRoutes(services.RecentViews, services.Profile, services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/reference-data",
 		routes.ReferenceRoutes(db, appConfig.CORSAllowedOrigins))
 

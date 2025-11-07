@@ -15,7 +15,7 @@ export default function CarListingPage() {
   const params = useParams();
   const router = useRouter();
   const carId = Number(params.id);
-  const { user, roles, isAuthenticated } = useUserAuth();
+  const { roles, isAuthenticated } = useUserAuth();
 
   const [car, setCar] = useState<Car | null>(null);
   const [contacts, setContacts] = useState<SellerContact[]>([]);
