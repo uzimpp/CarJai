@@ -1155,55 +1155,136 @@ paths:
         '500':
           description: Database commit failed
 
-  # Recent Views
-  /api/recent-views:
+  # Favorites
+  /api/favorites/my:
     get:
       tags:
-        - RecentViews
-      summary: Get user's recent car views
-      description: Returns the authenticated user's viewing history with flattened car details.
-      parameters:
-        - name: limit
-          in: query
-          description: Maximum number of entries to return (default 20, max 100)
-          schema:
-            type: integer
-            default: 20
+        - Favorites
+      summary: Get current user's favourite listings (buyer-only)
+      operationId: getMyFavourites
+      x-roles:
+        - buyer
+      security:
+        - CookieAuth: []
+      description: |
+        Buyer-only endpoint. Returns the authenticated buyer's favourite car listings with images.
+        Sellers are not allowed to use favourites and will receive 403.
       responses:
         '200':
-          description: Recent views retrieved successfully
+          description: Favourite car listings with images
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RecentViewsResponse'
+                $ref: '#/components/schemas/CarListingWithImagesResponse'
+              examples:
+                sample:
+                  value:
+                    success: true
+                    data:
+                      - id: 101
+                        sellerId: 5
+                        year: 2019
+                        mileage: 35000
+                        price: 420000
+                        provinceId: 10
+                        conditionRating: 4
+                        bodyTypeCode: "SEDAN"
+                        transmissionCode: "AT"
+                        drivetrainCode: "FWD"
+                        seats: 5
+                        doors: 4
+                        status: "active"
+                        createdAt: "2024-12-01T10:00:00Z"
+                        updatedAt: "2024-12-10T10:00:00Z"
+                        brandName: "TOYOTA"
+                        modelName: "COROLLA"
+                        submodelName: "1.8E"
+                        images:
+                          - id: 1
+                            carId: 101
+                            imageType: "image/jpeg"
+                            imageSize: 204800
+                            displayOrder: 1
+                            uploadedAt: "2024-12-01T11:00:00Z"
         '401':
-          description: Unauthorized
+          description: Unauthorized - Authentication required
+        '403':
+          description: Forbidden - Only buyers can access favourites
 
-  /api/recent-views/record:
+  /api/favorites/{carId}:
     post:
       tags:
-        - RecentViews
-      summary: Record a car view
-      description: Records that the authenticated user viewed a specific car.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RecordViewRequest'
+        - Favorites
+      summary: Add a car to favourites (buyer-only)
+      operationId: addFavourite
+      x-roles:
+        - buyer
+      security:
+        - CookieAuth: []
+      description: |
+        Buyer-only endpoint. Adds the specified car to the authenticated buyer's favourites.
+        Sellers are not allowed to use favourites and will receive 403.
+      parameters:
+        - name: carId
+          in: path
+          required: true
+          schema:
+            type: integer
       responses:
         '200':
-          description: View recorded successfully
+          description: Favourite added successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RecordViewResponse'
+                $ref: '#/components/schemas/BasicResponse'
+              examples:
+                success:
+                  value:
+                    success: true
+                    message: "Car 101 added to favourites"
         '400':
-          description: Invalid request
+          description: Bad request - Invalid car ID or car not active
         '401':
-          description: Unauthorized
-        '500':
-          description: Server error
+          description: Unauthorized - Authentication required
+        '403':
+          description: Forbidden - Only buyers can add favourites
+
+    delete:
+      tags:
+        - Favorites
+      summary: Remove a car from favourites (buyer-only)
+      operationId: removeFavourite
+      x-roles:
+        - buyer
+      security:
+        - CookieAuth: []
+      description: |
+        Buyer-only endpoint. Removes the specified car from the authenticated buyer's favourites.
+        Sellers are not allowed to use favourites and will receive 403.
+      parameters:
+        - name: carId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Favourite removed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicResponse'
+              examples:
+                success:
+                  value:
+                    success: true
+                    message: "Car 101 removed from favourites"
+        '401':
+          description: Unauthorized - Authentication required
+        '404':
+          description: Favourite not found
+        '403':
+          description: Forbidden - Only buyers can remove favourites
 
 components:
   securitySchemes:
@@ -1549,6 +1630,107 @@ components:
         pages:
           type: integer
 
+    # --- Favorites: Basic and Listing Schemas ---
+    BasicResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+
+    CarImageMetadata:
+      type: object
+      description: Image metadata without binary data
+      properties:
+        id:
+          type: integer
+        carId:
+          type: integer
+        imageType:
+          type: string
+          description: MIME type (e.g., image/jpeg)
+        imageSize:
+          type: integer
+        displayOrder:
+          type: integer
+        uploadedAt:
+          type: string
+          format: date-time
+
+    CarListingWithImages:
+      type: object
+      description: Compact car listing with images for favourites
+      properties:
+        id:
+          type: integer
+        sellerId:
+          type: integer
+        year:
+          type: integer
+          nullable: true
+        mileage:
+          type: integer
+          nullable: true
+        price:
+          type: integer
+          nullable: true
+        provinceId:
+          type: integer
+          nullable: true
+        conditionRating:
+          type: integer
+          nullable: true
+        bodyTypeCode:
+          type: string
+          nullable: true
+        transmissionCode:
+          type: string
+          nullable: true
+        drivetrainCode:
+          type: string
+          nullable: true
+        seats:
+          type: integer
+          nullable: true
+        doors:
+          type: integer
+          nullable: true
+        status:
+          type: string
+          enum: [draft, active, sold, deleted]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        brandName:
+          type: string
+          nullable: true
+        modelName:
+          type: string
+          nullable: true
+        submodelName:
+          type: string
+          nullable: true
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/CarImageMetadata'
+
+    CarListingWithImagesResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CarListingWithImages'
+        message:
+          type: string
+
     # --- NEW: Schemas for Market Price ---
     MarketPrice:
       type: object
@@ -1596,74 +1778,3 @@ components:
         updated_count:
           type: integer
           example: 10
-
-    # Recent Views
-    RecentViewWithCarDetails:
-      type: object
-      description: A recent view entry enriched with car fields for display
-      properties:
-        rvid:
-          type: integer
-        user_id:
-          type: integer
-        car_id:
-          type: integer
-        viewed_at:
-          type: string
-          format: date-time
-        year:
-          type: integer
-          nullable: true
-        mileage:
-          type: integer
-          nullable: true
-        price:
-          type: integer
-        province:
-          type: string
-          nullable: true
-        condition_rating:
-          type: integer
-          nullable: true
-        color:
-          type: string
-          nullable: true
-        status:
-          type: string
-        brand_name:
-          type: string
-          nullable: true
-        model_name:
-          type: string
-          nullable: true
-        seller_display_name:
-          type: string
-
-    RecentViewsResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/RecentViewWithCarDetails'
-        message:
-          type: string
-          nullable: true
-
-    RecordViewRequest:
-      type: object
-      required:
-        - car_id
-      properties:
-        car_id:
-          type: integer
-
-    RecordViewResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-        message:
-          type: string
