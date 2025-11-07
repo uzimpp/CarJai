@@ -7,17 +7,25 @@ import Link from "next/link";
 import { Car, InspectionData } from "@/types/car";
 import { SellerContact } from "@/types/user";
 import { carsAPI } from "@/lib/carsAPI";
+import { useUserAuth } from "@/hooks/useUserAuth";
+import { favoritesAPI } from "@/lib/favoritesAPI";
+import FavoriteButton from "@/components/car/FavoriteButton";
 
 export default function CarListingPage() {
   const params = useParams();
   const router = useRouter();
   const carId = Number(params.id);
+  const { roles, isAuthenticated } = useUserAuth();
 
   const [car, setCar] = useState<Car | null>(null);
   const [contacts, setContacts] = useState<SellerContact[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string>("");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [favoriteCarIds, setFavoriteCarIds] = useState<Set<number>>(new Set());
+
+  const isBuyer = isAuthenticated && roles?.buyer;
 
   useEffect(() => {
     let mounted = true;
@@ -57,6 +65,36 @@ export default function CarListingPage() {
       mounted = false;
     };
   }, [carId]);
+
+  // Fetch favorites for authenticated buyers
+  useEffect(() => {
+    const fetchFavorites = async () => {
+      if (isBuyer) {
+        try {
+          const favorites = await favoritesAPI.getFavorites();
+          const favoriteIds = new Set(favorites.map(car => car.id));
+          setFavoriteCarIds(favoriteIds);
+          setIsFavorited(favoriteIds.has(carId));
+        } catch (error) {
+          console.error('Failed to fetch favorites:', error);
+        }
+      }
+    };
+
+    fetchFavorites();
+  }, [isBuyer, carId]);
+
+  const handleFavoriteToggle = async (carId: number, newFavoriteState: boolean) => {
+    // Update local state immediately for optimistic UI
+    setIsFavorited(newFavoriteState);
+    const newFavoriteCarIds = new Set(favoriteCarIds);
+    if (newFavoriteState) {
+      newFavoriteCarIds.add(carId);
+    } else {
+      newFavoriteCarIds.delete(carId);
+    }
+    setFavoriteCarIds(newFavoriteCarIds);
+  };
 
   const getContactIcon = (contactType: string) => {
     switch (contactType.toLowerCase()) {
@@ -149,8 +187,17 @@ export default function CarListingPage() {
           <div className="text-2 bold text-maroon">
             ฿{formatPrice(carData.price || 0)}
           </div>
-          <div className="text--1 text-gray-600">
-            Listed on {formatDate(carData.createdAt)}
+          <div className="flex items-center gap-(--space-m)">
+            <div className="text--1 text-gray-600">
+              Listed on {formatDate(carData.createdAt)}
+            </div>
+            {isBuyer && (
+              <FavoriteButton
+                carId={carId}
+                isFavorited={isFavorited}
+                onToggle={handleFavoriteToggle}
+              />
+            )}
           </div>
         </div>
       </div>
