@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { CarListing } from "@/types/car";
 import { useCallback } from "react";
-import FavoriteButton from "./FavoriteButton";
 
 export interface CarCardProps {
   car: CarListing;
@@ -13,9 +12,6 @@ export interface CarCardProps {
   onPublish?: (id: number) => void;
   onUnpublish?: (id: number) => void;
   showActions?: boolean; // when true, show publish/unpublish/delete actions
-  showFavorite?: boolean; // when true, show favorite button for buyers
-  isFavorited?: boolean; // whether this car is favorited by current user
-  onFavoriteToggle?: (carId: number, isFavorited: boolean) => void; // callback when favorite is toggled
 }
 
 export default function CarCard({
@@ -25,9 +21,6 @@ export default function CarCard({
   onPublish,
   onUnpublish,
   showActions = false,
-  showFavorite = false,
-  isFavorited = false,
-  onFavoriteToggle,
 }: CarCardProps) {
   const handleDelete = useCallback(() => {
     if (!onDelete) return;
@@ -69,23 +62,12 @@ export default function CarCard({
             </div>
           )}
 
-          {/* Favorite button (top-right for buyers) */}
-          {showFavorite && (
-            <div className="absolute top-(--space-s) right-(--space-s)">
-              <FavoriteButton
-                carId={car.id}
-                isFavorited={isFavorited}
-                onToggle={onFavoriteToggle}
-              />
-            </div>
-          )}
-
-          {/* Delete icon (top-right, positioned below favorite if both exist) */}
+          {/* Delete icon (top-right) */}
           {showActions && onDelete && (
             <button
               aria-label="Delete"
               onClick={handleDelete}
-              className={`absolute ${showFavorite ? 'top-16' : 'top-(--space-s)'} right-(--space-s) w-9 h-9 rounded-full bg-red-600/90 hover:bg-red-700 text-white flex items-center justify-center shadow-md`}
+              className="absolute top-(--space-s) right-(--space-s) w-9 h-9 rounded-full bg-red-600/90 hover:bg-red-700 text-white flex items-center justify-center shadow-md"
             >
               {/* trash icon */}
               <svg
