@@ -92,6 +92,7 @@ func TestFavouriteHandler_AddFavourite(t *testing.T) {
 			req := httptest.NewRequest(tt.method, "/api/favorites/1", nil)
 			ctx := context.WithValue(req.Context(), "userID", tt.userID)
 			ctx = context.WithValue(ctx, "token", "test-token")
+			ctx = context.WithValue(ctx, "carID", tt.carID)
 			req = req.WithContext(ctx)
 			w := httptest.NewRecorder()
 
@@ -116,7 +117,7 @@ func (h *testFavouriteHandler) AddFavourite(w http.ResponseWriter, r *http.Reque
 	}
 
 	userID, ok := r.Context().Value("userID").(int)
-	if !ok {
+	if !ok || userID == 0 {
 		utils.WriteError(w, http.StatusUnauthorized, "Authentication required")
 		return
 	}
@@ -133,7 +134,10 @@ func (h *testFavouriteHandler) AddFavourite(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	carID := 1 // Simplified for test
+	carID, ok := r.Context().Value("carID").(int)
+	if !ok {
+		carID = 0
+	}
 	if carID <= 0 {
 		utils.WriteError(w, http.StatusBadRequest, "Invalid car ID")
 		return
