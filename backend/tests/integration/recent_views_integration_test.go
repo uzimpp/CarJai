@@ -51,11 +51,14 @@ func TestRecentViewsFlow(t *testing.T) {
 	}
 
 	// Create a car
-	sellerEmail := fmt.Sprintf("seller%d@example.com", time.Now().UnixNano())
+	// Use nanosecond modulo to ensure unique email/username while keeping username under 20 chars
+	sellerNanos := time.Now().UnixNano() % 1000000
+	sellerTimestamp := sellerNanos % 1000000 // Limit to 6 digits to keep username under 20 chars
+	sellerEmail := fmt.Sprintf("seller%d@example.com", sellerNanos) // Use full nanos for email uniqueness
 	sellerSignup := models.UserSignupRequest{
 		Email:    sellerEmail,
 		Password: "password123",
-		Username: fmt.Sprintf("seller%d", time.Now().UnixNano()),
+		Username: fmt.Sprintf("seller%d", sellerTimestamp), // "seller" (6) + 6 digits = 12 chars
 		Name:     "Test Seller",
 	}
 
@@ -81,7 +84,7 @@ func TestRecentViewsFlow(t *testing.T) {
 			}
 
 			jsonData, _ := json.Marshal(viewData)
-			req, _ := http.NewRequest("POST", ts.server.URL+"/api/recent-views", bytes.NewBuffer(jsonData))
+			req, _ := http.NewRequest("POST", ts.server.URL+"/api/recent-views/record", bytes.NewBuffer(jsonData))
 			req.Header.Set("Content-Type", "application/json")
 			req.AddCookie(&http.Cookie{Name: "jwt", Value: userToken})
 
