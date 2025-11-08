@@ -22,7 +22,7 @@ func TestRecentViewsHandler_RecordView(t *testing.T) {
 		userID            int
 		requestBody       interface{}
 		isBuyer           bool
-		getRolesFunc      func(userID int) (*models.UserRoles, error)
+		getRolesFunc      func(userID int) (models.UserRoles, error)
 		recordViewFunc    func(userID, carID int) error
 		expectedStatus    int
 	}{

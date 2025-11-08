@@ -139,7 +139,7 @@ func TestProfileHandler_GetBuyerProfile(t *testing.T) {
 				return &models.User{ID: 1}, nil
 			},
 			getBuyerFunc: func(userID int) (*models.Buyer, error) {
-				return &models.Buyer{UserID: userID}, nil
+				return &models.Buyer{ID: 1}, nil
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -152,7 +152,7 @@ func TestProfileHandler_GetBuyerProfile(t *testing.T) {
 				return &models.User{ID: 1}, nil
 			},
 			getBuyerFunc: func(userID int) (*models.Buyer, error) {
-				return nil, &utils.ValidationError{Message: "not found"}
+				return nil, &services.ValidationError{Message: "not found"}
 			},
 			expectedStatus: http.StatusNotFound,
 		},
@@ -243,7 +243,7 @@ func TestProfileHandler_UpsertBuyerProfile(t *testing.T) {
 				return &models.User{ID: 1}, nil
 			},
 			upsertBuyerFunc: func(userID int, req models.BuyerRequest) (*models.Buyer, error) {
-				return &models.Buyer{UserID: userID}, nil
+				return &models.Buyer{ID: 1}, nil
 			},
 			expectedStatus: http.StatusOK,
 		},

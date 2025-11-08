@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/uzimpp/CarJai/backend/models"
+	"github.com/uzimpp/CarJai/backend/services"
 	"github.com/uzimpp/CarJai/backend/utils"
 )
 
@@ -31,7 +32,7 @@ func TestPublicSellerHandler_GetSeller(t *testing.T) {
 			method:   "GET",
 			sellerID: "999",
 			getPublicSellerFunc: func(sellerID string) (*models.Seller, error) {
-				return nil, &utils.ValidationError{Message: "not found"}
+				return nil, &services.ValidationError{Message: "not found"}
 			},
 			expectedStatus: http.StatusNotFound,
 		},

@@ -287,10 +287,11 @@ func TestAdminAuthHandler_Me(t *testing.T) {
 			cookieValue: "test-token",
 			getCurrentAdminFunc: func(token string) (*models.AdminMeData, error) {
 				return &models.AdminMeData{
-					Admin: models.Admin{
+					Admin: models.AdminPublic{
 						ID:       1,
 						Username: "admin",
 						Name:     "Test Admin",
+						CreatedAt: time.Now(),
 					},
 				}, nil
 			},
