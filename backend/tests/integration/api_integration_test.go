@@ -260,9 +260,11 @@ func TestUserAuthFlow(t *testing.T) {
 
 	// Test Signup
 	t.Run("Signup", func(t *testing.T) {
-		timestamp := time.Now().Unix() % 1000000 // Limit to 6 digits to keep username under 20 chars
+		// Use nanosecond modulo to ensure unique email/username while keeping username under 20 chars
+		nanos := time.Now().UnixNano() % 1000000
+		timestamp := nanos % 1000000 // Limit to 6 digits to keep username under 20 chars
 		signupData := models.UserSignupRequest{
-			Email:    fmt.Sprintf("test%d@example.com", timestamp),
+			Email:    fmt.Sprintf("test%d@example.com", nanos), // Use full nanos for email uniqueness
 			Password: "password123",
 			Username: fmt.Sprintf("test%d", timestamp), // "test" (4) + 6 digits = 10 chars, well under 20
 			Name:     "Test User",
@@ -304,9 +306,11 @@ func TestUserAuthFlow(t *testing.T) {
 
 	// Test Signin
 	t.Run("Signin", func(t *testing.T) {
-		timestamp := time.Now().Unix() % 1000000 // Limit to 6 digits to keep username under 20 chars
+		// Use nanosecond modulo to ensure unique email/username while keeping username under 20 chars
+		nanos := time.Now().UnixNano() % 1000000
+		timestamp := nanos % 1000000 // Limit to 6 digits to keep username under 20 chars
 		signinData := models.UserSigninRequest{
-			EmailOrUsername: fmt.Sprintf("test%d@example.com", timestamp),
+			EmailOrUsername: fmt.Sprintf("test%d@example.com", nanos), // Use full nanos for email uniqueness
 			Password:        "password123",
 		}
 
@@ -362,8 +366,10 @@ func TestCarEndpoints(t *testing.T) {
 	defer ts.cleanup()
 
 	// Create a test user first
-	timestamp := time.Now().Unix() % 1000000 // Limit to 6 digits to keep username under 20 chars
-	testEmail := fmt.Sprintf("seller%d@example.com", timestamp)
+	// Use nanosecond modulo to ensure unique email/username while keeping username under 20 chars
+	nanos := time.Now().UnixNano() % 1000000
+	timestamp := nanos % 1000000 // Limit to 6 digits to keep username under 20 chars
+	testEmail := fmt.Sprintf("seller%d@example.com", nanos) // Use full nanos for email uniqueness
 	signupData := models.UserSignupRequest{
 		Email:    testEmail,
 		Password: "password123",

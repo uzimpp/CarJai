@@ -17,8 +17,10 @@ func TestProfileFlow(t *testing.T) {
 	defer ts.cleanup()
 
 	// Create test user
-	timestamp := time.Now().Unix() % 1000000 // Limit to 6 digits to keep username under 20 chars
-	testEmail := fmt.Sprintf("user%d@example.com", timestamp)
+	// Use nanosecond modulo to ensure unique email/username while keeping username under 20 chars
+	nanos := time.Now().UnixNano() % 1000000
+	timestamp := nanos % 1000000 // Limit to 6 digits to keep username under 20 chars
+	testEmail := fmt.Sprintf("user%d@example.com", nanos) // Use full nanos for email uniqueness
 	signupData := models.UserSignupRequest{
 		Email:    testEmail,
 		Password: "password123",
@@ -44,7 +46,7 @@ func TestProfileFlow(t *testing.T) {
 
 	// Test Get Profile
 	t.Run("GetProfile", func(t *testing.T) {
-		req, _ := http.NewRequest("GET", ts.server.URL+"/api/profile/", nil)
+		req, _ := http.NewRequest("GET", ts.server.URL+"/api/profile/self", nil)
 		req.AddCookie(&http.Cookie{Name: "jwt", Value: userToken})
 
 		client := &http.Client{}
@@ -66,7 +68,7 @@ func TestProfileFlow(t *testing.T) {
 		}
 
 		jsonData, _ := json.Marshal(updateData)
-		req, _ := http.NewRequest("PATCH", ts.server.URL+"/api/profile/", bytes.NewBuffer(jsonData))
+		req, _ := http.NewRequest("PATCH", ts.server.URL+"/api/profile/self", bytes.NewBuffer(jsonData))
 		req.Header.Set("Content-Type", "application/json")
 		req.AddCookie(&http.Cookie{Name: "jwt", Value: userToken})
 
