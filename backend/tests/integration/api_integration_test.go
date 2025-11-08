@@ -260,10 +260,11 @@ func TestUserAuthFlow(t *testing.T) {
 
 	// Test Signup
 	t.Run("Signup", func(t *testing.T) {
+		timestamp := time.Now().Unix() % 1000000 // Limit to 6 digits to keep username under 20 chars
 		signupData := models.UserSignupRequest{
-			Email:    fmt.Sprintf("test%d@example.com", time.Now().UnixNano()),
+			Email:    fmt.Sprintf("test%d@example.com", timestamp),
 			Password: "password123",
-			Username: fmt.Sprintf("testuser%d", time.Now().UnixNano()),
+			Username: fmt.Sprintf("test%d", timestamp), // "test" (4) + 6 digits = 10 chars, well under 20
 			Name:     "Test User",
 		}
 
@@ -303,8 +304,9 @@ func TestUserAuthFlow(t *testing.T) {
 
 	// Test Signin
 	t.Run("Signin", func(t *testing.T) {
+		timestamp := time.Now().Unix() % 1000000 // Limit to 6 digits to keep username under 20 chars
 		signinData := models.UserSigninRequest{
-			EmailOrUsername: fmt.Sprintf("test%d@example.com", time.Now().UnixNano()),
+			EmailOrUsername: fmt.Sprintf("test%d@example.com", timestamp),
 			Password:        "password123",
 		}
 
@@ -312,7 +314,7 @@ func TestUserAuthFlow(t *testing.T) {
 		signupData := models.UserSignupRequest{
 			Email:    signinData.EmailOrUsername,
 			Password: signinData.Password,
-			Username: fmt.Sprintf("testuser%d", time.Now().UnixNano()),
+			Username: fmt.Sprintf("test%d", timestamp), // "test" (4) + 6 digits = 10 chars
 			Name:     "Test User",
 		}
 
@@ -360,11 +362,12 @@ func TestCarEndpoints(t *testing.T) {
 	defer ts.cleanup()
 
 	// Create a test user first
-	testEmail := fmt.Sprintf("seller%d@example.com", time.Now().UnixNano())
+	timestamp := time.Now().Unix() % 1000000 // Limit to 6 digits to keep username under 20 chars
+	testEmail := fmt.Sprintf("seller%d@example.com", timestamp)
 	signupData := models.UserSignupRequest{
 		Email:    testEmail,
 		Password: "password123",
-		Username: fmt.Sprintf("seller%d", time.Now().UnixNano()),
+		Username: fmt.Sprintf("seller%d", timestamp), // "seller" (6) + 6 digits = 12 chars
 		Name:     "Test Seller",
 	}
 
@@ -469,7 +472,7 @@ func TestAdminAuthFlow(t *testing.T) {
 		}
 
 		jsonData, _ := json.Marshal(signinData)
-		resp, err := http.Post(ts.server.URL+"/admin/auth/login", "application/json", bytes.NewBuffer(jsonData))
+		resp, err := http.Post(ts.server.URL+"/admin/auth/signin", "application/json", bytes.NewBuffer(jsonData))
 		if err != nil {
 			t.Fatalf("Failed to make admin signin request: %v", err)
 		}

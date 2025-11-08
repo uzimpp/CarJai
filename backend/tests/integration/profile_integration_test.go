@@ -17,11 +17,12 @@ func TestProfileFlow(t *testing.T) {
 	defer ts.cleanup()
 
 	// Create test user
-	testEmail := fmt.Sprintf("user%d@example.com", time.Now().UnixNano())
+	timestamp := time.Now().Unix() % 1000000 // Limit to 6 digits to keep username under 20 chars
+	testEmail := fmt.Sprintf("user%d@example.com", timestamp)
 	signupData := models.UserSignupRequest{
 		Email:    testEmail,
 		Password: "password123",
-		Username: fmt.Sprintf("user%d", time.Now().UnixNano()),
+		Username: fmt.Sprintf("user%d", timestamp), // "user" (4) + 6 digits = 10 chars
 		Name:     "Test User",
 	}
 

@@ -17,11 +17,12 @@ func TestFavouritesFlow(t *testing.T) {
 	defer ts.cleanup()
 
 	// Create test user (buyer)
-	testEmail := fmt.Sprintf("buyer%d@example.com", time.Now().UnixNano())
+	timestamp := time.Now().Unix() % 1000000 // Limit to 6 digits to keep username under 20 chars
+	testEmail := fmt.Sprintf("buyer%d@example.com", timestamp)
 	signupData := models.UserSignupRequest{
 		Email:    testEmail,
 		Password: "password123",
-		Username: fmt.Sprintf("buyer%d", time.Now().UnixNano()),
+		Username: fmt.Sprintf("buyer%d", timestamp), // "buyer" (5) + 6 digits = 11 chars
 		Name:     "Test Buyer",
 	}
 
