@@ -66,6 +66,11 @@ type testReferenceHandler struct {
 }
 
 func (h *testReferenceHandler) GetReferenceData(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	lang := r.URL.Query().Get("lang")
 	if lang == "" {
 		lang = "en"

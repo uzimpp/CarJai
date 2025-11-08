@@ -129,7 +129,7 @@ func (h *testRecentViewsHandler) RecordView(w http.ResponseWriter, r *http.Reque
 	}
 
 	userID, ok := r.Context().Value("userID").(int)
-	if !ok {
+	if !ok || userID == 0 {
 		utils.WriteError(w, http.StatusUnauthorized, "User not authenticated")
 		return
 	}
