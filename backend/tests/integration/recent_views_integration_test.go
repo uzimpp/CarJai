@@ -90,7 +90,8 @@ func TestRecentViewsFlow(t *testing.T) {
 		}
 
 		// Update car status to active for testing (bypass validation for test purposes)
-		_, err = ts.db.Exec("UPDATE cars SET status = 'active' WHERE id = $1", car.ID)
+		// Need to set chassis_number first as it's required for active cars
+		_, err = ts.db.Exec("UPDATE cars SET chassis_number = 'TESTCHASSIS123', status = 'active' WHERE id = $1", car.ID)
 		if err != nil {
 			t.Fatalf("Failed to update car status: %v", err)
 		}
