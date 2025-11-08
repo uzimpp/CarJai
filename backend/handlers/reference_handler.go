@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	// "fmt" // Removed unused import
 	"net/http"
-	"strings"
 
 	"github.com/uzimpp/CarJai/backend/models"
 	"github.com/uzimpp/CarJai/backend/utils"
@@ -41,43 +40,8 @@ type ReferenceData struct {
 	Drivetrains   []ReferenceOption `json:"drivetrains"`
 }
 
-// HandleReferenceData acts as a router for all /api/reference-data/* requests
-func (h *ReferenceHandler) HandleReferenceData(w http.ResponseWriter, r *http.Request) {
-	path := r.URL.Path
-
-	// Case 1: /api/reference-data (Original API)
-	if path == "/api/reference-data" || path == "/api/reference-data/" {
-		h.GetReferenceData(w, r)
-		return
-	}
-
-	// Case 2: /api/reference-data/brands (New API)
-	if strings.HasSuffix(path, "/brands") {
-		h.handleGetBrands(w, r)
-		return
-	}
-
-	// Case 3: /api/reference-data/models (New API)
-	if strings.HasSuffix(path, "/models") {
-		h.handleGetModels(w, r)
-		return
-	}
-
-	// Case 4: /api/reference-data/submodels (New API)
-	if strings.HasSuffix(path, "/submodels") {
-		h.handleGetSubModels(w, r)
-		return
-	}
-
-	// Fallback
-	utils.RespondJSON(w, http.StatusNotFound, models.UserErrorResponse{
-		Success: false,
-		Error:   "Not found",
-	})
-}
-
-// GetReferenceData handles GET /api/reference-data
-func (h *ReferenceHandler) GetReferenceData(w http.ResponseWriter, r *http.Request) {
+// GetAll handles GET /api/reference-data/all
+func (h *ReferenceHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	// Get language parameter (default to "en")
 	lang := r.URL.Query().Get("lang")
 	if lang == "" {
@@ -227,8 +191,8 @@ func (h *ReferenceHandler) getDrivetrains(lang string) ([]ReferenceOption, error
 	return drivetrains, nil
 }
 
-// handleGetBrands handles GET /api/reference-data/brands
-func (h *ReferenceHandler) handleGetBrands(w http.ResponseWriter, r *http.Request) {
+// GetBrands handles GET /api/reference-data/brands
+func (h *ReferenceHandler) GetBrands(w http.ResponseWriter, r *http.Request) {
 	query := `SELECT DISTINCT brand FROM market_price WHERE brand IS NOT NULL AND brand != '' ORDER BY brand;`
 
 	rows, err := h.db.Query(query)
@@ -252,8 +216,8 @@ func (h *ReferenceHandler) handleGetBrands(w http.ResponseWriter, r *http.Reques
 	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{"success": true, "data": brands})
 }
 
-// handleGetModels handles GET /api/reference-data/models
-func (h *ReferenceHandler) handleGetModels(w http.ResponseWriter, r *http.Request) {
+// GetModels handles GET /api/reference-data/models
+func (h *ReferenceHandler) GetModels(w http.ResponseWriter, r *http.Request) {
 	brand := r.URL.Query().Get("brand")
 	if brand == "" {
 		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{Success: false, Error: "Brand query parameter is required"})
@@ -282,8 +246,8 @@ func (h *ReferenceHandler) handleGetModels(w http.ResponseWriter, r *http.Reques
 	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{"success": true, "data": modelsList})
 }
 
-// handleGetSubModels handles GET /api/reference-data/submodels
-func (h *ReferenceHandler) handleGetSubModels(w http.ResponseWriter, r *http.Request) {
+// GetSubModels handles GET /api/reference-data/submodels
+func (h *ReferenceHandler) GetSubModels(w http.ResponseWriter, r *http.Request) {
 	brand := r.URL.Query().Get("brand")
 	model := r.URL.Query().Get("model")
 	if brand == "" || model == "" {

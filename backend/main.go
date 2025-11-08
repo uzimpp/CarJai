@@ -173,8 +173,6 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 	)
 	mux.Handle("/health/",
 		routes.HealthRoutes(db, appConfig.CORSAllowedOrigins))
-	
-	// Add trailing slash to match sub-paths like /brands, /models
 	mux.Handle("/api/reference-data/",
 		routes.ReferenceRoutes(db, appConfig.CORSAllowedOrigins))
 

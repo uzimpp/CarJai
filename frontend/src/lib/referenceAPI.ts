@@ -1,4 +1,4 @@
-// 
+//
 import { apiCall } from "@/lib/apiCall";
 
 export type ReferenceOption = { code: string; label: string };
@@ -15,14 +15,16 @@ export const referenceAPI = {
     data: ReferenceData;
   }> {
     const qs = new URLSearchParams({ lang }).toString();
-    return apiCall(`/api/reference-data?${qs}`, { method: "GET" });
+    return apiCall(`/api/reference-data/all?${qs}`, { method: "GET" });
   },
 
   async getBrands(): Promise<{ success: boolean; data: string[] }> {
-    return apiCall('/api/reference-data/brands', { method: "GET" });
+    return apiCall("/api/reference-data/brands", { method: "GET" });
   },
 
-  async getModels(brand: string): Promise<{ success: boolean; data: string[] }> {
+  async getModels(
+    brand: string
+  ): Promise<{ success: boolean; data: string[] }> {
     if (!brand) {
       return { success: true, data: [] };
     }
@@ -30,7 +32,10 @@ export const referenceAPI = {
     return apiCall(`/api/reference-data/models?${qs}`, { method: "GET" });
   },
 
-  async getSubModels(brand: string, model: string): Promise<{ success: boolean; data: string[] }> {
+  async getSubModels(
+    brand: string,
+    model: string
+  ): Promise<{ success: boolean; data: string[] }> {
     if (!brand || !model) {
       return { success: true, data: [] };
     }
