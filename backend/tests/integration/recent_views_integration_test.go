@@ -2,6 +2,7 @@ package integration
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -75,6 +76,12 @@ func TestRecentViewsFlow(t *testing.T) {
 		car, err := ts.services.Car.CreateCar(seller.ID)
 		if err != nil {
 			t.Fatalf("Failed to create car: %v", err)
+		}
+
+		// Update car status to active for testing (bypass validation for test purposes)
+		_, err = ts.db.Exec("UPDATE cars SET status = 'active' WHERE id = $1", car.ID)
+		if err != nil {
+			t.Fatalf("Failed to update car status: %v", err)
 		}
 
 		// Test Record View
