@@ -15,7 +15,7 @@ import (
 type mockAdminServiceForIP struct {
 	addIPToWhitelistFunc    func(adminID int, ipAddress, description string) error
 	removeIPFromWhitelistFunc func(adminID int, ipAddress string) error
-	getWhitelistedIPsFunc   func(adminID int) ([]models.IPWhitelist, error)
+	getWhitelistedIPsFunc   func(adminID int) ([]models.AdminIPWhitelist, error)
 }
 
 func (m *mockAdminServiceForIP) AddIPToWhitelist(adminID int, ipAddress, description string) error {
@@ -32,7 +32,7 @@ func (m *mockAdminServiceForIP) RemoveIPFromWhitelist(adminID int, ipAddress str
 	return nil
 }
 
-func (m *mockAdminServiceForIP) GetWhitelistedIPs(adminID int) ([]models.IPWhitelist, error) {
+func (m *mockAdminServiceForIP) GetWhitelistedIPs(adminID int) ([]models.AdminIPWhitelist, error) {
 	if m.getWhitelistedIPsFunc != nil {
 		return m.getWhitelistedIPsFunc(adminID)
 	}
@@ -266,15 +266,15 @@ func TestAdminIPHandler_GetWhitelistedIPs(t *testing.T) {
 		name                string
 		method              string
 		adminID             int
-		getWhitelistedIPsFunc func(adminID int) ([]models.IPWhitelist, error)
+		getWhitelistedIPsFunc func(adminID int) ([]models.AdminIPWhitelist, error)
 		expectedStatus      int
 	}{
 		{
 			name:    "Successful get",
 			method:  "GET",
 			adminID: 1,
-			getWhitelistedIPsFunc: func(adminID int) ([]models.IPWhitelist, error) {
-				return []models.IPWhitelist{}, nil
+			getWhitelistedIPsFunc: func(adminID int) ([]models.AdminIPWhitelist, error) {
+				return []models.AdminIPWhitelist{}, nil
 			},
 			expectedStatus: http.StatusOK,
 		},

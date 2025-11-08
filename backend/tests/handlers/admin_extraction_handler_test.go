@@ -14,25 +14,7 @@ import (
 	"github.com/uzimpp/CarJai/backend/utils"
 )
 
-// mockExtractionService is a mock implementation of ExtractionService for testing
-type mockExtractionService struct {
-	extractMarketPricesFunc func(ctx context.Context, filePath string) ([]services.MarketPrice, error)
-	commitMarketPricesFunc  func(ctx context.Context, prices []services.MarketPrice) (int, int, error)
-}
-
-func (m *mockExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, filePath string) ([]services.MarketPrice, error) {
-	if m.extractMarketPricesFunc != nil {
-		return m.extractMarketPricesFunc(ctx, filePath)
-	}
-	return nil, nil
-}
-
-func (m *mockExtractionService) CommitMarketPrices(ctx context.Context, prices []services.MarketPrice) (int, int, error) {
-	if m.commitMarketPricesFunc != nil {
-		return m.commitMarketPricesFunc(ctx, prices)
-	}
-	return 0, 0, nil
-}
+// mockExtractionService is defined in mocks.go
 
 func TestAdminExtractionHandler_HandleImportMarketPrices(t *testing.T) {
 	tests := []struct {

@@ -32,10 +32,11 @@ func TestAdminAuthHandler_Signin(t *testing.T) {
 			},
 			signinFunc: func(req services.SigninRequest) (*services.SigninResponse, error) {
 				return &services.SigninResponse{
-					Admin: models.Admin{
+					Admin: models.AdminPublic{
 						ID:       1,
 						Username: req.Username,
 						Name:     "Test Admin",
+						CreatedAt: time.Now(),
 					},
 					Token:     "test-token",
 					ExpiresAt: time.Now().Add(8 * time.Hour),

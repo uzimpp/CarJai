@@ -184,7 +184,7 @@ func (m *mockFavouriteService) GetFavouriteListings(userID int) ([]models.CarLis
 // mockRecentViewsService is a mock implementation of RecentViewsService for testing
 type mockRecentViewsService struct {
 	recordViewFunc      func(userID, carID int) error
-	getUserRecentViewsFunc func(userID, limit int) ([]models.RecentViewWithCar, error)
+	getUserRecentViewsFunc func(userID, limit int) ([]models.RecentViewWithCarDetails, error)
 }
 
 func (m *mockRecentViewsService) RecordView(userID, carID int) error {
@@ -194,7 +194,7 @@ func (m *mockRecentViewsService) RecordView(userID, carID int) error {
 	return nil
 }
 
-func (m *mockRecentViewsService) GetUserRecentViews(userID, limit int) ([]models.RecentViewWithCar, error) {
+func (m *mockRecentViewsService) GetUserRecentViews(userID, limit int) ([]models.RecentViewWithCarDetails, error) {
 	if m.getUserRecentViewsFunc != nil {
 		return m.getUserRecentViewsFunc(userID, limit)
 	}
@@ -364,7 +364,7 @@ type mockAdminService struct {
 	getCurrentAdminFunc func(token string) (*models.AdminMeData, error)
 	addIPToWhitelistFunc func(adminID int, ipAddress, description string) error
 	removeIPFromWhitelistFunc func(adminID int, ipAddress string) error
-	getWhitelistedIPsFunc func(adminID int) ([]models.IPWhitelist, error)
+	getWhitelistedIPsFunc func(adminID int) ([]models.AdminIPWhitelist, error)
 }
 
 func (m *mockAdminService) Signin(req services.SigninRequest) (*services.SigninResponse, error) {
@@ -402,7 +402,7 @@ func (m *mockAdminService) RemoveIPFromWhitelist(adminID int, ipAddress string) 
 	return nil
 }
 
-func (m *mockAdminService) GetWhitelistedIPs(adminID int) ([]models.IPWhitelist, error) {
+func (m *mockAdminService) GetWhitelistedIPs(adminID int) ([]models.AdminIPWhitelist, error) {
 	if m.getWhitelistedIPsFunc != nil {
 		return m.getWhitelistedIPsFunc(adminID)
 	}

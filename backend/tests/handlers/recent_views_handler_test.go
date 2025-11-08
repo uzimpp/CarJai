@@ -181,7 +181,7 @@ func TestRecentViewsHandler_GetRecentViews(t *testing.T) {
 		limit                 string
 		isBuyer               bool
 		getRolesFunc          func(userID int) (models.UserRoles, error)
-		getUserRecentViewsFunc func(userID, limit int) ([]models.RecentViewWithCar, error)
+		getUserRecentViewsFunc func(userID, limit int) ([]models.RecentViewWithCarDetails, error)
 		expectedStatus        int
 	}{
 		{
@@ -193,8 +193,8 @@ func TestRecentViewsHandler_GetRecentViews(t *testing.T) {
 			getRolesFunc: func(userID int) (models.UserRoles, error) {
 				return models.UserRoles{Buyer: true}, nil
 			},
-			getUserRecentViewsFunc: func(userID, limit int) ([]models.RecentViewWithCar, error) {
-				return []models.RecentViewWithCar{}, nil
+			getUserRecentViewsFunc: func(userID, limit int) ([]models.RecentViewWithCarDetails, error) {
+				return []models.RecentViewWithCarDetails{}, nil
 			},
 			expectedStatus: http.StatusOK,
 		},
