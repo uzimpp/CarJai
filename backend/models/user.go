@@ -261,7 +261,7 @@ type RecentViewWithCarDetails struct {
 	ViewedAt          time.Time `json:"viewed_at" db:"viewed_at"`
 	Year              *int      `json:"year" db:"year"`
 	Mileage           *int      `json:"mileage" db:"mileage"`
-	Price             int       `json:"price" db:"price"`
+	Price             *int      `json:"price" db:"price"`
 	Province          *string   `json:"province" db:"province"`
 	ConditionRating   *int      `json:"condition_rating" db:"condition_rating"`
 	Color             *string   `json:"color" db:"color"`
