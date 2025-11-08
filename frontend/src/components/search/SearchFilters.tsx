@@ -1,10 +1,30 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { referenceAPI, type ProvinceOption, type ReferenceOption } from "@/lib/referenceAPI";
+import { useState, useEffect, type FormEvent, type ChangeEvent } from "react";
+import {
+  referenceAPI,
+  type ProvinceOption,
+  type ReferenceOption,
+} from "@/lib/referenceAPI";
+
+export type CategoryValue = "all" | "electric" | "sport" | "family" | "compact";
+
+export type CategoryOption = {
+  value: CategoryValue;
+  label: string;
+  fuelTypes?: string[];
+  bodyType?: string;
+};
 
 interface SearchFiltersProps {
+  filters: SearchFiltersData;
+  searchInput: string;
+  category: CategoryValue;
+  categoryOptions: CategoryOption[];
   onFiltersChange: (filters: SearchFiltersData) => void;
+  onSearchSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onSearchInputChange: (value: string) => void;
+  onCategoryChange: (value: CategoryValue) => void;
 }
 
 export interface SearchFiltersData {
@@ -23,8 +43,16 @@ export interface SearchFiltersData {
   conditionRating?: number;
 }
 
-export default function SearchFilters({ onFiltersChange }: SearchFiltersProps) {
-  const [filters, setFilters] = useState<SearchFiltersData>({});
+export default function SearchFilters({
+  filters,
+  searchInput,
+  category,
+  categoryOptions,
+  onFiltersChange,
+  onSearchSubmit,
+  onSearchInputChange,
+  onCategoryChange,
+}: SearchFiltersProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [referenceData, setReferenceData] = useState<{
     provinces: ProvinceOption[];
@@ -62,43 +90,86 @@ export default function SearchFilters({ onFiltersChange }: SearchFiltersProps) {
     key: keyof SearchFiltersData,
     value: string | number | string[] | undefined
   ) => {
-    const newFilters = { ...filters, [key]: value || undefined };
-    setFilters(newFilters);
-    onFiltersChange(newFilters);
+    const shouldRemove =
+      value === undefined ||
+      value === "" ||
+      (Array.isArray(value) && value.length === 0);
+
+    if (shouldRemove) {
+      const nextFilters = { ...filters } as Record<string, unknown>;
+      delete nextFilters[key as string];
+      onFiltersChange(nextFilters as SearchFiltersData);
+      return;
+    }
+
+    onFiltersChange({
+      ...filters,
+      [key]: value as never,
+    });
   };
 
   const clearFilters = () => {
-    setFilters({});
     onFiltersChange({});
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-xl font-semibold text-gray-900">Filters</h3>
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="text-sm text-maroon hover:underline"
-        >
-          {isExpanded ? "Hide" : "Show"} Filters
-        </button>
-      </div>
-
-      {isExpanded && (
-        <div className="space-y-4">
-          {/* Search */}
+    <div className="space-y-6">
+      {/* Search Bar and Category */}
+      <div className="bg-white rounded-2xl shadow-lg p-6">
+        <form onSubmit={onSearchSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Search
             </label>
             <input
               type="text"
-              placeholder="Brand, model, etc."
-              value={filters.search || ""}
-              onChange={(e) => handleChange("search", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
+              value={searchInput}
+              onChange={(e) => onSearchInputChange(e.target.value)}
+              placeholder="Search cars, e.g. Mitsu"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base text-gray-900 focus:border-maroon focus:outline-none focus:ring-2 focus:ring-maroon/40"
             />
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Category
+            </label>
+            <select
+              value={category}
+              onChange={(e) =>
+                onCategoryChange(e.target.value as CategoryValue)
+              }
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base text-gray-900 focus:border-maroon focus:outline-none focus:ring-2 focus:ring-maroon/40"
+            >
+              {categoryOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <button
+            type="submit"
+            className="w-full rounded-lg bg-maroon px-6 py-3 text-base font-semibold text-white transition-colors hover:bg-maroon/90 focus:outline-none focus:ring-2 focus:ring-maroon/40"
+          >
+            Search
+          </button>
+        </form>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white rounded-2xl shadow-lg p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-semibold text-gray-900">Filters</h3>
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="text-sm text-maroon hover:underline"
+          >
+            {isExpanded ? "Hide" : "Show"} Filters
+          </button>
+        </div>
+
+        {isExpanded && (
+          <div className="space-y-4">
 
           {/* Price Range */}
           <div className="grid grid-cols-2 gap-4">
@@ -359,8 +430,9 @@ export default function SearchFilters({ onFiltersChange }: SearchFiltersProps) {
           >
             Clear All Filters
           </button>
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
