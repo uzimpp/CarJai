@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 
 	"github.com/uzimpp/CarJai/backend/models"
@@ -100,7 +101,7 @@ func (h *testCarHandler) CreateCar(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userID, ok := r.Context().Value("userID").(int)
-	if !ok {
+	if !ok || userID == 0 {
 		utils.RespondJSON(w, http.StatusUnauthorized, models.UserErrorResponse{
 			Success: false,
 			Error:   "Unauthorized",
@@ -194,7 +195,10 @@ func TestCarHandler_GetCar(t *testing.T) {
 				carService: mockCarService,
 			}
 
-			req := httptest.NewRequest(tt.method, "/api/cars/1", nil)
+			url := "/api/cars/" + strconv.Itoa(tt.carID)
+			req := httptest.NewRequest(tt.method, url, nil)
+			ctx := context.WithValue(req.Context(), "carID", tt.carID)
+			req = req.WithContext(ctx)
 			w := httptest.NewRecorder()
 
 			handler.GetCar(w, req)
@@ -215,7 +219,18 @@ func (h *testCarHandler) GetCar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	carID := 1 // Simplified for test
+	carID, ok := r.Context().Value("carID").(int)
+	if !ok {
+		carID = 0
+	}
+	if carID <= 0 {
+		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
+			Success: false,
+			Error:   "Invalid car ID",
+		})
+		return
+	}
+
 	carWithImages, err := h.carService.GetCarWithImages(carID)
 	if err != nil {
 		if err.Error() == "not found" {
@@ -232,7 +247,7 @@ func (h *testCarHandler) GetCar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if carWithImages.Car.Status != "active" {
+	if carWithImages == nil || carWithImages.Car.Status != "active" {
 		utils.RespondJSON(w, http.StatusNotFound, models.UserErrorResponse{
 			Success: false,
 			Error:   "Car not found",
