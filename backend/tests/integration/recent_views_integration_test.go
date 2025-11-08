@@ -63,7 +63,7 @@ func TestRecentViewsFlow(t *testing.T) {
 	seller, _ := ts.services.User.ValidateUserSession(userToken)
 	if seller != nil {
 		ts.services.Profile.UpsertSeller(seller.ID, models.SellerRequest{
-			BusinessName: "Test Business",
+			DisplayName: "Test Business",
 		})
 
 		car, err := ts.services.Car.CreateCar(seller.ID)

@@ -105,7 +105,7 @@ func TestProfileFlow(t *testing.T) {
 	// Test Upsert Seller Profile
 	t.Run("UpsertSellerProfile", func(t *testing.T) {
 		sellerData := models.SellerRequest{
-			BusinessName: "Test Business",
+			DisplayName: "Test Business",
 		}
 
 		jsonData, _ := json.Marshal(sellerData)

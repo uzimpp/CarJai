@@ -2,7 +2,6 @@ package integration
 
 import (
 	"bytes"
-	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -385,7 +384,7 @@ func TestCarEndpoints(t *testing.T) {
 	user, _ := ts.services.User.ValidateUserSession(userToken)
 	if user != nil {
 		ts.services.Profile.UpsertSeller(user.ID, models.SellerRequest{
-			BusinessName: "Test Business",
+			DisplayName: "Test Business",
 		})
 	}
 

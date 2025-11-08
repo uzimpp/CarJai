@@ -71,7 +71,7 @@ func TestFavouritesFlow(t *testing.T) {
 	seller, _ := ts.services.User.ValidateUserSession(sellerToken)
 	if seller != nil {
 		ts.services.Profile.UpsertSeller(seller.ID, models.SellerRequest{
-			BusinessName: "Test Business",
+			DisplayName: "Test Business",
 		})
 
 		// Create a car
