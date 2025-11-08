@@ -11,73 +11,7 @@ import (
 	"github.com/uzimpp/CarJai/backend/utils"
 )
 
-// mockProfileService is a mock implementation of ProfileService for testing
-type mockProfileService struct {
-	getFullProfileFunc    func(userID int, user *models.User) (*models.ProfileData, error)
-	getBuyerByUserIDFunc  func(userID int) (*models.Buyer, error)
-	upsertBuyerFunc       func(userID int, req models.BuyerRequest) (*models.Buyer, error)
-	getSellerByUserIDFunc func(userID int) (*models.Seller, error)
-	upsertSellerFunc      func(userID int, req models.SellerRequest) (*models.Seller, *[]models.SellerContact, error)
-	getSellerContactsFunc func(sellerID int) ([]models.SellerContact, error)
-	getRolesForUserFunc   func(userID int) (models.UserRoles, error)
-	getPublicSellerByIDFunc func(sellerID string) (*models.Seller, error)
-}
-
-func (m *mockProfileService) GetFullProfile(userID int, user *models.User) (*models.ProfileData, error) {
-	if m.getFullProfileFunc != nil {
-		return m.getFullProfileFunc(userID, user)
-	}
-	return nil, nil
-}
-
-func (m *mockProfileService) GetBuyerByUserID(userID int) (*models.Buyer, error) {
-	if m.getBuyerByUserIDFunc != nil {
-		return m.getBuyerByUserIDFunc(userID)
-	}
-	return nil, nil
-}
-
-func (m *mockProfileService) UpsertBuyer(userID int, req models.BuyerRequest) (*models.Buyer, error) {
-	if m.upsertBuyerFunc != nil {
-		return m.upsertBuyerFunc(userID, req)
-	}
-	return nil, nil
-}
-
-func (m *mockProfileService) GetSellerByUserID(userID int) (*models.Seller, error) {
-	if m.getSellerByUserIDFunc != nil {
-		return m.getSellerByUserIDFunc(userID)
-	}
-	return nil, nil
-}
-
-func (m *mockProfileService) UpsertSeller(userID int, req models.SellerRequest) (*models.Seller, *[]models.SellerContact, error) {
-	if m.upsertSellerFunc != nil {
-		return m.upsertSellerFunc(userID, req)
-	}
-	return nil, nil, nil
-}
-
-func (m *mockProfileService) GetSellerContacts(sellerID int) ([]models.SellerContact, error) {
-	if m.getSellerContactsFunc != nil {
-		return m.getSellerContactsFunc(sellerID)
-	}
-	return nil, nil
-}
-
-func (m *mockProfileService) GetRolesForUser(userID int) (models.UserRoles, error) {
-	if m.getRolesForUserFunc != nil {
-		return m.getRolesForUserFunc(userID)
-	}
-	return models.UserRoles{}, nil
-}
-
-func (m *mockProfileService) GetPublicSellerByID(sellerID string) (*models.Seller, error) {
-	if m.getPublicSellerByIDFunc != nil {
-		return m.getPublicSellerByIDFunc(sellerID)
-	}
-	return nil, nil
-}
+// mockProfileService is defined in mocks.go
 
 func TestProfileHandler_Profile(t *testing.T) {
 	tests := []struct {

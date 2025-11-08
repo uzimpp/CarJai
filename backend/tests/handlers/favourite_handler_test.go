@@ -11,33 +11,7 @@ import (
 	"github.com/uzimpp/CarJai/backend/utils"
 )
 
-// mockFavouriteService is a mock implementation of FavouriteService for testing
-type mockFavouriteService struct {
-	addFavouriteFunc      func(userID, carID int) error
-	removeFavouriteFunc   func(userID, carID int) error
-	getFavouriteListingsFunc func(userID int) ([]models.CarListingWithImages, error)
-}
-
-func (m *mockFavouriteService) AddFavourite(userID, carID int) error {
-	if m.addFavouriteFunc != nil {
-		return m.addFavouriteFunc(userID, carID)
-	}
-	return nil
-}
-
-func (m *mockFavouriteService) RemoveFavourite(userID, carID int) error {
-	if m.removeFavouriteFunc != nil {
-		return m.removeFavouriteFunc(userID, carID)
-	}
-	return nil
-}
-
-func (m *mockFavouriteService) GetFavouriteListings(userID int) ([]models.CarListingWithImages, error) {
-	if m.getFavouriteListingsFunc != nil {
-		return m.getFavouriteListingsFunc(userID)
-	}
-	return nil, nil
-}
+// mockFavouriteService is defined in mocks.go
 
 func TestFavouriteHandler_AddFavourite(t *testing.T) {
 	tests := []struct {

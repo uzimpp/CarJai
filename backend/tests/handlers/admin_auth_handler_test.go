@@ -13,45 +13,7 @@ import (
 	"github.com/uzimpp/CarJai/backend/utils"
 )
 
-// mockAdminService is a mock implementation of AdminService for testing
-type mockAdminService struct {
-	signinFunc        func(req services.SigninRequest) (*services.SigninResponse, error)
-	signoutFunc       func(req services.SignoutRequest) error
-	getCurrentAdminFunc func(token string) (*models.AdminMeData, error)
-}
-
-func (m *mockAdminService) Signin(req services.SigninRequest) (*services.SigninResponse, error) {
-	if m.signinFunc != nil {
-		return m.signinFunc(req)
-	}
-	return nil, nil
-}
-
-func (m *mockAdminService) Signout(req services.SignoutRequest) error {
-	if m.signoutFunc != nil {
-		return m.signoutFunc(req)
-	}
-	return nil
-}
-
-func (m *mockAdminService) GetCurrentAdmin(token string) (*models.AdminMeData, error) {
-	if m.getCurrentAdminFunc != nil {
-		return m.getCurrentAdminFunc(token)
-	}
-	return nil, nil
-}
-
-// mockJWTManager is a mock implementation of JWTManager for testing
-type mockJWTManager struct {
-	refreshTokenFunc func(token string) (string, time.Time, error)
-}
-
-func (m *mockJWTManager) RefreshToken(token string) (string, time.Time, error) {
-	if m.refreshTokenFunc != nil {
-		return m.refreshTokenFunc(token)
-	}
-	return "", time.Time{}, nil
-}
+// mockAdminService and mockJWTManager are defined in mocks.go
 
 func TestAdminAuthHandler_Signin(t *testing.T) {
 	tests := []struct {

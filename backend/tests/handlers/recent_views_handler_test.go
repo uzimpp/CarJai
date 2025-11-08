@@ -13,25 +13,7 @@ import (
 	"github.com/uzimpp/CarJai/backend/utils"
 )
 
-// mockRecentViewsService is a mock implementation of RecentViewsService for testing
-type mockRecentViewsService struct {
-	recordViewFunc      func(userID, carID int) error
-	getUserRecentViewsFunc func(userID, limit int) ([]models.RecentViewWithCar, error)
-}
-
-func (m *mockRecentViewsService) RecordView(userID, carID int) error {
-	if m.recordViewFunc != nil {
-		return m.recordViewFunc(userID, carID)
-	}
-	return nil
-}
-
-func (m *mockRecentViewsService) GetUserRecentViews(userID, limit int) ([]models.RecentViewWithCar, error) {
-	if m.getUserRecentViewsFunc != nil {
-		return m.getUserRecentViewsFunc(userID, limit)
-	}
-	return nil, nil
-}
+// mockRecentViewsService is defined in mocks.go
 
 func TestRecentViewsHandler_RecordView(t *testing.T) {
 	tests := []struct {
