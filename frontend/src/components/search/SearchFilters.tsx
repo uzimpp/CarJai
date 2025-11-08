@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { referenceAPI, type ProvinceOption, type ReferenceOption } from "@/lib/referenceAPI";
 
 interface SearchFiltersProps {
   onFiltersChange: (filters: SearchFiltersData) => void;
@@ -16,17 +17,50 @@ export interface SearchFiltersData {
   bodyType?: string;
   transmission?: string;
   drivetrain?: string;
-  fuelType?: string;
+  fuelTypes?: string[];
+  colors?: string[];
+  provinceId?: number;
   conditionRating?: number;
 }
 
 export default function SearchFilters({ onFiltersChange }: SearchFiltersProps) {
   const [filters, setFilters] = useState<SearchFiltersData>({});
   const [isExpanded, setIsExpanded] = useState(false);
+  const [referenceData, setReferenceData] = useState<{
+    provinces: ProvinceOption[];
+    transmissions: ReferenceOption[];
+    drivetrains: ReferenceOption[];
+    colors: ReferenceOption[];
+  }>({
+    provinces: [],
+    transmissions: [],
+    drivetrains: [],
+    colors: [],
+  });
+
+  // Fetch reference data on mount
+  useEffect(() => {
+    const fetchReferenceData = async () => {
+      try {
+        const result = await referenceAPI.getAll("en");
+        if (result.success) {
+          setReferenceData({
+            provinces: result.data.provinces || [],
+            transmissions: result.data.transmissions || [],
+            drivetrains: result.data.drivetrains || [],
+            colors: result.data.colors || [],
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch reference data:", error);
+      }
+    };
+    fetchReferenceData();
+  }, []);
 
   const handleChange = (
     key: keyof SearchFiltersData,
-    value: string | number | undefined
+    value: string | number | string[] | undefined
   ) => {
     const newFilters = { ...filters, [key]: value || undefined };
     setFilters(newFilters);
@@ -160,6 +194,163 @@ export default function SearchFilters({ onFiltersChange }: SearchFiltersProps) {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
             />
           </div>
+
+          {/* Body Type */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Body Type
+            </label>
+            <select
+              value={filters.bodyType || ""}
+              onChange={(e) =>
+                handleChange("bodyType", e.target.value || undefined)
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
+            >
+              <option value="">All Types</option>
+              <option value="PICKUP">Pickup</option>
+              <option value="VAN">Van</option>
+              <option value="CITYCAR">City Car</option>
+              <option value="DAILY">Daily Use</option>
+              <option value="SUV">SUV</option>
+              <option value="SPORTLUX">Sport / Luxury</option>
+            </select>
+          </div>
+
+          {/* Fuel Types */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Fuel Type
+            </label>
+            <div className="space-y-2">
+              {[
+                { code: "GASOLINE", label: "Gasoline" },
+                { code: "DIESEL", label: "Diesel" },
+                { code: "ELECTRIC", label: "Electric" },
+                { code: "HYBRID", label: "Hybrid" },
+                { code: "LPG", label: "LPG" },
+                { code: "CNG", label: "CNG" },
+              ].map((fuel) => (
+                <label key={fuel.code} className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={filters.fuelTypes?.includes(fuel.code) || false}
+                    onChange={(e) => {
+                      const currentFuels = filters.fuelTypes || [];
+                      const newFuels = e.target.checked
+                        ? [...currentFuels, fuel.code]
+                        : currentFuels.filter((f) => f !== fuel.code);
+                      handleChange(
+                        "fuelTypes",
+                        newFuels.length > 0 ? newFuels : undefined
+                      );
+                    }}
+                    className="w-4 h-4 text-maroon border-gray-300 rounded focus:ring-maroon"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">
+                    {fuel.label}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+            {/* Transmission */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Transmission
+              </label>
+              <select
+                value={filters.transmission || ""}
+                onChange={(e) =>
+                  handleChange("transmission", e.target.value || undefined)
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
+              >
+                <option value="">All Types</option>
+                {referenceData.transmissions.map((transmission) => (
+                  <option key={transmission.code} value={transmission.code}>
+                    {transmission.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Drivetrain */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Drivetrain
+              </label>
+              <select
+                value={filters.drivetrain || ""}
+                onChange={(e) =>
+                  handleChange("drivetrain", e.target.value || undefined)
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
+              >
+                <option value="">All Types</option>
+                {referenceData.drivetrains.map((drivetrain) => (
+                  <option key={drivetrain.code} value={drivetrain.code}>
+                    {drivetrain.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Colors */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Colors
+              </label>
+              <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+                {referenceData.colors.map((color) => (
+                  <label key={color.code} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={filters.colors?.includes(color.code) || false}
+                      onChange={(e) => {
+                        const currentColors = filters.colors || [];
+                        const newColors = e.target.checked
+                          ? [...currentColors, color.code]
+                          : currentColors.filter((c) => c !== color.code);
+                        handleChange(
+                          "colors",
+                          newColors.length > 0 ? newColors : undefined
+                        );
+                      }}
+                      className="w-4 h-4 text-maroon border-gray-300 rounded focus:ring-maroon"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">
+                      {color.label}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Province */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Province
+              </label>
+              <select
+                value={filters.provinceId || ""}
+                onChange={(e) =>
+                  handleChange(
+                    "provinceId",
+                    e.target.value ? parseInt(e.target.value) : undefined
+                  )
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
+              >
+                <option value="">All Provinces</option>
+                {referenceData.provinces.map((province) => (
+                  <option key={province.id} value={province.id}>
+                    {province.label}
+                  </option>
+                ))}
+              </select>
+            </div>
 
           {/* Clear Button */}
           <button

@@ -145,15 +145,17 @@ export default function Step4ReviewForm({
             </InlineAlert>
           ) : (
             <InlineAlert type="warning">
-              <div>
-                Your listing is not yet ready. Please address the following
-                issues:
-                <ul className="list-disc list-inside mt-2 space-y-1">
+              <>
+                <p className="mb-2">
+                  Your listing is not yet ready. Please address the following
+                  issues:
+                </p>
+                <ul className="list-disc list-inside space-y-1">
                   {reviewResult.issues.map((issue, index) => (
                     <li key={index}>{issue}</li>
                   ))}
                 </ul>
-              </div>
+              </>
             </InlineAlert>
           )}
         </div>

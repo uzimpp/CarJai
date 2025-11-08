@@ -48,7 +48,7 @@ export function InlineAlert({ type, children, onDismiss }: InlineAlertProps) {
       className={`flex items-start gap-(--space-xs) p-(--space-s) rounded-lg border ${style.container} mb-(--space-m)`}
     >
       <Icon className={`h-6 w-6 ${style.icon} flex-shrink-0`} />
-      <p className={`text-0 ${style.text} flex-1`}>{children}</p>
+      <div className={`text-0 ${style.text} flex-1`}>{children}</div>
       {onDismiss && (
         <button
           type="button"

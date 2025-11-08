@@ -60,7 +60,7 @@ export default function MyListingsPage() {
           setListings(result.data);
         } else {
         }
-      } catch (err) {
+      } catch {
       } finally {
         setIsLoadingListings(false);
       }

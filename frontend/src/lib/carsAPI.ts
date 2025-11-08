@@ -40,9 +40,16 @@ export const carsAPI = {
     if (params.provinceId)
       searchParams.append("provinceId", params.provinceId.toString());
     if (params.bodyType) searchParams.append("bodyType", params.bodyType);
+    if (params.transmission) searchParams.append("transmission", params.transmission);
+    if (params.drivetrain) searchParams.append("drivetrain", params.drivetrain);
     if (params.fuelTypes && params.fuelTypes.length > 0) {
       params.fuelTypes.forEach((fuelType) => {
         searchParams.append("fuelTypes", fuelType);
+      });
+    }
+    if (params.colors && params.colors.length > 0) {
+      params.colors.forEach((color) => {
+        searchParams.append("colors", color);
       });
     }
 

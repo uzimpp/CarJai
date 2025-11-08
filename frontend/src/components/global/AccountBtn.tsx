@@ -55,15 +55,17 @@ export default function AccountBtn({
               }`}
             >
               <span className="text-0 hidden sm:block">
-                {isAuthedAdmin
-                  ? adminUser?.username
-                  : user?.username}
+                {isAuthedAdmin ? adminUser?.username : user?.username}
               </span>
             </button>
             {open && (
               <div
                 className={`absolute right-0 mt-[var(--space-s-m)] p-(--space-2xs) w-70 rounded-xl shadow-[var(--shadow-md)] text-0  overflow-hidden z-50
-                  ${isAuthedAdmin ? "bg-black text-white" : "bg-white text-black"}`}
+                  ${
+                    isAuthedAdmin
+                      ? "bg-black text-white"
+                      : "bg-white text-black"
+                  }`}
               >
                 {/* <div className="border-b border-white/5 bg-black/95">
                 <div className="text--1 text-white/80">
@@ -119,24 +121,19 @@ export default function AccountBtn({
 
                       {roles?.buyer && (
                         <Link
-                          href="/recent_views"
+                          href="/history"
                           onClick={() => setOpen(false)}
-                          className="flex items-center gap-(--space-xs) px-(--space-xs) py-(--space-2xs) rounded-lg  text-gray-700 hover:bg-maroon/10 hover:text-maroon transition-colors"
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-maroon/10 hover:text-maroon transition-colors"
                         >
                           <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
                             className="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={1.4}
-                              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                            />
+                            <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 18.657l-6.828-6.83a4 4 0 010-5.655z" />
                           </svg>
-                          <span>Recent Views</span>
+                          <span className="font-medium">Recent Views</span>
                         </Link>
                       )}
 

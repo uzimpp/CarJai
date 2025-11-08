@@ -50,9 +50,11 @@ type ServiceContainer struct {
 	User        *services.UserService
 	Profile     *services.ProfileService
 	Car         *services.CarService
+	Favourite   *services.FavouriteService
 	Maintenance *services.MaintenanceService
 	OCR         *services.OCRService
 	Scraper     *services.ScraperService
+	RecentViews *services.RecentViewsService
 	Extraction  *services.ExtractionService
 	UserJWT     *utils.JWTManager
 	AdminJWT    *utils.JWTManager
@@ -74,6 +76,7 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 	inspectionRepo := models.NewInspectionRepository(database)
 	carColorRepo := models.NewCarColorRepository(database)
 	carFuelRepo := models.NewCarFuelRepository(database)
+	favouriteRepo := models.NewFavouriteRepository(database)
 	// Create JWT managers
 	userJWTManager := utils.NewJWTManager(
 		appConfig.UserJWTSecret,
@@ -108,10 +111,16 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 		carColorRepo,
 		carFuelRepo,
 	)
+	// Create favourites service
+	favouriteService := services.NewFavouriteService(favouriteRepo, carService)
 
 	// Create scraper service
 	scraperService := services.NewScraperService()
 
+	// Create recent views service
+	recentViewsService := services.NewRecentViewsService(db)
+
+	// Create extraction service
 	extractionService := services.NewExtractionService(db)
 
 	return &ServiceContainer{
@@ -121,9 +130,10 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 			ipWhitelistRepo,
 			adminJWTManager,
 		),
-		User:    userService,
-		Profile: profileService,
-		Car:     carService,
+		User:      userService,
+		Profile:   profileService,
+		Car:       carService,
+		Favourite: favouriteService,
 		Maintenance: services.NewMaintenanceService(
 			adminRepo,
 			sessionRepo,
@@ -131,11 +141,12 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 			carRepo,
 			utils.AppLogger,
 		),
-		OCR:        services.NewOCRService(appConfig.AigenAPIKey),
-		Scraper:    scraperService,
-		Extraction: extractionService,
-		UserJWT:    userJWTManager,
-		AdminJWT:   adminJWTManager,
+		OCR:         services.NewOCRService(appConfig.AigenAPIKey),
+		Scraper:     scraperService,
+		RecentViews: recentViewsService,
+		Extraction:  extractionService,
+		UserJWT:     userJWTManager,
+		AdminJWT:    adminJWTManager,
 	}
 }
 
@@ -159,6 +170,12 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 		routes.CarRoutes(services.Car, services.User, services.Profile, services.OCR, services.Scraper, services.UserJWT, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/cars/",
 		routes.CarRoutes(services.Car, services.User, services.Profile, services.OCR, services.Scraper, services.UserJWT, appConfig.CORSAllowedOrigins))
+
+	// Favourite routes
+	mux.Handle("/api/favorites",
+		routes.FavouritesRoutes(services.Favourite, services.User, appConfig.CORSAllowedOrigins))
+	mux.Handle("/api/favorites/",
+		routes.FavouritesRoutes(services.Favourite, services.User, appConfig.CORSAllowedOrigins))
 	mux.Handle(adminPrefix+"/", // Handle all paths under /admin/
 		routes.AdminRoutes(
 			services.Admin,
@@ -171,6 +188,10 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 	)
 	mux.Handle("/health/",
 		routes.HealthRoutes(db, appConfig.CORSAllowedOrigins))
+	mux.Handle("/api/recent-views",
+		routes.RecentViewsRoutes(services.RecentViews, services.Profile, services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
+	mux.Handle("/api/recent-views/",
+		routes.RecentViewsRoutes(services.RecentViews, services.Profile, services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/reference-data",
 		routes.ReferenceRoutes(db, appConfig.CORSAllowedOrigins))
 
