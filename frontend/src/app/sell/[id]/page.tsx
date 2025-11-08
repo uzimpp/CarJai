@@ -901,14 +901,6 @@ useEffect(() => {
                 }}
                 isSubmitting={isSubmitting}
                 
-                // --- Pass new props to Step2 form ---
-                brandOptions={brandOptions}
-                modelOptions={modelOptions}
-                subModelOptions={subModelOptions}
-                isBrandLoading={isBrandLoading}
-                isModelLoading={isModelLoading}
-                isSubModelLoading={isSubModelLoading}
-                // --- End new props ---
               />
             </div>
           )}
