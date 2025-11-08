@@ -64,10 +64,22 @@ func TestRecentViewsFlow(t *testing.T) {
 	}
 
 	jsonData, _ = json.Marshal(sellerSignup)
-	resp, _ = http.Post(ts.server.URL+"/api/auth/signup", "application/json", bytes.NewBuffer(jsonData))
-	resp.Body.Close()
+	sellerResp, _ := http.Post(ts.server.URL+"/api/auth/signup", "application/json", bytes.NewBuffer(jsonData))
+	sellerCookies := sellerResp.Cookies()
+	var sellerToken string
+	for _, cookie := range sellerCookies {
+		if cookie.Name == "jwt" {
+			sellerToken = cookie.Value
+			break
+		}
+	}
+	sellerResp.Body.Close()
 
-	seller, _ := ts.services.User.ValidateUserSession(userToken)
+	if sellerToken == "" {
+		t.Fatal("Failed to get seller token")
+	}
+
+	seller, _ := ts.services.User.ValidateUserSession(sellerToken)
 	if seller != nil {
 		ts.services.Profile.UpsertSeller(seller.ID, models.SellerRequest{
 			DisplayName: "Test Business",
