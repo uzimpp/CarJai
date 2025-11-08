@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/uzimpp/CarJai/backend/models"
-	"github.com/uzimpp/CarJai/backend/services"
 	"github.com/uzimpp/CarJai/backend/utils"
 )
 
