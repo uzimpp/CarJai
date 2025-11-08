@@ -11,6 +11,7 @@ import {
 import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { carsAPI } from "@/lib/carsAPI";
+import { favoritesAPI } from "@/lib/favoritesAPI";
 import SearchFilters, {
   type SearchFiltersData,
   type CategoryValue,
@@ -19,6 +20,7 @@ import SearchFilters, {
 import { CarListing } from "@/types/car";
 import type { SearchCarsParams } from "@/types/search";
 import CarCard from "@/components/car/CarCard";
+import { useUserAuth } from "@/hooks/useUserAuth";
 
 const CATEGORY_OPTIONS: CategoryOption[] = [
   { value: "all", label: "All" },
@@ -253,10 +255,18 @@ function BrowsePageContent() {
   const [page, setPage] = useState(initialPage);
   const [filters, setFilters] = useState<SearchFiltersData>(initialFilters);
   const [category, setCategory] = useState<CategoryValue>(initialCategory);
-  const [searchInput, setSearchInput] = useState("");
+  const [searchInput, setSearchInput] = useState(initialFilters.search ?? "");
+  const [favoriteCarIds, setFavoriteCarIds] = useState<Set<number>>(new Set());
+
+  const { isAuthenticated, roles } = useUserAuth();
+  const isBuyer = isAuthenticated && roles?.buyer;
 
   const syncRoute = useCallback(
-    (nextFilters: SearchFiltersData, nextPage: number, nextCategory: CategoryValue) => {
+    (
+      nextFilters: SearchFiltersData,
+      nextPage: number,
+      nextCategory: CategoryValue
+    ) => {
       const params = buildSearchParams(nextFilters, nextPage, nextCategory);
       const queryString = params.toString();
       router.replace(queryString ? `/browse?${queryString}` : "/browse", {
@@ -331,6 +341,36 @@ function BrowsePageContent() {
 
     fetchCars();
   }, [filters, page]);
+
+  // Fetch user's favorites when they're authenticated as a buyer
+  useEffect(() => {
+    const fetchFavorites = async () => {
+      if (!isBuyer) return;
+      
+      try {
+        const favoritesCars = await favoritesAPI.getFavorites();
+        const favoriteIds = new Set(favoritesCars.map((car: CarListing) => car.id));
+        setFavoriteCarIds(favoriteIds);
+      } catch (error) {
+        console.error("Failed to fetch favorites:", error);
+      }
+    };
+
+    fetchFavorites();
+  }, [isBuyer]);
+
+  const handleFavoriteToggle = async (carId: number, isFavorited: boolean) => {
+    // Update local state immediately for optimistic UI
+    setFavoriteCarIds(prev => {
+      const newSet = new Set(prev);
+      if (isFavorited) {
+        newSet.add(carId);
+      } else {
+        newSet.delete(carId);
+      }
+      return newSet;
+    });
+  };
 
   const handleFiltersChange = (newFilters: SearchFiltersData) => {
     applyFilters(newFilters);
@@ -525,7 +565,14 @@ function BrowsePageContent() {
               {/* Car Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
                 {cars.map((car) => (
-                    <CarCard key={car.id} car={car} variant="browse" />
+                  <CarCard 
+                    key={car.id} 
+                    car={car} 
+                    variant="browse"
+                    showFavorite={isBuyer}
+                    isFavorited={favoriteCarIds.has(car.id)}
+                    onFavoriteToggle={handleFavoriteToggle}
+                  />
                 ))}
               </div>
 

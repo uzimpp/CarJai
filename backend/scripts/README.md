@@ -42,32 +42,11 @@ var (
 ```
 
 ## How to Run
-
-### Option 1: Run Locally (Without Docker)
-
 **Prerequisites:**
-- Go 1.24+ installed
 - PostgreSQL database running locally
-- `.env` file configured in `backend/` directory
+- `.env` file configured in `/` directory
 
 **Steps:**
-
-```bash
-# 1. Navigate to scripts directory
-cd backend/scripts
-
-# 2. Run the seed script
-go run seed_demo_cars.go
-```
-
-The script will automatically:
-- Load database credentials from `backend/.env`
-- Create/reuse demo seller account
-- Generate cars with random data
-- Insert images from `frontend/public/assets/cars/`
-
-### Option 2: Run in Docker (Recommended when using Docker)
-
 The seed script is pre-compiled as a binary inside the backend Docker container.
 
 **Prerequisites:**

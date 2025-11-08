@@ -198,13 +198,14 @@ erDiagram
     favourites {
         int user_id PK "PRIMARY KEY, REFERENCES users(id) ON DELETE CASCADE"
         int car_id PK "PRIMARY KEY, REFERENCES cars(id) ON DELETE CASCADE"
-        timestamptz created_at "DEFAULT now()"
+        timestamptz created_at "DEFAULT NOW()"
     }
 
     recent_views {
-        int user_id PK "PRIMARY KEY, REFERENCES users(id) ON DELETE CASCADE"
-        int car_id PK "PRIMARY KEY, REFERENCES cars(id) ON DELETE CASCADE"
-        timestamptz last_viewed_at "NOT NULL DEFAULT now()"
+        int rvid PK "SERIAL"
+        int user_id FK "NOT NULL, REFERENCES users(id) ON DELETE CASCADE"
+        int car_id FK "NOT NULL, REFERENCES cars(id) ON DELETE CASCADE"
+        timestamp viewed_at "NOT NULL DEFAULT NOW()"
     }
 
     %% --- Market Data Table (007) ---
