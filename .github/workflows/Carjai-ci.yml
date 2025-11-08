@@ -99,9 +99,9 @@ jobs:
         working-directory: ./backend
         run: go vet ./... || echo "No linting issues found"
         
-      - name: Run tests
+      - name: Run unit tests
         working-directory: ./backend
-        run: go test -v ./... || echo "Tests completed with some failures"
+        run: go test -v ./tests/handlers/... || echo "Unit tests completed with some failures"
         
       - name: Build Go binary
         working-directory: ./backend
@@ -114,11 +114,114 @@ jobs:
           path: backend/main
           retention-days: 7
 
+  # Run All Tests (Unit + Integration)
+  tests:
+    name: Run All Tests
+    runs-on: ubuntu-latest
+    needs: [detect-environment, backend]
+    
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: carjai_test
+          POSTGRES_USER: carjai_user
+          POSTGRES_PASSWORD: test_password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24.3'
+          
+      - name: Install Go dependencies
+        working-directory: ./backend
+        run: go mod download
+        
+      - name: Wait for PostgreSQL
+        run: |
+          until pg_isready -h localhost -p 5432 -U carjai_user; do
+            echo "Waiting for PostgreSQL..."
+            sleep 2
+          done
+          echo "PostgreSQL is ready!"
+          
+      - name: Run database migrations
+        working-directory: ./backend
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USER: carjai_user
+          DB_PASSWORD: test_password
+          DB_NAME: carjai_test
+          DB_SSLMODE: disable
+        run: |
+          # Install psql if not available
+          sudo apt-get update && sudo apt-get install -y postgresql-client
+          
+          # Run migrations in order (sorted numerically by filename)
+          export PGPASSWORD=test_password
+          echo "📦 Running database migrations..."
+          for migration in $(ls -v migrations/*.sql 2>/dev/null || echo ""); do
+            if [ -f "$migration" ]; then
+              echo "  → Running: $(basename $migration)"
+              psql -h localhost -U carjai_user -d carjai_test -f "$migration" || exit 1
+            fi
+          done
+          echo "✅ All migrations completed successfully"
+          
+      - name: Run all tests
+        working-directory: ./backend
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USER: carjai_user
+          DB_PASSWORD: test_password
+          DB_NAME: carjai_test
+          DB_SSLMODE: disable
+          USER_JWT_SECRET: test_user_jwt_secret_key_at_least_32_chars_long
+          USER_JWT_EXPIRATION_HOURS: 24
+          USER_JWT_ISSUER: carjai-app
+          ADMIN_JWT_SECRET: test_admin_jwt_secret_key_at_least_32_chars_long
+          ADMIN_JWT_EXPIRATION_HOURS: 2
+          ADMIN_JWT_ISSUER: carjai-admin
+          ADMIN_USERNAME: testadmin
+          ADMIN_PASSWORD: test_admin_password
+          ADMIN_NAME: Test Admin
+          ADMIN_ROUTE_PREFIX: /admin
+          ADMIN_IP_WHITELIST: 127.0.0.1/32,::1/128
+          CORS_ALLOWED_ORIGINS: http://localhost:3000
+          AIGEN_API_KEY: test_key
+        run: |
+          echo "🧪 Running all tests..."
+          echo ""
+          echo "📋 Step 1: Running unit tests (handlers)..."
+          go test -v ./tests/handlers/... -count=1 || (echo "❌ Unit tests failed!" && exit 1)
+          echo "✅ Unit tests passed!"
+          echo ""
+          echo "📋 Step 2: Running integration tests..."
+          go test -v ./tests/integration/... -count=1 || (echo "❌ Integration tests failed!" && exit 1)
+          echo "✅ Integration tests passed!"
+          echo ""
+          echo "📋 Step 3: Running other backend tests..."
+          go test -v ./tests/... -count=1 -run "Test" -skip "handlers|integration" || echo "⚠️  Some other tests may have failed (non-critical)"
+          echo ""
+          echo "✅ All critical tests passed!"
+
   # Docker Build
   docker:
     name: Docker Build
     runs-on: ubuntu-latest
-    needs: [detect-environment, frontend, backend]
+    needs: [detect-environment, frontend, backend, tests]
     if: needs.detect-environment.outputs.is-develop == 'true' || needs.detect-environment.outputs.is-main == 'true'
 
     steps:
