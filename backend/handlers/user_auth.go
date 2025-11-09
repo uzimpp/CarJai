@@ -396,8 +396,15 @@ func (h *UserAuthHandler) GoogleCallback(w http.ResponseWriter, r *http.Request)
         SameSite: http.SameSiteLaxMode,
         MaxAge:   int(time.Until(response.Data.ExpiresAt).Seconds()),
     })
-
-    utils.WriteJSON(w, http.StatusOK, response)
+    // Redirect to frontend role selection after successful Google signup/signin
+    origins := strings.Split(utils.GetEnv("CORS_ALLOWED_ORIGINS"), ",")
+    frontend := strings.TrimSpace(origins[0])
+    if frontend == "" {
+        frontend = "http://localhost:3000"
+    }
+    // Preserve UX: send user to role selection onboarding
+    redirectURL := frontend + "/signup/role?from=signup"
+    http.Redirect(w, r, redirectURL, http.StatusFound)
 }
 
 // Signout handles user sign out requests
