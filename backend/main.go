@@ -54,10 +54,7 @@ type ServiceContainer struct {
 	Maintenance *services.MaintenanceService
 	OCR         *services.OCRService
 	Scraper     *services.ScraperService
-<<<<<<< HEAD
-=======
 	RecentViews *services.RecentViewsService
->>>>>>> 8b17a62bed83599c0ab92c5ebf23d926285971b9
 	Extraction  *services.ExtractionService
 	UserJWT     *utils.JWTManager
 	AdminJWT    *utils.JWTManager
@@ -79,11 +76,8 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 	inspectionRepo := models.NewInspectionRepository(database)
 	carColorRepo := models.NewCarColorRepository(database)
 	carFuelRepo := models.NewCarFuelRepository(database)
-<<<<<<< HEAD
 	marketPriceRepo := models.NewMarketPriceRepository(database)
-=======
 	favouriteRepo := models.NewFavouriteRepository(database)
->>>>>>> 8b17a62bed83599c0ab92c5ebf23d926285971b9
 	// Create JWT managers
 	userJWTManager := utils.NewJWTManager(
 		appConfig.UserJWTSecret,
@@ -128,12 +122,6 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 	// Create recent views service
 	recentViewsService := services.NewRecentViewsService(db)
 
-<<<<<<< HEAD
-=======
-	// Create extraction service
-	extractionService := services.NewExtractionService(db)
-
->>>>>>> 8b17a62bed83599c0ab92c5ebf23d926285971b9
 	return &ServiceContainer{
 		Admin: services.NewAdminService(
 			adminRepo,
@@ -154,10 +142,7 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 		),
 		OCR:         services.NewOCRService(appConfig.AigenAPIKey),
 		Scraper:     scraperService,
-<<<<<<< HEAD
-=======
 		RecentViews: recentViewsService,
->>>>>>> 8b17a62bed83599c0ab92c5ebf23d926285971b9
 		Extraction:  extractionService,
 		UserJWT:     userJWTManager,
 		AdminJWT:    adminJWTManager,
