@@ -305,7 +305,8 @@ func (h *ReferenceHandler) GetSubModels(w http.ResponseWriter, r *http.Request) 
 	}
 
 	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{"success": true, "data": subModels})
-	
+}
+
 func (h *ReferenceHandler) getProvinces(lang string) ([]ProvinceOption, error) {
 	nameCol := "name_en"
 	if lang == "th" {

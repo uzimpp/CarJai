@@ -190,7 +190,6 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 	)
 	mux.Handle("/health/",
 		routes.HealthRoutes(db, appConfig.CORSAllowedOrigins))
-	mux.Handle("/api/reference-data/",
     mux.Handle("/api/recent-views",
         routes.RecentViewsRoutes(services.RecentViews, services.Profile, services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
     mux.Handle("/api/recent-views/",
