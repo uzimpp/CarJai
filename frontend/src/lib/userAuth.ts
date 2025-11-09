@@ -50,7 +50,8 @@ export const authAPI = {
 
   // Google OAuth authentication
   async googleAuth(data: GoogleAuthRequest): Promise<GoogleAuthResponse> {
-    return apiCall<GoogleAuthResponse>("/api/auth/google", {
+    // Use backend endpoint that verifies Google ID token server-side
+    return apiCall<GoogleAuthResponse>("/api/auth/google/signin", {
       method: "POST",
       body: JSON.stringify(data),
     });
