@@ -48,6 +48,45 @@ func UserAuthRoutes(
 		),
 	)
 
+	// Google OAuth: direct ID token sign-in (POST)
+	router.HandleFunc("/api/auth/google/signin",
+		middleware.CORSMiddleware(allowedOrigins)(
+			middleware.SecurityHeadersMiddleware(
+				middleware.LoginRateLimit()( 
+					middleware.LoggingMiddleware(
+						userAuthHandler.GoogleSignin,
+					),
+				),
+			),
+		),
+	)
+
+	// Google OAuth: start authorization (GET)
+	router.HandleFunc("/api/auth/google/start",
+		middleware.CORSMiddleware(allowedOrigins)(
+			middleware.SecurityHeadersMiddleware(
+				middleware.GeneralRateLimit()( 
+					middleware.LoggingMiddleware(
+						userAuthHandler.GoogleStart,
+					),
+				),
+			),
+		),
+	)
+
+	// Google OAuth: callback (GET)
+	router.HandleFunc("/api/auth/google/callback",
+		middleware.CORSMiddleware(allowedOrigins)(
+			middleware.SecurityHeadersMiddleware(
+				middleware.GeneralRateLimit()( 
+					middleware.LoggingMiddleware(
+						userAuthHandler.GoogleCallback,
+					),
+				),
+			),
+		),
+	)
+
 	// User authentication routes (POST)
 	router.HandleFunc("/api/auth/signout",
 		middleware.CORSMiddleware(allowedOrigins)(

@@ -1,13 +1,15 @@
 package handlers
 
 import (
-	"encoding/json"
-	"net/http"
-	"time"
+    "encoding/json"
+    "net/http"
+    "net/url"
+    "strings"
+    "time"
 
-	"github.com/uzimpp/CarJai/backend/models"
-	"github.com/uzimpp/CarJai/backend/services"
-	"github.com/uzimpp/CarJai/backend/utils"
+    "github.com/uzimpp/CarJai/backend/models"
+    "github.com/uzimpp/CarJai/backend/services"
+    "github.com/uzimpp/CarJai/backend/utils"
 )
 
 // UserAuthHandler handles user authentication requests
@@ -187,6 +189,215 @@ func (h *UserAuthHandler) Signin(w http.ResponseWriter, r *http.Request) {
 	})
 
 	utils.WriteJSON(w, http.StatusOK, response)
+}
+
+// GoogleSignin handles user sign in using Google ID token (One Tap / GIS)
+func (h *UserAuthHandler) GoogleSignin(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodPost {
+        http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+        return
+    }
+
+    var req models.UserGoogleSigninRequest
+    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+        response := models.UserErrorResponse{
+            Success: false,
+            Error:   "Invalid request body",
+            Code:    http.StatusBadRequest,
+        }
+        utils.WriteJSON(w, http.StatusBadRequest, response)
+        return
+    }
+
+    if req.IDToken == "" {
+        response := models.UserErrorResponse{
+            Success: false,
+            Error:   "id_token is required",
+            Code:    http.StatusBadRequest,
+        }
+        utils.WriteJSON(w, http.StatusBadRequest, response)
+        return
+    }
+
+    clientIP := utils.ExtractClientIP(
+        r.RemoteAddr,
+        r.Header.Get("X-Forwarded-For"),
+        r.Header.Get("X-Real-IP"),
+    )
+    userAgent := r.UserAgent()
+
+    response, err := h.userService.SigninWithGoogleIDToken(req.IDToken, clientIP, userAgent)
+    if err != nil {
+        errorResponse := models.UserErrorResponse{
+            Success: false,
+            Error:   err.Error(),
+            Code:    http.StatusUnauthorized,
+        }
+        utils.WriteJSON(w, http.StatusUnauthorized, errorResponse)
+        return
+    }
+
+    http.SetCookie(w, &http.Cookie{
+        Name:     "jwt",
+        Value:    response.Data.Token,
+        Path:     "/",
+        HttpOnly: true,
+        Secure:   false,
+        SameSite: http.SameSiteLaxMode,
+        MaxAge:   int(time.Until(response.Data.ExpiresAt).Seconds()),
+    })
+
+    // Redirect to frontend after setting cookie for a smoother UX
+    // Use first allowed origin from CORS config as frontend base
+    origins := strings.Split(utils.GetEnv("CORS_ALLOWED_ORIGINS"), ",")
+    frontend := strings.TrimSpace(origins[0])
+    if frontend == "" {
+        frontend = "http://localhost:3000"
+    }
+    http.Redirect(w, r, frontend, http.StatusFound)
+}
+
+// GoogleStart initiates the OAuth flow by redirecting to Google's authorization URL
+func (h *UserAuthHandler) GoogleStart(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodGet {
+        http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+        return
+    }
+
+    clientID := utils.GetEnv("GOOGLE_CLIENT_ID")
+    redirectURI := utils.GetEnv("GOOGLE_REDIRECT_URI")
+    if clientID == "" || redirectURI == "" {
+        utils.WriteError(w, http.StatusInternalServerError, "Google OAuth not configured")
+        return
+    }
+
+    state := utils.GenerateSecureSessionID()
+    // Store state in a short-lived cookie to validate on callback
+    http.SetCookie(w, &http.Cookie{
+        Name:     "oauth_state",
+        Value:    state,
+        Path:     "/",
+        HttpOnly: true,
+        Secure:   false,
+        SameSite: http.SameSiteLaxMode,
+        MaxAge:   300, // 5 minutes
+    })
+
+    q := url.Values{}
+    q.Set("client_id", clientID)
+    q.Set("redirect_uri", redirectURI)
+    q.Set("response_type", "code")
+    q.Set("scope", "openid email profile")
+    q.Set("state", state)
+    q.Set("access_type", "online")
+    q.Set("include_granted_scopes", "true")
+
+    authURL := "https://accounts.google.com/o/oauth2/v2/auth?" + q.Encode()
+    http.Redirect(w, r, authURL, http.StatusFound)
+}
+
+// GoogleCallback handles the OAuth callback, exchanges code for tokens, and signs in
+func (h *UserAuthHandler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodGet {
+        http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+        return
+    }
+
+    // Validate state
+    state := r.URL.Query().Get("state")
+    code := r.URL.Query().Get("code")
+    if state == "" || code == "" {
+        utils.WriteError(w, http.StatusBadRequest, "Missing state or code")
+        return
+    }
+
+    stateCookie, err := r.Cookie("oauth_state")
+    if err != nil || stateCookie.Value != state {
+        utils.WriteError(w, http.StatusBadRequest, "Invalid state")
+        return
+    }
+
+    // Exchange code for tokens
+    clientID := utils.GetEnv("GOOGLE_CLIENT_ID")
+    clientSecret := utils.GetEnv("GOOGLE_CLIENT_SECRET")
+    redirectURI := utils.GetEnv("GOOGLE_REDIRECT_URI")
+    if clientID == "" || clientSecret == "" || redirectURI == "" {
+        utils.WriteError(w, http.StatusInternalServerError, "Google OAuth not configured")
+        return
+    }
+
+    form := url.Values{}
+    form.Set("client_id", clientID)
+    form.Set("client_secret", clientSecret)
+    form.Set("code", code)
+    form.Set("redirect_uri", redirectURI)
+    form.Set("grant_type", "authorization_code")
+
+    resp, err := http.PostForm("https://oauth2.googleapis.com/token", form)
+    if err != nil {
+        utils.WriteError(w, http.StatusBadGateway, "Failed to exchange code")
+        return
+    }
+    defer resp.Body.Close()
+    if resp.StatusCode != http.StatusOK {
+        utils.WriteError(w, http.StatusBadGateway, "Invalid token response from Google")
+        return
+    }
+
+    var tokenRes struct {
+        AccessToken string `json:"access_token"`
+        IDToken     string `json:"id_token"`
+        ExpiresIn   int    `json:"expires_in"`
+        TokenType   string `json:"token_type"`
+        Scope       string `json:"scope"`
+        RefreshToken string `json:"refresh_token"`
+    }
+    if err := json.NewDecoder(resp.Body).Decode(&tokenRes); err != nil {
+        utils.WriteError(w, http.StatusBadGateway, "Failed to parse token response")
+        return
+    }
+
+    clientIP := utils.ExtractClientIP(
+        r.RemoteAddr,
+        r.Header.Get("X-Forwarded-For"),
+        r.Header.Get("X-Real-IP"),
+    )
+    userAgent := r.UserAgent()
+
+    response, err := h.userService.SigninWithGoogleIDToken(tokenRes.IDToken, clientIP, userAgent)
+    if err != nil {
+        errorResponse := models.UserErrorResponse{
+            Success: false,
+            Error:   err.Error(),
+            Code:    http.StatusUnauthorized,
+        }
+        utils.WriteJSON(w, http.StatusUnauthorized, errorResponse)
+        return
+    }
+
+    // Clear state cookie
+    http.SetCookie(w, &http.Cookie{
+        Name:     "oauth_state",
+        Value:    "",
+        Path:     "/",
+        HttpOnly: true,
+        Secure:   false,
+        SameSite: http.SameSiteLaxMode,
+        MaxAge:   -1,
+    })
+
+    // Set jwt cookie
+    http.SetCookie(w, &http.Cookie{
+        Name:     "jwt",
+        Value:    response.Data.Token,
+        Path:     "/",
+        HttpOnly: true,
+        Secure:   false,
+        SameSite: http.SameSiteLaxMode,
+        MaxAge:   int(time.Until(response.Data.ExpiresAt).Seconds()),
+    })
+
+    utils.WriteJSON(w, http.StatusOK, response)
 }
 
 // Signout handles user sign out requests
