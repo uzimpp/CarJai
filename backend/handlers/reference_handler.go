@@ -48,51 +48,6 @@ type ReferenceData struct {
 	Provinces     []ProvinceOption  `json:"provinces"`
 }
 
-func (h *ReferenceHandler) getColors(lang string) ([]ReferenceOption, error) {
-	nameCol := "name_en"
-	if lang == "th" {
-		nameCol = "name_th"
-	}
-	query := "SELECT code, " + nameCol + " FROM colors ORDER BY " + nameCol
-	rows, err := h.db.Query(query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var colors []ReferenceOption
-	for rows.Next() {
-		var opt ReferenceOption
-		if err := rows.Scan(&opt.Code, &opt.Label); err != nil {
-			return nil, err
-		}
-		colors = append(colors, opt)
-	}
-	return colors, nil
-}
-
-func (h *ReferenceHandler) getProvinces(lang string) ([]ProvinceOption, error) {
-	nameCol := "name_en"
-	if lang == "th" {
-		nameCol = "name_th"
-	}
-	query := "SELECT id, " + nameCol + " FROM provinces ORDER BY " + nameCol
-	rows, err := h.db.Query(query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var provinces []ProvinceOption
-	for rows.Next() {
-		var opt ProvinceOption
-		if err := rows.Scan(&opt.ID, &opt.Label); err != nil {
-			return nil, err
-		}
-		provinces = append(provinces, opt)
-	}
-	return provinces, nil
-}
 
 // GetAll handles GET /api/reference-data/all
 func (h *ReferenceHandler) GetAll(w http.ResponseWriter, r *http.Request) {

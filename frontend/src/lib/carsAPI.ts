@@ -8,6 +8,7 @@ import type {
   BookResult,
   CarListing,
 } from "@/types/car";
+import type { RecordViewResponse } from "@/types/user";
 
 // Type definitions now sourced from types/Car
 
@@ -302,4 +303,20 @@ export const carsAPI = {
     });
   },
 
+  async recordView(carId: number): Promise<{
+    success: boolean;
+    message: string;
+  }> {
+    return apiCall<{
+      success: boolean;
+      message: string;
+    }>('/api/recent-views/record', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ car_id: carId }),
+    });
+  },
+  
 };
