@@ -121,6 +121,7 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 
 	// Create recent views service
 	recentViewsService := services.NewRecentViewsService(db)
+	extractionService := services.NewExtractionService(db)
 
 	return &ServiceContainer{
 		Admin: services.NewAdminService(
@@ -175,6 +176,14 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 		routes.FavouritesRoutes(services.Favourite, services.User, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/favorites/",
 		routes.FavouritesRoutes(services.Favourite, services.User, appConfig.CORSAllowedOrigins))
+	mux.Handle("/api/recent-views/",
+		routes.RecentViewsRoutes(
+			services.RecentViews,
+			services.Profile,  
+			services.User,
+			services.UserJWT,
+			appConfig.CORSAllowedOrigins,
+		))
 	mux.Handle(adminPrefix+"/", // Handle all paths under /admin/
 		routes.AdminRoutes(
 			services.Admin,

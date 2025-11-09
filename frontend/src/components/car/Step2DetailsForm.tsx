@@ -9,7 +9,6 @@ import type { CarFormData } from "@/types/car";
 import { DAMAGE_OPTIONS } from "@/constants/car";
 import { referenceAPI } from "@/lib/referenceAPI";
 import type { ChoiceOption } from "@/components/ui/Choices";
-// import ComboboxInput from "@/components/global/ComboboxInput"; // ลบออก
 
 interface Step2DetailsFormProps {
   formData: Partial<CarFormData>;
@@ -18,13 +17,6 @@ interface Step2DetailsFormProps {
   onBack: () => void;
   isSubmitting: boolean;
 
-  // ลบ props ของ dropdowns ออก
-  // brandOptions: string[];
-  // modelOptions: string[];
-  // subModelOptions: string[];
-  // isBrandLoading: boolean;
-  // isModelLoading: boolean;
-  // isSubModelLoading: boolean;
 }
 
 export default function Step2DetailsForm({
@@ -33,13 +25,7 @@ export default function Step2DetailsForm({
   onContinue,
   onBack,
   isSubmitting,
-}: // ลบ props ที่ destructure ออก
-// brandOptions,
-// modelOptions,
-// subModelOptions,
-// isBrandLoading,
-// isModelLoading,
-// isSubModelLoading,
+}: 
 Step2DetailsFormProps) {
   // Fetch reference options
   const [bodyTypeOptions, setBodyTypeOptions] = useState<
@@ -96,15 +82,6 @@ Step2DetailsFormProps) {
 
   return (
     <div className="space-y-6">
-      {/* --- ลบส่วน Vehicle Identity ทั้งหมด --- */}
-      {/* <FormSection
-        title="Vehicle Identity"
-        description="Confirm the vehicle model details."
-      >
-        ...
-      </FormSection> */}
-      {/* --- สิ้นสุดการลบ --- */}
-
       {/* Body Type Selection */}
       <FormSection
         title="Body Type"

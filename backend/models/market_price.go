@@ -4,22 +4,21 @@ package models
 import (
 	"database/sql"
 	"fmt"
-	"time" // (เพิ่ม time import)
+	"time"
 )
 
 // MarketPrice represents a row in the market_price table
-// *** V18 FIX: อัปเดต Struct ให้ตรงกับ 007_market_price.sql ***
 type MarketPrice struct {
 	ID          int       `json:"id" db:"id"`
 	Brand       string    `json:"brand" db:"brand"`
-	Model       string    `json:"model" db:"model"`         // (เพิ่ม Model)
-	SubModel    string    `json:"sub_model" db:"sub_model"` // (เปลี่ยนจาก ModelTrim)
+	Model       string    `json:"model" db:"model"`         
+	SubModel    string    `json:"sub_model" db:"sub_model"` 
 	YearStart   int       `json:"year_start" db:"year_start"`
 	YearEnd     int       `json:"year_end" db:"year_end"`
 	PriceMinTHB int64     `json:"price_min_thb" db:"price_min_thb"`
 	PriceMaxTHB int64     `json:"price_max_thb" db:"price_max_thb"`
-	CreatedAt   time.Time `json:"created_at" db:"created_at"` // (เพิ่ม)
-	UpdatedAt   time.Time `json:"updated_at" db:"updated_at"` // (เพิ่ม)
+	CreatedAt   time.Time `json:"created_at" db:"created_at"` 
+	UpdatedAt   time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // MarketPriceRepository handles market_price table operations
@@ -33,7 +32,6 @@ func NewMarketPriceRepository(db *Database) *MarketPriceRepository {
 }
 
 // GetMarketPrice finds the average market price for a given brand, model, and year
-// *** V18 FIX: อัปเดต Signature และ Query ***
 func (r *MarketPriceRepository) GetMarketPrice(brand string, model string, submodel string, year int) (*MarketPrice, error) {
 	mp := &MarketPrice{}
 

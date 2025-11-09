@@ -3,7 +3,7 @@
 import React, { useState, ChangeEvent, FormEvent } from 'react';
 import ConditionalLayout from '@/components/global/Layout';
 
-// Interface MarketPrice (ยังคงเดิม)
+// Interface MarketPrice
 interface MarketPrice {
   brand: string;
   model: string;
@@ -16,32 +16,31 @@ interface MarketPrice {
   updated_at?: string; 
 }
 
-// Type for status messages (ยังคงเดิม)
+// Type for status messages 
 interface StatusResponse {
   message: string;
   error?: string;
 }
-// Type for JSON error structure (ยังคงเดิม)
+// Type for JSON error structure
 interface GoErrorResponse {
 	success: boolean;
 	error: string;
 	code: number;
 }
-// Type for successful Commit response (ยังคงเดิม)
+// Type for successful Commit response 
 interface CommitSuccessResponse {
     message: string;
     inserted_count: number;
     updated_count: number;
 }
 
-// --- V16: Interface POC Response (ยังคงเดิม) ---
-// เรายังต้องรับค่ำนี้จาก Backend แต่เราจะไม่แสดงผลทุกฟิลด์
+// --- Interface POC Response ---
 interface ExtractionPOCResponse {
-  detected_headers: string[]; // (ไม่ได้ใช้)
-  debug_log: string[];        // (ไม่ได้ใช้)
+  detected_headers: string[]; 
+  debug_log: string[];       
   final_prices: MarketPrice[];
 }
-// --- End V16 ---
+
 
 
 export default function UploadMarketPricePage() {
@@ -54,8 +53,6 @@ export default function UploadMarketPricePage() {
   const [isCommitting, setIsCommitting] = useState<boolean>(false);
   const [commitStatus, setCommitStatus] = useState<StatusResponse | null>(null);
 
-  // --- (ลบ useState ของ debugHeaders และ debugLog ออกแล้ว) ---
-
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     // Reset states when file changes
     setSelectedFile(null);
@@ -63,8 +60,6 @@ export default function UploadMarketPricePage() {
     setExtractedJson(null);
     setParsedData(null);
     setCommitStatus(null); 
-    
-    // --- (ลบการ Reset POC states ออกแล้ว) ---
 
     if (event.target.files && event.target.files[0]) {
       if (event.target.files[0].type === 'application/pdf') {
@@ -90,8 +85,6 @@ export default function UploadMarketPricePage() {
     setParsedData(null);
     setCommitStatus(null); 
     
-    // --- (ลบการ Reset POC states ออกแล้ว) ---
-    
     const formData = new FormData();
     formData.append('marketPricePdf', selectedFile!);
 
@@ -105,17 +98,12 @@ export default function UploadMarketPricePage() {
       const contentType = response.headers.get("content-type");
 
       if (response.ok && response.status === 200 && contentType && contentType.includes("application/json")) {
-        // --- V16: Handle new POC Response ---
         const result: ExtractionPOCResponse = await response.json();
         
-        // 1. เก็บผลลัพธ์สุดท้าย (เหมือนเดิม)
         setExtractedJson(JSON.stringify(result.final_prices, null, 2));
         setParsedData(result.final_prices); 
-        
-        // --- (ลบการ Set state ของ POC ออกแล้ว) ---
 
         setUploadStatus({ message: `Successfully extracted ${result.final_prices.length} records. Review data below and confirm import.`, error: undefined });
-        // --- End V16 ---
 
       } else { // Handle extraction errors
         let errorMessage = `Extraction failed with status ${response.status}`;
@@ -172,8 +160,6 @@ export default function UploadMarketPricePage() {
               setParsedData(null);
               setSelectedFile(null);
               setUploadStatus(null); 
-              
-              // --- (ลบการ Clear POC data ออกแล้ว) ---
 
               const fileInput = document.getElementById('pdf-upload') as HTMLInputElement;
               if (fileInput) fileInput.value = '';
@@ -251,9 +237,6 @@ export default function UploadMarketPricePage() {
               {isLoading ? 'Extracting...' : 'Upload and Extract Data'}
             </button>
           </form>
-
-          {/* --- (ลบส่วนแสดงผล POC Debug Output ออกแล้ว) --- */}
-
 
           {/* Extracted JSON Display Area & Commit Section */}
           {extractedJson && (
