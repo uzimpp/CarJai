@@ -431,16 +431,20 @@ func (r *CarRepository) GetCarsBySellerID(sellerID int) ([]Car, error) {
 
 // SearchCarsRequest represents search/filter parameters
 type SearchCarsRequest struct {
-	Query        string  // Search query for brand/model/description
-	MinPrice     *int    // Minimum price filter
-	MaxPrice     *int    // Maximum price filter
-	ProvinceID   *int    // Province filter
-	MinYear      *int    // Minimum year filter
-	MaxYear      *int    // Maximum year filter
-	BodyTypeCode *string // Body type filter (code like "PICKUP", "SUV")
-	Status       string  // Status filter (default: "active")
-	Limit        int     // Results per page (default: 20)
-	Offset       int     // Pagination offset (default: 0)
+	Query            string   // Search query for brand/model/description
+	MinPrice         *int     // Minimum price filter
+	MaxPrice         *int     // Maximum price filter
+	ProvinceID       *int     // Province filter
+	MinYear          *int     // Minimum year filter
+	MaxYear          *int     // Maximum year filter
+	BodyTypeCode     *string  // Body type filter (code like "PICKUP", "SUV")
+	TransmissionCode *string  // Transmission filter (code like "MANUAL", "AT")
+	DrivetrainCode   *string  // Drivetrain filter (code like "FWD", "AWD", "4WD")
+	FuelTypeCodes    []string // Fuel type filters (codes like "GASOLINE", "DIESEL")
+	ColorCodes       []string // Color filters (codes like "WHITE", "BLACK", "GRAY")
+	Status           string   // Status filter (default: "active")
+	Limit            int      // Results per page (default: 20)
+	Offset           int      // Pagination offset (default: 0)
 }
 
 // GetActiveCars retrieves all active car listings with optional filters
@@ -481,15 +485,55 @@ func (r *CarRepository) GetActiveCars(req *SearchCarsRequest) ([]Car, int, error
 	}
 
 	if req.BodyTypeCode != nil {
-		whereClauses = append(whereClauses, fmt.Sprintf("body_type_code = $%d", argCounter))
+		whereClauses = append(whereClauses, fmt.Sprintf("cars.body_type_code = $%d", argCounter))
 		args = append(args, *req.BodyTypeCode)
 		argCounter++
+	}
+
+	if req.TransmissionCode != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("cars.transmission_code = $%d", argCounter))
+		args = append(args, *req.TransmissionCode)
+		argCounter++
+	}
+
+	if req.DrivetrainCode != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("cars.drivetrain_code = $%d", argCounter))
+		args = append(args, *req.DrivetrainCode)
+		argCounter++
+	}
+
+	// Fuel type filter (requires JOIN with car_fuel)
+	fuelJoin := ""
+	if len(req.FuelTypeCodes) > 0 {
+		// Build IN clause for fuel types
+		fuelPlaceholders := make([]string, len(req.FuelTypeCodes))
+		for i, fuelCode := range req.FuelTypeCodes {
+			fuelPlaceholders[i] = fmt.Sprintf("$%d", argCounter)
+			args = append(args, fuelCode)
+			argCounter++
+		}
+		fuelJoin = " INNER JOIN car_fuel ON cars.id = car_fuel.car_id"
+		whereClauses = append(whereClauses, fmt.Sprintf("car_fuel.fuel_type_code IN (%s)", strings.Join(fuelPlaceholders, ",")))
+	}
+
+	// Color filter (requires JOIN with car_colors)
+	colorJoin := ""
+	if len(req.ColorCodes) > 0 {
+		// Build IN clause for colors
+		colorPlaceholders := make([]string, len(req.ColorCodes))
+		for i, colorCode := range req.ColorCodes {
+			colorPlaceholders[i] = fmt.Sprintf("$%d", argCounter)
+			args = append(args, colorCode)
+			argCounter++
+		}
+		colorJoin = " INNER JOIN car_colors ON cars.id = car_colors.car_id"
+		whereClauses = append(whereClauses, fmt.Sprintf("car_colors.color_code IN (%s)", strings.Join(colorPlaceholders, ",")))
 	}
 
 	// Text search on brand/model/description in cars
 	if req.Query != "" {
 		whereClauses = append(whereClauses, fmt.Sprintf(
-			"(brand_name ILIKE $%d OR model_name ILIKE $%d OR description ILIKE $%d)",
+			"(cars.brand_name ILIKE $%d OR cars.model_name ILIKE $%d OR cars.description ILIKE $%d)",
 			argCounter, argCounter+1, argCounter+2,
 		))
 		searchPattern := "%" + req.Query + "%"
@@ -499,26 +543,36 @@ func (r *CarRepository) GetActiveCars(req *SearchCarsRequest) ([]Car, int, error
 
 	whereSQL := strings.Join(whereClauses, " AND ")
 
-	// Count total results
-	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM cars WHERE %s", whereSQL)
+	// Count total results (with DISTINCT if joins are used)
+	countQuery := ""
+	joinClause := fuelJoin + colorJoin
+	if joinClause != "" {
+		countQuery = fmt.Sprintf("SELECT COUNT(DISTINCT cars.id) FROM cars%s WHERE %s", joinClause, whereSQL)
+	} else {
+		countQuery = fmt.Sprintf("SELECT COUNT(*) FROM cars WHERE %s", whereSQL)
+	}
 	var total int
 	err := r.db.DB.QueryRow(countQuery, args...).Scan(&total)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to count cars: %w", err)
 	}
 
-	// Get paginated results
+	// Get paginated results (with DISTINCT if joins are used)
+	selectClause := "SELECT"
+	if joinClause != "" {
+		selectClause = "SELECT DISTINCT"
+	}
 	query := fmt.Sprintf(`
-        SELECT cars.id, cars.seller_id, cars.body_type_code, cars.transmission_code, cars.drivetrain_code,
+        %s cars.id, cars.seller_id, cars.body_type_code, cars.transmission_code, cars.drivetrain_code,
             cars.brand_name, cars.model_name, cars.submodel_name, cars.chassis_number,
             cars.year, cars.mileage, cars.engine_cc, cars.seats, cars.doors,
             cars.prefix, cars.number, cars.province_id, cars.description, cars.price,
             cars.is_flooded, cars.is_heavily_damaged,
             cars.status, cars.condition_rating, cars.created_at, cars.updated_at
-        FROM cars
+        FROM cars%s
         WHERE %s
         ORDER BY cars.created_at DESC
-        LIMIT $%d OFFSET $%d`, whereSQL, argCounter, argCounter+1)
+        LIMIT $%d OFFSET $%d`, selectClause, joinClause, whereSQL, argCounter, argCounter+1)
 
 	args = append(args, req.Limit, req.Offset)
 

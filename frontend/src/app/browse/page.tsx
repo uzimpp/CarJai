@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { carsAPI } from "@/lib/carsAPI";
+import { favoritesAPI } from "@/lib/favoritesAPI";
 import SearchFilters, {
   SearchFiltersData,
 } from "@/components/search/SearchFilters";
 import { CarListing } from "@/types/car";
 import type { SearchCarsParams } from "@/types/search";
 import CarCard from "@/components/car/CarCard";
+import { useUserAuth } from "@/hooks/useUserAuth";
 
 export default function BrowsePage() {
   const [cars, setCars] = useState<CarListing[]>([]);
@@ -16,6 +18,10 @@ export default function BrowsePage() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<SearchFiltersData>({});
+  const [favoriteCarIds, setFavoriteCarIds] = useState<Set<number>>(new Set());
+  
+  const { isAuthenticated, roles } = useUserAuth();
+  const isBuyer = isAuthenticated && roles?.buyer;
 
   // Fetch cars
   useEffect(() => {
@@ -33,6 +39,14 @@ export default function BrowsePage() {
         if (filters.maxPrice) params.maxPrice = filters.maxPrice;
         if (filters.minYear) params.minYear = filters.minYear;
         if (filters.maxYear) params.maxYear = filters.maxYear;
+        if (filters.bodyType) params.bodyType = filters.bodyType;
+        if (filters.transmission) params.transmission = filters.transmission;
+        if (filters.drivetrain) params.drivetrain = filters.drivetrain;
+        if (filters.fuelTypes && filters.fuelTypes.length > 0)
+          params.fuelTypes = filters.fuelTypes;
+        if (filters.colors && filters.colors.length > 0)
+          params.colors = filters.colors;
+        if (filters.provinceId) params.provinceId = filters.provinceId;
 
         const result = await carsAPI.search(params);
 
@@ -53,6 +67,36 @@ export default function BrowsePage() {
 
     fetchCars();
   }, [filters, page]);
+
+  // Fetch user's favorites when they're authenticated as a buyer
+  useEffect(() => {
+    const fetchFavorites = async () => {
+      if (!isBuyer) return;
+      
+      try {
+        const favoritesCars = await favoritesAPI.getFavorites();
+        const favoriteIds = new Set(favoritesCars.map((car: CarListing) => car.id));
+        setFavoriteCarIds(favoriteIds);
+      } catch (error) {
+        console.error("Failed to fetch favorites:", error);
+      }
+    };
+
+    fetchFavorites();
+  }, [isBuyer]);
+
+  const handleFavoriteToggle = async (carId: number, isFavorited: boolean) => {
+    // Update local state immediately for optimistic UI
+    setFavoriteCarIds(prev => {
+      const newSet = new Set(prev);
+      if (isFavorited) {
+        newSet.add(carId);
+      } else {
+        newSet.delete(carId);
+      }
+      return newSet;
+    });
+  };
 
   const handleFiltersChange = (newFilters: SearchFiltersData) => {
     setFilters(newFilters);
@@ -120,7 +164,14 @@ export default function BrowsePage() {
               {/* Car Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
                 {cars.map((car) => (
-                    <CarCard key={car.id} car={car} variant="browse" />
+                  <CarCard 
+                    key={car.id} 
+                    car={car} 
+                    variant="browse"
+                    showFavorite={isBuyer}
+                    isFavorited={favoriteCarIds.has(car.id)}
+                    onFavoriteToggle={handleFavoriteToggle}
+                  />
                 ))}
               </div>
 

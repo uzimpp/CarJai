@@ -22,6 +22,7 @@ services:
 
   # Backend Go API service
   backend:
+    container_name: carjai-backend
     build:
       context: ./backend
       dockerfile: dockerfile
@@ -52,6 +53,8 @@ services:
       AIGEN_API_KEY: ${AIGEN_API_KEY}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+    volumes:
+      - ./frontend/public/assets:/app/frontend/public/assets:ro
     networks:
       - carjai-network
     depends_on:
