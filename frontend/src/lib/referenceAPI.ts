@@ -2,11 +2,14 @@
 import { apiCall } from "@/lib/apiCall";
 
 export type ReferenceOption = { code: string; label: string };
+export type ProvinceOption = { id: number; label: string };
 export type ReferenceData = {
   bodyTypes: ReferenceOption[];
   transmissions: ReferenceOption[];
   fuelTypes: ReferenceOption[];
   drivetrains: ReferenceOption[];
+  colors: ReferenceOption[];
+  provinces: ProvinceOption[];
 };
 
 export const referenceAPI = {
