@@ -83,8 +83,6 @@ var singleModelBrands = map[string]bool{
 	"AION": true, "TESLA": true, "NETA": true, "XPENG": true, "ZEEKR": true, "LEAPMOTOR": true,
 	"AVATR": true, "DEEPAL": true, "DENZA": true, "ORA": true,
 }
-
-// (V20) 'knownModelPrefixes' ยังคงมีประโยชน์สำหรับเคส 'AUDI'
 var knownModelPrefixes = map[string]bool{
 	// TOYOTA
 	"HILUX CHAMP":       true,
@@ -125,7 +123,7 @@ const (
 	ExpectingYear
 )
 
-// --- Helper Functions (ไม่เปลี่ยนแปลง) ---
+// --- Helper Functions ---
 func cleanPriceString(priceStr string) string { return cleanRegex.ReplaceAllString(priceStr, "") }
 func parseYearRange(yearStr string) (int, int, error) {
 	matches := yearRegex.FindStringSubmatch(yearStr)
@@ -186,7 +184,6 @@ func parsePriceRange(priceStr string) (int64, int64, error) {
 	return minPrice, maxPrice, nil
 }
 
-// (V20) ฟังก์ชัน `splitModelSubModel` ยังคงจำเป็น (สำหรับ AION/AUDI ที่ไม่มี Header)
 func splitModelSubModel(fullSubModel string, brand string) (string, string) {
 	if _, isSingleModel := singleModelBrands[brand]; isSingleModel {
 		return fullSubModel, ""
@@ -227,11 +224,11 @@ func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, file
 
 	var tempPrices []MarketPrice
 	var currentBrand string
-	var currentModel string // <-- V22: ตัวแปรนี้จะ "จำ" Header ไว้
+	var currentModel string 
 	currentPage := 1
 	currentState := ExpectingHeaderOrSubModel
 	var tempSubModel string
-	var tempLine string // <-- V22: ตัวแปรนี้ใช้พักข้อมูลบรรทัดล่าสุด
+	var tempLine string 
 	var tempYearStart, tempYearEnd int
 	lines := strings.Split(fullText, "\n")
 
@@ -272,8 +269,6 @@ func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, file
 
 				for i := range tempPrices {
 					tempPrices[i].Brand = currentBrand
-					
-					// (V22) ใช้ splitModelSubModel เสมอสำหรับ tempPrices (เพราะมันไม่มี Header)
 					finalModel, finalSubModel := splitModelSubModel(tempPrices[i].SubModel, currentBrand)
 					tempPrices[i].Model = finalModel
 					tempPrices[i].SubModel = finalSubModel
@@ -300,7 +295,6 @@ func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, file
 			continue
 		}
 
-		// --- Rule 1: "มีครบทั้งหมด" (dataRegex) ---
 		carMatches := dataRegex.FindStringSubmatch(line)
 		if len(carMatches) == 4 {
 			extractedSubModel := strings.TrimSpace(carMatches[1])
@@ -313,19 +307,13 @@ func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, file
 			if extractedSubModel != "" && errYear == nil && errPrice == nil {
 				now := time.Now()
 
-				//
-				// *** V22 FIX: จุดที่ 1 (dataRegex) ***
-				//
 				if tempLine != "" {
-					// ตรวจสอบว่าบรรทัดก่อนหน้า (tempLine) เป็น Junk หรือ Model Header
 					if _, isJunk := junkSet[tempLine]; !isJunk {
-						// ถ้าไม่ใช่ Junk -> มันคือ Model Header
 						currentModel = tempLine // e.g., "HILUX (STANDARD CAB)"
 						pocResponse.DebugLog = append(pocResponse.DebugLog, fmt.Sprintf("Page ~%d, Line %d: (dataRegex) Detected Header: '%s'", currentPage, lineNum+1, currentModel))
 					}
-					tempLine = "" // ใช้ tempLine แล้ว ต้องล้าง
+					tempLine = "" 
 				}
-				// *** END V22 FIX ***
 
 				marketPrice := MarketPrice{
 					Brand:     currentBrand,
@@ -339,20 +327,14 @@ func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, file
 					UpdatedAt: now,
 				}
 
-				//
-				// *** V22 FIX: จุดที่ 2 (dataRegex) ***
-				//
 				if currentModel == "" {
-					// (AION / TESLA / AUDI ที่ไม่มี Header)
 					finalModelToUse, finalSubModelToUse := splitModelSubModel(extractedSubModel, currentBrand)
 					marketPrice.Model = finalModelToUse
 					marketPrice.SubModel = finalSubModelToUse
 				} else {
-					// (HILUX / AUDI ที่มี Header)
 					marketPrice.Model = currentModel      // e.g., "HILUX (STANDARD CAB)"
 					marketPrice.SubModel = extractedSubModel // e.g., "HILUX VIGO"
 				}
-				// *** END V22 FIX ***
 
 				if currentBrand == "" {
 					tempPrices = append(tempPrices, marketPrice)
@@ -363,7 +345,6 @@ func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, file
 				currentState = ExpectingHeaderOrSubModel
 				tempSubModel = ""
 				tempLine = ""
-				// (V22) ห้ามรีเซ็ต currentModel ที่นี่
 				continue
 			}
 		}
@@ -388,19 +369,18 @@ func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, file
 					tempYearEnd = yearEnd
 					currentState = ExpectingPrice
 					pocResponse.DebugLog = append(pocResponse.DebugLog, fmt.Sprintf("Page ~%d, Line %d: State 1 -> 2. '%s' was SubModel-L1. Got Year. Waiting for Price.", currentPage, lineNum+1, tempSubModel))
-					tempLine = "" // (V22) ล้าง tempLine
+					tempLine = "" 
 				}
 			} else if !priceRegex.MatchString(line) {
 				if _, isJunk := junkSet[tempLine]; isJunk {
 					pocResponse.DebugLog = append(pocResponse.DebugLog, fmt.Sprintf("Page ~%d, Line %d: (Junk Case) Discarding Junk Header: '%s'. Retrying with '%s'.", currentPage, lineNum+1, tempLine, line))
-					tempLine = line // (V22) ตั้ง tempLine ใหม่
+					tempLine = line 
 					currentState = ExpectingYearOrSubModel // Back to State 1
 				} else {
-					// (V22) นี่คือจุดที่ตรวจพบ "A1" 
-					currentModel = tempLine // <--- นี่คือ Model Header
-					tempSubModel = line // <--- นี่คือ Sub-Model Line 1 (เช่น "A1 1.4" )
+					currentModel = tempLine
+					tempSubModel = line 
 					currentState = ExpectingYear
-					tempLine = "" // (V22) ล้าง tempLine
+					tempLine = "" 
 
 					headerMsg := fmt.Sprintf("Page ~%d, Line %d: State 1 -> 3. (AUDI Case) '%s' was Model Header. Set SubModel-L1: '%s'. Waiting for Year.", currentPage, lineNum+1, currentModel, tempSubModel)
 					pocResponse.DebugLog = append(pocResponse.DebugLog, headerMsg)
@@ -442,24 +422,15 @@ func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, file
 					CreatedAt: now,
 					UpdatedAt: now,
 				}
-				
-				//
-				// *** V2G... (V22) FIX: จุดที่ 3 (State 2) ***
-				//
+		
 				if currentModel == "" {
-					// (AION / TESLA Case) - เรามาจาก State 1 -> 2
-					// tempSubModel คือ "AION ES"
 					finalModel, finalSubModel := splitModelSubModel(tempSubModel, currentBrand)
 					marketPrice.Model = finalModel
 					marketPrice.SubModel = finalSubModel
 				} else {
-					// (HILUX / AUDI Case) - เรามาจาก State 1 -> 3 -> 2
-					// currentModel คือ "A1"
-					// tempSubModel คือ "A1 1.4"
 					marketPrice.Model = currentModel
 					marketPrice.SubModel = tempSubModel
 				}
-				// *** END V22 FIX ***
 
 				if currentBrand == "" {
 					tempPrices = append(tempPrices, marketPrice)
@@ -470,16 +441,14 @@ func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, file
 				currentState = ExpectingHeaderOrSubModel
 				tempSubModel = ""
 				tempLine = ""
-				// (V22) ห้ามรีเซ็ต currentModel ที่นี่
 			} else {
 				pocResponse.DebugLog = append(pocResponse.DebugLog, fmt.Sprintf("Page ~%d, Line %d: WARNING - Expected price, got '%s'. Resetting state.", currentPage, lineNum+1, line))
 				currentState = ExpectingHeaderOrSubModel
 				tempSubModel = ""
 				tempLine = ""
-				// (V22) ห้ามรีเซ็ต currentModel ที่นี่
 			}
-		} // --- End Switch
-	} // --- End For Loop
+		}
+	} 
 
 	log.Printf("PDF parsing finished. Found %d records.", len(pocResponse.FinalPrices))
 	pocResponse.DebugLog = append(pocResponse.DebugLog, fmt.Sprintf("PDF parsing finished. Found %d records.", len(pocResponse.FinalPrices)))
@@ -487,7 +456,6 @@ func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, file
 	return pocResponse, nil
 }
 
-// --- Commit Function (ไม่เปลี่ยนแปลง) ---
 func (s *ExtractionService) CommitMarketPrices(ctx context.Context, pricesToCommit []MarketPrice) (insertedCount int, updatedCount int, err error) {
 	if len(pricesToCommit) == 0 {
 		log.Println("No records received to commit.")
@@ -561,7 +529,7 @@ func (s *ExtractionService) CommitMarketPrices(ctx context.Context, pricesToComm
 	return
 }
 
-// --- Import Function (ไม่เปลี่ยนแปลง) ---
+// --- Import Function ---
 func (s *ExtractionService) ImportMarketPricesFromPDF(ctx context.Context, filePath string) (insertedCount int, updatedCount int, err error) {
 	log.Printf("Starting market price import (Extraction + DB) from PDF: %s", filePath)
 
