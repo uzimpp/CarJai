@@ -396,15 +396,29 @@ func (h *UserAuthHandler) GoogleCallback(w http.ResponseWriter, r *http.Request)
         SameSite: http.SameSiteLaxMode,
         MaxAge:   int(time.Until(response.Data.ExpiresAt).Seconds()),
     })
-    // Redirect to frontend role selection after successful Google signup/signin
+
+    // Determine redirect target based on existing roles
     origins := strings.Split(utils.GetEnv("CORS_ALLOWED_ORIGINS"), ",")
     frontend := strings.TrimSpace(origins[0])
     if frontend == "" {
         frontend = "http://localhost:3000"
     }
-    // Preserve UX: send user to role selection onboarding
-    redirectURL := frontend + "/signup/role?from=signup"
-    http.Redirect(w, r, redirectURL, http.StatusFound)
+
+    // Default to homepage for returning users; role onboarding for new users
+    redirectPath := "/"
+    if me, err := h.userService.GetCurrentUser(response.Data.Token); err == nil {
+        roles := me.Data.Roles
+        if !roles.Buyer && !roles.Seller {
+            redirectPath = "/signup/role?from=signup"
+        } else {
+            redirectPath = "/"
+        }
+    } else {
+        // If we cannot determine roles, use safe default
+        redirectPath = "/"
+    }
+
+    http.Redirect(w, r, frontend+redirectPath, http.StatusFound)
 }
 
 // Signout handles user sign out requests
