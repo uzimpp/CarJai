@@ -177,141 +177,128 @@ export default function AdminReportsPage() {
   const carReportsCount = reports.filter((r) => r.type === "car").length;
 
   return (
-    <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full">
+    <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full flex flex-col gap-(--space-s-m)">
       {/* Header */}
-      <section className="rounded-3xl bg-gradient-to-r from-maroon to-red text-white shadow-[var(--shadow-lg)] px-(--space-l) py-(--space-m) mb-(--space-l)">
-        <div>
-          <h1 className="text-3 bold">Fraud Reports</h1>
-          <p className="text--1 opacity-90">
-            Review and manage fraudulent user and car reports
-          </p>
-        </div>
-      </section>
-
-      {/* Main Content */}
       <div>
-        {/* Stats */}
-        <div className="mb-(--space-l)">
-          <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m)">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-(--space-m)">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-maroon">
-                  {reports.length}
-                </div>
-                <div className="text--1 text-gray-600">Total Reports</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-red-600">
-                  {pendingCount}
-                </div>
-                <div className="text--1 text-gray-600">Pending</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">
-                  {userReportsCount}
-                </div>
-                <div className="text--1 text-gray-600">User Reports</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-orange-600">
-                  {carReportsCount}
-                </div>
-                <div className="text--1 text-gray-600">Car Reports</div>
-              </div>
-            </div>
+        <h1 className="text-3 bold">Fraud Reports</h1>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-(--space-m)">
+        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m)">
+          <p className="text--1 text-gray-600 mb-1">Total Reports</p>
+          <p className="text-3xl font-bold text-gray-900">{reports.length}</p>
+        </div>
+        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m)">
+          <p className="text--1 text-gray-600 mb-1">Pending</p>
+          <p className="text-3xl font-bold text-gray-900">{pendingCount}</p>
+        </div>
+        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m)">
+          <p className="text--1 text-gray-600 mb-1">User Reports</p>
+          <p className="text-3xl font-bold text-gray-900">{userReportsCount}</p>
+        </div>
+        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m)">
+          <p className="text--1 text-gray-600 mb-1">Car Reports</p>
+          <p className="text-3xl font-bold text-gray-900">{carReportsCount}</p>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m)">
+        <div className="flex flex-wrap gap-(--space-s)">
+          {/* Type Filter */}
+          <div className="flex gap-(--space-2xs)">
+            <span className="text-0 text-gray-700 font-medium py-2">Type:</span>
+            <button
+              onClick={() => setFilterType("all")}
+              className={`px-(--space-s) py-(--space-2xs) rounded-lg text-0 ${
+                filterType === "all"
+                  ? "bg-maroon text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => setFilterType("user")}
+              className={`px-(--space-s) py-(--space-2xs) rounded-lg text-0 ${
+                filterType === "user"
+                  ? "bg-maroon text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              Users
+            </button>
+            <button
+              onClick={() => setFilterType("car")}
+              className={`px-(--space-s) py-(--space-2xs) rounded-lg text-0 ${
+                filterType === "car"
+                  ? "bg-maroon text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              Cars
+            </button>
+          </div>
+
+          {/* Status Filter */}
+          <div className="flex gap-(--space-2xs)">
+            <span className="text-0 text-gray-700 font-medium py-2">
+              Status:
+            </span>
+            <button
+              onClick={() => setFilterStatus("all")}
+              className={`px-(--space-s) py-(--space-2xs) rounded-lg text-0 ${
+                filterStatus === "all"
+                  ? "bg-maroon text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => setFilterStatus("pending")}
+              className={`px-(--space-s) py-(--space-2xs) rounded-lg text-0 ${
+                filterStatus === "pending"
+                  ? "bg-maroon text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              Pending
+            </button>
+            <button
+              onClick={() => setFilterStatus("resolved")}
+              className={`px-(--space-s) py-(--space-2xs) rounded-lg text-0 ${
+                filterStatus === "resolved"
+                  ? "bg-maroon text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              Resolved
+            </button>
+            <button
+              onClick={() => setFilterStatus("dismissed")}
+              className={`px-(--space-s) py-(--space-2xs) rounded-lg text-0 ${
+                filterStatus === "dismissed"
+                  ? "bg-maroon text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              Dismissed
+            </button>
           </div>
         </div>
+      </div>
 
-        {/* Filters */}
-        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m) mb-(--space-l)">
-          <div className="flex flex-wrap gap-(--space-s)">
-            {/* Type Filter */}
-            <div className="flex gap-(--space-2xs)">
-              <span className="text-0 text-gray-700 font-medium py-2">
-                Type:
-              </span>
-              <button
-                onClick={() => setFilterType("all")}
-                className={`px-(--space-s) py-(--space-2xs) rounded-lg text-0 ${
-                  filterType === "all"
-                    ? "bg-maroon text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                All
-              </button>
-              <button
-                onClick={() => setFilterType("user")}
-                className={`px-(--space-s) py-(--space-2xs) rounded-lg text-0 ${
-                  filterType === "user"
-                    ? "bg-maroon text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                Users
-              </button>
-              <button
-                onClick={() => setFilterType("car")}
-                className={`px-(--space-s) py-(--space-2xs) rounded-lg text-0 ${
-                  filterType === "car"
-                    ? "bg-maroon text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                Cars
-              </button>
-            </div>
-
-            {/* Status Filter */}
-            <div className="flex gap-(--space-2xs)">
-              <span className="text-0 text-gray-700 font-medium py-2">
-                Status:
-              </span>
-              <button
-                onClick={() => setFilterStatus("all")}
-                className={`px-(--space-s) py-(--space-2xs) rounded-lg text-0 ${
-                  filterStatus === "all"
-                    ? "bg-maroon text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                All
-              </button>
-              <button
-                onClick={() => setFilterStatus("pending")}
-                className={`px-(--space-s) py-(--space-2xs) rounded-lg text-0 ${
-                  filterStatus === "pending"
-                    ? "bg-maroon text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                Pending
-              </button>
-              <button
-                onClick={() => setFilterStatus("resolved")}
-                className={`px-(--space-s) py-(--space-2xs) rounded-lg text-0 ${
-                  filterStatus === "resolved"
-                    ? "bg-maroon text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                Resolved
-              </button>
-              <button
-                onClick={() => setFilterStatus("dismissed")}
-                className={`px-(--space-s) py-(--space-2xs) rounded-lg text-0 ${
-                  filterStatus === "dismissed"
-                    ? "bg-maroon text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                Dismissed
-              </button>
-            </div>
-          </div>
+      {/* Reports Section */}
+      <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] overflow-hidden">
+        <div className="px-(--space-m) py-(--space-s) border-b border-gray-200">
+          <h2 className="text-2 font-bold text-gray-900">
+            Reports{" "}
+            {filteredReports.length > 0 && `(${filteredReports.length})`}
+          </h2>
         </div>
 
-        {/* Reports List */}
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
@@ -320,11 +307,26 @@ export default function AdminReportsPage() {
             </div>
           </div>
         ) : error ? (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-(--space-m) text-center">
-            <p className="text-red-600">{error}</p>
+          <div className="p-(--space-m)">
+            <div className="bg-red-50 border border-red-200 rounded-xl p-(--space-m) text-center">
+              <p className="text-red-600">{error}</p>
+            </div>
           </div>
         ) : filteredReports.length === 0 ? (
-          <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-l) text-center">
+          <div className="p-(--space-l) text-center">
+            <svg
+              className="w-16 h-16 text-gray-300 mx-auto mb-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M12 8v4l3 3m6-1a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
             <p className="text-gray-600">
               {reports.length === 0
                 ? "No reports found. API integration pending."
@@ -341,142 +343,168 @@ export default function AdminReportsPage() {
             )}
           </div>
         ) : (
-          <div className="space-y-(--space-m)">
-            {filteredReports.map((report) => (
-              <div
-                key={report.id}
-                className="bg-white rounded-3xl shadow-[var(--shadow-md)] overflow-hidden"
-              >
-                <div className="p-(--space-m)">
-                  {/* Report Header */}
-                  <div className="flex flex-wrap items-start justify-between gap-(--space-s) mb-(--space-s)">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-(--space-s) mb-2">
-                        <span
-                          className={`px-(--space-s) py-(--space-3xs) rounded-full text--1 font-medium ${
-                            report.type === "user"
-                              ? "bg-blue-100 text-blue-700"
-                              : "bg-orange-100 text-orange-700"
-                          }`}
-                        >
-                          {report.type === "user"
-                            ? "User Report"
-                            : "Car Report"}
-                        </span>
-                        <span
-                          className={`px-(--space-s) py-(--space-3xs) rounded-full text--1 font-medium ${
-                            report.status === "pending"
-                              ? "bg-red-100 text-red-700"
-                              : report.status === "resolved"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-gray-100 text-gray-700"
-                          }`}
-                        >
-                          {report.status.charAt(0).toUpperCase() +
-                            report.status.slice(1)}
-                        </span>
-                      </div>
-                      <h3 className="text-1 font-bold text-gray-900">
-                        {report.type === "user"
-                          ? `Reported User: ${
-                              report.targetUserName ||
-                              `User #${report.targetUserId}`
-                            }`
-                          : `Reported Car: ${
-                              report.targetCarTitle ||
-                              `Car #${report.targetCarId}`
-                            }`}
-                      </h3>
-                    </div>
-                    <div className="text--1 text-gray-500">
-                      {new Date(report.createdAt).toLocaleString()}
+          <div className="divide-y divide-gray-100">
+            {/* Column headers - desktop */}
+            <div className="hidden md:grid md:grid-cols-[1.3fr_1.6fr_1.4fr_1.2fr_1fr_220px] gap-(--space-2xs) px-(--space-m) py-(--space-2xs) bg-gray-50">
+              <div className="text--1 font-medium text-gray-500 uppercase tracking-wider">
+                Subject
+              </div>
+              <div className="text--1 font-medium text-gray-500 uppercase tracking-wider">
+                Reported By
+              </div>
+              <div className="text--1 font-medium text-gray-500 uppercase tracking-wider">
+                Reason
+              </div>
+              <div className="text--1 font-medium text-gray-500 uppercase tracking-wider">
+                Date
+              </div>
+              <div className="text--1 font-medium text-gray-500 uppercase tracking-wider">
+                Status
+              </div>
+              <div className="text--1 font-medium text-gray-500 uppercase tracking-wider text-center">
+                Actions
+              </div>
+            </div>
+
+            {filteredReports.map((report) => {
+              const subjectText =
+                report.type === "user"
+                  ? report.targetUserName || `User #${report.targetUserId}`
+                  : report.targetCarTitle || `Car #${report.targetCarId}`;
+
+              return (
+                <div
+                  key={report.id}
+                  className="px-(--space-m) py-(--space-s) grid grid-cols-1 md:grid-cols-[1.3fr_1.6fr_1.4fr_1.2fr_1fr_220px] items-start gap-(--space-2xs)"
+                >
+                  {/* Subject + badges (mobile shows both here) */}
+                  <div className="flex items-start gap-(--space-s)">
+                    <span
+                      className={`px-(--space-s) py-(--space-3xs) rounded-full text--1 font-medium ${
+                        report.type === "user"
+                          ? "bg-blue-100 text-blue-700"
+                          : "bg-orange-100 text-orange-700"
+                      }`}
+                    >
+                      {report.type === "user" ? "User" : "Car"}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-0 font-medium text-gray-900 truncate">
+                        {subjectText}
+                      </p>
+                      <p className="text--1 text-gray-600 md:hidden mt-0.5">
+                        {report.reason}
+                      </p>
+                      <p className="text--2 text-gray-500 md:hidden">
+                        {new Date(report.createdAt).toLocaleString()}
+                      </p>
                     </div>
                   </div>
 
-                  {/* Report Details */}
-                  <div className="mb-(--space-s)">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-(--space-s) text-0">
-                      <div>
-                        <span className="text-gray-600">Reported by: </span>
-                        <span className="font-medium">
-                          {report.reportedByName} ({report.reportedByEmail})
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Reason: </span>
-                        <span className="font-medium">{report.reason}</span>
-                      </div>
-                    </div>
-                    {report.description && (
-                      <div className="mt-(--space-s) p-(--space-s) bg-gray-50 rounded-lg">
-                        <p className="text-0 text-gray-700">
-                          {report.description}
-                        </p>
-                      </div>
+                  {/* Reported By */}
+                  <div className="hidden md:block text-0 text-gray-900 truncate">
+                    {report.reportedByName} ({report.reportedByEmail})
+                  </div>
+
+                  {/* Reason */}
+                  <div className="hidden md:block text-0 text-gray-700 truncate">
+                    {report.reason}
+                  </div>
+
+                  {/* Date */}
+                  <div className="hidden md:block text--1 text-gray-500">
+                    {new Date(report.createdAt).toLocaleString()}
+                  </div>
+
+                  {/* Status */}
+                  <div className="hidden md:flex items-center gap-2">
+                    <span
+                      className={`px-(--space-s) py-(--space-3xs) rounded-full text--1 font-medium ${
+                        report.status === "pending"
+                          ? "bg-red-100 text-red-700"
+                          : report.status === "resolved"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-gray-100 text-gray-700"
+                      }`}
+                    >
+                      {report.status.charAt(0).toUpperCase() +
+                        report.status.slice(1)}
+                    </span>
+                    {report.resolvedBy && report.status !== "pending" && (
+                      <span className="text--2 text-gray-500">
+                        by {report.resolvedBy}
+                      </span>
                     )}
                   </div>
 
                   {/* Actions */}
-                  {report.status === "pending" && (
-                    <div className="flex flex-wrap gap-(--space-s) pt-(--space-s) border-t border-gray-200">
-                      <button
-                        onClick={() => handleResolve(report.id)}
-                        disabled={actionLoading === report.id}
-                        className="px-(--space-m) py-(--space-2xs) rounded-lg bg-green-600 hover:bg-green-700 text-white text-0 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {actionLoading === report.id
-                          ? "Processing..."
-                          : "Mark as Resolved"}
-                      </button>
-                      <button
-                        onClick={() => handleDismiss(report.id)}
-                        disabled={actionLoading === report.id}
-                        className="px-(--space-m) py-(--space-2xs) rounded-lg bg-gray-600 hover:bg-gray-700 text-white text-0 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {actionLoading === report.id
-                          ? "Processing..."
-                          : "Dismiss"}
-                      </button>
-                      {report.type === "user" && report.targetUserId && (
+                  <div className="mt-(--space-xs) md:mt-0 flex flex-wrap md:justify-center gap-(--space-2xs)">
+                    {report.status === "pending" ? (
+                      <>
                         <button
-                          onClick={() =>
-                            handleBanUser(report.targetUserId!, report.id)
-                          }
+                          onClick={() => handleResolve(report.id)}
                           disabled={actionLoading === report.id}
-                          className="px-(--space-m) py-(--space-2xs) rounded-lg bg-red-600 hover:bg-red-700 text-white text-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-(--space-m) py-(--space-2xs) rounded-lg bg-green-600 hover:bg-green-700 text-white text-0 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {actionLoading === report.id
                             ? "Processing..."
-                            : "Ban User"}
+                            : "Resolve"}
                         </button>
-                      )}
-                      {report.type === "car" && report.targetCarId && (
                         <button
-                          onClick={() =>
-                            handleRemoveCar(report.targetCarId!, report.id)
-                          }
+                          onClick={() => handleDismiss(report.id)}
                           disabled={actionLoading === report.id}
-                          className="px-(--space-m) py-(--space-2xs) rounded-lg bg-red-600 hover:bg-red-700 text-white text-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-(--space-m) py-(--space-2xs) rounded-lg bg-gray-600 hover:bg-gray-700 text-white text-0 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {actionLoading === report.id
                             ? "Processing..."
-                            : "Remove Car"}
+                            : "Dismiss"}
                         </button>
-                      )}
-                    </div>
-                  )}
-
-                  {report.status !== "pending" && report.resolvedBy && (
-                    <div className="pt-(--space-s) border-t border-gray-200 text--1 text-gray-500">
-                      {report.status === "resolved" ? "Resolved" : "Dismissed"}{" "}
-                      by {report.resolvedBy}
-                      {report.resolvedAt &&
-                        ` on ${new Date(report.resolvedAt).toLocaleString()}`}
-                    </div>
-                  )}
+                        {report.type === "user" && report.targetUserId && (
+                          <button
+                            onClick={() =>
+                              handleBanUser(report.targetUserId!, report.id)
+                            }
+                            disabled={actionLoading === report.id}
+                            className="px-(--space-m) py-(--space-2xs) rounded-lg bg-red-600 hover:bg-red-700 text-white text-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {actionLoading === report.id
+                              ? "Processing..."
+                              : "Ban User"}
+                          </button>
+                        )}
+                        {report.type === "car" && report.targetCarId && (
+                          <button
+                            onClick={() =>
+                              handleRemoveCar(report.targetCarId!, report.id)
+                            }
+                            disabled={actionLoading === report.id}
+                            className="px-(--space-m) py-(--space-2xs) rounded-lg bg-red-600 hover:bg-red-700 text-white text-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {actionLoading === report.id
+                              ? "Processing..."
+                              : "Remove Car"}
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text--1 text-gray-500">
+                        {report.status === "resolved"
+                          ? "Resolved"
+                          : "Dismissed"}
+                        {report.resolvedBy &&
+                          ` by ${report.resolvedBy}${
+                            report.resolvedAt
+                              ? ` on ${new Date(
+                                  report.resolvedAt
+                                ).toLocaleString()}`
+                              : ""
+                          }`}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
