@@ -15,9 +15,11 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Build the application
-# Ensure build command is correct for your project structure
+# Build the main application
 RUN CGO_ENABLED=0 GOOS=linux go build -mod=mod -a -installsuffix cgo -o main .
+
+# Build the seed script binary
+RUN CGO_ENABLED=0 GOOS=linux go build -mod=mod -a -installsuffix cgo -o seed_demo_cars ./scripts/seed_demo_cars.go
 
 # Final stage
 FROM alpine:latest
@@ -38,8 +40,14 @@ ENV CHROME_BIN=/usr/bin/chromium
 
 WORKDIR /app/
 
-# Copy the binary from builder stage
+# Copy the main binary from builder stage
 COPY --from=builder /app/main .
+
+# Copy the seed script binary
+COPY --from=builder /app/seed_demo_cars ./scripts/
+
+# Copy scripts directory (for reference and helpers)
+COPY scripts/seed_demo_cars_docker.sh ./scripts/
 
 # Expose port (adjust as needed)
 EXPOSE 8080

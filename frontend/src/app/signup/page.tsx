@@ -133,7 +133,12 @@ export default function SignupPage() {
         }, 100);
       } else if (result.error?.includes("already exists")) {
         router.push("/signin?message=account_exists");
+      } else {
+        // Handle other signup errors - the error will be displayed via the error state from useUserAuth
+        console.error("Signup failed:", result.error);
       }
+    } catch (err) {
+      console.error("Signup error:", err);
     } finally {
       setIsSubmitting(false);
     }
