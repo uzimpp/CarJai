@@ -235,27 +235,31 @@ jobs:
       - name: Run all tests
         working-directory: ./backend
         env:
-          PORT: 8080
-          ENVIRONMENT: test
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_USER: carjai_user
-          DB_PASSWORD: test_password
-          DB_NAME: carjai_test
-          DB_SSLMODE: disable
-          USER_JWT_SECRET: test_user_jwt_secret_key_at_least_32_chars_long
-          USER_JWT_EXPIRATION_HOURS: 24
-          USER_JWT_ISSUER: carjai-app
-          ADMIN_JWT_SECRET: test_admin_jwt_secret_key_at_least_32_chars_long
-          ADMIN_JWT_EXPIRATION_HOURS: 2
-          ADMIN_JWT_ISSUER: carjai-admin
-          ADMIN_USERNAME: testadmin
-          ADMIN_PASSWORD: test_admin_password
-          ADMIN_NAME: Test Admin
-          ADMIN_ROUTE_PREFIX: /admin
-          ADMIN_IP_WHITELIST: 127.0.0.1/32,::1/128
-          CORS_ALLOWED_ORIGINS: http://localhost:3000
-          AIGEN_API_KEY: test_key
+          PORT: ${{ secrets.PORT }}
+          ENVIRONMENT: ${{ secrets.ENVIRONMENT }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_SSLMODE: ${{ secrets.DB_SSLMODE }}
+          USER_JWT_SECRET: ${{ secrets.USER_JWT_SECRET }}
+          USER_JWT_EXPIRATION_HOURS: ${{ secrets.USER_JWT_EXPIRATION_HOURS }}
+          USER_JWT_ISSUER: ${{ secrets.USER_JWT_ISSUER }}
+          ADMIN_JWT_SECRET: ${{ secrets.ADMIN_JWT_SECRET }}
+          ADMIN_JWT_EXPIRATION_HOURS: ${{ secrets.ADMIN_JWT_EXPIRATION_HOURS }}
+          ADMIN_JWT_ISSUER: ${{ secrets.ADMIN_JWT_ISSUER }}
+          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          ADMIN_NAME: ${{ secrets.ADMIN_NAME }}
+          ADMIN_ROUTE_PREFIX: ${{ secrets.ADMIN_ROUTE_PREFIX }}
+          ADMIN_IP_WHITELIST: ${{ secrets.ADMIN_IP_WHITELIST }}
+          CORS_ALLOWED_ORIGINS: ${{ secrets.CORS_ALLOWED_ORIGINS }}
+          AIGEN_API_KEY: ${{ secrets.AIGEN_API_KEY }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REDIRECT_URI: ${{ secrets.GOOGLE_REDIRECT_URI }}
+          BACKEND_URL: ${{ secrets.BACKEND_URL }}
         run: |
           echo "🧪 Running all tests..."
           echo ""
@@ -377,34 +381,38 @@ jobs:
       - name: Start services with docker-compose
         env:
           # Backend environment variables
-          PORT: 8080
-          ENVIRONMENT: test
-          POSTGRES_DB: carjai
-          POSTGRES_USER: carjai_user
-          POSTGRES_PASSWORD: test_password
-          DB_NAME: carjai
-          DB_PASSWORD: test_password
-          DB_USER: carjai_user
-          DB_HOST: database
-          DB_PORT: 5432
-          DB_SSLMODE: disable
-          USER_JWT_SECRET: test_user_jwt_secret_key_at_least_32_chars_long
-          USER_JWT_EXPIRATION_HOURS: 24
-          USER_JWT_ISSUER: carjai-app
-          ADMIN_JWT_SECRET: test_admin_jwt_secret_key_at_least_32_chars_long
-          ADMIN_JWT_EXPIRATION_HOURS: 2
-          ADMIN_JWT_ISSUER: carjai-admin
-          JWT_SECRET: test_jwt_secret_key_at_least_32_characters_long
-          JWT_EXPIRATION_HOURS: 24
-          JWT_ISSUER: test_api
-          ADMIN_USERNAME: testadmin
-          ADMIN_PASSWORD: test_admin_password
-          ADMIN_NAME: Test Admin
-          ADMIN_ROUTE_PREFIX: /admin
-          ADMIN_IP_WHITELIST: 127.0.0.1/32,::1/128,172.18.0.0/16
-          CORS_ALLOWED_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
-          NEXT_PUBLIC_API_URL: http://localhost:8080
-          AIGEN_API_KEY: test_key
+          PORT: ${{ secrets.PORT }}
+          ENVIRONMENT: ${{ secrets.ENVIRONMENT }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_SSLMODE: ${{ secrets.DB_SSLMODE }}
+          USER_JWT_SECRET: ${{ secrets.USER_JWT_SECRET }}
+          USER_JWT_EXPIRATION_HOURS: ${{ secrets.USER_JWT_EXPIRATION_HOURS }}
+          USER_JWT_ISSUER: ${{ secrets.USER_JWT_ISSUER }}
+          ADMIN_JWT_SECRET: ${{ secrets.ADMIN_JWT_SECRET }}
+          ADMIN_JWT_EXPIRATION_HOURS: ${{ secrets.ADMIN_JWT_EXPIRATION_HOURS }}
+          ADMIN_JWT_ISSUER: ${{ secrets.ADMIN_JWT_ISSUER }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_EXPIRATION_HOURS: ${{ secrets.JWT_EXPIRATION_HOURS }}
+          JWT_ISSUER: ${{ secrets.JWT_ISSUER }}
+          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          ADMIN_NAME: ${{ secrets.ADMIN_NAME }}
+          ADMIN_ROUTE_PREFIX: ${{ secrets.ADMIN_ROUTE_PREFIX }}
+          ADMIN_IP_WHITELIST: ${{ secrets.ADMIN_IP_WHITELIST }}
+          CORS_ALLOWED_ORIGINS: ${{ secrets.CORS_ALLOWED_ORIGINS }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          AIGEN_API_KEY: ${{ secrets.AIGEN_API_KEY }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REDIRECT_URI: ${{ secrets.GOOGLE_REDIRECT_URI }}
+          BACKEND_URL: ${{ secrets.BACKEND_URL }}
           # Frontend environment variables
           NODE_ENV: test
         run: |
