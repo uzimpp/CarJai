@@ -11,7 +11,7 @@ CREATE TABLE users (
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
     google_id VARCHAR(255) UNIQUE,
     auth_provider VARCHAR(50),
-    provider_linked_at TIMESTAMP,
+    provider_linked_at TIMESTAMP
 );
 
 -- User sessions
