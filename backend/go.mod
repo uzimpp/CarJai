@@ -1,6 +1,6 @@
 module github.com/uzimpp/CarJai/backend
 
-go 1.24.1
+go 1.24.3
 
 require (
 	github.com/PuerkitoBio/goquery v1.10.3

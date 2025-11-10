@@ -1,7 +1,8 @@
 CREATE TABLE market_price (
     id SERIAL PRIMARY KEY,
     brand VARCHAR(255) NOT NULL,
-    model_trim VARCHAR(255) NOT NULL,
+    model VARCHAR(255) NOT NULL,
+    sub_model VARCHAR(255) NOT NULL,
     year_start SMALLINT NOT NULL,
     year_end SMALLINT NOT NULL,
     price_min_thb BIGINT NOT NULL,
@@ -10,8 +11,19 @@ CREATE TABLE market_price (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_market_price_brand_model_year ON market_price (brand, model_trim, year_start, year_end);
+CREATE INDEX idx_market_price_brand_model_sub_model_year ON market_price (
+    brand,
+    model,
+    sub_model,
+    year_start,
+    year_end
+);
 
 ALTER TABLE market_price
-ADD CONSTRAINT market_price_unique UNIQUE (brand, model_trim, year_start, year_end);
-
+ADD CONSTRAINT market_price_unique UNIQUE (
+    brand,
+    model,
+    sub_model,
+    year_start,
+    year_end
+);

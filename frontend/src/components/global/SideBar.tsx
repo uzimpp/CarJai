@@ -78,7 +78,7 @@ export default function SideBar({ onWidthChange }: SideBarProps) {
 
       {/* Navigation Menu */}
       <nav className="flex flex-col gap-y-(--space-2xs) overflow-x-visible pt-(--space-xs) border-t border-white/20">
-        {adminMenuItems.map((item: any) => {
+        {adminMenuItems.map((item) => {
           const isActive = pathname === item.href;
           return (
             <div key={item.href}>

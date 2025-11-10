@@ -75,7 +75,7 @@ export default function AccountBtn({
                 <div className="flex flex-col gap-y-(--space-2xs)">
                   {isAuthedAdmin && (
                     <Fragment>
-                      {adminMenuItems.map((item: any) => (
+                      {adminMenuItems.map((item) => (
                         <Link
                           key={item.label}
                           href={item.href}

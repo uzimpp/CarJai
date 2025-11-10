@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"encoding/json" // *** Added this import ***
 	"fmt"
 	"io"
 	"log"
@@ -27,7 +26,7 @@ func NewAdminExtractionHandler(es *services.ExtractionService) *AdminExtractionH
 	}
 }
 
-// HandleImportMarketPrices handles the PDF upload, extracts data, and returns JSON.
+// HandleImportMarketPrices handles the PDF upload, extracts data, and commits directly to database.
 func (h *AdminExtractionHandler) HandleImportMarketPrices(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		utils.WriteError(w, http.StatusMethodNotAllowed, "Method Not Allowed")
@@ -82,21 +81,28 @@ func (h *AdminExtractionHandler) HandleImportMarketPrices(w http.ResponseWriter,
 	}
 	// --- End File Upload Handling ---
 
-	// --- Call Extraction Service Synchronously ---
-	log.Printf("Starting synchronous extraction for file: %s", tempFilePath)
-	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Minute)
+	// --- Call Import Service (Extract + Commit) ---
+	log.Printf("Starting market price import (extraction + database commit) for file: %s", tempFilePath)
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Minute) // Longer timeout for DB operations
 	defer cancel()
-	extractedData, extractErr := h.ExtractionService.ExtractMarketPricesFromPDF(ctx, tempFilePath)
-	if extractErr != nil {
-		log.Printf("ERROR during synchronous market price extraction from %s: %v", tempFilePath, extractErr)
-		utils.WriteError(w, http.StatusInternalServerError, fmt.Sprintf("Extraction failed: %v", extractErr))
+
+	inserted, updated, importErr := h.ExtractionService.ImportMarketPricesFromPDF(ctx, tempFilePath)
+	if importErr != nil {
+		log.Printf("ERROR during market price import from %s: %v", tempFilePath, importErr)
+		utils.WriteError(w, http.StatusInternalServerError, fmt.Sprintf("Import failed: %v", importErr))
 		return
 	}
-	log.Printf("Synchronous extraction from %s completed. Found %d records.", tempFilePath, len(extractedData))
 
-	// --- Respond to Client with Status 200 OK and Extracted JSON Data ---
-	utils.WriteJSON(w, http.StatusOK, extractedData)
-	log.Println("Admin ImportMarketPrices request processed, extraction complete, JSON response sent.")
+	log.Printf("Market price import from %s completed successfully. Inserted: %d, Updated: %d", tempFilePath, inserted, updated)
+
+	// --- Respond with Success ---
+	response := map[string]interface{}{
+		"message":        "Market prices imported successfully.",
+		"inserted_count": inserted,
+		"updated_count":  updated,
+	}
+	utils.WriteJSON(w, http.StatusOK, response)
+	log.Println("Admin ImportMarketPrices request processed successfully.")
 }
 
 // --- New Handler: Receive JSON and Save to Database ---
@@ -119,59 +125,4 @@ func (h *AdminExtractionHandler) HandleGetMarketPrices(w http.ResponseWriter, r 
 
 	log.Printf("Successfully retrieved %d market prices.", len(prices))
 	utils.WriteJSON(w, http.StatusOK, prices)
-}
-
-// HandleCommitMarketPrices receives extracted market price data as JSON and commits it to the database.
-func (h *AdminExtractionHandler) HandleCommitMarketPrices(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		utils.WriteError(w, http.StatusMethodNotAllowed, "Method Not Allowed")
-		return
-	}
-
-	// 1. Decode JSON Body
-	var pricesToCommit []services.MarketPrice // Use the struct from the services package
-	decoder := json.NewDecoder(r.Body)
-	decoder.DisallowUnknownFields() // Optional: reject requests with extra fields
-
-	err := decoder.Decode(&pricesToCommit)
-	if err != nil {
-		log.Printf("Error decoding JSON body for commit: %v", err)
-		if err == io.EOF {
-			utils.WriteError(w, http.StatusBadRequest, "Request body cannot be empty.")
-		} else if _, ok := err.(*json.SyntaxError); ok {
-			utils.WriteError(w, http.StatusBadRequest, "Invalid JSON format in request body.")
-		} else {
-			utils.WriteError(w, http.StatusBadRequest, fmt.Sprintf("Error decoding request body: %v", err))
-		}
-		return
-	}
-
-	if len(pricesToCommit) == 0 {
-		log.Println("Received commit request with empty data array.")
-		utils.WriteError(w, http.StatusBadRequest, "Received empty data array. Nothing to commit.")
-		return
-	}
-
-	log.Printf("Received commit request with %d records.", len(pricesToCommit))
-
-	// 2. Call Service to Commit Data
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Minute) // Longer timeout for DB operations
-	defer cancel()
-
-	inserted, updated, commitErr := h.ExtractionService.CommitMarketPrices(ctx, pricesToCommit)
-
-	if commitErr != nil {
-		log.Printf("ERROR during market price commit: %v", commitErr)
-		utils.WriteError(w, http.StatusInternalServerError, fmt.Sprintf("Database commit failed: %v", commitErr))
-		return
-	}
-
-	// 3. Respond Success
-	log.Printf("Market price commit successful. Inserted: %d, Updated: %d", inserted, updated)
-	response := map[string]interface{}{
-		"message":        "Market prices committed successfully.",
-		"inserted_count": inserted,
-		"updated_count":  updated,
-	}
-	utils.WriteJSON(w, http.StatusOK, response)
 }

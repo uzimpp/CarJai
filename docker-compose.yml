@@ -50,9 +50,11 @@ services:
       ADMIN_IP_WHITELIST: ${ADMIN_IP_WHITELIST}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      BACKEND_URL: ${BACKEND_URL}
       AIGEN_API_KEY: ${AIGEN_API_KEY}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
     volumes:
       - ./frontend/public/assets:/app/frontend/public/assets:ro
     networks:

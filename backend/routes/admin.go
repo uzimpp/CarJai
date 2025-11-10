@@ -80,17 +80,18 @@ func AdminRoutes(
 	router.HandleFunc(basePath+"/ip-whitelist/check", applyAdminAuthMiddleware(adminIPHandler.CheckIPDeletionImpact))
 	router.HandleFunc(basePath+"/ip-whitelist/remove", applyAdminAuthMiddleware(adminIPHandler.RemoveIPFromWhitelist))
 
-	// --- Market Price GET Route (GET all prices) ---
-	// This endpoint retrieves all market prices from the database
-	router.HandleFunc(basePath+"/market-price", applyAdminAuthMiddleware(adminExtractionHandler.HandleGetMarketPrices))
-
-	// --- Market Price Import/Extract Route (POST PDF) ---
-	// This endpoint only use for extract data
-	router.HandleFunc(basePath+"/market-price/import", applyAdminAuthMiddleware(adminExtractionHandler.HandleImportMarketPrices))
-
-	// --- Market Price Commit Route (POST JSON) ---
-	// This endpoint receive JSON and insert to DB
-	router.HandleFunc(basePath+"/market-price/commit", applyAdminAuthMiddleware(adminExtractionHandler.HandleCommitMarketPrices))
+	// --- Market Price Routes ---
+	// GET: Retrieve all market prices from the database
+	// POST: Upload PDF and directly import to database
+	router.HandleFunc(basePath+"/market-price", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			applyAdminAuthMiddleware(adminExtractionHandler.HandleGetMarketPrices)(w, r)
+		} else if r.Method == http.MethodPost {
+			applyAdminAuthMiddleware(adminExtractionHandler.HandleImportMarketPrices)(w, r)
+		} else {
+			utils.WriteError(w, http.StatusMethodNotAllowed, "Method Not Allowed")
+		}
+	})
 
 	// --- Health Check & Root ---
 	// Health check and Root only need Global IP Whitelist and general logging

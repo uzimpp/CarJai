@@ -9,22 +9,28 @@ import (
 
 // AppConfig holds application configuration
 type AppConfig struct {
-	Port				string
-	AdminRoutePrefix	string
-	Environment 		string
-	AdminUsername		string
-	AdminPassword		string
-	AdminName			string
-	AdminIPWhitelist	[]string
-	CORSAllowedOrigins	[]string
-	AigenAPIKey			string `env:"AIGEN_API_KEY,required"`
+	Port               string
+	AdminRoutePrefix   string
+	Environment        string
+	AdminUsername      string
+	AdminPassword      string
+	AdminName          string
+	AdminIPWhitelist   []string
+	CORSAllowedOrigins []string
+	AigenAPIKey        string `env:"AIGEN_API_KEY,required"`
+	// Google OAuth configuration
+	GoogleClientID     string
+	GoogleClientSecret string
+	GoogleRedirectURI  string
+	// General backend URL (used for constructing absolute callback URLs)
+	BackendURL string
 	// Separate JWT configs for user and admin
-	UserJWTSecret		string
-	UserJWTExpiration	int // in hours
-	UserJWTIssuer		string
-	AdminJWTSecret		string
-	AdminJWTExpiration	int // in hours
-	AdminJWTIssuer		string
+	UserJWTSecret      string
+	UserJWTExpiration  int // in hours
+	UserJWTIssuer      string
+	AdminJWTSecret     string
+	AdminJWTExpiration int // in hours
+	AdminJWTIssuer     string
 }
 
 // LoadAppConfig loads application configuration from environment variables
@@ -42,6 +48,11 @@ func LoadAppConfig() *AppConfig {
 		AdminName:          utils.GetEnv("ADMIN_NAME"),
 		AdminIPWhitelist:   allowedIPs,
 		CORSAllowedOrigins: allowedOrigins,
+		// Google OAuth
+		GoogleClientID:     utils.GetEnv("GOOGLE_CLIENT_ID"),
+		GoogleClientSecret: utils.GetEnv("GOOGLE_CLIENT_SECRET"),
+		GoogleRedirectURI:  utils.GetEnv("GOOGLE_REDIRECT_URI"),
+		BackendURL:         utils.GetEnv("BACKEND_URL"),
 		// User JWT configs
 		UserJWTSecret:     utils.GetEnv("USER_JWT_SECRET"),
 		UserJWTExpiration: utils.GetEnvAsInt("USER_JWT_EXPIRATION_HOURS"),

@@ -122,13 +122,8 @@ export default function IPWhitelistPage() {
   return (
     <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full flex flex-col gap-(--space-s-m)">
       {/* Header */}
-      <div className="rounded-3xl bg-gradient-to-r from-maroon to-red text-white shadow-[var(--shadow-lg)] px-(--space-l) py-(--space-m)">
-        <div>
-          <h1 className="text-3 bold">IP Whitelist Management</h1>
-          <p className="text--1 opacity-90">
-            Manage allowed IP addresses for admin access
-          </p>
-        </div>
+      <div>
+        <h1 className="text-3 bold">IP Whitelist Management</h1>
       </div>
 
       {/* Add IP Form */}

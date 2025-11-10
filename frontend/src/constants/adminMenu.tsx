@@ -1,4 +1,4 @@
-export const adminMenuItems = [
+export const adminMenuItems: { href: string; label: string; icon: React.ReactNode }[] = [
   {
     href: "/admin/dashboard",
     label: "Dashboard",

@@ -7,6 +7,7 @@ import {
   AdminSession,
   AdminIPWhitelist,
   AdminSigninRequest,
+  AdminAuthResponse,
 } from "@/types/admin";
 import { adminAuthAPI } from "@/lib/adminAuth";
 import { mutualLogout } from "@/lib/mutualLogout";
@@ -17,7 +18,7 @@ interface AdminAuthContextType {
   ipWhitelist: AdminIPWhitelist[];
   loading: boolean;
   isAuthenticated: boolean | null;
-  signin: (data: AdminSigninRequest) => Promise<any>;
+  signin: (data: AdminSigninRequest) => Promise<AdminAuthResponse>;
   signout: () => Promise<void>;
   validateSession: () => Promise<void>;
   fetchIPWhitelist: () => void;
@@ -137,7 +138,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         // Ignore post-signin data fetch errors
       }
 
-      return response;
+      return response as AdminAuthResponse;
     } catch (error) {
       throw error;
     } finally {
