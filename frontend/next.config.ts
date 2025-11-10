@@ -15,7 +15,7 @@ const nextConfig: NextConfig = {
     } else {
       backendUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.carjai.com";
     }
-    
+
     return [
       // *** นี่คือ Rule ที่ต้องเอาคอมเมนต์ออก ***
       // มันจะจับคู่ /admin/auth/signin และส่งต่อไปที่ backend

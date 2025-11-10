@@ -11,13 +11,13 @@ import (
 type MarketPrice struct {
 	ID          int       `json:"id" db:"id"`
 	Brand       string    `json:"brand" db:"brand"`
-	Model       string    `json:"model" db:"model"`         
-	SubModel    string    `json:"sub_model" db:"sub_model"` 
+	Model       string    `json:"model" db:"model"`
+	SubModel    string    `json:"sub_model" db:"sub_model"`
 	YearStart   int       `json:"year_start" db:"year_start"`
 	YearEnd     int       `json:"year_end" db:"year_end"`
 	PriceMinTHB int64     `json:"price_min_thb" db:"price_min_thb"`
 	PriceMaxTHB int64     `json:"price_max_thb" db:"price_max_thb"`
-	CreatedAt   time.Time `json:"created_at" db:"created_at"` 
+	CreatedAt   time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at" db:"updated_at"`
 }
 
@@ -68,7 +68,7 @@ func (r *MarketPriceRepository) GetMarketPrice(brand string, model string, submo
 
 func (r *MarketPriceRepository) GetDistinctBrands() ([]string, error) {
 	query := `SELECT DISTINCT brand FROM market_price ORDER BY brand;`
-	
+
 	rows, err := r.db.DB.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query distinct brands: %w", err)
@@ -88,7 +88,7 @@ func (r *MarketPriceRepository) GetDistinctBrands() ([]string, error) {
 
 func (r *MarketPriceRepository) GetDistinctModels(brand string) ([]string, error) {
 	query := `SELECT DISTINCT model FROM market_price WHERE brand = $1 ORDER BY model;`
-	
+
 	rows, err := r.db.DB.Query(query, brand)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query distinct models: %w", err)

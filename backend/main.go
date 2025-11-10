@@ -163,7 +163,7 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 
 	// Mount all routes
 	mux.Handle("/api/auth/",
-		routes.UserAuthRoutes(services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
+		routes.UserAuthRoutes(services.User, services.UserJWT, appConfig.CORSAllowedOrigins, appConfig))
 	mux.Handle("/api/profile/",
 		routes.ProfileRoutes(services.Profile, services.User, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/sellers/",
@@ -190,10 +190,10 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 	)
 	mux.Handle("/health/",
 		routes.HealthRoutes(db, appConfig.CORSAllowedOrigins))
-    mux.Handle("/api/recent-views",
-        routes.RecentViewsRoutes(services.RecentViews, services.Profile, services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
-    mux.Handle("/api/recent-views/",
-        routes.RecentViewsRoutes(services.RecentViews, services.Profile, services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
+	mux.Handle("/api/recent-views",
+		routes.RecentViewsRoutes(services.RecentViews, services.Profile, services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
+	mux.Handle("/api/recent-views/",
+		routes.RecentViewsRoutes(services.RecentViews, services.Profile, services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/reference-data/",
 		routes.ReferenceRoutes(db, appConfig.CORSAllowedOrigins))
 
