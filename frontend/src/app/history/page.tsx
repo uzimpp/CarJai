@@ -81,8 +81,11 @@ export default function HistoryPage() {
               const carResp = await apiCall<{ success: boolean; data: Car }>(`/api/cars/${v.car_id}`, {
                 method: 'GET',
               });
-              const firstImageId = carResp.success ? carResp.data?.images?.[0]?.id : undefined;
-              return { ...v, image_id: firstImageId };
+              if (carResp.success && carResp.data) {
+                const firstImageId = carResp.data?.images?.[0]?.id;
+                return { ...v, image_id: firstImageId };
+              }
+              return v;
             } catch {
               // If fetching fails, return as-is without image
               return v;

@@ -8,6 +8,7 @@ import type {
   BookResult,
   CarListing,
 } from "@/types/car";
+import type { RecordViewResponse } from "@/types/user";
 
 // Type definitions now sourced from types/Car
 
@@ -283,4 +284,39 @@ export const carsAPI = {
       method: "GET",
     });
   },
+
+  /**
+   * Fetches the estimated price for a car.
+   * Returns null data if estimation is unavailable (success: false).
+   */
+  async getPriceEstimate(carId: number): Promise<{
+    success: boolean;
+    data: { estimatedPrice: number } | null;
+    message?: string;
+  }> {
+    return apiCall<{
+      success: boolean;
+      data: { estimatedPrice: number } | null;
+      message?: string;
+    }>(`/api/cars/${carId}/estimate`, {
+      method: "GET",
+    });
+  },
+
+  async recordView(carId: number): Promise<{
+    success: boolean;
+    message: string;
+  }> {
+    return apiCall<{
+      success: boolean;
+      message: string;
+    }>('/api/recent-views/record', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ car_id: carId }),
+    });
+  },
+  
 };
