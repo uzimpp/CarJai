@@ -24,14 +24,12 @@ import (
 
 // testServer holds the test server and dependencies
 type testServer struct {
-	server      *httptest.Server
-	db          *sql.DB
-	services    *servicesContainer
-	appConfig   *config.AppConfig
-	userToken   string
-	adminToken  string
-	testUserID  int
-	testAdminID int
+	server     *httptest.Server
+	db         *sql.DB
+	services   *servicesContainer
+	appConfig  *config.AppConfig
+	userToken  string
+	adminToken string
 }
 
 // servicesContainer mirrors main.ServiceContainer
@@ -53,7 +51,7 @@ type servicesContainer struct {
 func loadEnv(t *testing.T) {
 	envPath := "/app/.env"
 	if _, err := os.Stat(envPath); os.IsNotExist(err) {
-		envPath = "../../.env"
+		envPath = "../../../.env"
 	}
 	if err := godotenv.Load(envPath); err != nil {
 		log.Printf("Warning: Could not load .env file: %v. Using system environment variables.", err)
@@ -107,6 +105,7 @@ func initializeTestServices(db *sql.DB, appConfig *config.AppConfig) *servicesCo
 	carColorRepo := models.NewCarColorRepository(database)
 	carFuelRepo := models.NewCarFuelRepository(database)
 	favouriteRepo := models.NewFavouriteRepository(database)
+	marketPriceRepo := models.NewMarketPriceRepository(database)
 
 	// Create JWT managers
 	userJWTManager := utils.NewJWTManager(
@@ -139,6 +138,7 @@ func initializeTestServices(db *sql.DB, appConfig *config.AppConfig) *servicesCo
 		inspectionRepo,
 		carColorRepo,
 		carFuelRepo,
+		marketPriceRepo,
 	)
 
 	// Create favourites service
@@ -183,7 +183,7 @@ func setupTestRoutes(svcs *servicesContainer, appConfig *config.AppConfig, db *s
 	})
 
 	mux.Handle("/api/auth/",
-		routes.UserAuthRoutes(svcs.User, svcs.UserJWT, appConfig.CORSAllowedOrigins))
+		routes.UserAuthRoutes(svcs.User, svcs.UserJWT, appConfig.CORSAllowedOrigins, appConfig))
 	mux.Handle("/api/profile/",
 		routes.ProfileRoutes(svcs.Profile, svcs.User, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/sellers/",
@@ -368,7 +368,7 @@ func TestCarEndpoints(t *testing.T) {
 	// Create a test user first
 	// Use nanosecond modulo to ensure unique email/username while keeping username under 20 chars
 	nanos := time.Now().UnixNano() % 1000000
-	timestamp := nanos % 1000000 // Limit to 6 digits to keep username under 20 chars
+	timestamp := nanos % 1000000                            // Limit to 6 digits to keep username under 20 chars
 	testEmail := fmt.Sprintf("seller%d@example.com", nanos) // Use full nanos for email uniqueness
 	signupData := models.UserSignupRequest{
 		Email:    testEmail,
@@ -502,4 +502,3 @@ func TestAdminAuthFlow(t *testing.T) {
 		}
 	})
 }
-
