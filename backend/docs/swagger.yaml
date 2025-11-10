@@ -108,6 +108,65 @@ paths:
         '401':
           description: Invalid credentials
 
+  /api/auth/google/signin:
+    post:
+      tags:
+        - Authentication
+      summary: User sign in with Google ID token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id_token
+              properties:
+                id_token:
+                  type: string
+                  description: Google ID token from Google Identity Services
+      responses:
+        '200':
+          description: Sign in successful
+        '401':
+          description: Invalid Google token
+
+  /api/auth/google/start:
+    get:
+      tags:
+        - Authentication
+      summary: Start Google OAuth flow
+      security: []
+      responses:
+        '302':
+          description: Redirects to Google authorization page
+        '500':
+          description: Google OAuth not configured
+
+  /api/auth/google/callback:
+    get:
+      tags:
+        - Authentication
+      summary: Google OAuth callback
+      security: []
+      parameters:
+        - in: query
+          name: state
+          schema:
+            type: string
+        - in: query
+          name: code
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Sign in successful
+        '400':
+          description: Invalid state or code
+        '502':
+          description: Failed to exchange code
+
   /api/auth/me:
     get:
       tags:
@@ -744,6 +803,53 @@ paths:
                     type: string
                   redirectToCarId:
                     type: integer
+
+  /api/cars/{id}/estimate:
+    get:
+      tags:
+        - Cars
+      summary: Get estimated market price for a car
+      description: >
+        Calculates an estimated market price for a car based on its
+        brand, submodel, year, condition, mileage, and inspection results.
+        Requires authentication (inherits global CookieAuth).
+      operationId: getCarPriceEstimate
+      parameters:
+        - name: id
+          in: path
+          description: ID of the car (draft) to estimate
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Estimation successful or estimation unavailable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    nullable: true
+                    properties:
+                      estimatedPrice:
+                        type: integer
+                        format: int64
+                        example: 450000
+                  message:
+                    type: string
+                    nullable: true
+                    example: "estimation unavailable: market price not found for TOYOTA HILUX VIGO (2008)"
+        '400':
+          description: Bad request (e.g., Invalid car ID)
+        '401':
+          description: Unauthorized
+        '404':
+          description: Car not found
 
   /api/cars/book:
     post:
@@ -1928,3 +2034,4 @@ components:
         updated_count:
           type: integer
           example: 10
+}

@@ -78,7 +78,7 @@ func (s *RecentViewsService) GetUserRecentViews(userID, limit int) ([]models.Rec
             c.status,
             c.brand_name,
             c.model_name,
-            s.display_name as seller_display_name
+            COALESCE(s.display_name, 'Unknown Seller') as seller_display_name
         FROM recent_views rv
         JOIN cars c ON rv.car_id = c.id
         LEFT JOIN provinces p ON c.province_id = p.id
@@ -96,7 +96,7 @@ func (s *RecentViewsService) GetUserRecentViews(userID, limit int) ([]models.Rec
 	}
 	defer rows.Close()
 
-	var recentViews []models.RecentViewWithCarDetails
+	recentViews := make([]models.RecentViewWithCarDetails, 0)
 	for rows.Next() {
 		var rv models.RecentViewWithCarDetails
 		var yearNull, mileageNull, priceNull, conditionRatingNull sql.NullInt64

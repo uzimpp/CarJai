@@ -6,6 +6,8 @@ import (
 	"mime/multipart"
 	"net/http"
 	"time"
+	"math"
+	"database/sql"
 
 	"github.com/uzimpp/CarJai/backend/models"
 	"github.com/uzimpp/CarJai/backend/utils"
@@ -63,6 +65,7 @@ type CarService struct {
 	inspectionRepo *models.InspectionRepository
 	colorRepo      *models.CarColorRepository
 	fuelRepo       *models.CarFuelRepository
+	marketPriceRepo   *models.MarketPriceRepository
 }
 
 // NewCarService creates a new car service
@@ -72,6 +75,7 @@ func NewCarService(
 	inspectionRepo *models.InspectionRepository,
 	colorRepo *models.CarColorRepository,
 	fuelRepo *models.CarFuelRepository,
+	marketPriceRepo *models.MarketPriceRepository,
 ) *CarService {
 	return &CarService{
 		carRepo:        carRepo,
@@ -79,7 +83,121 @@ func NewCarService(
 		inspectionRepo: inspectionRepo,
 		colorRepo:      colorRepo,
 		fuelRepo:       fuelRepo,
+		marketPriceRepo:   marketPriceRepo,
 	}
+}
+
+// --- EstimateCarPrice ---
+// EstimateCarPrice calculates an estimated price based on market data and car condition
+func (s *CarService) EstimateCarPrice(carID int) (int64, error) {
+	// 1. Get car data
+	car, err := s.carRepo.GetCarByID(carID)
+	if err != nil {
+		return 0, fmt.Errorf("car not found: %w", err)
+	}
+
+	insp, err := s.inspectionRepo.GetInspectionByCarID(carID)
+	if err != nil && err != sql.ErrNoRows {
+		return 0, fmt.Errorf("failed to check inspection data: %w", err)
+	}
+
+
+	// 3. Check for required fields for estimation
+
+	if car.BrandName == nil || car.ModelName == nil || car.SubmodelName == nil || car.Year == nil {
+		return 0, fmt.Errorf("estimation unavailable: missing brand, model, submodel, or year")
+	}
+
+	// 4. Get base market price
+	marketPrice, err := s.marketPriceRepo.GetMarketPrice(*car.BrandName, *car.ModelName, *car.SubmodelName, *car.Year)
+	if err != nil {
+		return 0, fmt.Errorf("estimation unavailable: no matching market data found")
+	}
+
+	// 5. Calculate base price (average of min/max)
+	basePrice := (marketPrice.PriceMinTHB + marketPrice.PriceMaxTHB) / 2
+	if basePrice <= 0 {
+		return 0, fmt.Errorf("invalid base price from market data")
+	}
+
+	// 6. Calculate Condition Score (Adjustment Factor)
+	adjustmentFactor := 1.0
+
+
+	if car.ConditionRating != nil {
+		adjustmentFactor += (float64(*car.ConditionRating) - 3.0) * 0.05
+	}
+
+	if car.Mileage != nil {
+		carAge := time.Now().Year() - *car.Year + 1
+		if carAge <= 0 {
+			carAge = 1
+		}
+		mileagePerYear := float64(*car.Mileage) / float64(carAge)
+
+		if mileagePerYear < 15000 {
+			adjustmentFactor += 0.05
+		} else if mileagePerYear > 30000 {
+			adjustmentFactor -= 0.05
+		}
+	}
+
+	if car.IsFlooded {
+		adjustmentFactor -= 0.30
+	}
+	if car.IsHeavilyDamaged {
+		adjustmentFactor -= 0.40
+	}
+
+	if insp != nil {
+
+		inspectionFields := []*bool{
+			insp.OverallPass,
+			insp.BrakeResult,
+			insp.HandbrakeResult,
+			insp.AlignmentResult,
+			insp.NoiseResult,
+			insp.EmissionResult,
+			insp.HornResult,
+			insp.SpeedometerResult,
+			insp.HighLowBeamResult,
+			insp.SignalLightsResult,
+			insp.OtherLightsResult,
+			insp.WindshieldResult,
+			insp.SteeringResult,
+			insp.WheelsTiresResult,
+			insp.FuelTankResult,
+			insp.ChassisResult,
+			insp.BodyResult,
+			insp.DoorsFloorResult,
+			insp.SeatbeltResult,
+			insp.WiperResult,
+		}
+
+		failedCount := 0
+		for _, field := range inspectionFields {
+			if field == nil || *field == false {
+				failedCount++
+			}
+		}
+
+		if failedCount == 0 {
+			adjustmentFactor += 0.20
+		} else {
+			penalty := float64(failedCount) * 0.01
+			adjustmentFactor -= penalty
+		}
+	}
+
+
+
+	// 8. Calculate final price
+	finalPrice := float64(basePrice) * adjustmentFactor
+
+	// Round to nearest 1,000 THB
+	estimatedPrice := int64(math.Round(finalPrice/1000) * 1000)
+
+	return estimatedPrice, nil
 }
 
 // CreateCar creates a new empty draft car (ephemeral)

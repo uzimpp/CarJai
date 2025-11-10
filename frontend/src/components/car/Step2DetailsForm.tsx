@@ -16,6 +16,7 @@ interface Step2DetailsFormProps {
   onContinue: () => void;
   onBack: () => void;
   isSubmitting: boolean;
+
 }
 
 export default function Step2DetailsForm({
@@ -24,7 +25,8 @@ export default function Step2DetailsForm({
   onContinue,
   onBack,
   isSubmitting,
-}: Step2DetailsFormProps) {
+}: 
+Step2DetailsFormProps) {
   // Fetch reference options
   const [bodyTypeOptions, setBodyTypeOptions] = useState<
     ChoiceOption<string>[]
@@ -168,6 +170,7 @@ export default function Step2DetailsForm({
       {/* Action Buttons */}
       <div className="flex justify-between pt-6 border-t">
         <button
+          type="button"
           onClick={onBack}
           disabled={isSubmitting}
           className="px-6 py-3 border border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"

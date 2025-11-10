@@ -84,6 +84,20 @@ export default function CarListingPage() {
     fetchFavorites();
   }, [isBuyer, carId]);
 
+  useEffect(() => {
+    if (isBuyer && carId) {
+      
+      const recordView = async () => {
+        try {
+          await carsAPI.recordView(carId);
+        } catch (err) {
+          console.error("Failed to record viewing history:", err);
+        }
+      };
+      recordView();
+    }
+  }, [carId, isBuyer]); // ทำงานทุกครั้งที่ carId หรือ สถานะ isBuyer เปลี่ยน
+
   const handleFavoriteToggle = async (carId: number, newFavoriteState: boolean) => {
     // Update local state immediately for optimistic UI
     setIsFavorited(newFavoriteState);

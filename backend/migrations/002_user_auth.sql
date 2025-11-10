@@ -8,7 +8,10 @@ CREATE TABLE users (
     username VARCHAR(20) UNIQUE NOT NULL,
     name VARCHAR(100) NOT NULL, -- display name "John Doe"
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    google_id VARCHAR(255) UNIQUE,
+    auth_provider VARCHAR(50),
+    provider_linked_at TIMESTAMP
 );
 
 -- User sessions
@@ -23,13 +26,15 @@ CREATE TABLE user_sessions (
 );
 
 -- Indexes
+CREATE INDEX idx_users_created_at ON users (created_at);
+
 CREATE INDEX idx_user_sessions_token ON user_sessions (token);
 
 CREATE INDEX idx_user_sessions_user_id ON user_sessions (user_id);
 
 CREATE INDEX idx_user_sessions_expires_at ON user_sessions (expires_at);
 
---
+CREATE INDEX idx_users_google_id ON users (google_id);
 
 -- Expired session cleanup function
 CREATE OR REPLACE FUNCTION cleanup_expired_user_sessions()
@@ -78,6 +83,3 @@ COMMENT ON COLUMN user_sessions.ip_address IS 'IP address from which session was
 COMMENT ON COLUMN user_sessions.user_agent IS 'User agent string from login request';
 
 COMMENT ON COLUMN user_sessions.expires_at IS 'Session expiration timestamp';
-
--- Common sort/filter on users by creation time
-CREATE INDEX IF NOT EXISTS idx_users_created_at ON users (created_at);

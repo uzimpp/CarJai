@@ -6,32 +6,41 @@ import ConditionalLayout from '@/components/global/Layout';
 // Interface MarketPrice
 interface MarketPrice {
   brand: string;
-  model_trim: string;
+  model: string;
+  sub_model: string;
   year_start: number;
   year_end: number;
   price_min_thb: number;
   price_max_thb: number;
-  created_at?: string; // Optional in frontend display
-  updated_at?: string; // Optional in frontend display
+  created_at?: string; 
+  updated_at?: string; 
 }
 
-// Type for status messages
+// Type for status messages 
 interface StatusResponse {
   message: string;
   error?: string;
 }
-// Type for JSON error structure from Go backend's utils.WriteError
+// Type for JSON error structure
 interface GoErrorResponse {
 	success: boolean;
 	error: string;
 	code: number;
 }
-// Type for successful Commit response
+// Type for successful Commit response 
 interface CommitSuccessResponse {
     message: string;
     inserted_count: number;
     updated_count: number;
 }
+
+// --- Interface POC Response ---
+interface ExtractionPOCResponse {
+  detected_headers: string[]; 
+  debug_log: string[];       
+  final_prices: MarketPrice[];
+}
+
 
 
 export default function UploadMarketPricePage() {
@@ -50,7 +59,7 @@ export default function UploadMarketPricePage() {
     setUploadStatus(null);
     setExtractedJson(null);
     setParsedData(null);
-    setCommitStatus(null); // Reset commit status as well
+    setCommitStatus(null); 
 
     if (event.target.files && event.target.files[0]) {
       if (event.target.files[0].type === 'application/pdf') {
@@ -74,7 +83,8 @@ export default function UploadMarketPricePage() {
     setUploadStatus(null);
     setExtractedJson(null);
     setParsedData(null);
-    setCommitStatus(null); // Clear previous commit status
+    setCommitStatus(null); 
+    
     const formData = new FormData();
     formData.append('marketPricePdf', selectedFile!);
 
@@ -88,13 +98,12 @@ export default function UploadMarketPricePage() {
       const contentType = response.headers.get("content-type");
 
       if (response.ok && response.status === 200 && contentType && contentType.includes("application/json")) {
-        const result: MarketPrice[] = await response.json();
-        setExtractedJson(JSON.stringify(result, null, 2));
-        setParsedData(result); // Store parsed data
-        setUploadStatus({ message: `Successfully extracted ${result.length} records. Review data below and confirm import.`, error: undefined });
-        // Optional: Clear file input after successful extraction
-        // const fileInput = document.getElementById('pdf-upload') as HTMLInputElement;
-        // if (fileInput) fileInput.value = '';
+        const result: ExtractionPOCResponse = await response.json();
+        
+        setExtractedJson(JSON.stringify(result.final_prices, null, 2));
+        setParsedData(result.final_prices); 
+
+        setUploadStatus({ message: `Successfully extracted ${result.final_prices.length} records. Review data below and confirm import.`, error: undefined });
 
       } else { // Handle extraction errors
         let errorMessage = `Extraction failed with status ${response.status}`;
@@ -150,7 +159,8 @@ export default function UploadMarketPricePage() {
               setExtractedJson(null);
               setParsedData(null);
               setSelectedFile(null);
-              setUploadStatus(null); // Clear extraction status too
+              setUploadStatus(null); 
+
               const fileInput = document.getElementById('pdf-upload') as HTMLInputElement;
               if (fileInput) fileInput.value = '';
 
