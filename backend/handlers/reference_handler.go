@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"database/sql"
+	// "fmt" // Removed unused import
 	"net/http"
 
 	"github.com/uzimpp/CarJai/backend/models"
@@ -47,8 +48,9 @@ type ReferenceData struct {
 	Provinces     []ProvinceOption  `json:"provinces"`
 }
 
-// GetReferenceData handles GET /api/reference-data
-func (h *ReferenceHandler) GetReferenceData(w http.ResponseWriter, r *http.Request) {
+
+// GetAll handles GET /api/reference-data/all
+func (h *ReferenceHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	// Get language parameter (default to "en")
 	lang := r.URL.Query().Get("lang")
 	if lang == "" {
@@ -218,6 +220,92 @@ func (h *ReferenceHandler) getDrivetrains(lang string) ([]ReferenceOption, error
 		drivetrains = append(drivetrains, opt)
 	}
 	return drivetrains, nil
+}
+
+// GetBrands handles GET /api/reference-data/brands
+func (h *ReferenceHandler) GetBrands(w http.ResponseWriter, r *http.Request) {
+	query := `SELECT DISTINCT brand FROM market_price WHERE brand IS NOT NULL AND brand != '' ORDER BY brand;`
+
+	rows, err := h.db.Query(query)
+	if err != nil {
+		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{Success: false, Error: "Failed to query brands: " + err.Error()})
+		return
+	}
+	defer rows.Close()
+
+	// Use make to ensure an empty slice [] is returned, not nil (which becomes null in JSON)
+	brands := make([]string, 0)
+	for rows.Next() {
+		var brand string
+		if err := rows.Scan(&brand); err != nil {
+			utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{Success: false, Error: "Failed to scan brand: " + err.Error()})
+			return
+		}
+		brands = append(brands, brand)
+	}
+
+	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{"success": true, "data": brands})
+}
+
+// GetModels handles GET /api/reference-data/models
+func (h *ReferenceHandler) GetModels(w http.ResponseWriter, r *http.Request) {
+	brand := r.URL.Query().Get("brand")
+	if brand == "" {
+		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{Success: false, Error: "Brand query parameter is required"})
+		return
+	}
+
+	query := `SELECT DISTINCT model FROM market_price WHERE brand = $1 AND model IS NOT NULL AND model != '' ORDER BY model;`
+	rows, err := h.db.Query(query, brand)
+	if err != nil {
+		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{Success: false, Error: "Failed to query models: " + err.Error()})
+		return
+	}
+	defer rows.Close()
+
+	// Use make to ensure an empty slice [] is returned, not nil
+	modelsList := make([]string, 0)
+	for rows.Next() {
+		var model string
+		if err := rows.Scan(&model); err != nil {
+			utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{Success: false, Error: "Failed to scan model: " + err.Error()})
+			return
+		}
+		modelsList = append(modelsList, model)
+	}
+
+	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{"success": true, "data": modelsList})
+}
+
+// GetSubModels handles GET /api/reference-data/submodels
+func (h *ReferenceHandler) GetSubModels(w http.ResponseWriter, r *http.Request) {
+	brand := r.URL.Query().Get("brand")
+	model := r.URL.Query().Get("model")
+	if brand == "" || model == "" {
+		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{Success: false, Error: "Brand and Model query parameters are required"})
+		return
+	}
+
+	query := `SELECT DISTINCT sub_model FROM market_price WHERE brand = $1 AND model = $2 AND sub_model IS NOT NULL AND sub_model != '' ORDER BY sub_model;`
+	rows, err := h.db.Query(query, brand, model)
+	if err != nil {
+		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{Success: false, Error: "Failed to query submodels: " + err.Error()})
+		return
+	}
+	defer rows.Close()
+
+	// Use make to ensure an empty slice [] is returned, not nil
+	subModels := make([]string, 0)
+	for rows.Next() {
+		var subModel string
+		if err := rows.Scan(&subModel); err != nil {
+			utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{Success: false, Error: "Failed to scan submodel: " + err.Error()})
+			return
+		}
+		subModels = append(subModels, subModel)
+	}
+
+	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{"success": true, "data": subModels})
 }
 
 func (h *ReferenceHandler) getProvinces(lang string) ([]ProvinceOption, error) {
