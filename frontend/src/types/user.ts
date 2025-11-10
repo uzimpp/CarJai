@@ -140,6 +140,11 @@ interface GoogleAuthResponse {
   message?: string;
 }
 
+interface RecordViewResponse {
+  success: boolean;
+  message: string;
+}
+
 export type {
   User,
   UserRoles,
@@ -148,6 +153,7 @@ export type {
   AuthResponse,
   MeResponse,
   AuthError,
+  RecordViewResponse,
   SigninRequest,
   SignupRequest,
   GoogleAuthRequest,

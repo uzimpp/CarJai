@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"context"
-	"encoding/json" // *** Added this import ***
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -92,14 +92,13 @@ func (h *AdminExtractionHandler) HandleImportMarketPrices(w http.ResponseWriter,
 		utils.WriteError(w, http.StatusInternalServerError, fmt.Sprintf("Extraction failed: %v", extractErr))
 		return
 	}
-	log.Printf("Synchronous extraction from %s completed. Found %d records.", tempFilePath, len(extractedData))
+	
+	log.Printf("Synchronous extraction from %s completed. Found %d records.", tempFilePath, len(extractedData.FinalPrices))
 
 	// --- Respond to Client with Status 200 OK and Extracted JSON Data ---
-	utils.WriteJSON(w, http.StatusOK, extractedData)
+	utils.WriteJSON(w, http.StatusOK, extractedData) // ส่ง struct กลับไปทั้งหมด (ถูกต้องแล้วสำหรับ POC)
 	log.Println("Admin ImportMarketPrices request processed, extraction complete, JSON response sent.")
 }
-
-// --- New Handler: Receive JSON and Save to Database ---
 // HandleCommitMarketPrices receives extracted market price data as JSON and commits it to the database.
 func (h *AdminExtractionHandler) HandleCommitMarketPrices(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {

@@ -76,6 +76,7 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 	inspectionRepo := models.NewInspectionRepository(database)
 	carColorRepo := models.NewCarColorRepository(database)
 	carFuelRepo := models.NewCarFuelRepository(database)
+	marketPriceRepo := models.NewMarketPriceRepository(database)
 	favouriteRepo := models.NewFavouriteRepository(database)
 	// Create JWT managers
 	userJWTManager := utils.NewJWTManager(
@@ -110,6 +111,7 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 		inspectionRepo,
 		carColorRepo,
 		carFuelRepo,
+		marketPriceRepo,
 	)
 	// Create favourites service
 	favouriteService := services.NewFavouriteService(favouriteRepo, carService)
@@ -192,7 +194,7 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 		routes.RecentViewsRoutes(services.RecentViews, services.Profile, services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/recent-views/",
 		routes.RecentViewsRoutes(services.RecentViews, services.Profile, services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
-	mux.Handle("/api/reference-data",
+	mux.Handle("/api/reference-data/",
 		routes.ReferenceRoutes(db, appConfig.CORSAllowedOrigins))
 
 	return mux
