@@ -266,8 +266,27 @@ func (h *UserAuthHandler) GoogleStart(w http.ResponseWriter, r *http.Request) {
 
     clientID := utils.GetEnv("GOOGLE_CLIENT_ID")
     redirectURI := utils.GetEnv("GOOGLE_REDIRECT_URI")
-    if clientID == "" || redirectURI == "" {
-        utils.WriteError(w, http.StatusInternalServerError, "Google OAuth not configured")
+    if redirectURI == "" {
+        // Fallback to BACKEND_URL if explicit redirect is not configured
+        backendURL := strings.TrimSpace(utils.GetEnv("BACKEND_URL"))
+        if backendURL != "" {
+            if strings.HasSuffix(backendURL, "/") {
+                backendURL = backendURL[:len(backendURL)-1]
+            }
+            redirectURI = backendURL + "/api/auth/google/callback"
+        }
+    }
+    // Validate env configuration and redirect URI format
+    if clientID == "" {
+        utils.WriteError(w, http.StatusInternalServerError, "Google OAuth not configured: missing GOOGLE_CLIENT_ID")
+        return
+    }
+    if redirectURI == "" {
+        utils.WriteError(w, http.StatusInternalServerError, "Google OAuth not configured: missing GOOGLE_REDIRECT_URI and BACKEND_URL")
+        return
+    }
+    if u, err := url.Parse(redirectURI); err != nil || u.Scheme == "" || u.Host == "" {
+        utils.WriteError(w, http.StatusBadRequest, "Invalid GOOGLE_REDIRECT_URI: must be an absolute URL")
         return
     }
 
@@ -291,8 +310,20 @@ func (h *UserAuthHandler) GoogleStart(w http.ResponseWriter, r *http.Request) {
     q.Set("state", state)
     q.Set("access_type", "online")
     q.Set("include_granted_scopes", "true")
+    // Optional prompt to ensure account selection; harmless for most setups
+    q.Set("prompt", "select_account")
 
     authURL := "https://accounts.google.com/o/oauth2/v2/auth?" + q.Encode()
+    // Support debug mode to help diagnose malformed requests
+    if dv := r.URL.Query().Get("debug"); dv == "1" || strings.EqualFold(dv, "true") {
+        utils.WriteJSON(w, http.StatusOK, map[string]string{
+            "client_id":    clientID,
+            "redirect_uri": redirectURI,
+            "state":        state,
+            "auth_url":     authURL,
+        })
+        return
+    }
     http.Redirect(w, r, authURL, http.StatusFound)
 }
 
@@ -340,7 +371,18 @@ func (h *UserAuthHandler) GoogleCallback(w http.ResponseWriter, r *http.Request)
     }
     defer resp.Body.Close()
     if resp.StatusCode != http.StatusOK {
-        utils.WriteError(w, http.StatusBadGateway, "Invalid token response from Google")
+        // Try to surface error details from Google to aid troubleshooting
+        var errBody map[string]interface{}
+        _ = json.NewDecoder(resp.Body).Decode(&errBody)
+        msg := "Invalid token response from Google"
+        if errStr, ok := errBody["error"].(string); ok && errStr != "" {
+            if desc, ok := errBody["error_description"].(string); ok && desc != "" {
+                msg = msg + ": " + errStr + " - " + desc
+            } else {
+                msg = msg + ": " + errStr
+            }
+        }
+        utils.WriteError(w, http.StatusBadGateway, msg)
         return
     }
 
