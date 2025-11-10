@@ -83,15 +83,11 @@ func AdminRoutes(
 	// --- Market Price Routes ---
 	// GET: Retrieve all market prices from the database
 	// POST: Upload PDF and directly import to database
-	router.HandleFunc(basePath+"/market-price", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet {
-			applyAdminAuthMiddleware(adminExtractionHandler.HandleGetMarketPrices)(w, r)
-		} else if r.Method == http.MethodPost {
-			applyAdminAuthMiddleware(adminExtractionHandler.HandleImportMarketPrices)(w, r)
-		} else {
-			utils.WriteError(w, http.StatusMethodNotAllowed, "Method Not Allowed")
-		}
-	})
+	router.HandleFunc(basePath+"/market-price/data",
+		applyAdminAuthMiddleware(adminExtractionHandler.HandleGetMarketPrices))
+
+	router.HandleFunc(basePath+"/market-price/upload",
+		applyAdminAuthMiddleware(adminExtractionHandler.HandleImportMarketPrices))
 
 	// --- Health Check & Root ---
 	// Health check and Root only need Global IP Whitelist and general logging

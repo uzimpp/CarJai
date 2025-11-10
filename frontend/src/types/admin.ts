@@ -100,6 +100,30 @@ interface AdminUpdateUserError {
   code: number;
 }
 
+interface MarketPrice {
+  id: number;
+  brand: string;
+  model: string;
+  sub_model: string;
+  year_start: number;
+  year_end: number;
+  price_min_thb: number;
+  price_max_thb: number;
+}
+
+interface MarketPriceResponse {
+  success: boolean;
+  data: MarketPrice[];
+  message: string;
+}
+
+// Import (PDF) response from backend
+interface ImportMarketPriceResponse {
+  message: string;
+  inserted_count: number;
+  updated_count: number;
+}
+
 export type {
   AdminUser,
   AdminSession,
@@ -116,4 +140,7 @@ export type {
   AdminUpdateUserError,
   UserType,
   UserRole,
+  MarketPrice,
+  MarketPriceResponse,
+  ImportMarketPriceResponse,
 };

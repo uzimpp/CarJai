@@ -2,6 +2,7 @@
 
 import React, { useState, ChangeEvent, FormEvent, useEffect } from "react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
+import { adminAuthAPI } from "@/lib/adminAuth";
 
 // Interface MarketPrice
 interface MarketPrice {
@@ -80,66 +81,24 @@ function UploadModal({
     setIsUploading(true);
     setUploadStatus(null);
 
-    const formData = new FormData();
-    formData.append("marketPricePdf", selectedFile!);
-
     try {
-      const response = await fetch("/admin/market-price", {
-        method: "POST",
-        body: formData,
-        credentials: "include",
+      const result = await adminAuthAPI.importMarketPrices(selectedFile);
+      setUploadStatus({
+        message: `${result.message} Inserted: ${result.inserted_count}, Updated: ${result.updated_count}`,
+        error: undefined,
       });
+      // Clear file after successful import
+      setSelectedFile(null);
+      const fileInput = document.getElementById(
+        "pdf-upload"
+      ) as HTMLInputElement;
+      if (fileInput) fileInput.value = "";
 
-      const contentType = response.headers.get("content-type");
-
-      if (
-        response.ok &&
-        response.status === 200 &&
-        contentType &&
-        contentType.includes("application/json")
-      ) {
-        const result: ImportSuccessResponse = await response.json();
-
-        setUploadStatus({
-          message: `${result.message} Inserted: ${result.inserted_count}, Updated: ${result.updated_count}`,
-          error: undefined,
-        });
-
-        // Clear file after successful import
-        setSelectedFile(null);
-        const fileInput = document.getElementById(
-          "pdf-upload"
-        ) as HTMLInputElement;
-        if (fileInput) fileInput.value = "";
-
-        // Wait a moment to show success message, then close and refresh
-        setTimeout(() => {
-          onSuccess();
-          onClose();
-        }, 2000);
-      } else {
-        let errorMessage = `Import failed with status ${response.status}`;
-        try {
-          if (contentType && contentType.includes("application/json")) {
-            const errorResult: GoErrorResponse = await response.json();
-            errorMessage =
-              errorResult.error ||
-              `Error ${errorResult.code || response.status}`;
-          } else {
-            const textError = await response.text();
-            errorMessage = textError || response.statusText || errorMessage;
-          }
-        } catch (parseError) {
-          console.error("Error parsing import error response:", parseError);
-          try {
-            const textError = await response.text();
-            errorMessage = textError || response.statusText || errorMessage;
-          } catch {
-            errorMessage = response.statusText || errorMessage;
-          }
-        }
-        setUploadStatus({ message: "", error: errorMessage });
-      }
+      // Wait a moment to show success message, then close and refresh
+      setTimeout(() => {
+        onSuccess();
+        onClose();
+      }, 2000);
     } catch (error) {
       console.error("Network or other error during import:", error);
       const errorMessage =
@@ -261,25 +220,9 @@ export default function MarketPricePage() {
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch("/admin/market-price", {
-        method: "GET",
-        credentials: "include",
-      });
-
-      if (response.ok) {
-        const contentType = response.headers.get("content-type");
-        if (contentType && contentType.includes("application/json")) {
-          const data: MarketPrice[] = await response.json();
-          setPrices(data || []);
-          setFilteredPrices(data || []);
-        } else {
-          // Backend returned HTML instead of JSON
-          setPrices([]);
-          setFilteredPrices([]);
-        }
-      } else {
-        throw new Error("Failed to fetch market prices");
-      }
+      const data = await adminAuthAPI.getMarketPrices();
+      setPrices(data || []);
+      setFilteredPrices(data || []);
     } catch (err) {
       console.error("Error fetching market prices:", err);
       // Set empty arrays instead of error for initial load

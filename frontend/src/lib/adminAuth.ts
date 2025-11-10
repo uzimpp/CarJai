@@ -5,6 +5,9 @@ import {
   AdminAuthResponse,
   AdminSigninRequest,
   AdminActionResponse,
+  MarketPrice,
+  MarketPriceResponse,
+  ImportMarketPriceResponse,
 } from "@/types/admin";
 import { apiCall } from "@/lib/apiCall";
 
@@ -65,6 +68,21 @@ export const adminAuthAPI = {
     const qs = `?ip=${encodeURIComponent(ip_address)}`;
     return apiCall<AdminActionResponse>(`/admin/ip-whitelist/remove${qs}`, {
       method: "DELETE",
+    });
+  },
+
+  async getMarketPrices(): Promise<MarketPrice[]> {
+    return apiCall<MarketPrice[]>("/admin/market-price/data", {
+      method: "GET",
+    });
+  },
+
+  async importMarketPrices(file: File): Promise<ImportMarketPriceResponse> {
+    const form = new FormData();
+    form.append("marketPricePdf", file);
+    return apiCall<ImportMarketPriceResponse>("/admin/market-price/upload", {
+      method: "POST",
+      body: form,
     });
   },
 };

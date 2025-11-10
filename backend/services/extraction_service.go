@@ -552,7 +552,8 @@ func (s *ExtractionService) GetAllMarketPrices(ctx context.Context) ([]MarketPri
 	}
 	defer rows.Close()
 
-	var prices []MarketPrice
+	// Initialize with empty slice instead of nil to ensure JSON array response
+	prices := make([]MarketPrice, 0)
 	for rows.Next() {
 		var price MarketPrice
 		if scanErr := rows.Scan(
