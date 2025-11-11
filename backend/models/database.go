@@ -612,6 +612,119 @@ func (r *UserRepository) UpdatePassword(userID int, passwordHash string) error {
 	return nil
 }
 
+func (r *UserRepository) GetManagedUsers() (*[]AdminManagedUser, error) {
+	var users []AdminManagedUser
+
+	// Query นี้จะ JOIN (ผ่าน Subquery) เพื่อดึง Role ของ User มาด้วย
+	query := `
+		SELECT
+			u.id,
+			u.username,
+			u.name,
+			u.email,
+			u.created_at,
+			u.updated_at,
+			'user' AS type,
+			COALESCE(
+				(SELECT 'Seller' FROM seller_profiles sp WHERE sp.user_id = u.id LIMIT 1),
+				(SELECT 'Buyer' FROM buyer_profiles bp WHERE bp.user_id = u.id LIMIT 1),
+				'No role'
+			) AS role
+		FROM
+			users u
+		ORDER BY
+			u.created_at DESC
+	`
+
+	rows, err := r.db.DB.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("error querying managed users: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var user AdminManagedUser
+		// Scan ตามลำดับของ SELECT
+		err := rows.Scan(
+			&user.ID,
+			&user.Username,
+			&user.Name,
+			&user.Email,
+			&user.CreatedAt,
+			&user.UpdatedAt,
+			&user.Type,
+			&user.Role,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan managed user: %w", err)
+		}
+		users = append(users, user)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating managed users: %w", err)
+	}
+
+	return &users, nil
+}
+
+// UpdateUserByAdmin updates user details from the admin panel
+// [TASK 3]
+func (r *UserRepository) UpdateUserByAdmin(userID int, data AdminUpdateUserRequest) (*User, error) {
+	// สร้าง Query แบบไดนามิกเหมือนฟังก์ชัน UpdateUser
+	query := "UPDATE users SET "
+	args := []interface{}{}
+	argNum := 1
+	updates := []string{}
+
+	if data.Name != nil {
+		updates = append(updates, fmt.Sprintf("name = $%d", argNum))
+		args = append(args, *data.Name)
+		argNum++
+	}
+	if data.Username != nil {
+		updates = append(updates, fmt.Sprintf("username = $%d", argNum))
+		args = append(args, *data.Username)
+		argNum++
+	}
+	if data.Email != nil {
+		updates = append(updates, fmt.Sprintf("email = $%d", argNum))
+		args = append(args, *data.Email)
+		argNum++
+	}
+
+	if len(updates) == 0 {
+		// ไม่มีอะไรอัปเดต
+		return r.GetUserByID(userID)
+	}
+
+	// อัปเดต updated_at เสมอ
+	updates = append(updates, fmt.Sprintf("updated_at = $%d", argNum))
+	args = append(args, time.Now())
+	argNum++
+
+	// ต่อ String query
+	query += strings.Join(updates, ", ")
+	query += fmt.Sprintf(" WHERE id = $%d", argNum)
+	args = append(args, userID)
+
+	result, err := r.db.DB.Exec(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute admin update: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get rows affected: %w", err)
+	}
+	if rowsAffected == 0 {
+		return nil, fmt.Errorf("user not found")
+	}
+
+	// คืนค่า User ที่อัปเดตแล้ว
+	return r.GetUserByID(userID)
+}
+
 // UserSessionRepository handles user session-related database operations
 type UserSessionRepository struct {
 	db *Database
