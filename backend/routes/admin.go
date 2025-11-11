@@ -92,9 +92,19 @@ func AdminRoutes(
 	router.HandleFunc(basePath+"/market-price/upload",
 		applyAdminAuthMiddleware(adminExtractionHandler.HandleImportMarketPrices))
 
-	// GET /admin/users
+	// GET /admin/users  (Get all users)
+	// POST /admin/users (Create new user)
 	router.HandleFunc(basePath+"/users",
-		applyAdminAuthMiddleware(adminUserHandler.HandleGetUsers))
+		applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodGet {
+				adminUserHandler.HandleGetUsers(w, r)
+			} else if r.Method == http.MethodPost {
+				adminUserHandler.HandleCreateUser(w, r) // [ADD] call HandleCreateUser
+			} else {
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			}
+		}),
+	)
 
 	// This handler catches /admin/users/1, /admin/users/2, etc.
 	router.HandleFunc(basePath+"/users/",

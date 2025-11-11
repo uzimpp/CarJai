@@ -71,3 +71,22 @@ func (h *AdminUserHandler) HandleUpdateUser(w http.ResponseWriter, r *http.Reque
 	// Returning the public user data is good practice
 	utils.WriteJSON(w, http.StatusOK, updatedUser.ToPublic())
 }
+
+// HandleCreateUser handles POST /admin/users
+func (h *AdminUserHandler) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
+    var req models.AdminCreateUserRequest
+    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+        utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
+        return
+    }
+
+    // (Optional) Validate request struct here...
+
+    newUser, err := h.userService.CreateUserByAdmin(req)
+    if err != nil {
+        utils.WriteError(w, http.StatusConflict, err.Error()) // 409 Conflict
+        return
+    }
+
+    utils.WriteJSON(w, http.StatusCreated, newUser.ToPublic()) // 201 Created
+}

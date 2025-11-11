@@ -72,6 +72,41 @@ func (s *UserService) UpdateUserByAdmin(userID int, data models.AdminUpdateUserR
 	return updatedUser, nil
 }
 
+// CreateUserByAdmin creates a new user (called by an admin)
+func (s *UserService) CreateUserByAdmin(data models.AdminCreateUserRequest) (*models.User, error) {
+    // 1. Check if user already exists by email
+    if _, err := s.userRepo.GetUserByEmail(data.Email); err == nil {
+        return nil, fmt.Errorf("email %s is already in use", data.Email)
+    }
+
+    // 2. Check if username already exists
+    if _, err := s.userRepo.GetUserByUsername(data.Username); err == nil {
+        return nil, fmt.Errorf("username %s is already taken", data.Username)
+    }
+
+    // 3. Hash password
+    hashedPassword, err := bcrypt.GenerateFromPassword([]byte(data.Password), bcrypt.DefaultCost)
+    if err != nil {
+        return nil, fmt.Errorf("failed to hash password: %w", err)
+    }
+
+    // 4. Create user model
+    user := &models.User{
+        Email:        data.Email,
+        Username:     data.Username,
+        Name:         data.Name,
+        PasswordHash: string(hashedPassword),
+    }
+
+    // 5. Save to database
+    err = s.userRepo.CreateUser(user)
+    if err != nil {
+        return nil, fmt.Errorf("failed to create user: %w", err)
+    }
+
+    return user, nil
+}
+
 // Signup creates a new user account
 func (s *UserService) Signup(email, password, username, name, ipAddress, userAgent string) (*models.UserAuthResponse, error) {
 	// Check if user already exists by email
