@@ -17,3 +17,9 @@ export {
   getPreviousStep,
   isStepCompleted,
 } from "./stepNavigation";
+
+export {
+  getTimeRemaining,
+  isSessionExpiringSoon,
+  getTimeDifference,
+} from "./timeUtils";

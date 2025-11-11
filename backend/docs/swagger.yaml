@@ -108,6 +108,65 @@ paths:
         '401':
           description: Invalid credentials
 
+  /api/auth/google/signin:
+    post:
+      tags:
+        - Authentication
+      summary: User sign in with Google ID token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id_token
+              properties:
+                id_token:
+                  type: string
+                  description: Google ID token from Google Identity Services
+      responses:
+        '200':
+          description: Sign in successful
+        '401':
+          description: Invalid Google token
+
+  /api/auth/google/start:
+    get:
+      tags:
+        - Authentication
+      summary: Start Google OAuth flow
+      security: []
+      responses:
+        '302':
+          description: Redirects to Google authorization page
+        '500':
+          description: Google OAuth not configured
+
+  /api/auth/google/callback:
+    get:
+      tags:
+        - Authentication
+      summary: Google OAuth callback
+      security: []
+      parameters:
+        - in: query
+          name: state
+          schema:
+            type: string
+        - in: query
+          name: code
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Sign in successful
+        '400':
+          description: Invalid state or code
+        '502':
+          description: Failed to exchange code
+
   /api/auth/me:
     get:
       tags:

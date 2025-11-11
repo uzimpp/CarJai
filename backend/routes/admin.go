@@ -77,15 +77,17 @@ func AdminRoutes(
 	// --- Admin IP Whitelist Management Routes ---
 	router.HandleFunc(basePath+"/ip-whitelist", applyAdminAuthMiddleware(adminIPHandler.GetWhitelistedIPs))
 	router.HandleFunc(basePath+"/ip-whitelist/add", applyAdminAuthMiddleware(adminIPHandler.AddIPToWhitelist))
+	router.HandleFunc(basePath+"/ip-whitelist/check", applyAdminAuthMiddleware(adminIPHandler.CheckIPDeletionImpact))
 	router.HandleFunc(basePath+"/ip-whitelist/remove", applyAdminAuthMiddleware(adminIPHandler.RemoveIPFromWhitelist))
 
-	// --- Market Price Import/Extract Route (POST PDF) ---
-	// This endpoint only use for extract data
-	router.HandleFunc(basePath+"/market-price/import", applyAdminAuthMiddleware(adminExtractionHandler.HandleImportMarketPrices))
+	// --- Market Price Routes ---
+	// GET: Retrieve all market prices from the database
+	// POST: Upload PDF and directly import to database
+	router.HandleFunc(basePath+"/market-price/data",
+		applyAdminAuthMiddleware(adminExtractionHandler.HandleGetMarketPrices))
 
-	// --- Market Price Commit Route (POST JSON) ---
-	// This endpoint receive JSON and insert to DB
-	router.HandleFunc(basePath+"/market-price/commit", applyAdminAuthMiddleware(adminExtractionHandler.HandleCommitMarketPrices))
+	router.HandleFunc(basePath+"/market-price/upload",
+		applyAdminAuthMiddleware(adminExtractionHandler.HandleImportMarketPrices))
 
 	// --- Health Check & Root ---
 	// Health check and Root only need Global IP Whitelist and general logging

@@ -176,7 +176,7 @@ func (s *CarService) EstimateCarPrice(carID int) (int64, error) {
 
 		failedCount := 0
 		for _, field := range inspectionFields {
-			if field == nil || *field == false {
+			if field == nil || !*field {
 				failedCount++
 			}
 		}
