@@ -7,6 +7,11 @@ import { Seller, SellerContact } from "@/types/user";
 import type { CarListing } from "@/types/car";
 import { sellerAPI } from "@/lib/sellerAPI";
 import CarCard from "@/components/car/CarCard";
+import { useUserAuth } from "@/hooks/useUserAuth";
+import ReportModal from "@/components/reports/ReportModal";
+import { reportsAPI } from "@/lib/reportsAPI";
+import { DEFAULT_SELLER_SUBTOPICS } from "@/types/report";
+import { FlagIcon } from "@heroicons/react/24/outline";
 
 export default function SellerPage() {
   const params = useParams<{ id: string }>();
@@ -17,6 +22,10 @@ export default function SellerPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [cars, setCars] = useState<CarListing[]>([]);
   const [notFoundState, setNotFoundState] = useState(false);
+  const [isReportSellerOpen, setIsReportSellerOpen] = useState(false);
+  const [reportFeedback, setReportFeedback] = useState<string>("");
+  const { isAuthenticated, roles } = useUserAuth();
+  const isBuyer = isAuthenticated && roles?.buyer;
 
   useEffect(() => {
     let mounted = true;
@@ -291,10 +300,50 @@ export default function SellerPage() {
                   </a>
                 </div>
               )}
+              {isBuyer && (
+                <button
+                  onClick={() => setIsReportSellerOpen(true)}
+                  className="mt-(--space-s) w-full inline-flex items-center justify-center gap-2 px-3.5 py-2 border-[3px] border-rose-300 rounded-[14px] bg-transparent text-rose-700 hover:bg-rose-50 hover:text-rose-800 transition-colors text-base font-medium"
+                >
+                  <FlagIcon className="h-5 w-5" aria-hidden="true" />
+                  Report Seller
+                </button>
+              )}
+              {reportFeedback && (
+                <div className="mt-(--space-s) text--1 text-green-700 bg-green-50 border border-green-200 rounded p-2">
+                  {reportFeedback}
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
+      {/* Report Modal */}
+      <ReportModal
+        isOpen={isReportSellerOpen}
+        target="seller"
+        onClose={() => setIsReportSellerOpen(false)}
+        onSubmit={async (data) => {
+          setReportFeedback("");
+          try {
+            const res = await reportsAPI.submitSellerReport(seller.id, data);
+            if (res?.success) {
+              setReportFeedback("Thanks! Your report has been submitted.");
+            }
+          } catch (e: unknown) {
+            let msg = "Failed to submit seller report";
+            if (typeof e === "object" && e !== null && "message" in e) {
+              const m = (e as { message?: unknown }).message;
+              if (typeof m === "string") msg = m;
+            } else if (typeof e === "string") {
+              msg = e;
+            }
+            setReportFeedback(msg);
+            throw e;
+          }
+        }}
+        suggestedSubtopics={DEFAULT_SELLER_SUBTOPICS}
+      />
     </div>
   );
 }

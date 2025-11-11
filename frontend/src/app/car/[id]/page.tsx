@@ -10,6 +10,13 @@ import { carsAPI } from "@/lib/carsAPI";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import { favoritesAPI } from "@/lib/favoritesAPI";
 import FavoriteButton from "@/components/car/FavoriteButton";
+import ReportModal from "@/components/reports/ReportModal";
+import { reportsAPI } from "@/lib/reportsAPI";
+import { FlagIcon } from "@heroicons/react/24/outline";
+import {
+  DEFAULT_CAR_SUBTOPICS,
+  DEFAULT_SELLER_SUBTOPICS,
+} from "@/types/report";
 
 export default function CarListingPage() {
   const params = useParams();
@@ -24,6 +31,9 @@ export default function CarListingPage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFavorited, setIsFavorited] = useState(false);
   const [favoriteCarIds, setFavoriteCarIds] = useState<Set<number>>(new Set());
+  const [isReportCarOpen, setIsReportCarOpen] = useState(false);
+  const [isReportSellerOpen, setIsReportSellerOpen] = useState(false);
+  const [reportFeedback, setReportFeedback] = useState<string>("");
 
   const isBuyer = isAuthenticated && roles?.buyer;
 
@@ -94,6 +104,54 @@ export default function CarListingPage() {
       newFavoriteCarIds.delete(carId);
     }
     setFavoriteCarIds(newFavoriteCarIds);
+  };
+
+  const handleSubmitCarReport = async (data: {
+    topic: string;
+    subTopics: string[];
+    description: string;
+  }) => {
+    setReportFeedback("");
+    try {
+      const res = await reportsAPI.submitCarReport(carId, data);
+      if (res?.success) {
+        setReportFeedback("Thanks! Your report has been submitted.");
+      }
+    } catch (e: unknown) {
+      let msg = "Failed to submit car report";
+      if (typeof e === "object" && e !== null && "message" in e) {
+        const m = (e as { message?: unknown }).message;
+        if (typeof m === "string") msg = m;
+      } else if (typeof e === "string") {
+        msg = e;
+      }
+      setReportFeedback(msg);
+      throw e; // rethrow so modal shows error
+    }
+  };
+
+  const handleSubmitSellerReport = async (data: {
+    topic: string;
+    subTopics: string[];
+    description: string;
+  }) => {
+    setReportFeedback("");
+    try {
+      const res = await reportsAPI.submitSellerReport(carData.sellerId, data);
+      if (res?.success) {
+        setReportFeedback("Thanks! Your report has been submitted.");
+      }
+    } catch (e: unknown) {
+      let msg = "Failed to submit seller report";
+      if (typeof e === "object" && e !== null && "message" in e) {
+        const m = (e as { message?: unknown }).message;
+        if (typeof m === "string") msg = m;
+      } else if (typeof e === "string") {
+        msg = e;
+      }
+      setReportFeedback(msg);
+      throw e; // rethrow so modal shows error
+    }
   };
 
   const getContactIcon = (contactType: string) => {
@@ -197,6 +255,16 @@ export default function CarListingPage() {
                 isFavorited={isFavorited}
                 onToggle={handleFavoriteToggle}
               />
+            )}
+            {isBuyer && (
+              <button
+                onClick={() => setIsReportCarOpen(true)}
+                className="inline-flex items-center gap-2 px-3.5 py-2 border-[3px] border-rose-300 rounded-[14px] bg-transparent text-rose-700 hover:bg-rose-50 hover:text-rose-800 transition-colors text-base font-medium"
+                aria-label="Report this listing"
+              >
+                <FlagIcon className="h-5 w-5" aria-hidden="true" />
+                Report Car
+              </button>
             )}
           </div>
         </div>
@@ -491,6 +559,15 @@ export default function CarListingPage() {
               >
                 View Seller Profile
               </Link>
+              {isBuyer && (
+                <button
+                  onClick={() => setIsReportSellerOpen(true)}
+                  className="mt-(--space-s) w-full inline-flex items-center justify-center gap-2 px-3.5 py-2 border-[3px] border-rose-300 rounded-[14px] bg-transparent text-rose-700 hover:bg-rose-50 hover:text-rose-800 transition-colors text-base font-medium"
+                >
+                  <FlagIcon className="h-5 w-5" aria-hidden="true" />
+                  Report Seller
+                </button>
+              )}
             </div>
           </div>
 
@@ -530,6 +607,27 @@ export default function CarListingPage() {
           </div>
         </div>
       </div>
+      {reportFeedback && (
+        <div className="mt-(--space-s) text--1 text-green-700 bg-green-50 border border-green-200 rounded p-2">
+          {reportFeedback}
+        </div>
+      )}
+
+      {/* Report Modals */}
+      <ReportModal
+        isOpen={isReportCarOpen}
+        target="car"
+        onClose={() => setIsReportCarOpen(false)}
+        onSubmit={handleSubmitCarReport}
+        suggestedSubtopics={DEFAULT_CAR_SUBTOPICS}
+      />
+      <ReportModal
+        isOpen={isReportSellerOpen}
+        target="seller"
+        onClose={() => setIsReportSellerOpen(false)}
+        onSubmit={handleSubmitSellerReport}
+        suggestedSubtopics={DEFAULT_SELLER_SUBTOPICS}
+      />
     </div>
   );
 }
