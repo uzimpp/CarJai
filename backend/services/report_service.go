@@ -38,6 +38,10 @@ func NewReportService(repo *models.ReportRepository, carService *CarService, pro
     return &ReportService{repo: repo, carService: carService, profileService: profileService, db: database.DB}
 }
 
+// ErrConflict is a sentinel error used to indicate a conflict (HTTP 409)
+// Handlers can use IsConflict to check and map it to 409.
+var ErrConflict = errors.New("conflict")
+
 // SubmitCarReport validates and creates a car report
 func (s *ReportService) SubmitCarReport(reporterID, carID int, topic string, subTopics []string, description string) (int, error) {
     topic = strings.TrimSpace(strings.ToLower(topic))
@@ -64,7 +68,7 @@ func (s *ReportService) SubmitCarReport(reporterID, carID int, topic string, sub
         return 0, err
     }
     if dup {
-        return 0, models.ConflictError("duplicate report within 30 days")
+        return 0, fmt.Errorf("%w: duplicate report within 30 days", ErrConflict)
     }
 
     subJSON, _ := json.Marshal(subTopics)
@@ -99,7 +103,7 @@ func (s *ReportService) SubmitSellerReport(reporterID, sellerID int, topic strin
         return 0, err
     }
     if dup {
-        return 0, models.ConflictError("duplicate report within 30 days")
+        return 0, fmt.Errorf("%w: duplicate report within 30 days", ErrConflict)
     }
 
     subJSON, _ := json.Marshal(subTopics)
@@ -203,6 +207,5 @@ func (s *ReportService) WarnSeller(sellerID, adminID int, notes *string) (int, e
 
 // ConflictError helper is expected by handlers to map to 409
 func (s *ReportService) IsConflict(err error) bool {
-    var ce models.Conflict
-    return errors.As(err, &ce)
+    return errors.Is(err, ErrConflict)
 }
