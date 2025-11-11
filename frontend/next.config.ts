@@ -2,6 +2,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Prevent Next.js from redirecting URLs with/without trailing slashes
+  skipTrailingSlashRedirect: true,
+
   async rewrites() {
     // ... (ส่วน Logic การหา backendUrl ของคุณถูกต้องแล้ว) ...
     const isDocker = process.env.DOCKER_ENV === "true";

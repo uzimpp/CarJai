@@ -10,6 +10,7 @@ import { carsAPI } from "@/lib/carsAPI";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import { favoritesAPI } from "@/lib/favoritesAPI";
 import FavoriteButton from "@/components/car/FavoriteButton";
+import { recentAPI } from "@/lib/recentAPI";
 
 export default function CarListingPage() {
   const params = useParams();
@@ -66,17 +67,40 @@ export default function CarListingPage() {
     };
   }, [carId]);
 
+  // Record recent view once car data is available
+  useEffect(() => {
+    if (!car) return;
+    try {
+      const c = car.car;
+      const imgs = car.images || [];
+      const first = imgs[0];
+      // Fire-and-forget; do not block UI
+      void recentAPI.addRecent(carId, {
+        title: [c?.brandName, c?.modelName, c?.submodelName]
+          .filter(Boolean)
+          .join(" "),
+        price: c?.price,
+        thumbnailId: first?.id,
+        thumbnailUrl:
+          first?.url ||
+          (first?.id ? `/api/cars/images/${first.id}` : undefined),
+      });
+    } catch {
+      // Ignore non-critical recent view errors
+    }
+  }, [carId, car]);
+
   // Fetch favorites for authenticated buyers
   useEffect(() => {
     const fetchFavorites = async () => {
       if (isBuyer) {
         try {
           const favorites = await favoritesAPI.getFavorites();
-          const favoriteIds = new Set(favorites.map(car => car.id));
+          const favoriteIds = new Set(favorites.map((car) => car.id));
           setFavoriteCarIds(favoriteIds);
           setIsFavorited(favoriteIds.has(carId));
         } catch (error) {
-          console.error('Failed to fetch favorites:', error);
+          console.error("Failed to fetch favorites:", error);
         }
       }
     };
@@ -86,7 +110,6 @@ export default function CarListingPage() {
 
   useEffect(() => {
     if (isBuyer && carId) {
-      
       const recordView = async () => {
         try {
           await carsAPI.recordView(carId);
@@ -98,7 +121,10 @@ export default function CarListingPage() {
     }
   }, [carId, isBuyer]); // ทำงานทุกครั้งที่ carId หรือ สถานะ isBuyer เปลี่ยน
 
-  const handleFavoriteToggle = async (carId: number, newFavoriteState: boolean) => {
+  const handleFavoriteToggle = async (
+    carId: number,
+    newFavoriteState: boolean
+  ) => {
     // Update local state immediately for optimistic UI
     setIsFavorited(newFavoriteState);
     const newFavoriteCarIds = new Set(favoriteCarIds);

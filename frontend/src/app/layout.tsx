@@ -3,6 +3,7 @@ import { Syne } from "next/font/google";
 // import localFont from "next/font/local";
 import "./globals.css";
 import ConditionalLayout from "@/components/global/Layout";
+import { AuthProviders } from "@/components/providers/AuthProviders";
 
 const syne = Syne({
   variable: "--font-syne",
@@ -34,7 +35,9 @@ export default function RootLayout({
     <html lang="en">
       {/* ${fcSubject.variable} var(--font-fc-subject)*/}
       <body className={`${syne.variable} antialiased min-h-screen flex`}>
-        <ConditionalLayout>{children}</ConditionalLayout>
+        <AuthProviders>
+          <ConditionalLayout>{children}</ConditionalLayout>
+        </AuthProviders>
       </body>
     </html>
   );

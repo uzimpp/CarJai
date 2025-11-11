@@ -9,7 +9,7 @@ import BuyerForm from "@/components/profile/BuyerForm";
 
 export default function BuyerProfilePage() {
   const router = useRouter();
-  const { isAuthenticated, isLoading } = useUserAuth();
+  const { isAuthenticated, isLoading, validateSession } = useUserAuth();
   const [error, setError] = useState<string | null>(null);
 
   // Redirect to signin if not authenticated
@@ -23,6 +23,8 @@ export default function BuyerProfilePage() {
     try {
       setError(null);
       await profileAPI.upsertBuyerProfile(data);
+      // Refresh auth context to get updated roles
+      await validateSession();
       // Redirect to welcome page after successful profile creation
       router.push("/signup/welcome/buyer");
     } catch (err) {

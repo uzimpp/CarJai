@@ -17,7 +17,7 @@ import Link from "next/link";
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { isAuthenticated, isLoading } = useUserAuth();
+  const { isAuthenticated, isLoading, validateSession } = useUserAuth();
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -86,6 +86,8 @@ export default function SettingsPage() {
       setBuyerSuccess(null);
       const res = await profileAPI.upsertBuyerProfile(data);
       setBuyerSuccess("Buyer preferences saved successfully!");
+      // Refresh auth context to get updated roles
+      await validateSession();
       // Update local state immediately with response
       setProfileData((prev) =>
         prev
@@ -112,6 +114,8 @@ export default function SettingsPage() {
       setSellerSuccess(null);
       const res = await profileAPI.upsertSellerProfile(data);
       setSellerSuccess("Seller settings saved successfully!");
+      // Refresh auth context to get updated roles
+      await validateSession();
       // Update local state immediately with response
       setProfileData((prev) =>
         prev
