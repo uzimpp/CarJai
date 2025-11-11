@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import SearchBar from "@/components/global/SearchBar";
@@ -37,6 +37,19 @@ export default function NavBar() {
   const shouldShowSearchBar = !noSearchBarPages.includes(pathname);
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  // Close the mobile menu when resizing to desktop or on route changes
+  useEffect(() => {
+    const onResize = () => {
+      if (typeof window !== "undefined" && window.innerWidth >= 768) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
 
   const handleSignout = async () => {
     try {
@@ -52,79 +65,75 @@ export default function NavBar() {
 
   return (
     <>
-      {/* Overlay that covers the whole page when dropdown is open */}
-      {isMobileMenuOpen && (
-        <div className="hidden md:block fixed inset-0 bg-[#000000]/8 z-[45] pointer-events-none transition-opacity duration-500 ease-in-out opacity-100" />
-      )}
-      <div className="bg-white md:mx-(--space-s-m) md:rounded-b-4xl md:shadow-sm">
+      <div className="top-0 left-0 right-0 bg-white md:mx-(--space-s-m) md:rounded-b-4xl shadow-sm z-50">
         <div className="relative flex justify-between flex-row items-center p-(--space-2xs-s) px-(--space-s-m) w-full rounded-b-4xl">
-          <div className="flex flex-row items-center gap-x-(--space-4xs) md:px-(--space-s)">
-            <Link
-              href="/"
-              className="flex flex-row items-center gap-x-(--space-4xs)"
-            >
+        <div className="flex flex-row items-center gap-x-(--space-4xs) md:px-(--space-s)">
+          <Link
+            href="/"
+            className="flex flex-row items-center gap-x-(--space-4xs)"
+          >
               <div className="relative w-(--space-m-l) h-(--space-m-l)">
-                <Image
-                  src="/logo/logo.png"
-                  alt="logo"
-                  fill
-                  quality={100}
-                  className="object-contain"
-                  priority
-                />
-              </div>
-              <h1 className="text-1 font-semibold ml-(--space-3xs) hidden md:block">
-                arJai
-              </h1>
-            </Link>
-          </div>
+              <Image
+                src="/logo/logo.png"
+                alt="logo"
+                fill
+                quality={100}
+                className="object-contain"
+                priority
+              />
+            </div>
+            <h1 className="text-1 font-semibold ml-(--space-3xs) hidden md:block">
+              arJai
+            </h1>
+          </Link>
+        </div>
 
-          {shouldShowSearchBar && (
-            <div className="flex-1 max-w-md mx-(--space-l)">
+        {shouldShowSearchBar && (
+          <div className="flex-1 max-w-md mx-(--space-l)">
               <SearchBar
                 className="bg-maroon/20"
                 placeholder="Search cars..."
               />
-            </div>
-          )}
+          </div>
+        )}
 
           {/* Desktop nav */}
           <nav className="hidden md:flex flex-row gap-x-(--space-m-l) items-center">
-            {/* <Link
+          {/* <Link
             href="/"
             className="text-0 text-gray-700 hover:text-maroon transition-colors font-medium"
           >
             Home
           </Link> */}
-            <Link
-              href="/browse"
-              className="text-0 text-gray-700 hover:text-maroon transition-colors font-medium"
-            >
-              Browse Cars
-            </Link>
-            <Link
-              href="/about-us"
-              className="text-0 text-gray-700 hover:text-maroon transition-colors font-medium"
-            >
-              About
-            </Link>
+          <Link
+            href="/browse"
+            className="text-0 text-gray-700 hover:text-maroon transition-colors font-medium"
+          >
+            Browse Cars
+          </Link>
+          <Link
+            href="/about-us"
+            className="text-0 text-gray-700 hover:text-maroon transition-colors font-medium"
+          >
+            About
+          </Link>
 
-            {isLoading ? (
-              <div className="flex items-center gap-x-(--space-2xs) px-(--space-s) py-(--space-2xs) bg-maroon/10 rounded-full">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-maroon"></div>
-              </div>
-            ) : (
-              <AccountBtn
-                user={user}
-                roles={roles}
-                profiles={profiles}
-                isAuthedAdmin={isAuthedAdmin}
-                isAuthedUser={isAuthedUser}
-                adminUser={adminUser}
-                handleSignout={handleSignout}
-              />
-            )}
-          </nav>
+          {isLoading ? (
+            <div className="flex items-center gap-x-(--space-2xs) px-(--space-s) py-(--space-2xs) bg-maroon/10 rounded-full">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-maroon"></div>
+            </div>
+          ) : (
+            <AccountBtn
+              user={user}
+              roles={roles}
+              profiles={profiles}
+              isAuthedAdmin={isAuthedAdmin}
+              isAuthedUser={isAuthedUser}
+              adminUser={adminUser}
+              handleSignout={handleSignout}
+            />
+          )}
+        </nav>
 
           {/* Mobile hamburger button */}
           <button
@@ -167,7 +176,7 @@ export default function NavBar() {
 
           {/* Mobile menu panel */}
           {isMobileMenuOpen && (
-            <div className="md:hidden absolute right-0 top-full w-full bg-white rounded-b-xl">
+            <div className="md:hidden absolute right-0 top-full w-full bg-white rounded-b-xl shadow-sm z-50">
               <div className="flex flex-col p-(--space-s) pt-0 gap-y-(--space-2xs)">
                 <Link
                   href="/browse"
@@ -200,7 +209,9 @@ export default function NavBar() {
                       setIsMobileMenuOpen(false);
                     }}
                     onNavigate={() => setIsMobileMenuOpen(false)}
-                    variant="panel"
+                    baseColor="text-grey"
+                    activeColor="hover:text-maroon hover:text-maroon"
+                    signoutClass="text-red-600 hover:bg-red-50 hover:text-red-700"
                   />
                 )}
               </div>
@@ -210,6 +221,14 @@ export default function NavBar() {
           )}
         </div>
       </div>
+      {/* <div
+        className={`absolute left-0 right-0 bottom-0 top-full bg-[#000000]/15 transition-opacity duration-500 ease-in-out ${
+          isMobileMenuOpen
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none"
+        } z-40`}
+        onClick={() => setIsMobileMenuOpen(false)}
+      /> */}
     </>
   );
 }

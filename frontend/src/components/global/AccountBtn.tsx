@@ -77,7 +77,17 @@ export default function AccountBtn({
                     handleSignout();
                   }}
                   onNavigate={() => setOpen(false)}
-                  variant="dropdown"
+                  baseColor={`${isAuthedAdmin ? "text-white" : "text-grey"}`}
+                  activeColor={`${
+                    isAuthedAdmin
+                      ? "hover:bg-red/50 hover:text-white"
+                      : "hover:bg-maroon/10 hover:text-maroon"
+                  }`}
+                  signoutClass={`${
+                    isAuthedAdmin
+                      ? "text-white hover:bg-red/50"
+                      : "text-red-600 hover:bg-red-50 hover:text-red-700"
+                  } `}
                 />
               </div>
             )}

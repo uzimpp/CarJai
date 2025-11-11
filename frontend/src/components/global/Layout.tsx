@@ -22,6 +22,8 @@ export default function ConditionalLayout({
   const footerRef = useRef<HTMLElement>(null);
   const [footerHeight, setFooterHeight] = useState(0);
   const [sidebarWidth, setSidebarWidth] = useState(256); // Default to 256px (w-64)
+  const [isMobile, setIsMobile] = useState(false);
+  const ADMIN_MOBILE_NAV_HEIGHT = 56; // fixed px height for admin mobile top navbar
 
   // Determine current step based on pathname
   const getCurrentStep = () => {
@@ -86,6 +88,13 @@ export default function ConditionalLayout({
 
   // Measure navbar height
   useEffect(() => {
+    const updateIsMobile = () => {
+      setIsMobile(
+        typeof window !== "undefined" ? window.innerWidth < 768 : false
+      );
+    };
+    updateIsMobile();
+    window.addEventListener("resize", updateIsMobile);
     const updateHeaderHeight = () => {
       if (headRef.current) {
         setHeaderHeight(headRef.current.offsetHeight);
@@ -101,7 +110,10 @@ export default function ConditionalLayout({
     updateFooterHeight();
     // Update on window resize
     window.addEventListener("resize", updateHeaderHeight);
-    return () => window.removeEventListener("resize", updateHeaderHeight);
+    return () => {
+      window.removeEventListener("resize", updateHeaderHeight);
+      window.removeEventListener("resize", updateIsMobile);
+    };
   }, [pathname, shouldShowNavbar]);
 
   // Measure footer height
@@ -123,12 +135,18 @@ export default function ConditionalLayout({
   return (
     <Fragment>
       {/* Admin Sidebar */}
-      {shouldShowSidebar && <SideBar onWidthChange={setSidebarWidth} />}
+      {shouldShowSidebar && (
+        <SideBar onWidthChange={setSidebarWidth} isMobile={isMobile} />
+      )}
 
       <header
         className="fixed top-0 left-0 right-0 z-100"
         ref={headRef as React.RefObject<HTMLHeadElement>}
-        style={shouldShowSidebar ? { marginLeft: `${sidebarWidth}px` } : {}}
+        style={
+          shouldShowSidebar && !isMobile
+            ? { marginLeft: `${sidebarWidth}px` }
+            : {}
+        }
       >
         <div className="max-w-[1536px] w-full mx-auto">
           {shouldShowNavbar && <NavBar />}
@@ -140,10 +158,16 @@ export default function ConditionalLayout({
         className="flex-1 flex justify-center w-full rounded-b-4xl bg-white z-50"
         style={{
           paddingTop: `${
-            shouldShowStepIndicator || shouldShowNavbar ? headerHeight : 0
+            shouldShowStepIndicator || shouldShowNavbar
+              ? headerHeight
+              : isAdminPage
+              ? isMobile
+                ? ADMIN_MOBILE_NAV_HEIGHT
+                : 0
+              : 0
           }px`,
           marginBottom: shouldShowFooter ? `calc(${footerHeight}px - 5rem)` : 0,
-          marginLeft: shouldShowSidebar ? `${sidebarWidth}px` : 0,
+          marginLeft: shouldShowSidebar && !isMobile ? `${sidebarWidth}px` : 0,
         }}
       >
         {children}
@@ -152,7 +176,11 @@ export default function ConditionalLayout({
       <footer
         className="z-0 fixed bottom-0 left-0 right-0 w-full bg-[#181414]"
         ref={footerRef as React.RefObject<HTMLElement>}
-        style={shouldShowSidebar ? { marginLeft: `${sidebarWidth}px` } : {}}
+        style={
+          shouldShowSidebar && !isMobile
+            ? { marginLeft: `${sidebarWidth}px` }
+            : {}
+        }
       >
         {shouldShowFooter && <Footer />}
       </footer>

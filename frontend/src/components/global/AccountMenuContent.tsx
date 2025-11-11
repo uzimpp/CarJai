@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import type { User, UserRoles } from "@/types/user";
 import type { AdminUser } from "@/types/admin";
 import { adminMenuItems } from "@/constants/adminMenu";
@@ -13,7 +14,10 @@ interface AccountMenuContentProps {
   adminUser: AdminUser | null;
   handleSignout: () => void | Promise<void>;
   onNavigate?: () => void;
-  variant?: "dropdown" | "panel";
+  // Optional style overrides for link states
+  baseColor: string; // e.g., "text-grey"
+  activeColor: string; // e.g., "bg-maroon/10 text-maroon"
+  signoutClass: string; // e.g., "text-red-600"
 }
 
 export default function AccountMenuContent({
@@ -24,23 +28,34 @@ export default function AccountMenuContent({
   adminUser,
   handleSignout,
   onNavigate,
-  variant = "dropdown",
+  baseColor,
+  activeColor,
+  signoutClass,
 }: AccountMenuContentProps) {
+  const pathname = usePathname();
   return (
     <div className="flex flex-col gap-y-(--space-2xs)">
       {isAuthedAdmin && adminUser && (
         <>
-          {adminMenuItems.map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              onClick={onNavigate}
-              className="flex items-center gap-(--space-xs) px-(--space-xs) py-(--space-2xs) rounded-lg hover:bg-maroon/30"
-            >
-              {item.icon}
-              <span>{item.label}</span>
-            </Link>
-          ))}
+          {adminMenuItems.map((item) => {
+            const isActive = pathname === item.href;
+            const activeCls = activeColor ?? "bg-maroon text-white";
+            const idleCls = `${baseColor ?? ""} ${
+              activeColor ?? "hover:bg-maroon/10 hover:text-maroon"
+            }`.trim();
+            return (
+              <Link
+                key={item.label}
+                href={item.href}
+                onClick={onNavigate}
+                className={`flex items-center gap-(--space-xs) px-(--space-xs) py-(--space-2xs) rounded-lg transition-colors
+                    ${isActive ? activeCls : idleCls}`}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
           <div className="h-px bg-white/10 dark:bg-white/10 my-(--space-2xs)" />
         </>
       )}
@@ -61,7 +76,9 @@ export default function AccountMenuContent({
             <Link
               href="/favorites"
               onClick={onNavigate}
-              className="flex items-center gap-(--space-xs) px-(--space-xs) py-(--space-2xs) rounded-lg text-gray-700 hover:bg-maroon/10 hover:text-maroon transition-colors"
+              className={`flex items-center gap-(--space-xs) px-(--space-xs) py-(--space-2xs) rounded-lg transition-colors ${
+                baseColor ?? ""
+              } ${activeColor ?? "hover:bg-maroon/10 hover:text-maroon"}`}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -79,7 +96,9 @@ export default function AccountMenuContent({
             <Link
               href="/history"
               onClick={onNavigate}
-              className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-maroon/10 hover:text-maroon transition-colors"
+              className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
+                baseColor ?? ""
+              } ${activeColor ?? "hover:bg-maroon/10 hover:text-maroon"}`}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -97,7 +116,9 @@ export default function AccountMenuContent({
             <Link
               href={`/seller/${user?.id}`}
               onClick={onNavigate}
-              className="flex items-center gap-(--space-xs) px-(--space-xs) py-(--space-2xs) rounded-lg text-gray-700 hover:bg-maroon/10 hover:text-maroon transition-colors"
+              className={`flex items-center gap-(--space-xs) px-(--space-2xs) py-(--space-2xs) rounded-lg transition-colors ${
+                baseColor ?? ""
+              } ${activeColor ?? "hover:bg-maroon/10 hover:text-maroon"}`}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -119,7 +140,9 @@ export default function AccountMenuContent({
             <Link
               href="/listings"
               onClick={onNavigate}
-              className="flex items-center gap-(--space-xs) px-(--space-xs) py-(--space-2xs) rounded-lg text-gray-700 hover:bg-maroon/10 hover:text-maroon transition-colors"
+              className={`flex items-center gap-(--space-xs) px-(--space-xs) py-(--space-2xs) rounded-lg transition-colors ${
+                baseColor ?? ""
+              } ${activeColor ?? "hover:bg-maroon/10 hover:text-maroon"}`}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -137,7 +160,9 @@ export default function AccountMenuContent({
             <Link
               href="/settings"
               onClick={onNavigate}
-              className="flex items-center gap-(--space-xs) px-(--space-xs) py-(--space-2xs) rounded-lg text-gray-700 hover:bg-maroon/10 hover:text-maroon transition-colors"
+              className={`flex items-center gap-(--space-xs) px-(--space-xs) py-(--space-2xs) rounded-lg transition-colors ${
+                baseColor ?? ""
+              } ${activeColor ?? "hover:bg-maroon/10 hover:text-maroon"}`}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -162,8 +187,7 @@ export default function AccountMenuContent({
           await handleSignout();
           onNavigate?.();
         }}
-        className={"w-full text-left gap-(--space-xs) px-(--space-s) py-(--space-2xs) rounded-md border-t flex items-center text-red-600 hover:bg-red-50 border-gray-100 mt-(--space-2xs)"
-        }
+        className={`w-full text-left gap-(--space-xs) px-(--space-s) py-(--space-2xs) rounded-md flex items-center ${signoutClass} `}
       >
         <svg
           className="w-5 h-5 flex-shrink-0"
