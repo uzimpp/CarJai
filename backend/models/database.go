@@ -614,8 +614,6 @@ func (r *UserRepository) UpdatePassword(userID int, passwordHash string) error {
 
 func (r *UserRepository) GetManagedUsers() (*[]AdminManagedUser, error) {
 	var users []AdminManagedUser
-
-	// Query นี้จะ JOIN (ผ่าน Subquery) เพื่อดึง Role ของ User มาด้วย
 	query := `
 		SELECT
 			u.id,
@@ -626,8 +624,8 @@ func (r *UserRepository) GetManagedUsers() (*[]AdminManagedUser, error) {
 			u.updated_at,
 			'user' AS type,
 			COALESCE(
-				(SELECT 'Seller' FROM seller_profiles sp WHERE sp.user_id = u.id LIMIT 1),
-				(SELECT 'Buyer' FROM buyer_profiles bp WHERE bp.user_id = u.id LIMIT 1),
+				(SELECT 'Seller' FROM sellers s WHERE s.id = u.id LIMIT 1),
+				(SELECT 'Buyer' FROM buyers b WHERE b.id = u.id LIMIT 1),
 				'No role'
 			) AS role
 		FROM
@@ -644,12 +642,11 @@ func (r *UserRepository) GetManagedUsers() (*[]AdminManagedUser, error) {
 
 	for rows.Next() {
 		var user AdminManagedUser
-		// Scan ตามลำดับของ SELECT
 		err := rows.Scan(
 			&user.ID,
 			&user.Username,
 			&user.Name,
-			&user.Email,
+			&user.Email, 
 			&user.CreatedAt,
 			&user.UpdatedAt,
 			&user.Type,
@@ -671,7 +668,6 @@ func (r *UserRepository) GetManagedUsers() (*[]AdminManagedUser, error) {
 // UpdateUserByAdmin updates user details from the admin panel
 // [TASK 3]
 func (r *UserRepository) UpdateUserByAdmin(userID int, data AdminUpdateUserRequest) (*User, error) {
-	// สร้าง Query แบบไดนามิกเหมือนฟังก์ชัน UpdateUser
 	query := "UPDATE users SET "
 	args := []interface{}{}
 	argNum := 1
@@ -694,16 +690,14 @@ func (r *UserRepository) UpdateUserByAdmin(userID int, data AdminUpdateUserReque
 	}
 
 	if len(updates) == 0 {
-		// ไม่มีอะไรอัปเดต
 		return r.GetUserByID(userID)
 	}
 
-	// อัปเดต updated_at เสมอ
 	updates = append(updates, fmt.Sprintf("updated_at = $%d", argNum))
 	args = append(args, time.Now())
 	argNum++
 
-	// ต่อ String query
+	// String query
 	query += strings.Join(updates, ", ")
 	query += fmt.Sprintf(" WHERE id = $%d", argNum)
 	args = append(args, userID)
@@ -721,7 +715,6 @@ func (r *UserRepository) UpdateUserByAdmin(userID int, data AdminUpdateUserReque
 		return nil, fmt.Errorf("user not found")
 	}
 
-	// คืนค่า User ที่อัปเดตแล้ว
 	return r.GetUserByID(userID)
 }
 

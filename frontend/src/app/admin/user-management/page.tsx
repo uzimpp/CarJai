@@ -182,27 +182,28 @@ export default function AdminUsersPage() {
 
   // Load users from API
   useEffect(() => {
-    if (authLoading) return;
+    if (authLoading || !isAuthenticated) return;
 
     const fetchUsers = async () => {
       try {
         setIsLoading(true);
         setError(null);
 
-        // TODO: Replace with actual API call
-        // const response = await fetch('/admin/users', {
-        //   headers: {
-        //     'Authorization': `Bearer ${token}`,
-        //   },
-        // });
-        // if (!response.ok) throw new Error('Failed to fetch users');
-        // const data = await response.json();
-        // setUsers(data.users);
-        // setTotal(data.total);
+        const response = await fetch('/api/admin/users');
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch users: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
 
-        // For now, set empty state
-        setUsers([]);
-        setTotal(0);
+        if (data.success) {
+          setUsers(data.data); 
+          setTotal(data.total);
+        } else {
+          throw new Error(data.error || 'Failed to fetch users');
+        }
+
         setIsLoading(false);
       } catch (err) {
         setError(
@@ -213,7 +214,7 @@ export default function AdminUsersPage() {
     };
 
     fetchUsers();
-  }, [authLoading]);
+  }, [authLoading, isAuthenticated]);
 
   // Filter users based on search and filters (client-side filtering for search/role)
   useEffect(() => {
@@ -267,17 +268,19 @@ export default function AdminUsersPage() {
     data: AdminUpdateUserRequest
   ) => {
     try {
-      // TODO: Replace with actual API call
-      // await fetch(`/admin/users/${userId}`, {
-      //   method: 'PATCH',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //     'Authorization': `Bearer ${token}`,
-      //   },
-      //   body: JSON.stringify(data),
-      // });
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
 
-      // For now, update local state
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || `Failed to update user: ${response.statusText}`);
+      }
+
       setUsers((prevUsers) =>
         prevUsers.map((user) => {
           if (user.id !== userId) return user;
@@ -297,6 +300,8 @@ export default function AdminUsersPage() {
           return updated;
         })
       );
+      setIsEditModalOpen(false);
+      setEditingUser(null);
     } catch (err) {
       console.error("Failed to update user:", err);
       throw err;
