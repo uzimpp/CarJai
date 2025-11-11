@@ -1,0 +1,208 @@
+package services
+
+import (
+    "database/sql"
+    "encoding/json"
+    "errors"
+    "fmt"
+    "strconv"
+    "strings"
+    "time"
+
+    "github.com/uzimpp/CarJai/backend/models"
+)
+
+var carTopics = map[string]struct{}{
+    "false_information": {},
+    "fraud": {},
+    "illegal_item": {},
+    "safety_issue": {},
+    "other": {},
+}
+
+var sellerTopics = map[string]struct{}{
+    "harassment": {},
+    "fraud": {},
+    "scam": {},
+    "other": {},
+}
+
+type ReportService struct {
+    repo           *models.ReportRepository
+    carService     *CarService
+    profileService *ProfileService
+    db             *sql.DB
+}
+
+func NewReportService(repo *models.ReportRepository, carService *CarService, profileService *ProfileService, database *models.Database) *ReportService {
+    return &ReportService{repo: repo, carService: carService, profileService: profileService, db: database.DB}
+}
+
+// SubmitCarReport validates and creates a car report
+func (s *ReportService) SubmitCarReport(reporterID, carID int, topic string, subTopics []string, description string) (int, error) {
+    topic = strings.TrimSpace(strings.ToLower(topic))
+    description = strings.TrimSpace(description)
+
+    if _, ok := carTopics[topic]; !ok {
+        return 0, fmt.Errorf("invalid topic")
+    }
+    if len(description) < 20 {
+        return 0, fmt.Errorf("description must be at least 20 characters")
+    }
+    if topic == "false_information" && len(subTopics) == 0 {
+        return 0, fmt.Errorf("sub_topics required for false_information")
+    }
+
+    // Verify car exists
+    if _, err := s.carService.GetCarByID(carID); err != nil {
+        return 0, err
+    }
+
+    // Prevent duplicate report within 30 days
+    dup, err := s.repo.HasRecentDuplicate(reporterID, "car", carID, 30)
+    if err != nil {
+        return 0, err
+    }
+    if dup {
+        return 0, models.ConflictError("duplicate report within 30 days")
+    }
+
+    subJSON, _ := json.Marshal(subTopics)
+    return s.repo.CreateCarReport(reporterID, carID, topic, json.RawMessage(subJSON), description)
+}
+
+// SubmitSellerReport validates and creates a seller report
+func (s *ReportService) SubmitSellerReport(reporterID, sellerID int, topic string, subTopics []string, description string) (int, error) {
+    topic = strings.TrimSpace(strings.ToLower(topic))
+    description = strings.Trim(description, " \n\t")
+
+    if _, ok := sellerTopics[topic]; !ok {
+        return 0, fmt.Errorf("invalid topic")
+    }
+    if len(description) < 30 {
+        return 0, fmt.Errorf("description must be at least 30 characters")
+    }
+
+    // Prevent self-report (seller reporting themselves)
+    if reporterID == sellerID {
+        return 0, fmt.Errorf("cannot report yourself")
+    }
+
+    // Verify seller exists
+    if _, err := s.profileService.GetPublicSellerByID(strconv.Itoa(sellerID)); err != nil {
+        return 0, err
+    }
+
+    // Prevent duplicate report within 30 days
+    dup, err := s.repo.HasRecentDuplicate(reporterID, "seller", sellerID, 30)
+    if err != nil {
+        return 0, err
+    }
+    if dup {
+        return 0, models.ConflictError("duplicate report within 30 days")
+    }
+
+    subJSON, _ := json.Marshal(subTopics)
+    return s.repo.CreateSellerReport(reporterID, sellerID, topic, json.RawMessage(subJSON), description)
+}
+
+// ListReports returns filtered reports with pagination
+func (s *ReportService) ListReports(filters models.ReportFilters) ([]models.Report, int, error) {
+    return s.repo.ListReports(filters)
+}
+
+func (s *ReportService) GetReportByID(id int) (*models.Report, error) {
+    return s.repo.GetReportByID(id)
+}
+
+// UpdateReportStatus updates status and admin notes transactionally
+func (s *ReportService) UpdateReportStatus(id int, status string, adminNotes *string, adminID int) error {
+    status = strings.ToLower(strings.TrimSpace(status))
+    allowed := map[string]struct{}{ "pending": {}, "reviewed": {}, "resolved": {}, "dismissed": {} }
+    if _, ok := allowed[status]; !ok {
+        return fmt.Errorf("invalid status")
+    }
+    tx, err := s.db.Begin()
+    if err != nil {
+        return err
+    }
+    defer func() {
+        if err != nil {
+            _ = tx.Rollback()
+        }
+    }()
+    if err = s.repo.UpdateReportStatusTx(tx, id, status, adminNotes, adminID); err != nil {
+        return err
+    }
+    if err = tx.Commit(); err != nil {
+        return err
+    }
+    return nil
+}
+
+// Admin seller actions (audit logged)
+func (s *ReportService) BanSeller(sellerID, adminID int, notes *string) (int, error) {
+    tx, err := s.db.Begin()
+    if err != nil {
+        return 0, err
+    }
+    defer func() {
+        if err != nil {
+            _ = tx.Rollback()
+        }
+    }()
+    id, err := s.repo.LogSellerAdminActionTx(tx, sellerID, adminID, "ban", notes, nil)
+    if err != nil {
+        return 0, err
+    }
+    if err = tx.Commit(); err != nil {
+        return 0, err
+    }
+    return id, nil
+}
+
+func (s *ReportService) SuspendSeller(sellerID, adminID int, until time.Time, notes *string) (int, error) {
+    tx, err := s.db.Begin()
+    if err != nil {
+        return 0, err
+    }
+    defer func() {
+        if err != nil {
+            _ = tx.Rollback()
+        }
+    }()
+    id, err := s.repo.LogSellerAdminActionTx(tx, sellerID, adminID, "suspend", notes, &until)
+    if err != nil {
+        return 0, err
+    }
+    if err = tx.Commit(); err != nil {
+        return 0, err
+    }
+    return id, nil
+}
+
+func (s *ReportService) WarnSeller(sellerID, adminID int, notes *string) (int, error) {
+    tx, err := s.db.Begin()
+    if err != nil {
+        return 0, err
+    }
+    defer func() {
+        if err != nil {
+            _ = tx.Rollback()
+        }
+    }()
+    id, err := s.repo.LogSellerAdminActionTx(tx, sellerID, adminID, "warn", notes, nil)
+    if err != nil {
+        return 0, err
+    }
+    if err = tx.Commit(); err != nil {
+        return 0, err
+    }
+    return id, nil
+}
+
+// ConflictError helper is expected by handlers to map to 409
+func (s *ReportService) IsConflict(err error) bool {
+    var ce models.Conflict
+    return errors.As(err, &ce)
+}
