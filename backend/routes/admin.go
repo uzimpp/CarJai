@@ -14,6 +14,7 @@ import (
 // AdminRoutes sets up admin authentication routes
 func AdminRoutes(
 	adminService *services.AdminService,
+	userService *services.UserService,
 	jwtManager *utils.JWTManager,
 	// Add ExtractionService
 	extractionService *services.ExtractionService,
@@ -29,6 +30,8 @@ func AdminRoutes(
 	adminIPHandler := handlers.NewAdminIPHandler(adminService)
 	// Create Handler for Extraction
 	adminExtractionHandler := handlers.NewAdminExtractionHandler(extractionService)
+	// Create Handler for user management
+	adminUserHandler := handlers.NewAdminUserHandler(adminService, userService)
 
 	// Create router
 	router := http.NewServeMux()
@@ -88,6 +91,21 @@ func AdminRoutes(
 
 	router.HandleFunc(basePath+"/market-price/upload",
 		applyAdminAuthMiddleware(adminExtractionHandler.HandleImportMarketPrices))
+
+	// GET /admin/users
+	router.HandleFunc(basePath+"/users",
+		applyAdminAuthMiddleware(adminUserHandler.HandleGetUsers))
+
+	// This handler catches /admin/users/1, /admin/users/2, etc.
+	router.HandleFunc(basePath+"/users/",
+		applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodPatch {
+				adminUserHandler.HandleUpdateUser(w, r)
+			} else {
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			}
+		}),
+	)
 
 	// --- Health Check & Root ---
 	// Health check and Root only need Global IP Whitelist and general logging

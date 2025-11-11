@@ -181,6 +181,7 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 	mux.Handle(adminPrefix+"/", // Handle all paths under /admin/
 		routes.AdminRoutes(
 			services.Admin,
+			services.User,
 			services.AdminJWT,
 			services.Extraction,
 			adminPrefix,
