@@ -77,8 +77,9 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 	inspectionRepo := models.NewInspectionRepository(database)
 	carColorRepo := models.NewCarColorRepository(database)
 	carFuelRepo := models.NewCarFuelRepository(database)
-    favouriteRepo := models.NewFavouriteRepository(database)
-    reportRepo := models.NewReportRepository(database)
+	marketPriceRepo := models.NewMarketPriceRepository(database)
+	favouriteRepo := models.NewFavouriteRepository(database)
+	reportRepo := models.NewReportRepository(database)
 	// Create JWT managers
 	userJWTManager := utils.NewJWTManager(
 		appConfig.UserJWTSecret,
@@ -112,6 +113,7 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 		inspectionRepo,
 		carColorRepo,
 		carFuelRepo,
+		marketPriceRepo,
 	)
     // Create favourites service
     favouriteService := services.NewFavouriteService(favouriteRepo, carService)
@@ -166,7 +168,7 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 
 	// Mount all routes
 	mux.Handle("/api/auth/",
-		routes.UserAuthRoutes(services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
+		routes.UserAuthRoutes(services.User, services.UserJWT, appConfig.CORSAllowedOrigins, appConfig))
 	mux.Handle("/api/profile/",
 		routes.ProfileRoutes(services.Profile, services.User, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/sellers/",
@@ -187,8 +189,8 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
     mux.Handle("/api/reports/",
         routes.ReportRoutes(services.Report, services.User, appConfig.CORSAllowedOrigins))
 	mux.Handle(adminPrefix+"/", // Handle all paths under /admin/
-		routes.AdminRoutes( 
-			services.Admin, 
+		routes.AdminRoutes(
+			services.Admin,
 			services.AdminJWT,
 			services.Extraction,
 			adminPrefix,
@@ -198,11 +200,11 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 	)
 	mux.Handle("/health/",
 		routes.HealthRoutes(db, appConfig.CORSAllowedOrigins))
-    mux.Handle("/api/recent-views",
-        routes.RecentViewsRoutes(services.RecentViews, services.Profile, services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
-    mux.Handle("/api/recent-views/",
-        routes.RecentViewsRoutes(services.RecentViews, services.Profile, services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
-	mux.Handle("/api/reference-data",
+	mux.Handle("/api/recent-views",
+		routes.RecentViewsRoutes(services.RecentViews, services.Profile, services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
+	mux.Handle("/api/recent-views/",
+		routes.RecentViewsRoutes(services.RecentViews, services.Profile, services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
+	mux.Handle("/api/reference-data/",
 		routes.ReferenceRoutes(db, appConfig.CORSAllowedOrigins))
 
 	return mux

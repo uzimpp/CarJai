@@ -345,7 +345,7 @@ func (r *IPWhitelistRepository) IsIPWhitelisted(adminID int, ipAddress string) (
 
 // UserRepository handles user-related database operations
 type UserRepository struct {
-	db *Database
+    db *Database
 }
 
 // NewUserRepository creates a new user repository
@@ -355,10 +355,10 @@ func NewUserRepository(db *Database) *UserRepository {
 
 // CreateUser creates a new user
 func (r *UserRepository) CreateUser(user *User) error {
-	query := `
-		INSERT INTO users (email, username, name, password_hash)
-		VALUES ($1, $2, $3, $4)
-		RETURNING id, created_at, updated_at`
+    query := `
+        INSERT INTO users (email, username, name, password_hash)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id, created_at, updated_at`
 
 	err := r.db.DB.QueryRow(query, user.Email, user.Username, user.Name, user.PasswordHash).Scan(
 		&user.ID, &user.CreatedAt, &user.UpdatedAt,
@@ -371,13 +371,45 @@ func (r *UserRepository) CreateUser(user *User) error {
 	return nil
 }
 
+// CreateUserWithGoogle creates a new user with Google account linked
+func (r *UserRepository) CreateUserWithGoogle(user *User) error {
+    query := `
+        INSERT INTO users (email, username, name, password_hash, google_id, auth_provider, provider_linked_at)
+        VALUES ($1, $2, $3, $4, $5, $6, NOW())
+        RETURNING id, created_at, updated_at`
+
+    var googleID interface{}
+    if user.GoogleID != nil {
+        googleID = *user.GoogleID
+    } else {
+        googleID = nil
+    }
+
+    var provider interface{}
+    if user.AuthProvider != nil {
+        provider = *user.AuthProvider
+    } else {
+        provider = nil
+    }
+
+    err := r.db.DB.QueryRow(query, user.Email, user.Username, user.Name, user.PasswordHash, googleID, provider).Scan(
+        &user.ID, &user.CreatedAt, &user.UpdatedAt,
+    )
+
+    if err != nil {
+        return fmt.Errorf("failed to create user (google): %w", err)
+    }
+
+    return nil
+}
+
 // GetUserByEmail retrieves a user by email
 func (r *UserRepository) GetUserByEmail(email string) (*User, error) {
-	user := &User{}
-	query := `
-		SELECT id, email, username, name, password_hash, created_at, updated_at
-		FROM users
-		WHERE email = $1`
+    user := &User{}
+    query := `
+        SELECT id, email, username, name, password_hash, created_at, updated_at
+        FROM users
+        WHERE email = $1`
 
 	err := r.db.DB.QueryRow(query, email).Scan(
 		&user.ID, &user.Email, &user.Username, &user.Name, &user.PasswordHash, &user.CreatedAt, &user.UpdatedAt,
@@ -395,11 +427,11 @@ func (r *UserRepository) GetUserByEmail(email string) (*User, error) {
 
 // GetUserByUsername retrieves a user by username
 func (r *UserRepository) GetUserByUsername(username string) (*User, error) {
-	user := &User{}
-	query := `
-		SELECT id, email, username, name, password_hash, created_at, updated_at
-		FROM users
-		WHERE username = $1`
+    user := &User{}
+    query := `
+        SELECT id, email, username, name, password_hash, created_at, updated_at
+        FROM users
+        WHERE username = $1`
 
 	err := r.db.DB.QueryRow(query, username).Scan(
 		&user.ID, &user.Email, &user.Username, &user.Name, &user.PasswordHash, &user.CreatedAt, &user.UpdatedAt,
@@ -417,11 +449,11 @@ func (r *UserRepository) GetUserByUsername(username string) (*User, error) {
 
 // GetUserByID retrieves a user by ID
 func (r *UserRepository) GetUserByID(id int) (*User, error) {
-	user := &User{}
-	query := `
-		SELECT id, email, username, name, password_hash, created_at, updated_at
-		FROM users
-		WHERE id = $1`
+    user := &User{}
+    query := `
+        SELECT id, email, username, name, password_hash, created_at, updated_at
+        FROM users
+        WHERE id = $1`
 
 	err := r.db.DB.QueryRow(query, id).Scan(
 		&user.ID, &user.Email, &user.Username, &user.Name, &user.PasswordHash, &user.CreatedAt, &user.UpdatedAt,
@@ -435,6 +467,73 @@ func (r *UserRepository) GetUserByID(id int) (*User, error) {
 	}
 
 	return user, nil
+}
+
+// GetUserByGoogleID retrieves a user by Google ID
+func (r *UserRepository) GetUserByGoogleID(googleID string) (*User, error) {
+    user := &User{}
+    query := `
+        SELECT id, email, username, name, password_hash, google_id, auth_provider, provider_linked_at, created_at, updated_at
+        FROM users
+        WHERE google_id = $1`
+
+    var googleIDNS sql.NullString
+    var providerNS sql.NullString
+    var linkedAtNT sql.NullTime
+
+    err := r.db.DB.QueryRow(query, googleID).Scan(
+        &user.ID, &user.Email, &user.Username, &user.Name, &user.PasswordHash,
+        &googleIDNS, &providerNS, &linkedAtNT, &user.CreatedAt, &user.UpdatedAt,
+    )
+
+    if err != nil {
+        if err == sql.ErrNoRows {
+            return nil, fmt.Errorf("user not found")
+        }
+        return nil, fmt.Errorf("failed to get user by google ID: %w", err)
+    }
+
+    if googleIDNS.Valid {
+        v := googleIDNS.String
+        user.GoogleID = &v
+    }
+    if providerNS.Valid {
+        v := providerNS.String
+        user.AuthProvider = &v
+    }
+    if linkedAtNT.Valid {
+        t := linkedAtNT.Time
+        user.LinkedAt = &t
+    }
+
+    return user, nil
+}
+
+// LinkGoogleAccount links a Google account to an existing user
+func (r *UserRepository) LinkGoogleAccount(userID int, googleID string) error {
+    query := `
+        UPDATE users
+        SET google_id = $1,
+            auth_provider = 'google',
+            provider_linked_at = NOW(),
+            updated_at = NOW()
+        WHERE id = $2`
+
+    result, err := r.db.DB.Exec(query, googleID, userID)
+    if err != nil {
+        return fmt.Errorf("failed to link google account: %w", err)
+    }
+
+    rowsAffected, err := result.RowsAffected()
+    if err != nil {
+        return fmt.Errorf("failed to get rows affected: %w", err)
+    }
+
+    if rowsAffected == 0 {
+        return fmt.Errorf("user not found")
+    }
+
+    return nil
 }
 
 // ValidateUserCredentials validates user email and password

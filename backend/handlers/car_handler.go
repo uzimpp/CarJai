@@ -33,6 +33,58 @@ func NewCarHandler(carService *services.CarService, userService *services.UserSe
 	}
 }
 
+// GetPriceEstimate handles GET /api/cars/{id}/estimate
+func (h *CarHandler) GetPriceEstimate(w http.ResponseWriter, r *http.Request) {
+	// Check method
+	if r.Method != http.MethodGet {
+		utils.RespondJSON(w, http.StatusMethodNotAllowed, models.UserErrorResponse{
+			Success: false,
+			Error:   "Method not allowed",
+		})
+		return
+	}
+
+	// Get user from context (ensure user is logged in)
+	_, ok := r.Context().Value("userID").(int)
+	if !ok {
+		utils.RespondJSON(w, http.StatusUnauthorized, models.UserErrorResponse{
+			Success: false,
+			Error:   "Unauthorized",
+		})
+		return
+	}
+
+	// Extract car ID from URL
+	carID, err := extractIDFromPath(r.URL.Path, "/api/cars/")
+	if err != nil {
+		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
+			Success: false,
+			Error:   "Invalid car ID",
+		})
+		return
+	}
+
+	// Get price estimation from service
+	price, err := h.carService.EstimateCarPrice(carID)
+	if err != nil {
+		// Don't return 500, just indicate estimation is unavailable
+		utils.RespondJSON(w, http.StatusOK, map[string]interface{}{
+			"success": false,
+			"message": err.Error(), // e.g., "estimation unavailable"
+			"data":    nil,
+		})
+		return
+	}
+
+	// Return estimated price
+	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{
+		"success": true,
+		"data": map[string]interface{}{
+			"estimatedPrice": price,
+		},
+	})
+}
+
 // CreateCar handles POST /api/cars
 func (h *CarHandler) CreateCar(w http.ResponseWriter, r *http.Request) {
 	// Check method

@@ -13,23 +13,23 @@ import (
 
 // DatabaseConfig holds database configuration
 type DatabaseConfig struct {
-	Host		string
-	Port		string
-	User		string
-	Password	string
-	DBName		string
-	SSLMode		string
+	Host     string
+	Port     string
+	User     string
+	Password string
+	DBName   string
+	SSLMode  string
 }
 
 // LoadDatabaseConfig loads database configuration from environment variables
 func LoadDatabaseConfig() *DatabaseConfig {
 	return &DatabaseConfig{
-		Host:		utils.GetEnv("DB_HOST"),
-		Port:		utils.GetEnv("DB_PORT"),
-		User:		utils.GetEnv("DB_USER"),
-		Password:	utils.GetEnv("DB_PASSWORD"),
-		DBName:		utils.GetEnv("DB_NAME"),
-		SSLMode:	utils.GetEnv("DB_SSLMODE"),
+		Host:     utils.GetEnv("DB_HOST"),
+		Port:     utils.GetEnv("DB_PORT"),
+		User:     utils.GetEnv("DB_USER"),
+		Password: utils.GetEnv("DB_PASSWORD"),
+		DBName:   utils.GetEnv("DB_NAME"),
+		SSLMode:  utils.GetEnv("DB_SSLMODE"),
 	}
 }
 
@@ -175,7 +175,6 @@ func initializeIPWhitelist(db *sql.DB, appConfig *AppConfig) error {
 		return nil
 	}
 
-	
 	// Parse IP addresses from environment variable
 	if len(appConfig.AdminIPWhitelist) == 0 {
 		fmt.Printf("Warning: ADMIN_IP_WHITELIST is empty, admin '%s' will not be able to login\n", appConfig.AdminUsername)

@@ -102,9 +102,10 @@ type AdminIPWhitelistRequest struct {
 
 // AdminIPWhitelistResponse represents the response payload for IP whitelist operations
 type AdminIPWhitelistResponse struct {
-	Success bool               `json:"success"`
-	Data    []AdminIPWhitelist `json:"data,omitempty"`
-	Message string             `json:"message,omitempty"`
+	Success           bool               `json:"success"`
+	Data              []AdminIPWhitelist `json:"data,omitempty"`
+	Message           string             `json:"message,omitempty"`
+	WouldBlockSession bool               `json:"would_block_session,omitempty"` // Warning: deletion would affect current session
 }
 
 // AdminErrorResponse represents error response structure

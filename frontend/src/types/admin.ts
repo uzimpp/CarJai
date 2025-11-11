@@ -31,8 +31,9 @@ interface AdminMeResponse {
 
 interface AdminIPWhitelistResponse {
   success: boolean;
-  data: AdminIPWhitelist[];
-  message: string;
+  data?: AdminIPWhitelist[];
+  message?: string;
+  would_block_session?: boolean; // Warning: deletion would affect current session
 }
 
 interface AdminAuthResponse {
@@ -61,6 +62,68 @@ interface AdminSigninRequest {
   password: string;
 }
 
+type UserType = "admin" | "user";
+type UserRole = "Admin" | "Buyer" | "Seller" | "No role";
+
+interface AdminManagedUser {
+  id: number;
+  type: UserType;
+  // User-only fields (users have email, updated_at, created_at)
+  email?: string | null; // Only for users
+  updated_at?: string; // Only for users - when profile was last updated
+  // Common fields (both admins and users have these)
+  username: string;
+  name: string;
+  created_at: string;
+  // UI fields (derived from data, not in database)
+  role: UserRole;
+  roles?: {
+    buyer: boolean;
+    seller: boolean;
+  };
+}
+
+interface AdminUpdateUserRequest {
+  name?: string;
+  username?: string;
+  email?: string; // Only for users
+}
+
+interface AdminUpdateUserResponse {
+  success: boolean;
+  message: string;
+}
+
+interface AdminUpdateUserError {
+  success: false;
+  error: string;
+  code: number;
+}
+
+interface MarketPrice {
+  id: number;
+  brand: string;
+  model: string;
+  sub_model: string;
+  year_start: number;
+  year_end: number;
+  price_min_thb: number;
+  price_max_thb: number;
+}
+
+interface MarketPriceResponse {
+  success: boolean;
+  data: MarketPrice[];
+  message: string;
+}
+
+// Import (PDF) response from backend
+interface ImportMarketPriceResponse {
+  message: string;
+  inserted_count: number;
+  updated_count: number;
+}
+
 export type {
   AdminUser,
   AdminSession,
@@ -71,4 +134,13 @@ export type {
   AdminAuthError,
   AdminSigninRequest,
   AdminActionResponse,
+  AdminManagedUser,
+  AdminUpdateUserRequest,
+  AdminUpdateUserResponse,
+  AdminUpdateUserError,
+  UserType,
+  UserRole,
+  MarketPrice,
+  MarketPriceResponse,
+  ImportMarketPriceResponse,
 };

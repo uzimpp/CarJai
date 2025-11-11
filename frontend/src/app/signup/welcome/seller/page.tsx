@@ -1,10 +1,19 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { useUserAuth } from "@/hooks/useUserAuth";
 
 export default function SellerWelcomePage() {
-  const { isLoading, isAuthenticated, roles, profiles } = useUserAuth();
+  const { isLoading, isAuthenticated, roles, profiles, validateSession } =
+    useUserAuth();
+
+  // If authenticated but roles are missing, try refreshing the session
+  useEffect(() => {
+    if (isAuthenticated && !isLoading && !roles?.seller) {
+      validateSession();
+    }
+  }, [isAuthenticated, isLoading, roles, validateSession]);
 
   if (isLoading) {
     return (
@@ -21,9 +30,13 @@ export default function SellerWelcomePage() {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h2>
-          <p className="text-gray-600 mb-6">You need to be a registered seller to access this page.</p>
-          <Link 
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            Access Denied
+          </h2>
+          <p className="text-gray-600 mb-6">
+            You need to be a registered seller to access this page.
+          </p>
+          <Link
             href="/signup/role/seller"
             className="inline-block bg-red-800 text-white px-6 py-3 rounded-lg hover:bg-red-900 transition-colors"
           >
@@ -49,7 +62,9 @@ export default function SellerWelcomePage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Complete Profile */}
           <Link
-            href={profiles?.sellerComplete ? "/settings" : "/signup/role/seller"}
+            href={
+              profiles?.sellerComplete ? "/settings" : "/signup/role/seller"
+            }
             className="group rounded-2xl border-2 border-gray-200 bg-white p-8 shadow-sm hover:shadow-lg hover:border-red-800 transition-all hover:-translate-y-1 text-left inline-block w-full"
           >
             <div className="flex items-center gap-3 mb-4">
@@ -57,19 +72,28 @@ export default function SellerWelcomePage() {
                 👤
               </div>
               <h2 className="text-xl font-semibold text-gray-900">
-                {profiles?.sellerComplete ? "Manage Profile" : "Complete Profile"}
+                {profiles?.sellerComplete
+                  ? "Manage Profile"
+                  : "Complete Profile"}
               </h2>
             </div>
             <p className="text-gray-600 mb-4">
-              {profiles?.sellerComplete 
+              {profiles?.sellerComplete
                 ? "Update your seller information and settings."
-                : "Complete your seller profile to start listing cars."
-              }
+                : "Complete your seller profile to start listing cars."}
             </p>
             <ul className="text-sm text-gray-500 space-y-1">
-              <li>• {profiles?.sellerComplete ? "Update" : "Add"} contact information</li>
-              <li>• {profiles?.sellerComplete ? "Manage" : "Set up"} dealership details</li>
-              <li>• {profiles?.sellerComplete ? "Edit" : "Add"} location and bio</li>
+              <li>
+                • {profiles?.sellerComplete ? "Update" : "Add"} contact
+                information
+              </li>
+              <li>
+                • {profiles?.sellerComplete ? "Manage" : "Set up"} dealership
+                details
+              </li>
+              <li>
+                • {profiles?.sellerComplete ? "Edit" : "Add"} location and bio
+              </li>
             </ul>
             {!profiles?.sellerComplete && (
               <div className="mt-3 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
@@ -132,7 +156,7 @@ export default function SellerWelcomePage() {
 
         {/* Additional Options */}
         <div className="mt-12 text-center">
-          <Link 
+          <Link
             href="/"
             className="text-red-800 hover:text-red-900 hover:underline"
           >

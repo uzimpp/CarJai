@@ -11,7 +11,7 @@ func ValidateIPAddress(ip string) error {
 	if ip == "" {
 		return fmt.Errorf("IP address cannot be empty")
 	}
-	
+
 	// Check if it's a CIDR notation
 	if strings.Contains(ip, "/") {
 		_, _, err := net.ParseCIDR(ip)
@@ -20,13 +20,13 @@ func ValidateIPAddress(ip string) error {
 		}
 		return nil
 	}
-	
+
 	// Check if it's a regular IP address
 	parsedIP := net.ParseIP(ip)
 	if parsedIP == nil {
 		return fmt.Errorf("invalid IP address format")
 	}
-	
+
 	return nil
 }
 
@@ -37,13 +37,13 @@ func IsIPInRange(ip, cidr string) (bool, error) {
 	if parsedIP == nil {
 		return false, fmt.Errorf("invalid IP address: %s", ip)
 	}
-	
+
 	// Parse the CIDR range
 	_, network, err := net.ParseCIDR(cidr)
 	if err != nil {
 		return false, fmt.Errorf("invalid CIDR range: %w", err)
 	}
-	
+
 	// Check if IP is in the network
 	return network.Contains(parsedIP), nil
 }
@@ -53,7 +53,7 @@ func IsIPWhitelisted(clientIP string, whitelist []string) (bool, error) {
 	if len(whitelist) == 0 {
 		return false, fmt.Errorf("whitelist is empty")
 	}
-	
+
 	for _, allowedIP := range whitelist {
 		// If it's a CIDR range
 		if strings.Contains(allowedIP, "/") {
@@ -71,7 +71,7 @@ func IsIPWhitelisted(clientIP string, whitelist []string) (bool, error) {
 			}
 		}
 	}
-	
+
 	return false, nil
 }
 
@@ -101,7 +101,7 @@ func ExtractClientIP(remoteAddr, xForwardedFor, xRealIP string) string {
 			}
 		}
 	}
-	
+
 	// Fall back to RemoteAddr
 	if remoteAddr != "" {
 		// RemoteAddr is usually in format "IP:port"
@@ -113,7 +113,7 @@ func ExtractClientIP(remoteAddr, xForwardedFor, xRealIP string) string {
 			}
 		}
 	}
-	
+
 	return ""
 }
 
@@ -123,12 +123,12 @@ func NormalizeIPAddress(ip string) (string, error) {
 	if parsedIP == nil {
 		return "", fmt.Errorf("invalid IP address: %s", ip)
 	}
-	
+
 	// Convert to IPv4 if it's an IPv4-mapped IPv6 address
 	if ipv4 := parsedIP.To4(); ipv4 != nil {
 		return ipv4.String(), nil
 	}
-	
+
 	// Return IPv6 in canonical form
 	return parsedIP.String(), nil
 }

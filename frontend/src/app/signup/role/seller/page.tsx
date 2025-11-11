@@ -9,7 +9,7 @@ import SellerForm from "@/components/profile/SellerForm";
 
 export default function SellerProfilePage() {
   const router = useRouter();
-  const { isAuthenticated, isLoading } = useUserAuth();
+  const { isAuthenticated, isLoading, validateSession } = useUserAuth();
   const [error, setError] = useState<string | null>(null);
 
   // Redirect to signin if not authenticated
@@ -22,7 +22,9 @@ export default function SellerProfilePage() {
   const handleSubmit = async (data: SellerRequest) => {
     try {
       setError(null);
-       await profileAPI.upsertSellerProfile(data);
+      await profileAPI.upsertSellerProfile(data);
+      // Refresh auth context to get updated roles
+      await validateSession();
       // Redirect to welcome page after successful profile creation
       router.push("/signup/welcome/seller");
     } catch (err) {

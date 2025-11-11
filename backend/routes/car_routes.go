@@ -129,6 +129,12 @@ func handleCarRoutes(
 ) {
 	path := r.URL.Path
 
+	// /api/cars/{id}/estimate - Get price estimate (authenticated)
+	if strings.HasSuffix(path, "/estimate") {
+		authMiddleware.RequireAuth(handler.GetPriceEstimate)(w, r)
+		return
+	}
+
 	// /api/cars/{id}/book - Upload registration book to existing car (authenticated)
 	if strings.HasSuffix(path, "/book") {
 		authMiddleware.RequireAuth(handler.UploadBook)(w, r)

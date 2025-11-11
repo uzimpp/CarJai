@@ -7,6 +7,7 @@ import { InlineAlert } from "@/components/ui/InlineAlert";
 import QrCodeUploader from "@/components/car/QrCodeUploader";
 import type { CarFormData } from "@/types/car";
 import Image from "next/image";
+import ComboboxInput from "@/components/global/ComboboxInput"; // Import the new component
 
 interface Step1DocumentsFormProps {
   formData: Partial<CarFormData>;
@@ -18,6 +19,14 @@ interface Step1DocumentsFormProps {
   inspectionOpen: boolean;
   onToggleInspection: () => void;
   inspectionPassSummary?: { passed: number; total: number };
+  
+  // Add new props for dropdowns
+  brandOptions: string[];
+  modelOptions: string[];
+  subModelOptions: string[];
+  isBrandLoading: boolean;
+  isModelLoading: boolean;
+  isSubModelLoading: boolean;
 }
 
 export default function Step1DocumentsForm({
@@ -30,6 +39,13 @@ export default function Step1DocumentsForm({
   inspectionOpen,
   onToggleInspection,
   inspectionPassSummary,
+  // Destructure new props
+  brandOptions,
+  modelOptions,
+  subModelOptions,
+  isBrandLoading,
+  isModelLoading,
+  isSubModelLoading,
 }: Step1DocumentsFormProps) {
   const [isUploadingBook, setIsUploadingBook] = useState(false);
   const [isUploadingInspection, setIsUploadingInspection] = useState(false);
@@ -224,7 +240,7 @@ export default function Step1DocumentsForm({
               <QrCodeUploader onScanComplete={handleQrScanComplete} />
               <p className="mt-2 text-xs text-gray-600">
                 Upload a photo/screenshot of the QR code from your inspection
-                receipt. Well read it and fetch the results automatically.
+                receipt. We ll read it and fetch the results automatically.
               </p>
             </div>
           </div>
@@ -260,33 +276,36 @@ export default function Step1DocumentsForm({
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <TextField
+              
+              {/* --- Start: Replaced TextFields with ComboboxInput --- */}
+              <ComboboxInput
                 label="Brand"
                 value={formData.brandName || ""}
-                onChange={(e) =>
-                  onFormDataChange({ brandName: e.target.value })
-                }
-                placeholder="e.g., Toyota"
-                required
+                onChange={(value) => onFormDataChange({ brandName: value })}
+                options={brandOptions}
+                loading={isBrandLoading}
+                placeholder="Select or type Brand"
               />
-              <TextField
+              <ComboboxInput
                 label="Model Name"
                 value={formData.modelName || ""}
-                onChange={(e) =>
-                  onFormDataChange({ modelName: e.target.value })
-                }
-                placeholder="e.g., Civic, Corolla, Camry"
-                required
+                onChange={(value) => onFormDataChange({ modelName: value })}
+                options={modelOptions}
+                loading={isModelLoading}
+                disabled={!formData.brandName || isBrandLoading}
+                placeholder="Select or type Model"
               />
-              <TextField
+              <ComboboxInput
                 label="Submodel Name"
                 value={formData.submodelName || ""}
-                onChange={(e) =>
-                  onFormDataChange({ submodelName: e.target.value })
-                }
-                placeholder="e.g., RS, Hybrid, Sport"
-                required
+                onChange={(value) => onFormDataChange({ submodelName: value })}
+                options={subModelOptions}
+                loading={isSubModelLoading}
+                disabled={!formData.brandName || !formData.modelName || isModelLoading}
+                placeholder="Select or type Submodel"
               />
+              {/* --- End: Replaced TextFields --- */}
+
               <TextField
                 label="Year"
                 type="number"

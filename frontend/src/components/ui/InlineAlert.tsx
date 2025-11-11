@@ -47,15 +47,15 @@ export function InlineAlert({ type, children, onDismiss }: InlineAlertProps) {
     <div
       className={`flex items-start gap-(--space-xs) p-(--space-s) rounded-lg border ${style.container} mb-(--space-m)`}
     >
-      <Icon className={`h-5 w-5 ${style.icon} flex-shrink-0 mt-0.5`} />
-      <p className={`text-0 ${style.text} flex-1`}>{children}</p>
+      <Icon className={`h-6 w-6 ${style.icon} flex-shrink-0`} />
+      <div className={`text-0 ${style.text} flex-1`}>{children}</div>
       {onDismiss && (
         <button
           type="button"
           onClick={onDismiss}
           className={`${style.icon} hover:opacity-70 flex-shrink-0`}
         >
-          <XCircleIcon className="h-5 w-5" />
+          <XCircleIcon className="h-6 w-6" />
         </button>
       )}
     </div>
