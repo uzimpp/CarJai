@@ -88,6 +88,7 @@ export default function AccountBtn({
                       ? "text-white hover:bg-red/50"
                       : "text-red-600 hover:bg-red-50 hover:text-red-700"
                   } `}
+                  lineColor={`${isAuthedAdmin ? "bg-white/10" : "bg-grey/10"}`}
                 />
               </div>
             )}

@@ -18,6 +18,7 @@ interface AccountMenuContentProps {
   baseColor: string; // e.g., "text-grey"
   activeColor: string; // e.g., "bg-maroon/10 text-maroon"
   signoutClass: string; // e.g., "text-red-600"
+  lineColor?: string; // e.g., "bg-grey/10"
 }
 
 export default function AccountMenuContent({
@@ -31,6 +32,7 @@ export default function AccountMenuContent({
   baseColor,
   activeColor,
   signoutClass,
+  lineColor = "bg-grey/10",
 }: AccountMenuContentProps) {
   const pathname = usePathname();
   return (
@@ -56,7 +58,6 @@ export default function AccountMenuContent({
               </Link>
             );
           })}
-          <div className="h-px bg-white/10 dark:bg-white/10 my-(--space-2xs)" />
         </>
       )}
 
@@ -181,6 +182,7 @@ export default function AccountMenuContent({
           )}
         </>
       )}
+      <div className={`h-px ${lineColor}`} />
 
       <button
         onClick={async () => {

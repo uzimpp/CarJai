@@ -240,7 +240,7 @@ export default function SideBar({
                     await handleSignout();
                     setIsMobileMenuOpen(false);
                   }}
-                  className="w-full text-left gap-(--space-xs) px-(--space-s) py-(--space-2xs) rounded-md flex items-center text-white hover:bg-maroon hover:text-white mt-(--space-2xs)"
+                  className="w-full text-left gap-(--space-xs) px-(--space-s) py-(--space-2xs) rounded-md flex items-center text-white hover:bg-maroon"
                 >
                   <svg
                     className="w-5 h-5 flex-shrink-0"

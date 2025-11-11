@@ -192,7 +192,7 @@ export default function NavBar() {
                 >
                   About
                 </Link>
-                <div className="h-px bg-gray-200 my-(--space-2xs)" />
+                <div className="h-px bg-grey/10" />
                 {isLoading ? (
                   <div className="flex items-center justify-center gap-x-(--space-2xs) px-(--space-s) py-(--space-2xs) bg-maroon/10 rounded-md">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-maroon"></div>
