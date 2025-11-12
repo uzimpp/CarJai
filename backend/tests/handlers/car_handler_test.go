@@ -357,3 +357,97 @@ func (h *testCarHandler) SearchCars(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func TestCarHandler_UpdateCar_Errors(t *testing.T) {
+	mock := &mockCarService{
+		updateCarFunc: func(carID, userID int, req *models.UpdateCarRequest, isAdmin bool) error {
+			return &services.ValidationError{Message: "unauthorized"}
+		},
+	}
+	handler := &CarHandler{carService: (*services.CarService)(nil)} // not used in test wrapper
+	test := &testCarHandler{carService: mock, userService: &mockUserService{}}
+	// Unauthorized (no userID)
+	req := httptest.NewRequest(http.MethodPut, "/api/cars/1", bytes.NewBufferString(`{}`))
+	w := httptest.NewRecorder()
+	test.UpdateCar(w, req)
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401 for no user, got %d", w.Code)
+	}
+	// Invalid car ID
+	req2 := httptest.NewRequest(http.MethodPut, "/api/cars/0", bytes.NewBufferString(`{}`))
+	ctx2 := context.WithValue(req2.Context(), "userID", 1)
+	req2 = req2.WithContext(ctx2)
+	w2 := httptest.NewRecorder()
+	test.UpdateCar(w2, req2)
+	if w2.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for invalid id, got %d", w2.Code)
+	}
+	// Invalid body
+	req3 := httptest.NewRequest(http.MethodPut, "/api/cars/1", bytes.NewBufferString(`invalid`))
+	ctx3 := context.WithValue(req3.Context(), "userID", 1)
+	req3 = req3.WithContext(ctx3)
+	w3 := httptest.NewRecorder()
+	test.UpdateCar(w3, req3)
+	if w3.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for invalid body, got %d", w3.Code)
+	}
+}
+
+func TestCarHandler_AutoSaveDraft_Errors(t *testing.T) {
+	mock := &mockCarService{
+		autoSaveDraftFunc: func(carID, userID int, req *models.UpdateCarRequest) error {
+			return &services.ValidationError{Message: "not found"}
+		},
+	}
+	test := &testCarHandler{carService: mock, userService: &mockUserService{}}
+	// Unauthorized
+	req := httptest.NewRequest(http.MethodPatch, "/api/cars/1", bytes.NewBufferString(`{}`))
+	w := httptest.NewRecorder()
+	test.AutoSaveDraft(w, req)
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401 for no user, got %d", w.Code)
+	}
+	// Invalid car ID
+	req2 := httptest.NewRequest(http.MethodPatch, "/api/cars/0", bytes.NewBufferString(`{}`))
+	ctx2 := context.WithValue(req2.Context(), "userID", 1)
+	req2 = req2.WithContext(ctx2)
+	w2 := httptest.NewRecorder()
+	test.AutoSaveDraft(w2, req2)
+	if w2.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for invalid id, got %d", w2.Code)
+	}
+	// Invalid body
+	req3 := httptest.NewRequest(http.MethodPatch, "/api/cars/1", bytes.NewBufferString(`invalid`))
+	ctx3 := context.WithValue(req3.Context(), "userID", 1)
+	req3 = req3.WithContext(ctx3)
+	w3 := httptest.NewRecorder()
+	test.AutoSaveDraft(w3, req3)
+	if w3.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for invalid body, got %d", w3.Code)
+	}
+}
+
+func TestCarHandler_DeleteCar_Errors(t *testing.T) {
+	mock := &mockCarService{
+		deleteCarFunc: func(carID, userID int, isAdmin bool) error {
+			return &services.ValidationError{Message: "unauthorized"}
+		},
+	}
+	test := &testCarHandler{carService: mock, userService: &mockUserService{}}
+	// Unauthorized
+	req := httptest.NewRequest(http.MethodDelete, "/api/cars/1", nil)
+	w := httptest.NewRecorder()
+	test.DeleteCar(w, req)
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401 for no user, got %d", w.Code)
+	}
+	// Invalid car ID
+	req2 := httptest.NewRequest(http.MethodDelete, "/api/cars/0", nil)
+	ctx2 := context.WithValue(req2.Context(), "userID", 1)
+	req2 = req2.WithContext(ctx2)
+	w2 := httptest.NewRecorder()
+	test.DeleteCar(w2, req2)
+	if w2.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for invalid id, got %d", w2.Code)
+	}
+}
+

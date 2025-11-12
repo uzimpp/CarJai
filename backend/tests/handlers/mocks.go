@@ -20,6 +20,7 @@ type mockUserService struct {
 	validateUserSessionFunc func(token string) (*models.User, error)
 	isSellerFunc            func(userID int) (bool, error)
 	getUserByUsernameFunc   func(username string) (*models.User, error)
+	updateUserFunc          func(userID int, username *string, name *string) (*models.User, error)
 }
 
 func (m *mockUserService) Signup(email, password, username, name, ipAddress, userAgent string) (*models.UserAuthResponse, error) {
@@ -81,6 +82,13 @@ func (m *mockUserService) IsSeller(userID int) (bool, error) {
 func (m *mockUserService) GetUserByUsername(username string) (*models.User, error) {
 	if m.getUserByUsernameFunc != nil {
 		return m.getUserByUsernameFunc(username)
+	}
+	return nil, nil
+}
+
+func (m *mockUserService) UpdateUser(userID int, username *string, name *string) (*models.User, error) {
+	if m.updateUserFunc != nil {
+		return m.updateUserFunc(userID, username, name)
 	}
 	return nil, nil
 }

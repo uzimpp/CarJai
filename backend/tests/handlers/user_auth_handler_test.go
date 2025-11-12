@@ -312,3 +312,83 @@ func (h *testUserAuthHandler) Signin(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusOK, response)
 }
 
+func TestUserAuthHandler_Me_And_Refresh_Error(t *testing.T) {
+	mock := &mockUserService{
+		getCurrentUserFunc: func(token string) (*models.UserMeResponse, error) {
+			return nil, &utils.HTTPError{Message: "invalid", Status: http.StatusUnauthorized}
+		},
+		refreshTokenFunc: func(token, ipAddress, userAgent string) (*models.UserAuthResponse, error) {
+			return nil, &utils.HTTPError{Message: "invalid", Status: http.StatusUnauthorized}
+		},
+	}
+	handler := &UserAuthHandler{
+		userService: mock,
+		appConfig:   &config.AppConfig{},
+	}
+	// Me: no cookie
+	req := httptest.NewRequest(http.MethodGet, "/api/auth/me", nil)
+	w := httptest.NewRecorder()
+	handler.Me(w, req)
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401 for me without cookie, got %d", w.Code)
+	}
+	// Refresh: no cookie
+	req2 := httptest.NewRequest(http.MethodPost, "/api/auth/refresh", nil)
+	w2 := httptest.NewRecorder()
+	handler.RefreshToken(w2, req2)
+	if w2.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401 for refresh without cookie, got %d", w2.Code)
+	}
+}
+
+func TestUserAuthHandler_ChangePassword_Errors(t *testing.T) {
+	mock := &mockUserService{
+		validateUserSessionFunc: func(token string) (*models.User, error) {
+			return &models.User{ID: 1}, nil
+		},
+		changePasswordFunc: func(userID int, currentPassword, newPassword string) error {
+			return &utils.HTTPError{Message: "bad request", Status: http.StatusBadRequest}
+		},
+	}
+	handler := &UserAuthHandler{
+		userService: mock,
+		appConfig:   &config.AppConfig{},
+	}
+	// No cookie -> 401
+	req := httptest.NewRequest(http.MethodPost, "/api/auth/change-password", nil)
+	w := httptest.NewRecorder()
+	handler.ChangePassword(w, req)
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401 when no cookie, got %d", w.Code)
+	}
+	// Invalid body -> 400
+	req2 := httptest.NewRequest(http.MethodPost, "/api/auth/change-password", bytes.NewBufferString("invalid"))
+	req2.Header.Set("Content-Type", "application/json")
+	req2.AddCookie(&http.Cookie{Name: "jwt", Value: "token"})
+	w2 := httptest.NewRecorder()
+	handler.ChangePassword(w2, req2)
+	if w2.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for invalid body, got %d", w2.Code)
+	}
+	// Too short new password -> 400
+	body, _ := json.Marshal(models.ChangePasswordRequest{CurrentPassword: "abcdef", NewPassword: "123"})
+	req3 := httptest.NewRequest(http.MethodPost, "/api/auth/change-password", bytes.NewBuffer(body))
+	req3.Header.Set("Content-Type", "application/json")
+	req3.AddCookie(&http.Cookie{Name: "jwt", Value: "token"})
+	w3 := httptest.NewRecorder()
+	handler.ChangePassword(w3, req3)
+	if w3.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for short password, got %d", w3.Code)
+	}
+	// Service error -> 400
+	body2, _ := json.Marshal(models.ChangePasswordRequest{CurrentPassword: "abcdef", NewPassword: "123456"})
+	req4 := httptest.NewRequest(http.MethodPost, "/api/auth/change-password", bytes.NewBuffer(body2))
+	req4.Header.Set("Content-Type", "application/json")
+	req4.AddCookie(&http.Cookie{Name: "jwt", Value: "token"})
+	w4 := httptest.NewRecorder()
+	handler.ChangePassword(w4, req4)
+	if w4.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for service error, got %d", w4.Code)
+	}
+}
+

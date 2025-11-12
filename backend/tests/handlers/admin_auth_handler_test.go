@@ -369,3 +369,62 @@ func (h *testAdminAuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusOK, response)
 }
 
+func TestAdminAuthHandler_RefreshToken_Error(t *testing.T) {
+	mockJWT := &mockJWTManager{
+		refreshTokenFunc: func(token string) (string, time.Time, error) {
+			return "", time.Time{}, &services.ValidationError{Message: "invalid token"}
+		},
+	}
+	handler := &AdminAuthHandler{
+		jwtManager: mockJWT,
+	}
+	// No cookie case -> Unauthorized
+	req := httptest.NewRequest(http.MethodPost, "/admin/auth/refresh", nil)
+	w := httptest.NewRecorder()
+	handler.RefreshToken(w, req)
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401 when no cookie, got %d", w.Code)
+	}
+	// With cookie but refresh error -> Unauthorized
+	req2 := httptest.NewRequest(http.MethodPost, "/admin/auth/refresh", nil)
+	req2.AddCookie(&http.Cookie{Name: "admin_jwt", Value: "bad"})
+	w2 := httptest.NewRecorder()
+	handler.RefreshToken(w2, req2)
+	if w2.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401 when refresh fails, got %d", w2.Code)
+	}
+	// Method not allowed
+	req3 := httptest.NewRequest(http.MethodGet, "/admin/auth/refresh", nil)
+	w3 := httptest.NewRecorder()
+	handler.RefreshToken(w3, req3)
+	if w3.Code != http.StatusMethodNotAllowed {
+		t.Errorf("expected 405 for wrong method, got %d", w3.Code)
+	}
+}
+
+func TestAdminAuthHandler_Signout_Error(t *testing.T) {
+	mockAdmin := &mockAdminService{
+		signoutFunc: func(req services.SignoutRequest) error {
+			return &services.ValidationError{Message: "signout failed"}
+		},
+	}
+	handler := &AdminAuthHandler{
+		adminService: mockAdmin,
+	}
+	// No cookie -> Unauthorized
+	req := httptest.NewRequest(http.MethodPost, "/admin/auth/logout", nil)
+	w := httptest.NewRecorder()
+	handler.Signout(w, req)
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401 when no cookie, got %d", w.Code)
+	}
+	// Service error -> Unauthorized
+	req2 := httptest.NewRequest(http.MethodPost, "/admin/auth/logout", nil)
+	req2.AddCookie(&http.Cookie{Name: "admin_jwt", Value: "token"})
+	w2 := httptest.NewRecorder()
+	handler.Signout(w2, req2)
+	if w2.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401 when service error, got %d", w2.Code)
+	}
+}
+

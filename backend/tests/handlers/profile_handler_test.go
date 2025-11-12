@@ -121,6 +121,74 @@ func (h *testProfileHandler) Profile(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusOK, response)
 }
 
+func TestProfileHandler_UpdateSelf_Errors(t *testing.T) {
+	mockUser := &mockUserService{
+		validateUserSessionFunc: func(token string) (*models.User, error) {
+			return &models.User{ID: 1, Username: "current"}, nil
+		},
+		getUserByUsernameFunc: func(username string) (*models.User, error) {
+			// Simulate username taken
+			if username == "taken" {
+				return &models.User{ID: 2, Username: "taken"}, nil
+			}
+			return nil, nil
+		},
+		updateUserFunc: func(userID int, username *string, name *string) (*models.User, error) {
+			return nil, &services.ValidationError{Message: "update failed"}
+		},
+	}
+	handler := &ProfileHandler{
+		userService: mockUser,
+	}
+	// Method not allowed
+	req0 := httptest.NewRequest(http.MethodGet, "/api/profile/self", nil)
+	w0 := httptest.NewRecorder()
+	handler.UpdateSelf(w0, req0)
+	if w0.Code != http.StatusMethodNotAllowed {
+		t.Errorf("expected 405, got %d", w0.Code)
+	}
+	// No cookie
+	req := httptest.NewRequest(http.MethodPatch, "/api/profile/self", nil)
+	w := httptest.NewRecorder()
+	handler.UpdateSelf(w, req)
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401 for no cookie, got %d", w.Code)
+	}
+	// Invalid body
+	req2 := httptest.NewRequest(http.MethodPatch, "/api/profile/self", bytes.NewBufferString("invalid"))
+	req2.Header.Set("Content-Type", "application/json")
+	req2.AddCookie(&http.Cookie{Name: "jwt", Value: "token"})
+	w2 := httptest.NewRecorder()
+	handler.UpdateSelf(w2, req2)
+	if w2.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for invalid body, got %d", w2.Code)
+	}
+	// Username taken
+	bodyTaken, _ := json.Marshal(models.UserUpdateSelfRequest{Username: strPtr("taken")})
+	req3 := httptest.NewRequest(http.MethodPatch, "/api/profile/self", bytes.NewBuffer(bodyTaken))
+	req3.Header.Set("Content-Type", "application/json")
+	req3.AddCookie(&http.Cookie{Name: "jwt", Value: "token"})
+	w3 := httptest.NewRecorder()
+	handler.UpdateSelf(w3, req3)
+	if w3.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 when username taken, got %d", w3.Code)
+	}
+	// Update failed (server error)
+	bodyOK, _ := json.Marshal(models.UserUpdateSelfRequest{Name: strPtr("New Name")})
+	req4 := httptest.NewRequest(http.MethodPatch, "/api/profile/self", bytes.NewBuffer(bodyOK))
+	req4.Header.Set("Content-Type", "application/json")
+	req4.AddCookie(&http.Cookie{Name: "jwt", Value: "token"})
+	// For update to be called, ensure username not taken
+	mockUser.getUserByUsernameFunc = func(username string) (*models.User, error) { return nil, nil }
+	w4 := httptest.NewRecorder()
+	handler.UpdateSelf(w4, req4)
+	if w4.Code != http.StatusInternalServerError {
+		t.Errorf("expected 500 when update fails, got %d", w4.Code)
+	}
+}
+
+func strPtr(s string) *string { return &s }
+
 func TestProfileHandler_GetBuyerProfile(t *testing.T) {
 	tests := []struct {
 		name                string
