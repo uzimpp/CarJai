@@ -107,6 +107,15 @@ interface AdminUpdateUserError {
   code: number;
 }
 
+interface AdminManagedCar {
+  id: number;
+  brandName: string | null;
+  submodelName: string | null;
+  status: string;
+  listedDate: string; 
+  soldBy: string | null; 
+}
+
 interface MarketPrice {
   id: number;
   brand: string;
@@ -146,6 +155,7 @@ export type {
   AdminUpdateUserResponse,
   AdminUpdateUserError,
   AdminCreateUserRequest,
+  AdminManagedCar,
   UserType,
   UserRole,
   MarketPrice,
