@@ -110,6 +110,7 @@ interface AdminUpdateUserError {
 interface AdminManagedCar {
   id: number;
   brandName: string | null;
+  modelName: string | null;
   submodelName: string | null;
   status: string;
   listedDate: string; 

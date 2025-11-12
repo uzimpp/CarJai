@@ -122,6 +122,7 @@ type UpdateCarRequest struct {
 type AdminManagedCar struct {
 	ID           int       `json:"id" db:"id"`
 	BrandName    *string   `json:"brandName" db:"brand_name"`
+	ModelName    *string   `json:"modelName" db:"model_name"`
 	SubmodelName *string   `json:"submodelName" db:"submodel_name"`
 	Status       string    `json:"status" db:"status"`
 	CreatedAt    time.Time `json:"listedDate" db:"created_at"`
@@ -326,6 +327,7 @@ func (r *CarRepository) GetManagedCars() (*[]AdminManagedCar, error) {
 		SELECT
 			c.id,
 			c.brand_name,
+			c.model_name,    
 			c.submodel_name,
 			c.status,
 			c.created_at,
@@ -349,6 +351,7 @@ func (r *CarRepository) GetManagedCars() (*[]AdminManagedCar, error) {
 		err := rows.Scan(
 			&car.ID,
 			&car.BrandName,
+			&car.ModelName,   
 			&car.SubmodelName,
 			&car.Status,
 			&car.CreatedAt,
