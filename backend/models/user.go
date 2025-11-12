@@ -6,16 +6,16 @@ import (
 
 // User represents a regular user in the system
 type User struct {
-    ID           int       `json:"id" db:"id"`
-    Email        string    `json:"email" db:"email"`
-    Username     string    `json:"username" db:"username"`
-    Name         string    `json:"name" db:"name"`
-    PasswordHash string    `json:"-" db:"password_hash"`
-    GoogleID     *string   `json:"googleId,omitempty" db:"google_id"`
-    AuthProvider *string   `json:"provider,omitempty" db:"auth_provider"`
-    LinkedAt     *time.Time `json:"linkedAt,omitempty" db:"provider_linked_at"`
-    CreatedAt    time.Time `json:"created_at" db:"created_at"`
-    UpdatedAt    time.Time `json:"updated_at" db:"updated_at"`
+	ID           int        `json:"id" db:"id"`
+	Email        string     `json:"email" db:"email"`
+	Username     string     `json:"username" db:"username"`
+	Name         string     `json:"name" db:"name"`
+	PasswordHash string     `json:"-" db:"password_hash"`
+	GoogleID     *string    `json:"googleId,omitempty" db:"google_id"`
+	AuthProvider *string    `json:"provider,omitempty" db:"auth_provider"`
+	LinkedAt     *time.Time `json:"linkedAt,omitempty" db:"provider_linked_at"`
+	CreatedAt    time.Time  `json:"created_at" db:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at" db:"updated_at"`
 }
 
 // UserSession represents an active user session
@@ -39,13 +39,13 @@ type UserSignupRequest struct {
 
 // UserSigninRequest represents the request payload for user sign in
 type UserSigninRequest struct {
-    EmailOrUsername string `json:"email_or_username" validate:"required"`
-    Password        string `json:"password" validate:"required,min=6"`
+	EmailOrUsername string `json:"email_or_username" validate:"required"`
+	Password        string `json:"password" validate:"required,min=6"`
 }
 
 // UserGoogleSigninRequest represents the request payload for Google sign in using ID token
 type UserGoogleSigninRequest struct {
-    IDToken string `json:"id_token" validate:"required"`
+	IDToken string `json:"id_token" validate:"required"`
 }
 
 // UserUpdateSelfRequest represents the request payload for PATCH /api/profile/self
@@ -302,7 +302,7 @@ type RecentViewWithCarDetails struct {
 	ViewedAt          time.Time `json:"viewed_at" db:"viewed_at"`
 	Year              *int      `json:"year" db:"year"`
 	Mileage           *int      `json:"mileage" db:"mileage"`
-	Price             int       `json:"price" db:"price"`
+	Price             *int      `json:"price" db:"price"`
 	Province          *string   `json:"province" db:"province"`
 	ConditionRating   *int      `json:"condition_rating" db:"condition_rating"`
 	Color             *string   `json:"color" db:"color"`
