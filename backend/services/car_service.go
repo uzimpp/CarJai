@@ -240,6 +240,24 @@ func (s *CarService) UpdateCarByAdmin(carID int, req models.AdminUpdateCarReques
 	return updatedCar, nil
 }
 
+// CreateCarByAdmin handles admin creation of a new car
+func (s *CarService) CreateCarByAdmin(req models.AdminCreateCarRequest) (*models.Car, error) {
+	newCar, err := s.carRepo.CreateCarByAdmin(req)
+	if err != nil {
+		return nil, err
+	}
+	return newCar, nil
+}
+
+// DeleteCarByAdmin handles admin deletion of a car
+func (s *CarService) DeleteCarByAdmin(carID int) error {
+	err := s.carRepo.DeleteCar(carID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // GetCarsBySellerID retrieves all cars for a seller
 func (s *CarService) GetCarsBySellerID(sellerID int) ([]models.Car, error) {
 	return s.carRepo.GetCarsBySellerID(sellerID)

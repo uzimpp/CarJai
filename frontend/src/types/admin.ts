@@ -130,6 +130,17 @@ interface AdminUpdateCarRequest {
   status?: string;
 }
 
+interface AdminCreateCarRequest {
+  sellerId: number;
+  brandName?: string;
+  modelName?: string;
+  submodelName?: string;
+  year?: number;
+  price?: number;
+  mileage?: number;
+  status?: string;
+}
+
 interface MarketPrice {
   id: number;
   brand: string;
@@ -171,6 +182,7 @@ export type {
   AdminCreateUserRequest,
   AdminManagedCar,
   AdminUpdateCarRequest,
+  AdminCreateCarRequest,
   UserType,
   UserRole,
   MarketPrice,

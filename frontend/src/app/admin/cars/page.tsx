@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
-import type { AdminManagedCar, AdminUpdateCarRequest} from "@/types/admin";
+import type { AdminManagedCar, AdminUpdateCarRequest, AdminCreateCarRequest} from "@/types/admin";
 import PaginateControl from "@/components/ui/PaginateControl";
 
 // Edit Car Modal Component
@@ -254,6 +254,374 @@ function EditCarModal({
   );
 }
 
+function AddCarModal({
+  isOpen,
+  onClose,
+  onSave,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (data: AdminCreateCarRequest) => Promise<void>;
+}) {
+  const [formData, setFormData] = useState<AdminCreateCarRequest>({
+    sellerId: 0,
+    brandName: "",
+    modelName: "",
+    submodelName: "",
+    year: undefined,
+    price: 0,
+    mileage: 0,
+    status: "draft",
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      // Reset form
+      setFormData({
+        sellerId: 0,
+        brandName: "",
+        modelName: "",
+        submodelName: "",
+        year: undefined,
+        price: 0,
+        mileage: 0,
+        status: "draft",
+      });
+      setError(null);
+    }
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (formData.sellerId === 0) {
+      setError("Seller ID is required.");
+      return;
+    }
+    setIsSaving(true);
+    setError(null);
+
+    const payload: AdminCreateCarRequest = {
+      ...formData,
+      brandName: formData.brandName || undefined,
+      modelName: formData.modelName || undefined,
+      submodelName: formData.submodelName || undefined,
+      year: formData.year || undefined,
+    };
+
+    try {
+      await onSave(payload);
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create car");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold text-gray-900">Add New Car</h2>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <svg>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Seller ID */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Seller ID (User ID) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                placeholder="Enter the User ID of the seller"
+                value={formData.sellerId === 0 ? "" : formData.sellerId}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    sellerId: parseInt(e.target.value) || 0,
+                  })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
+                required
+              />
+            </div>
+            
+            {/* Brand */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Brand
+              </label>
+              <input
+                type="text"
+                value={formData.brandName || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, brandName: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
+              />
+            </div>
+
+            {/* Model */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Model
+              </label>
+              <input
+                type="text"
+                value={formData.modelName || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, modelName: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
+              />
+            </div>
+
+            {/* Submodel */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Submodel
+              </label>
+              <input
+                type="text"
+                value={formData.submodelName || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, submodelName: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
+              />
+            </div>
+
+            {/* Year */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Year
+              </label>
+              <input
+                type="number"
+                value={formData.year || ""}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    year: parseInt(e.target.value) || undefined,
+                  })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
+              />
+            </div>
+
+            {/* Price */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Price (฿)
+              </label>
+              <input
+                type="number"
+                value={formData.price}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    price: parseInt(e.target.value) || 0,
+                  })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
+                required
+                min="0"
+              />
+            </div>
+
+            {/* Mileage */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Mileage (km)
+              </label>
+              <input
+                type="number"
+                value={formData.mileage}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    mileage: parseInt(e.target.value) || 0,
+                  })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
+                min="0"
+              />
+            </div>
+
+            {/* Status*/}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Status
+              </label>
+              <select
+                value={formData.status}
+                onChange={(e) =>
+                  setFormData({ ...formData, status: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent bg-white"
+                required
+              >
+                <option value="draft">Draft</option>
+                <option value="active">Active</option>
+                <option value="sold">Sold</option>
+                <option value="deleted">Deleted</option>
+              </select>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="flex-1 px-4 py-2 bg-maroon text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSaving ? "Creating..." : "Create Car"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DeleteCarModal({
+  car,
+  isOpen,
+  onClose,
+  onConfirm,
+}: {
+  car: AdminManagedCar | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (carId: number) => Promise<void>;
+}) {
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setError(null);
+    }
+  }, [isOpen]);
+
+  if (!isOpen || !car) return null;
+
+  const handleConfirm = async () => {
+    setIsDeleting(true);
+    setError(null);
+    try {
+      await onConfirm(car.id);
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete car");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4">
+        <div className="p-6">
+          <div className="flex items-start justify-between mb-4">
+            <h2 className="text-2xl font-bold text-gray-900">Delete Car</h2>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600"
+              disabled={isDeleting}
+            >
+              <svg>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <div className="mb-4">
+            <p className="text-gray-700">
+              Are you sure you want to delete this car?
+            </p>
+            <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <strong>ID:</strong> {car.id} <br />
+              <strong>Car:</strong> {car.brandName || "N/A"}{" "}
+              {car.modelName || ""}
+            </div>
+            <p className="text-sm text-red-600 mt-2">
+              This action cannot be undone.
+            </p>
+          </div>
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600">
+              {error}
+            </div>
+          )}
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleConfirm();
+            }}
+          >
+            <div className="flex gap-3 pt-4">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                No, Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isDeleting ? "Deleting..." : "Yes, Delete"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminCarsPage() {
   const { loading: authLoading, isAuthenticated } = useAdminAuth();
   const [cars, setCars] = useState<AdminManagedCar[]>([]);
@@ -267,6 +635,9 @@ export default function AdminCarsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [editingCar, setEditingCar] = useState<AdminManagedCar | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false); 
+  const [deletingCar, setDeletingCar] = useState<AdminManagedCar | null>(null); 
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false); 
 
   // Load cars from API
   useEffect(() => {
@@ -394,25 +765,61 @@ export default function AdminCarsPage() {
     }
   };
 
-  const handleDeleteCar = async (carId: number) => {
-    if (!confirm("Are you sure you want to delete this car listing?")) {
-      return;
-    }
-
+  const handleCreateCar = async (data: AdminCreateCarRequest) => {
     try {
-      // TODO: Replace with actual API call
-      // await fetch(`/admin/cars/${carId}`, {
-      //   method: 'DELETE',
-      //   headers: {
-      //     'Authorization': `Bearer ${token}`,
-      //   },
-      // });
+      const response = await fetch("/api/admin/cars", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
 
-      // For now, update local state
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || "Failed to create car");
+      }
+
+      const newCar = await response.json();
+
+      const newManagedCar: AdminManagedCar = {
+          id: newCar.id,
+          brandName: newCar.brandName,
+          modelName: newCar.modelName,
+          submodelName: newCar.submodelName,
+          year: newCar.year,
+          price: newCar.price,
+          mileage: newCar.mileage,
+          status: newCar.status,
+          listedDate: newCar.createdAt,
+          soldBy: `User ID: ${newCar.sellerId}`,
+      };
+
+      setCars((prevCars) => [newManagedCar, ...prevCars]);
+    } catch (err) {
+      console.error("Failed to create car:", err);
+      throw err;
+    }
+  };
+
+  const handleOpenDeleteModal = (car: AdminManagedCar) => {
+    setDeletingCar(car);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteCar = async (carId: number) => {
+    try {
+      const response = await fetch(`/api/admin/cars/${carId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || `Failed to delete car`);
+      }
+
       setCars((prevCars) => prevCars.filter((car) => car.id !== carId));
     } catch (err) {
       console.error("Failed to delete car:", err);
-      alert("Failed to delete car. Please try again.");
+      throw err; 
     }
   };
 
@@ -458,7 +865,7 @@ export default function AdminCarsPage() {
           <h1 className="text-3 bold">Car Management</h1>
         </div>
         <div className="flex flex-row justify-end items-center gap-2">
-          <button className="flex-1 px-4 py-2 bg-maroon text-white rounded-full hover:bg-red-700 transition-colors flex items-center justify-center gap-2 text-sm">
+          <button onClick={() => setIsAddModalOpen(true)} className="flex-1 px-4 py-2 bg-maroon text-white rounded-full hover:bg-red-700 transition-colors flex items-center justify-center gap-2 text-sm">
             <svg
               className="w-4 h-4"
               fill="none"
@@ -695,7 +1102,7 @@ export default function AdminCarsPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleDeleteCar(car.id)}
+                        onClick={() => handleOpenDeleteModal(car)}
                         className="p-(--space-2xs) rounded-lg text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors"
                         aria-label={`Delete car ${car.id}`}
                       >
@@ -741,6 +1148,19 @@ export default function AdminCarsPage() {
           setEditingCar(null);
         }}
         onSave={handleSaveCar}
+      />
+
+      <AddCarModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSave={handleCreateCar}
+      />
+      
+      <DeleteCarModal
+        car={deletingCar}
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDeleteCar}
       />
     </div>
   );

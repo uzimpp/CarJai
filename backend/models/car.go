@@ -143,6 +143,18 @@ type AdminUpdateCarRequest struct {
 	Status       *string `json:"status,omitempty"`
 }
 
+// AdminCreateCarRequest defines the fields for creating a car by admin
+type AdminCreateCarRequest struct {
+	SellerID     int     `json:"sellerId" validate:"required"`
+	BrandName    *string `json:"brandName,omitempty"`
+	ModelName    *string `json:"modelName,omitempty"`
+	SubmodelName *string `json:"submodelName,omitempty"`
+	Year         *int    `json:"year,omitempty"`
+	Price        *int    `json:"price,omitempty"`
+	Mileage      *int    `json:"mileage,omitempty"`
+	Status       *string `json:"status,omitempty"`
+}
+
 // AdminCarsListResponse is the response for GET /admin/cars
 type AdminCarsListResponse struct {
 	Success bool              `json:"success"`
@@ -462,6 +474,58 @@ func (r *CarRepository) UpdateCarByAdmin(carID int, req AdminUpdateCarRequest) (
 	}
 
 	return r.GetCarByID(carID)
+}
+
+// CreateCarByAdmin creates a new car listing associated with a seller
+func (r *CarRepository) CreateCarByAdmin(req AdminCreateCarRequest) (*Car, error) {
+	status := "draft"
+	if req.Status != nil {
+		status = *req.Status
+	}
+
+	car := &Car{
+		SellerID:     req.SellerID,
+		BrandName:    req.BrandName,
+		ModelName:    req.ModelName,
+		SubmodelName: req.SubmodelName,
+		Year:         req.Year,
+		Price:        req.Price,
+		Mileage:      req.Mileage,
+		Status:       status,
+		IsFlooded:        false,
+		IsHeavilyDamaged: false,
+	}
+
+	query := `
+		INSERT INTO cars (
+			seller_id, brand_name, model_name, submodel_name, year,
+			price, mileage, status, 
+			is_flooded, is_heavily_damaged
+		) VALUES (
+			$1, $2, $3, $4, $5,
+			$6, $7, $8,
+			$9, $10
+		)
+		RETURNING id, seller_id, brand_name, model_name, submodel_name, year,
+				  price, mileage, status, created_at, updated_at`
+
+	err := r.db.DB.QueryRow(query,
+		car.SellerID, car.BrandName, car.ModelName, car.SubmodelName, car.Year,
+		car.Price, car.Mileage, car.Status,
+		car.IsFlooded, car.IsHeavilyDamaged,
+	).Scan(
+		&car.ID, &car.SellerID, &car.BrandName, &car.ModelName, &car.SubmodelName, &car.Year,
+		&car.Price, &car.Mileage, &car.Status, &car.CreatedAt, &car.UpdatedAt,
+	)
+
+	if err != nil {
+		if strings.Contains(err.Error(), "violates foreign key constraint") {
+			return nil, fmt.Errorf("seller with ID %d not found", req.SellerID)
+		}
+		return nil, fmt.Errorf("failed to create car: %w", err)
+	}
+
+	return car, nil
 }
 
 // GetCarsBySellerID retrieves all cars for a seller

@@ -38,6 +38,7 @@ func (h *AdminCarHandler) HandleGetCars(w http.ResponseWriter, r *http.Request) 
 	}
 
 	utils.WriteJSON(w, http.StatusOK, response)
+	return
 }
 
 // HandleUpdateCar handles PATCH /admin/cars/:id
@@ -70,4 +71,63 @@ func (h *AdminCarHandler) HandleUpdateCar(w http.ResponseWriter, r *http.Request
 
 	// Return the updated car's public data 
 	utils.WriteJSON(w, http.StatusOK, updatedCar)
+	return
+}
+
+// HandleCreateCar handles POST /admin/cars
+func (h *AdminCarHandler) HandleCreateCar(w http.ResponseWriter, r *http.Request) {
+	var req models.AdminCreateCarRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	// (Validation)
+	if req.SellerID == 0 {
+		utils.WriteError(w, http.StatusBadRequest, "Seller ID is required")
+		return
+	}
+
+	// Call the service
+	newCar, err := h.carService.CreateCarByAdmin(req)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			utils.WriteError(w, http.StatusNotFound, err.Error())
+		} else {
+			utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		}
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusCreated, newCar)
+	return
+}
+
+// HandleDeleteCar handles DELETE /admin/cars/:id
+func (h *AdminCarHandler) HandleDeleteCar(w http.ResponseWriter, r *http.Request) {
+	// Extract car ID from URL path
+	parts := strings.Split(r.URL.Path, "/")
+	idStr := parts[len(parts)-1]
+	carID, err := strconv.Atoi(idStr)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid car ID")
+		return
+	}
+
+	// Call the service
+	err = h.carService.DeleteCarByAdmin(carID)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			utils.WriteError(w, http.StatusNotFound, err.Error())
+		} else {
+			utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		}
+		return
+	}
+	response := map[string]interface{}{
+		"success": true,
+		"message": "Car deleted successfully",
+	}
+	utils.WriteJSON(w, http.StatusOK, response)
+	return
 }

@@ -127,21 +127,24 @@ func AdminRoutes(
 	// GET /admin/cars
 	router.HandleFunc(basePath+"/cars",
 		applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
-			if r.Method == http.MethodGet {
+			switch r.Method {
+			case http.MethodGet:
 				adminCarHandler.HandleGetCars(w, r)
-			} else {
+			case http.MethodPost:
+				adminCarHandler.HandleCreateCar(w, r)
+			default:
 				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			}
 		}),
 	)
 
-	router.HandleFunc("/cars/",
+	router.HandleFunc(basePath+"/cars/",
 		applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case http.MethodPatch:
 				adminCarHandler.HandleUpdateCar(w, r)
-			// case http.MethodDelete:
-				// adminCarHandler.HandleDeleteCar(w, r) // (For delete in future)
+			case http.MethodDelete:
+				adminCarHandler.HandleDeleteCar(w, r)
 			default:
 				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			}
