@@ -45,7 +45,3 @@ CREATE TABLE IF NOT EXISTS seller_admin_actions (
 
 CREATE INDEX IF NOT EXISTS idx_seller_admin_actions_seller_id ON seller_admin_actions (seller_id);
 CREATE INDEX IF NOT EXISTS idx_seller_admin_actions_created_at ON seller_admin_actions (created_at);
-
--- Down
-DROP TABLE IF EXISTS seller_admin_actions;
-DROP TABLE IF EXISTS reports;
