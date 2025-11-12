@@ -77,11 +77,11 @@ erDiagram
         int budget_max "Nullable"
     }
 
-  %% --- Google OAuth ---
+  %% --- Google OAuth (010) ---
     %% Additional columns (added via migration 010)
     %% users.google_id UK "UNIQUE Nullable"
     %% users.auth_provider "Nullable (e.g., 'google')"
-     %% users.provider_linked_at "Nullable (timestamp when provider was linked)"
+    %% users.provider_linked_at "Nullable (timestamp when provider was linked)"
 
     %% --- Car Tables (005) ---
     cars {
