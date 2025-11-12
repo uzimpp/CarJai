@@ -94,6 +94,13 @@ interface AdminUpdateUserResponse {
   message: string;
 }
 
+interface AdminCreateUserRequest {
+  name: string;
+  username: string;
+  email: string;
+  password: string;
+}
+
 interface AdminUpdateUserError {
   success: false;
   error: string;
@@ -138,6 +145,7 @@ export type {
   AdminUpdateUserRequest,
   AdminUpdateUserResponse,
   AdminUpdateUserError,
+  AdminCreateUserRequest,
   UserType,
   UserRole,
   MarketPrice,
