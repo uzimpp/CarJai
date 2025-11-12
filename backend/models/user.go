@@ -150,6 +150,39 @@ func (s *UserSession) IsValid() bool {
 	return !s.IsExpired()
 }
 
+type AdminManagedUser struct {
+	ID        int       `json:"id" db:"id"`
+	Username  string    `json:"username" db:"username"`
+	Name      string    `json:"name" db:"name"`
+	Email     *string   `json:"email" db:"email"` // ใช้ pointer เผื่อเป็น null
+	Role      string    `json:"role" db:"role"`
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	Type      string    `json:"type" db:"type"` 
+	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+}
+
+// AdminCreateUserRequest represents the request payload for POST /admin/users
+type AdminCreateUserRequest struct {
+    Name     string `json:"name" validate:"required,min=2,max=100"`
+    Username string `json:"username" validate:"required,min=3,max=20"`
+    Email    string `json:"email" validate:"required,email"`
+    Password string `json:"password" validate:"required,min=6"`
+}
+
+// AdminUpdateUserRequest matches the request from page.tsx EditUserModal
+type AdminUpdateUserRequest struct {
+	Name     *string `json:"name,omitempty"`
+	Username *string `json:"username,omitempty"`
+	Email    *string `json:"email,omitempty"`
+}
+
+// AdminUsersListResponse is the response for GET /admin/users
+type AdminUsersListResponse struct {
+	Success bool               `json:"success"`
+	Data    []AdminManagedUser `json:"data"`
+	Total   int                `json:"total"`
+}
+
 // Buyer represents a buyer profile
 type Buyer struct {
 	ID        int     `json:"id" db:"id"`

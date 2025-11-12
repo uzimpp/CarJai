@@ -36,6 +36,93 @@ func (s *UserService) SetProfileService(profileService *ProfileService) {
 	s.profileService = profileService
 }
 
+// GetManagedUsers retrieves all users with their roles for the admin panel
+func (s *UserService) GetManagedUsers() (*[]models.AdminManagedUser, error) {
+	users, err := s.userRepo.GetManagedUsers()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get managed users: %w", err)
+	}
+	return users, nil
+}
+
+// UpdateUserByAdmin updates a user's details (called by an admin)
+func (s *UserService) UpdateUserByAdmin(userID int, data models.AdminUpdateUserRequest) (*models.User, error) {
+	// Check if username is already taken (if provided)
+	if data.Username != nil {
+		existingUser, err := s.userRepo.GetUserByUsername(*data.Username)
+		if err == nil && existingUser != nil && existingUser.ID != userID {
+			return nil, fmt.Errorf("username %s is already taken", *data.Username)
+		}
+	}
+
+	// Check if email is already taken (if provided)
+	if data.Email != nil {
+		existingUser, err := s.userRepo.GetUserByEmail(*data.Email)
+		if err == nil && existingUser != nil && existingUser.ID != userID {
+			return nil, fmt.Errorf("email %s is already in use", *data.Email)
+		}
+	}
+
+	// Update user in database
+	updatedUser, err := s.userRepo.UpdateUserByAdmin(userID, data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update user: %w", err)
+	}
+
+	return updatedUser, nil
+}
+
+// DeleteUserByAdmin deletes a user and all their sessions (called by an admin)
+func (s *UserService) DeleteUserByAdmin(userID int) error {
+	// Delete all user sessions
+	// (We don't care about the error too much, but it's good to try)
+	_, _ = s.userSessionRepo.DeleteAllSessionsForUser(userID)
+
+	// Delete the user
+	err := s.userRepo.DeleteUser(userID)
+	if err != nil {
+		return fmt.Errorf("failed to delete user: %w", err)
+	}
+
+	return nil
+}
+
+// CreateUserByAdmin creates a new user (called by an admin)
+func (s *UserService) CreateUserByAdmin(req models.AdminCreateUserRequest) (*models.User, error) {
+	// Check if user already exists by email
+	existingUser, err := s.userRepo.GetUserByEmail(req.Email)
+	if err == nil && existingUser != nil {
+		return nil, fmt.Errorf("user with email %s already exists", req.Email)
+	}
+
+	// Check if username already exists
+	existingUserByUsername, err := s.userRepo.GetUserByUsername(req.Username)
+	if err == nil && existingUserByUsername != nil {
+		return nil, fmt.Errorf("username %s is already taken", req.Username)
+	}
+
+	// Hash password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	// Create user
+	user := &models.User{
+		Email:        req.Email,
+		Username:     req.Username,
+		Name:         req.Name,
+		PasswordHash: string(hashedPassword),
+	}
+
+	err = s.userRepo.CreateUser(user)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create user: %w", err)
+	}
+
+	return user, nil
+}
+
 // Signup creates a new user account
 func (s *UserService) Signup(email, password, username, name, ipAddress, userAgent string) (*models.UserAuthResponse, error) {
 	// Check if user already exists by email

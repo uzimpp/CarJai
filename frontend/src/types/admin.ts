@@ -94,10 +94,51 @@ interface AdminUpdateUserResponse {
   message: string;
 }
 
+interface AdminCreateUserRequest {
+  name: string;
+  username: string;
+  email: string;
+  password: string;
+}
+
 interface AdminUpdateUserError {
   success: false;
   error: string;
   code: number;
+}
+
+interface AdminManagedCar {
+  id: number;
+  brandName: string | null;
+  modelName: string | null;
+  submodelName: string | null;
+  year: number | null;
+  status: string;
+  listedDate: string; 
+  soldBy: string | null; 
+  price: number | null; 
+  mileage: number | null;
+}
+
+interface AdminUpdateCarRequest {
+  brandName?: string;
+  modelName?: string;
+  submodelName?: string;
+  year?: number;
+  price?: number;
+  mileage?: number;
+  status?: string;
+}
+
+interface AdminCreateCarRequest {
+  sellerId: number;
+  brandName?: string;
+  modelName?: string;
+  submodelName?: string;
+  year?: number;
+  price?: number;
+  mileage?: number;
+  status?: string;
 }
 
 interface MarketPrice {
@@ -138,6 +179,10 @@ export type {
   AdminUpdateUserRequest,
   AdminUpdateUserResponse,
   AdminUpdateUserError,
+  AdminCreateUserRequest,
+  AdminManagedCar,
+  AdminUpdateCarRequest,
+  AdminCreateCarRequest,
   UserType,
   UserRole,
   MarketPrice,
