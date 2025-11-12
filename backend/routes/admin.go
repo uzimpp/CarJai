@@ -15,6 +15,7 @@ import (
 func AdminRoutes(
 	adminService *services.AdminService,
 	userService *services.UserService,
+	carService *services.CarService,
 	jwtManager *utils.JWTManager,
 	// Add ExtractionService
 	extractionService *services.ExtractionService,
@@ -30,8 +31,9 @@ func AdminRoutes(
 	adminIPHandler := handlers.NewAdminIPHandler(adminService)
 	// Create Handler for Extraction
 	adminExtractionHandler := handlers.NewAdminExtractionHandler(extractionService)
-	// Create Handler for user management
+	// Create Handler for user and car management
 	adminUserHandler := handlers.NewAdminUserHandler(adminService, userService)
+	adminCarHandler := handlers.NewAdminCarHandler(carService)
 
 	// Create router
 	router := http.NewServeMux()
@@ -116,6 +118,18 @@ func AdminRoutes(
 			case http.MethodDelete:
 				adminUserHandler.HandleDeleteUser(w, r)
 			default:
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			}
+		}),
+	)
+
+	// --- Admin Car Management Routes ---
+	// GET /admin/cars
+	router.HandleFunc(basePath+"/cars",
+		applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodGet {
+				adminCarHandler.HandleGetCars(w, r)
+			} else {
 				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			}
 		}),

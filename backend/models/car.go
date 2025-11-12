@@ -118,6 +118,23 @@ type UpdateCarRequest struct {
 	FuelLabels       []string `json:"fuelLabels"`       // Maps to fuel_codes, e.g., ["เบนซิน", "LPG"]
 }
 
+// AdminManagedCar represents car data for the admin management table
+type AdminManagedCar struct {
+	ID           int       `json:"id" db:"id"`
+	BrandName    *string   `json:"brandName" db:"brand_name"`
+	SubmodelName *string   `json:"submodelName" db:"submodel_name"`
+	Status       string    `json:"status" db:"status"`
+	CreatedAt    time.Time `json:"listedDate" db:"created_at"`
+	SellerName   *string   `json:"soldBy" db:"seller_name"`
+}
+
+// AdminCarsListResponse is the response for GET /admin/cars
+type AdminCarsListResponse struct {
+	Success bool              `json:"success"`
+	Data    []AdminManagedCar `json:"data"`
+	Total   int               `json:"total"`
+}
+
 // StepState models readiness of a step with issues
 type StepState struct {
 	Ready  bool     `json:"ready"`
@@ -300,6 +317,54 @@ func (r *CarRepository) GetCarByID(carID int) (*Car, error) {
 	}
 
 	return car, nil
+}
+
+// GetManagedCars retrieves all cars with seller names for the admin panel
+func (r *CarRepository) GetManagedCars() (*[]AdminManagedCar, error) {
+	var cars []AdminManagedCar
+	query := `
+		SELECT
+			c.id,
+			c.brand_name,
+			c.submodel_name,
+			c.status,
+			c.created_at,
+			u.name AS seller_name
+		FROM
+			cars c
+		LEFT JOIN
+			users u ON c.seller_id = u.id
+		ORDER BY
+			c.created_at DESC
+	`
+
+	rows, err := r.db.DB.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("error querying managed cars: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var car AdminManagedCar
+		err := rows.Scan(
+			&car.ID,
+			&car.BrandName,
+			&car.SubmodelName,
+			&car.Status,
+			&car.CreatedAt,
+			&car.SellerName,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan managed car: %w", err)
+		}
+		cars = append(cars, car)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating managed cars: %w", err)
+	}
+
+	return &cars, nil
 }
 
 // GetCarWithImagesAndInspection retrieves car, images, and inspection in one optimized query

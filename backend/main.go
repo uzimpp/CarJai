@@ -182,6 +182,7 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 		routes.AdminRoutes(
 			services.Admin,
 			services.User,
+			services.Car,
 			services.AdminJWT,
 			services.Extraction,
 			adminPrefix,

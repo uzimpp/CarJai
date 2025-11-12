@@ -222,6 +222,15 @@ func (s *CarService) GetCarByID(carID int) (*models.Car, error) {
 	return s.carRepo.GetCarByID(carID)
 }
 
+// GetManagedCars retrieves all cars for the admin panel
+func (s *CarService) GetManagedCars() (*[]models.AdminManagedCar, error) {
+	cars, err := s.carRepo.GetManagedCars()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get managed cars: %w", err)
+	}
+	return cars, nil
+}
+
 // GetCarsBySellerID retrieves all cars for a seller
 func (s *CarService) GetCarsBySellerID(sellerID int) ([]models.Car, error) {
 	return s.carRepo.GetCarsBySellerID(sellerID)
