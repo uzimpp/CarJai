@@ -176,14 +176,6 @@ type AdminUpdateUserRequest struct {
 	Email    *string `json:"email,omitempty"`
 }
 
-// AdminCreateUserRequest represents the request payload for POST /admin/users
-type AdminCreateUserRequest struct {
-	Name     string `json:"name" validate:"required,min=2,max=100"`
-	Username string `json:"username" validate:"required,min=3,max=20"`
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required,min=6"`
-}
-
 // AdminUsersListResponse is the response for GET /admin/users
 type AdminUsersListResponse struct {
 	Success bool               `json:"success"`

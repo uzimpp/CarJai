@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
-import type { AdminManagedUser, AdminUpdateUserRequest } from "@/types/admin";
+import type { AdminManagedUser, AdminUpdateUserRequest, AdminCreateUserRequest,} from "@/types/admin";
 import PaginateControl from "@/components/ui/PaginateControl";
 
 // Edit User Modal Component
@@ -166,6 +166,165 @@ function EditUserModal({
   );
 }
 
+function AddUserModal({
+  isOpen,
+  onClose,
+  onSave,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (data: AdminCreateUserRequest) => Promise<void>; // แก้ไข onSave
+}) {
+  const [formData, setFormData] = useState({
+    name: "",
+    username: "",
+    email: "",
+    password: "",
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        name: "",
+        username: "",
+        email: "",
+        password: "",
+      });
+      setError(null);
+    }
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      await onSave(formData);
+      onClose(); 
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create user");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold text-gray-900">Add New User</h2>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <svg>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Full Name
+              </label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Username
+              </label>
+              <input
+                type="text"
+                value={formData.username}
+                onChange={(e) =>
+                  setFormData({ ...formData, username: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Email
+              </label>
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Password
+              </label>
+              <input
+                type="password"
+                value={formData.password}
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
+                required
+                minLength={6}
+              />
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="flex-1 px-4 py-2 bg-maroon text-white rounded-lg hover:bg-maroon transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSaving ? "Creating..." : "Create User"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminUsersPage() {
   const { loading: authLoading, isAuthenticated } = useAdminAuth();
   const [users, setUsers] = useState<AdminManagedUser[]>([]);
@@ -179,6 +338,7 @@ export default function AdminUsersPage() {
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [editingUser, setEditingUser] = useState<AdminManagedUser | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   // Load users from API
   useEffect(() => {
@@ -308,6 +468,48 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleCreateUser = async (data: AdminCreateUserRequest) => {
+    try {
+      const response = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(
+          errData.error || `Failed to create user: ${response.statusText}`
+        );
+      }
+
+      const createdUserPublic = await response.json();
+
+      const newUser: AdminManagedUser = {
+        id: createdUserPublic.id,
+        name: createdUserPublic.name,
+        username: createdUserPublic.username,
+        email: createdUserPublic.email,
+        created_at: createdUserPublic.created_at,
+        updated_at: createdUserPublic.updated_at,
+        type: "user", 
+        role: "No role", 
+        roles: {
+          buyer: false,
+          seller: false,
+        },
+      };
+
+      setUsers((prevUsers) => [newUser, ...prevUsers]);
+      setIsAddModalOpen(false);
+    } catch (err) {
+      console.error("Failed to create user:", err);
+      throw err;
+    }
+  };
+
   // Pagination - use filtered users for client-side filtering
   const totalRows = filteredUsers.length;
   const totalPages = Math.ceil(totalRows / rowsPerPage);
@@ -333,7 +535,7 @@ export default function AdminUsersPage() {
           <h1 className="text-3 bold">User Management</h1>
         </div>
         <div className="flex flex-row justify-end items-center gap-2">
-          <button className="flex-1 px-4 py-2 bg-maroon text-white rounded-full hover:bg-red-700 transition-colors flex items-center justify-center gap-2 text-sm">
+          <button onClick={() => setIsAddModalOpen(true)} className="flex-1 px-4 py-2 bg-maroon text-white rounded-full hover:bg-red-700 transition-colors flex items-center justify-center gap-2 text-sm">
             <svg
               className="w-4 h-4"
               fill="none"
@@ -583,6 +785,11 @@ export default function AdminUsersPage() {
           setEditingUser(null);
         }}
         onSave={handleSaveUser}
+      />
+      <AddUserModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSave={handleCreateUser}
       />
     </div>
   );
