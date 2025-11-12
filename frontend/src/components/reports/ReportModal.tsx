@@ -30,7 +30,7 @@ export default function ReportModal({
   const carTopicOptions: { id: string; label: string; token: string; autoSub?: string[] }[] = [
     {
       id: "cond_mismatch",
-      label: "False information: Car condition does not match reality",
+      label: "False information",
       token: "false_information",
       autoSub: ["condition_mismatch"],
     },
@@ -96,13 +96,13 @@ export default function ReportModal({
           }
           const desc = topicId === "other"
             ? otherDescription.trim()
-            : `Quick report: ${opt.label}. Auto-generated summary for validation.`;
+            : `Quick report: ${opt.label}.`;
           await onSubmit({ topic: opt.token, subTopics: sub, description: desc });
         } else {
           const opt = sellerTopicOptions.find((o) => o.id === topicId)!;
           const desc = topicId === "other"
             ? otherDescription.trim()
-            : `Quick report: ${opt.label}. Auto-generated summary for validation; no extra details provided.`;
+            : `Quick report: ${opt.label}.`;
           await onSubmit({ topic: opt.token, subTopics: [], description: desc });
         }
       }

@@ -13,11 +13,14 @@ export type ReportFormData = {
 };
 
 export const DEFAULT_CAR_SUBTOPICS: string[] = [
-  "Stolen vehicle",
-  "Odometer rollback",
-  "False specs",
-  "Undisclosed damage",
-  "Counterfeit documents",
+  "Price",
+  "Mileage",
+  "Year",
+  "Condition",
+  "Accident history",
+  "Ownership",
+  "Documents",
+  "Photos",
 ];
 
 export const DEFAULT_SELLER_SUBTOPICS: string[] = [
