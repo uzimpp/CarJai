@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
-import type { CarListing } from "@/types/car";
+import type { AdminManagedCar } from "@/types/admin";
 import PaginateControl from "@/components/ui/PaginateControl";
 
 // Edit Car Modal Component
@@ -183,8 +183,8 @@ function EditCarModal({
 
 export default function AdminCarsPage() {
   const { loading: authLoading, isAuthenticated } = useAdminAuth();
-  const [cars, setCars] = useState<CarListing[]>([]);
-  const [filteredCars, setFilteredCars] = useState<CarListing[]>([]);
+  const [cars, setCars] = useState<AdminManagedCar[]>([]);
+  const [filteredCars, setFilteredCars] = useState<AdminManagedCar[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
@@ -192,7 +192,7 @@ export default function AdminCarsPage() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [editingCar, setEditingCar] = useState<CarListing | null>(null);
+  const [editingCar, setEditingCar] = useState<AdminManagedCar | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Load cars from API
@@ -204,25 +204,27 @@ export default function AdminCarsPage() {
         setIsLoading(true);
         setError(null);
 
-        // TODO: Replace with actual API call
-        // const response = await fetch('/admin/cars', {
-        //   headers: {
-        //     'Authorization': `Bearer ${token}`,
-        //   },
-        // });
-        // if (!response.ok) throw new Error('Failed to fetch cars');
-        // const data = await response.json();
-        // setCars(data.cars);
-        // setTotal(data.total);
-
-        // For now, set empty state
-        setCars([]);
-        setTotal(0);
-        setIsLoading(false);
+        // API Call
+        const response = await fetch("/api/admin/cars");
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.error || "Failed to fetch cars");
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          setCars(result.data);
+          setTotal(result.total); // Backend เราส่ง total มาให้
+        } else {
+          throw new Error(result.message || "Failed to load cars");
+        }
+        
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "An unexpected error occurred"
         );
+      } finally {
         setIsLoading(false);
       }
     };
@@ -535,7 +537,7 @@ export default function AdminCarsPage() {
                     {/* Sold By - hidden on mobile, visible on md+ */}
                     <div className="hidden md:block text--1 text-gray-500">
                       {/* TODO: Replace with actual seller username from API */}
-                      @seller{car.sellerId}
+                      {car.soldBy || "N/A"}
                     </div>
 
                     {/* Status - hidden on mobile, visible on md+ */}
@@ -552,7 +554,7 @@ export default function AdminCarsPage() {
 
                     {/* Listed Date - hidden on mobile, visible on md+ */}
                     <div className="hidden md:block text--1 text-gray-500">
-                      {formatDate(car.createdAt)}
+                      {formatDate(car.listedDate)}
                     </div>
 
                     {/* Mobile view - Brand, Submodel, Sold By, Status, Date */}
@@ -565,7 +567,7 @@ export default function AdminCarsPage() {
                         {car.submodelName || "N/A"}
                       </div>
                       <div className="text--1 text-gray-500">
-                        Sold by: @seller{car.sellerId}
+                        Sold by: {car.soldBy || "N/A"}
                       </div>
                       <span
                         className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium w-fit ${getStatusBadgeColor(
@@ -576,7 +578,7 @@ export default function AdminCarsPage() {
                           car.status.slice(1)}
                       </span>
                       <span className="text-gray-500 text--1">
-                        {formatDate(car.createdAt)}
+                        {formatDate(car.listedDate)}
                       </span>
                     </div>
 
