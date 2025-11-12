@@ -20,8 +20,6 @@ func AdminRoutes(
 	// Add ExtractionService
 	extractionService *services.ExtractionService,
 	reportService *services.ReportService,
-	userService *services.UserService,
-	carService *services.CarService,
 	adminPrefix string,
 	allowedOrigins []string,
 	allowedIPs []string,
