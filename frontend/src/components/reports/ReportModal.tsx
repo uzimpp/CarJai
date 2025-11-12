@@ -18,29 +18,94 @@ export default function ReportModal({
   onSubmit,
   suggestedSubtopics = [],
 }: ReportModalProps) {
-  const [topic, setTopic] = useState<string>("");
-  const [description, setDescription] = useState<string>("");
-  const [subTopics, setSubTopics] = useState<string[]>([]);
+  const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
+  const [otherDescription, setOtherDescription] = useState<string>("");
+  const [fakeDetailItems, setFakeDetailItems] = useState<string[]>([]);
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
-  const toggleSubtopic = (s: string) => {
-    setSubTopics((prev) =>
+  // UI topic definitions mapped to backend tokens
+  const carTopicOptions: { id: string; label: string; token: string; autoSub?: string[] }[] = [
+    {
+      id: "cond_mismatch",
+      label: "False information: Car condition does not match reality",
+      token: "false_information",
+      autoSub: ["condition_mismatch"],
+    },
+    {
+      id: "fake_details",
+      label: "Fake details (tick which items are untrue)",
+      token: "false_information",
+    },
+    { id: "car_not_exist", label: "This car does not exist", token: "fraud" },
+    { id: "already_sold", label: "This car has already been sold", token: "false_information", autoSub: ["already_sold"] },
+    { id: "edited_photo", label: "The car's photo has been edited/doctored", token: "false_information", autoSub: ["edited_photo"] },
+    { id: "other", label: "Other (Please specify)", token: "other" },
+  ];
+
+  const sellerTopicOptions: { id: string; label: string; token: string }[] = [
+    { id: "fraud", label: "Fraud", token: "fraud" },
+    { id: "contact_unreachable", label: "Contact information is unreachable", token: "scam" },
+    { id: "no_show", label: "No-show for the appointment", token: "fraud" },
+    { id: "selling_fake_car", label: "Selling a fake car", token: "fraud" },
+    { id: "impersonation", label: "Impersonating someone else's information", token: "fraud" },
+    { id: "other", label: "Other (Please specify)", token: "other" },
+  ];
+
+  const topicOptions = target === "car" ? carTopicOptions : sellerTopicOptions;
+  const toggleTopic = (id: string) => {
+    setSelectedTopics((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const toggleFakeDetail = (s: string) => {
+    setFakeDetailItems((prev) =>
       prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]
     );
   };
 
   const handleSubmit = async () => {
     setError("");
-    if (!topic.trim() || !description.trim()) {
-      setError("Please provide a topic and description.");
+    if (selectedTopics.length === 0) {
+      setError("Please select at least one topic.");
+      return;
+    }
+    // Require description only when 'Other' is chosen
+    if (selectedTopics.includes("other") && !otherDescription.trim()) {
+      setError("Please specify details for Other.");
+      return;
+    }
+    // If user selects 'Fake details' for car, require at least one checklist item
+    if (target === "car" && selectedTopics.includes("fake_details") && fakeDetailItems.length === 0) {
+      setError("Please tick at least one item under Fake details.");
       return;
     }
     try {
       setIsSubmitting(true);
-      await onSubmit({ topic, subTopics, description });
+      // Submit one report per selected topic
+      for (const topicId of selectedTopics) {
+        if (target === "car") {
+          const opt = carTopicOptions.find((o) => o.id === topicId)!;
+          const sub: string[] = [];
+          if (opt.autoSub && opt.autoSub.length > 0) sub.push(...opt.autoSub);
+          if (topicId === "fake_details") {
+            sub.push(...(fakeDetailItems.length > 0 ? fakeDetailItems : []));
+          }
+          const desc = topicId === "other"
+            ? otherDescription.trim()
+            : `Quick report: ${opt.label}. Auto-generated summary for validation.`;
+          await onSubmit({ topic: opt.token, subTopics: sub, description: desc });
+        } else {
+          const opt = sellerTopicOptions.find((o) => o.id === topicId)!;
+          const desc = topicId === "other"
+            ? otherDescription.trim()
+            : `Quick report: ${opt.label}. Auto-generated summary for validation; no extra details provided.`;
+          await onSubmit({ topic: opt.token, subTopics: [], description: desc });
+        }
+      }
       onClose();
     } catch (e: unknown) {
       let msg = "Failed to submit report";
@@ -57,8 +122,15 @@ export default function ReportModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+    <div className="fixed inset-0 z-50">
+      {/* Subtle gray overlay to dim the page behind the modal */}
+      <div
+        className="absolute inset-0 bg-gray-900/30"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <div className="relative h-full w-full flex items-center justify-center">
+        <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
         <h2 className="text-xl font-semibold mb-2">
           {target === "car" ? "Report this listing" : "Report this seller"}
         </h2>
@@ -72,51 +144,105 @@ export default function ReportModal({
           </div>
         )}
 
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Topic
-        </label>
-        <select
-          value={topic}
-          onChange={(e) => setTopic(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-4"
-        >
-          <option value="">Select a topic</option>
-          <option>Fraud</option>
-          <option>Misleading Info</option>
-          <option>Illegal Content</option>
-          <option>Other</option>
-        </select>
-
-        {suggestedSubtopics.length > 0 && (
-          <div className="mb-4">
-            <div className="text-sm font-medium text-gray-700 mb-1">
-              Subtopics (optional)
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              {suggestedSubtopics.map((s) => (
-                <label key={s} className="flex items-center gap-2 text-sm">
+        <div className="mb-3">
+          <div className="block text-sm font-medium text-gray-700 mb-1">
+            Topics (you can select multiple)
+          </div>
+          <div className="grid grid-cols-1 gap-2">
+            {topicOptions.map((opt) => (
+              <div key={opt.id} className="text-sm">
+                <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
-                    checked={subTopics.includes(s)}
-                    onChange={() => toggleSubtopic(s)}
+                    checked={selectedTopics.includes(opt.id)}
+                    onChange={() => toggleTopic(opt.id)}
+                    aria-expanded={
+                      opt.id === "fake_details"
+                        ? selectedTopics.includes("fake_details")
+                        : opt.id === "other"
+                        ? selectedTopics.includes("other")
+                        : undefined
+                    }
+                    aria-controls={
+                      opt.id === "fake_details"
+                        ? "fake-details-panel"
+                        : opt.id === "other"
+                        ? "other-panel"
+                        : undefined
+                    }
                   />
-                  {s}
+                  {opt.label}
                 </label>
-              ))}
-            </div>
+                {opt.id === "fake_details" && (
+                  <div
+                    id="fake-details-panel"
+                    className={
+                      `ml-6 overflow-hidden transition-all duration-300 ease-in-out ` +
+                      (selectedTopics.includes("fake_details")
+                        ? "max-h-[400px] opacity-100 mt-2"
+                        : "max-h-0 opacity-0")
+                    }
+                    role="region"
+                    aria-hidden={!selectedTopics.includes("fake_details")}
+                  >
+                    <div className="text-xs text-gray-600 mb-2">
+                      Tick which items are untrue
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {(suggestedSubtopics.length > 0 ? suggestedSubtopics : [
+                        "Price",
+                        "Mileage",
+                        "Year",
+                        "Condition",
+                        "Accident history",
+                        "Ownership",
+                        "Documents",
+                        "Photos",
+                      ]).map((s) => (
+                        <label key={s} className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={fakeDetailItems.includes(s)}
+                            onChange={() => toggleFakeDetail(s)}
+                          />
+                          {s}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {opt.id === "other" && (
+                  <div
+                    id="other-panel"
+                    className={
+                      `ml-6 overflow-hidden transition-all duration-300 ease-in-out ` +
+                      (selectedTopics.includes("other")
+                        ? "max-h-[220px] opacity-100 mt-2"
+                        : "max-h-0 opacity-0")
+                    }
+                    role="region"
+                    aria-hidden={!selectedTopics.includes("other")}
+                  >
+                    <div className="text-xs text-gray-600 mb-2">
+                      Provide details (required)
+                    </div>
+                    <textarea
+                      value={otherDescription}
+                      onChange={(e) => setOtherDescription(e.target.value)}
+                      rows={3}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                      placeholder="Please specify the issue."
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
-        )}
+        </div>
 
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Description
-        </label>
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={4}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-6"
-          placeholder="Please provide details and any relevant evidence."
-        />
+        {/* Fake details checklist is now inline within the topic list with slide-down animation. */}
+
+        {/* Description for Other now appears inline under the Other checkbox with slide-down animation. */}
 
         <div className="flex justify-end gap-2">
           <button
@@ -133,6 +259,7 @@ export default function ReportModal({
           >
             {isSubmitting ? "Submitting..." : "Submit Report"}
           </button>
+        </div>
         </div>
       </div>
     </div>
