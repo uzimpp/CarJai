@@ -74,6 +74,14 @@ func (h *HealthHandler) Health(w http.ResponseWriter, r *http.Request) {
 func (h *HealthHandler) checkDatabase() ServiceStatus {
 	start := time.Now()
 
+	if h.db == nil {
+		return ServiceStatus{
+			Status:       "unhealthy",
+			ResponseTime: time.Since(start).String(),
+			Error:        "database connection is nil",
+		}
+	}
+
 	err := h.db.Ping()
 	responseTime := time.Since(start)
 

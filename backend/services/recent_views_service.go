@@ -99,16 +99,17 @@ func (s *RecentViewsService) GetUserRecentViews(userID, limit int) ([]models.Rec
 	recentViews := make([]models.RecentViewWithCarDetails, 0)
 	for rows.Next() {
 		var rv models.RecentViewWithCarDetails
+		var yearNull, mileageNull, priceNull, conditionRatingNull sql.NullInt64
 		err := rows.Scan(
 			&rv.RVID,
 			&rv.UserID,
 			&rv.CarID,
 			&rv.ViewedAt,
-			&rv.Year,
-			&rv.Mileage,
-			&rv.Price,
+			&yearNull,
+			&mileageNull,
+			&priceNull,
 			&rv.Province,
-			&rv.ConditionRating,
+			&conditionRatingNull,
 			&rv.Color,
 			&rv.Status,
 			&rv.BrandName,
@@ -117,6 +118,23 @@ func (s *RecentViewsService) GetUserRecentViews(userID, limit int) ([]models.Rec
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan recent view: %w", err)
+		}
+		// Convert sql.NullInt64 to *int
+		if yearNull.Valid {
+			year := int(yearNull.Int64)
+			rv.Year = &year
+		}
+		if mileageNull.Valid {
+			mileage := int(mileageNull.Int64)
+			rv.Mileage = &mileage
+		}
+		if priceNull.Valid {
+			price := int(priceNull.Int64)
+			rv.Price = &price
+		}
+		if conditionRatingNull.Valid {
+			conditionRating := int(conditionRatingNull.Int64)
+			rv.ConditionRating = &conditionRating
 		}
 		recentViews = append(recentViews, rv)
 	}
