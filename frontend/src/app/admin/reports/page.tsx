@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
+import { apiCall } from "@/lib/apiCall";
 
 type ReportType = "user" | "car";
 type ReportStatus = "pending" | "resolved" | "dismissed";
@@ -42,30 +43,30 @@ export default function AdminReportsPage() {
         setIsLoading(true);
         setError(null);
 
-        // TODO: Replace with actual admin reports API endpoint
-        // const params = new URLSearchParams();
-        // if (filterType !== "all") params.append("type", filterType);
-        // if (filterStatus !== "all") params.append("status", filterStatus);
-        //
-        // const result = await apiCall<{
-        //   success: boolean;
-        //   data: FraudReport[];
-        // }>(`/admin/reports?${params.toString()}`, {
-        //   method: "GET",
-        // });
-        //
-        // if (result.success && result.data) {
-        //   setReports(result.data);
-        // } else {
-        //   setError("Failed to load reports");
-        // }
+        const params = new URLSearchParams();
+        if (filterType !== "all") params.append("type", filterType);
+        if (filterStatus !== "all") params.append("status", filterStatus);
 
-        // Placeholder: Empty reports for now
-        setReports([]);
+        const result = await apiCall<{
+          success: boolean;
+          data: FraudReport[];
+          total: number;
+        }>(`/admin/reports?${params.toString()}`, {
+          method: "GET",
+        });
+
+        if (result.success && result.data) {
+          setReports(result.data);
+        } else {
+          setError("Failed to load reports");
+        }
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "An unexpected error occurred"
-        );
+        const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred";
+        // Don't show authentication errors - the auth system will handle redirects
+        if (!errorMessage.includes("Authentication") && !errorMessage.includes("Unauthorized")) {
+          setError(errorMessage);
+        }
+        setReports([]);
       } finally {
         setIsLoading(false);
       }
@@ -73,19 +74,32 @@ export default function AdminReportsPage() {
 
     if (!authLoading && isAuthenticated) {
       fetchReports();
+    } else if (!authLoading && !isAuthenticated) {
+      setIsLoading(false);
+      setReports([]);
     }
   }, [filterType, filterStatus, authLoading, isAuthenticated]);
 
   const handleResolve = async (reportId: number) => {
     setActionLoading(reportId);
     try {
-      // TODO: Replace with actual API call
-      // await apiCall(`/admin/reports/${reportId}/resolve`, {
-      //   method: "POST",
-      // });
+      await apiCall(`/admin/reports/${reportId}/resolve`, {
+        method: "POST",
+      });
       // Refresh reports
-      // fetchReports();
-      alert("Report resolved (API integration pending)");
+      const params = new URLSearchParams();
+      if (filterType !== "all") params.append("type", filterType);
+      if (filterStatus !== "all") params.append("status", filterStatus);
+      const result = await apiCall<{
+        success: boolean;
+        data: FraudReport[];
+        total: number;
+      }>(`/admin/reports?${params.toString()}`, {
+        method: "GET",
+      });
+      if (result.success && result.data) {
+        setReports(result.data);
+      }
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to resolve report");
     } finally {
@@ -98,13 +112,23 @@ export default function AdminReportsPage() {
 
     setActionLoading(reportId);
     try {
-      // TODO: Replace with actual API call
-      // await apiCall(`/admin/reports/${reportId}/dismiss`, {
-      //   method: "POST",
-      // });
+      await apiCall(`/admin/reports/${reportId}/dismiss`, {
+        method: "POST",
+      });
       // Refresh reports
-      // fetchReports();
-      alert("Report dismissed (API integration pending)");
+      const params = new URLSearchParams();
+      if (filterType !== "all") params.append("type", filterType);
+      if (filterStatus !== "all") params.append("status", filterStatus);
+      const result = await apiCall<{
+        success: boolean;
+        data: FraudReport[];
+        total: number;
+      }>(`/admin/reports?${params.toString()}`, {
+        method: "GET",
+      });
+      if (result.success && result.data) {
+        setReports(result.data);
+      }
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to dismiss report");
     } finally {
@@ -117,15 +141,13 @@ export default function AdminReportsPage() {
 
     setActionLoading(reportId);
     try {
-      // TODO: Replace with actual API call
-      // await apiCall(`/admin/users/${userId}/ban`, {
-      //   method: "POST",
-      // });
-      // await handleResolve(reportId);
-      alert("User banned (API integration pending)");
+      await apiCall(`/admin/users/${userId}/ban`, {
+        method: "POST",
+      });
+      // Resolve the report after banning
+      await handleResolve(reportId);
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to ban user");
-    } finally {
       setActionLoading(null);
     }
   };
@@ -135,15 +157,13 @@ export default function AdminReportsPage() {
 
     setActionLoading(reportId);
     try {
-      // TODO: Replace with actual API call
-      // await apiCall(`/admin/cars/${carId}/remove`, {
-      //   method: "POST",
-      // });
-      // await handleResolve(reportId);
-      alert("Car listing removed (API integration pending)");
+      await apiCall(`/admin/cars/${carId}/remove`, {
+        method: "POST",
+      });
+      // Resolve the report after removing car
+      await handleResolve(reportId);
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to remove car");
-    } finally {
       setActionLoading(null);
     }
   };
@@ -329,18 +349,9 @@ export default function AdminReportsPage() {
             </svg>
             <p className="text-gray-600">
               {reports.length === 0
-                ? "No reports found. API integration pending."
+                ? "No reports found."
                 : "No reports match the current filters."}
             </p>
-            {reports.length === 0 && (
-              <p className="text--1 text-gray-500 mt-2">
-                Connect to{" "}
-                <code className="bg-gray-100 px-2 py-1 rounded">
-                  /admin/reports
-                </code>{" "}
-                endpoint to display reports.
-              </p>
-            )}
           </div>
         ) : (
           <div className="divide-y divide-gray-100">

@@ -17,6 +17,9 @@ func AdminRoutes(
 	jwtManager *utils.JWTManager,
 	// Add ExtractionService
 	extractionService *services.ExtractionService,
+	reportService *services.ReportService,
+	userService *services.UserService,
+	carService *services.CarService,
 	adminPrefix string,
 	allowedOrigins []string,
 	allowedIPs []string,
@@ -29,6 +32,8 @@ func AdminRoutes(
 	adminIPHandler := handlers.NewAdminIPHandler(adminService)
 	// Create Handler for Extraction
 	adminExtractionHandler := handlers.NewAdminExtractionHandler(extractionService)
+	// Create Handler for Reports
+	adminReportsHandler := handlers.NewAdminReportsHandler(reportService, userService, carService, adminService)
 
 	// Create router
 	router := http.NewServeMux()
@@ -88,6 +93,46 @@ func AdminRoutes(
 
 	router.HandleFunc(basePath+"/market-price/upload",
 		applyAdminAuthMiddleware(adminExtractionHandler.HandleImportMarketPrices))
+
+	// --- Admin Reports Routes ---
+	// Handle routes with IDs in path first (more specific): /admin/reports/{id}/resolve, /admin/reports/{id}/dismiss
+	router.HandleFunc(basePath+"/reports/",
+		applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+			path := r.URL.Path
+			if strings.HasSuffix(path, "/resolve") && r.Method == http.MethodPost {
+				adminReportsHandler.ResolveReport(w, r)
+			} else if strings.HasSuffix(path, "/dismiss") && r.Method == http.MethodPost {
+				adminReportsHandler.DismissReport(w, r)
+			} else {
+				http.NotFound(w, r)
+			}
+		}))
+	
+	// GET: List all reports with optional filters (less specific, registered after)
+	router.HandleFunc(basePath+"/reports",
+		applyAdminAuthMiddleware(adminReportsHandler.ListReports))
+	
+	// Handle routes with IDs in path: /admin/users/{id}/ban
+	router.HandleFunc(basePath+"/users/",
+		applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+			path := r.URL.Path
+			if strings.HasSuffix(path, "/ban") && r.Method == http.MethodPost {
+				adminReportsHandler.BanUser(w, r)
+			} else {
+				http.NotFound(w, r)
+			}
+		}))
+	
+	// Handle routes with IDs in path: /admin/cars/{id}/remove
+	router.HandleFunc(basePath+"/cars/",
+		applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+			path := r.URL.Path
+			if strings.HasSuffix(path, "/remove") && r.Method == http.MethodPost {
+				adminReportsHandler.RemoveCar(w, r)
+			} else {
+				http.NotFound(w, r)
+			}
+		}))
 
 	// --- Health Check & Root ---
 	// Health check and Root only need Global IP Whitelist and general logging

@@ -241,3 +241,8 @@ func (s *AdminService) RemoveIPFromWhitelist(adminID int, ipAddress string) erro
 func (s *AdminService) GetWhitelistedIPs(adminID int) ([]models.AdminIPWhitelist, error) {
 	return s.ipWhitelistRepo.GetWhitelistedIPs(adminID)
 }
+
+// GetAdminByID retrieves an admin by ID
+func (s *AdminService) GetAdminByID(adminID int) (*models.Admin, error) {
+	return s.adminRepo.GetAdminByID(adminID)
+}
