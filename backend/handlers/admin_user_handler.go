@@ -95,3 +95,36 @@ func (h *AdminUserHandler) HandleUpdateUser(w http.ResponseWriter, r *http.Reque
 	// Returning the public user data is good practice
 	utils.WriteJSON(w, http.StatusOK, updatedUser.ToPublic())
 }
+
+// HandleDeleteUser handles DELETE /admin/users/:id
+func (h *AdminUserHandler) HandleDeleteUser(w http.ResponseWriter, r *http.Request) {
+	// Extract user ID from URL path
+	parts := strings.Split(r.URL.Path, "/")
+	idStr := parts[len(parts)-1]
+	userID, err := strconv.Atoi(idStr)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid user ID")
+		return
+	}
+
+	// Call the service
+	err = h.userService.DeleteUserByAdmin(userID)
+	if err != nil {
+		// Check for specific errors
+		if strings.Contains(err.Error(), "cannot delete user") {
+			utils.WriteError(w, http.StatusConflict, err.Error())
+		} else if strings.Contains(err.Error(), "user not found") {
+			utils.WriteError(w, http.StatusNotFound, err.Error())
+		} else {
+			utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		}
+		return
+	}
+
+	// Return success
+	response := map[string]interface{}{
+		"success": true,
+		"message": "User deleted successfully",
+	}
+	utils.WriteJSON(w, http.StatusOK, response)
+}

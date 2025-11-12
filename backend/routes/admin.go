@@ -110,9 +110,12 @@ func AdminRoutes(
 	// This handler catches /admin/users/1, /admin/users/2, etc.
 	router.HandleFunc(basePath+"/users/",
 		applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
-			if r.Method == http.MethodPatch {
+			switch r.Method {
+			case http.MethodPatch:
 				adminUserHandler.HandleUpdateUser(w, r)
-			} else {
+			case http.MethodDelete:
+				adminUserHandler.HandleDeleteUser(w, r)
+			default:
 				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			}
 		}),

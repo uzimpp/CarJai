@@ -718,6 +718,36 @@ func (r *UserRepository) UpdateUserByAdmin(userID int, data AdminUpdateUserReque
 	return r.GetUserByID(userID)
 }
 
+// DeleteUser deletes a user by ID
+// !! WARNING: This is a hard delete.
+func (r *UserRepository) DeleteUser(userID int) error {
+	// We should delete related data first if not using ON DELETE CASCADE
+	// (e.g., from sellers, buyers, favorites, etc.)
+	// For this task, we assume related data is handled (e.g., in service) or has CASCADE delete.
+
+	query := `DELETE FROM users WHERE id = $1`
+
+	result, err := r.db.DB.Exec(query, userID)
+	if err != nil {
+		// Check for foreign key violation
+		if strings.Contains(err.Error(), "violates foreign key constraint") {
+			return fmt.Errorf("cannot delete user, they are still linked to other data (e.g., buyer/seller profile)")
+		}
+		return fmt.Errorf("failed to delete user: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("user not found")
+	}
+
+	return nil
+}
+
 // UserSessionRepository handles user session-related database operations
 type UserSessionRepository struct {
 	db *Database
@@ -787,6 +817,23 @@ func (r *UserSessionRepository) DeleteUserSession(token string) error {
 	}
 
 	return nil
+}
+
+// DeleteAllSessionsForUser deletes all sessions for a specific user ID
+func (r *UserSessionRepository) DeleteAllSessionsForUser(userID int) (int64, error) {
+	query := `DELETE FROM user_sessions WHERE user_id = $1`
+
+	result, err := r.db.DB.Exec(query, userID)
+	if err != nil {
+		return 0, fmt.Errorf("failed to delete sessions for user: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	return rowsAffected, nil
 }
 
 // CleanupExpiredUserSessions removes all expired user sessions

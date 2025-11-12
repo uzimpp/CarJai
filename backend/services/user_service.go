@@ -72,6 +72,21 @@ func (s *UserService) UpdateUserByAdmin(userID int, data models.AdminUpdateUserR
 	return updatedUser, nil
 }
 
+// DeleteUserByAdmin deletes a user and all their sessions (called by an admin)
+func (s *UserService) DeleteUserByAdmin(userID int) error {
+	// Delete all user sessions
+	// (We don't care about the error too much, but it's good to try)
+	_, _ = s.userSessionRepo.DeleteAllSessionsForUser(userID)
+
+	// Delete the user
+	err := s.userRepo.DeleteUser(userID)
+	if err != nil {
+		return fmt.Errorf("failed to delete user: %w", err)
+	}
+
+	return nil
+}
+
 // CreateUserByAdmin creates a new user (called by an admin)
 func (s *UserService) CreateUserByAdmin(req models.AdminCreateUserRequest) (*models.User, error) {
 	// Check if user already exists by email
