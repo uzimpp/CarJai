@@ -28,6 +28,15 @@ const nextConfig: NextConfig = {
         source: "/api/admin/users/:path*",
         destination: `${backendUrl}/admin/users/:path*`,
       },
+
+      {
+        source: "/api/admin/cars",
+        destination: `${backendUrl}/admin/cars`,
+      },
+      {
+        source: "/api/admin/cars/:path*",
+        destination: `${backendUrl}/admin/cars/:path*`,
+      },
       
       {
         source: "/admin/:path*",

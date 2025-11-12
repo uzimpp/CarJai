@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
-import type { AdminManagedCar } from "@/types/admin";
+import type { AdminManagedCar, AdminUpdateCarRequest} from "@/types/admin";
 import PaginateControl from "@/components/ui/PaginateControl";
 
 // Edit Car Modal Component
@@ -12,16 +12,19 @@ function EditCarModal({
   onClose,
   onSave,
 }: {
-  car: CarListing | null;
+  car: AdminManagedCar | null;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (carId: number, data: Partial<CarListing>) => void;
+  onSave: (carId: number, data: AdminUpdateCarRequest) => Promise<void>;
 }) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<AdminUpdateCarRequest>({
+    brandName: "",
+    modelName: "",
+    submodelName: "",
+    year: undefined,
     price: 0,
     mileage: 0,
     status: "",
-    description: "",
   });
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,11 +32,15 @@ function EditCarModal({
   useEffect(() => {
     if (car) {
       setFormData({
+        brandName: car.brandName || "",
+        modelName: car.modelName || "",
+        submodelName: car.submodelName || "",
+        year: car.year || undefined,
         price: car.price || 0,
         mileage: car.mileage || 0,
         status: car.status || "",
-        description: "",
       });
+      setError(null);
     }
   }, [car]);
 
@@ -48,7 +55,7 @@ function EditCarModal({
       // TODO: Replace with actual API call
       // await updateCar(car.id, formData);
 
-      onSave(car.id, formData);
+      await onSave(car.id, formData);
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update car");
@@ -102,6 +109,70 @@ function EditCarModal({
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Brand */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Brand
+              </label>
+              <input
+                type="text"
+                value={formData.brandName || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, brandName: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
+              />
+            </div>
+
+            {/* Model */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Model
+              </label>
+              <input
+                type="text"
+                value={formData.modelName || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, modelName: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
+              />
+            </div>
+
+            {/* Submodel */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Submodel
+              </label>
+              <input
+                type="text"
+                value={formData.submodelName || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, submodelName: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
+              />
+            </div>
+
+            {/* Year */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Year
+              </label>
+              <input
+                type="number"
+                value={formData.year || ""}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    year: parseInt(e.target.value) || undefined,
+                  })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
+              />
+            </div>
+
+            {/* Price */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Price (฿)
@@ -121,6 +192,7 @@ function EditCarModal({
               />
             </div>
 
+            {/* Mileage */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Mileage (km)
@@ -139,6 +211,7 @@ function EditCarModal({
               />
             </div>
 
+            {/* Status*/}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Status
@@ -275,33 +348,49 @@ export default function AdminCarsPage() {
   }
 
   // Handle edit car
-  const handleEditCar = (car: CarListing) => {
+  const handleEditCar = (car: AdminManagedCar) => {
     setEditingCar(car);
     setIsEditModalOpen(true);
   };
 
-  const handleSaveCar = async (carId: number, data: Partial<CarListing>) => {
+  const handleSaveCar = async (
+    carId: number,
+    data: AdminUpdateCarRequest
+  ) => {
     try {
-      // TODO: Replace with actual API call
-      // await fetch(`/admin/cars/${carId}`, {
-      //   method: 'PATCH',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //     'Authorization': `Bearer ${token}`,
-      //   },
-      //   body: JSON.stringify(data),
-      // });
+      const response = await fetch(`/api/admin/cars/${carId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
 
-      // For now, update local state
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || `Failed to update car: ${response.statusText}`);
+      }
+
+      const updatedCarPublic = await response.json();
+
       setCars((prevCars) =>
         prevCars.map((car) => {
           if (car.id !== carId) return car;
-          return { ...car, ...data };
+          return {
+            ...car,
+            brandName: updatedCarPublic.brandName,
+            modelName: updatedCarPublic.modelName,
+            submodelName: updatedCarPublic.submodelName,
+            year: updatedCarPublic.year,
+            price: updatedCarPublic.price,
+            mileage: updatedCarPublic.mileage,
+            status: updatedCarPublic.status,
+          };
         })
       );
     } catch (err) {
       console.error("Failed to update car:", err);
-      throw err;
+      throw err; 
     }
   };
 

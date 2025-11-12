@@ -135,6 +135,19 @@ func AdminRoutes(
 		}),
 	)
 
+	router.HandleFunc("/cars/",
+		applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			case http.MethodPatch:
+				adminCarHandler.HandleUpdateCar(w, r)
+			// case http.MethodDelete:
+				// adminCarHandler.HandleDeleteCar(w, r) // (For delete in future)
+			default:
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			}
+		}),
+	)
+
 	// --- Health Check & Root ---
 	// Health check and Root only need Global IP Whitelist and general logging
 	router.HandleFunc(basePath+"/health",

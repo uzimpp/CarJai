@@ -124,9 +124,23 @@ type AdminManagedCar struct {
 	BrandName    *string   `json:"brandName" db:"brand_name"`
 	ModelName    *string   `json:"modelName" db:"model_name"`
 	SubmodelName *string   `json:"submodelName" db:"submodel_name"`
+	Year         *int      `json:"year" db:"year"` 
 	Status       string    `json:"status" db:"status"`
 	CreatedAt    time.Time `json:"listedDate" db:"created_at"`
 	SellerName   *string   `json:"soldBy" db:"seller_name"`
+	Price        *int      `json:"price" db:"price"`
+	Mileage      *int      `json:"mileage" db:"mileage"`
+}
+
+// AdminUpdateCarRequest defines the fields updatable by an admin
+type AdminUpdateCarRequest struct {
+	BrandName    *string `json:"brandName,omitempty"`
+	ModelName    *string `json:"modelName,omitempty"`
+	SubmodelName *string `json:"submodelName,omitempty"`
+	Year         *int    `json:"year,omitempty"`
+	Price        *int    `json:"price,omitempty"`
+	Mileage      *int    `json:"mileage,omitempty"`
+	Status       *string `json:"status,omitempty"`
 }
 
 // AdminCarsListResponse is the response for GET /admin/cars
@@ -327,11 +341,14 @@ func (r *CarRepository) GetManagedCars() (*[]AdminManagedCar, error) {
 		SELECT
 			c.id,
 			c.brand_name,
-			c.model_name,    
+			c.model_name,
 			c.submodel_name,
+			c.year,          
 			c.status,
 			c.created_at,
-			u.name AS seller_name
+			u.name AS seller_name,
+			c.price,
+			c.mileage
 		FROM
 			cars c
 		LEFT JOIN
@@ -351,12 +368,16 @@ func (r *CarRepository) GetManagedCars() (*[]AdminManagedCar, error) {
 		err := rows.Scan(
 			&car.ID,
 			&car.BrandName,
-			&car.ModelName,   
+			&car.ModelName,
 			&car.SubmodelName,
+			&car.Year,         
 			&car.Status,
 			&car.CreatedAt,
 			&car.SellerName,
+			&car.Price,
+			&car.Mileage,
 		)
+		
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan managed car: %w", err)
 		}
@@ -370,92 +391,77 @@ func (r *CarRepository) GetManagedCars() (*[]AdminManagedCar, error) {
 	return &cars, nil
 }
 
-// GetCarWithImagesAndInspection retrieves car, images, and inspection in one optimized query
-func (r *CarRepository) GetCarWithImagesAndInspection(carID int) (*Car, []CarImageMetadata, *InspectionResult, error) {
-	// First get the car data
-	car := &Car{}
-	carQuery := `
-		SELECT id, seller_id, body_type_code, transmission_code, drivetrain_code,
-			brand_name, model_name, submodel_name, chassis_number,
-			year, mileage, engine_cc, seats, doors,
-			prefix, number, province_id, description, price,
-			is_flooded, is_heavily_damaged,
-			status, condition_rating, created_at, updated_at
-		FROM cars
-		WHERE id = $1`
+// UpdateCarByAdmin updates a car's details from the admin panel
+func (r *CarRepository) UpdateCarByAdmin(carID int, req AdminUpdateCarRequest) (*Car, error) {
+	// Build dynamic query
+	query := "UPDATE cars SET "
+	args := []interface{}{}
+	argNum := 1
+	updates := []string{}
 
-	err := r.db.DB.QueryRow(carQuery, carID).Scan(
-		&car.ID, &car.SellerID, &car.BodyTypeCode, &car.TransmissionCode, &car.DrivetrainCode,
-		&car.BrandName, &car.ModelName, &car.SubmodelName, &car.ChassisNumber,
-		&car.Year, &car.Mileage, &car.EngineCC, &car.Seats, &car.Doors,
-		&car.Prefix, &car.Number, &car.ProvinceID, &car.Description, &car.Price,
-		&car.IsFlooded, &car.IsHeavilyDamaged, &car.Status,
-		&car.ConditionRating, &car.CreatedAt, &car.UpdatedAt,
-	)
+	if req.BrandName != nil {
+		updates = append(updates, fmt.Sprintf("brand_name = $%d", argNum))
+		args = append(args, *req.BrandName)
+		argNum++
+	}
+	if req.ModelName != nil {
+		updates = append(updates, fmt.Sprintf("model_name = $%d", argNum))
+		args = append(args, *req.ModelName)
+		argNum++
+	}
+	if req.SubmodelName != nil {
+		updates = append(updates, fmt.Sprintf("submodel_name = $%d", argNum))
+		args = append(args, *req.SubmodelName)
+		argNum++
+	}
+	if req.Year != nil {
+		updates = append(updates, fmt.Sprintf("year = $%d", argNum))
+		args = append(args, *req.Year)
+		argNum++
+	}
+	if req.Price != nil {
+		updates = append(updates, fmt.Sprintf("price = $%d", argNum))
+		args = append(args, *req.Price)
+		argNum++
+	}
+	if req.Mileage != nil {
+		updates = append(updates, fmt.Sprintf("mileage = $%d", argNum))
+		args = append(args, *req.Mileage)
+		argNum++
+	}
+	if req.Status != nil {
+		updates = append(updates, fmt.Sprintf("status = $%d", argNum))
+		args = append(args, *req.Status)
+		argNum++
+	}
 
+	if len(updates) == 0 {
+		return r.GetCarByID(carID)
+	}
+
+	updates = append(updates, fmt.Sprintf("updated_at = $%d", argNum))
+	args = append(args, time.Now())
+	argNum++
+
+	query += strings.Join(updates, ", ")
+	query += fmt.Sprintf(" WHERE id = $%d", argNum)
+	args = append(args, carID)
+
+	// Execute query
+	result, err := r.db.DB.Exec(query, args...)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil, nil, fmt.Errorf("car not found")
-		}
-		return nil, nil, nil, fmt.Errorf("failed to get car: %w", err)
+		return nil, fmt.Errorf("failed to execute admin car update: %w", err)
 	}
 
-	// Get images metadata (separate query since it's a one-to-many relationship)
-	imageQuery := `
-		SELECT id, car_id, image_type, image_size, display_order, uploaded_at
-		FROM car_images
-		WHERE car_id = $1
-		ORDER BY display_order, uploaded_at`
-
-	imageRows, err := r.db.DB.Query(imageQuery, carID)
+	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to get car images: %w", err)
+		return nil, fmt.Errorf("failed to get rows affected: %w", err)
 	}
-	defer imageRows.Close()
-
-	var images []CarImageMetadata
-	for imageRows.Next() {
-		var img CarImageMetadata
-		err := imageRows.Scan(&img.ID, &img.CarID, &img.ImageType, &img.ImageSize, &img.DisplayOrder, &img.UploadedAt)
-		if err != nil {
-			return nil, nil, nil, fmt.Errorf("failed to scan image metadata: %w", err)
-		}
-		images = append(images, img)
+	if rowsAffected == 0 {
+		return nil, fmt.Errorf("car not found")
 	}
 
-	// Get inspection data (LEFT JOIN would return nil if no inspection exists)
-	inspection := &InspectionResult{}
-	inspectionQuery := `
-		SELECT id, car_id, station, overall_pass,
-			brake_result, handbrake_result, alignment_result, noise_result, emission_result,
-			horn_result, speedometer_result, high_low_beam_result, signal_lights_result,
-			other_lights_result, windshield_result, steering_result, wheels_tires_result,
-			fuel_tank_result, chassis_result, body_result, doors_floor_result, seatbelt_result, wiper_result,
-			created_at, updated_at
-		FROM car_inspection_results
-		WHERE car_id = $1
-		ORDER BY created_at DESC
-		LIMIT 1`
-
-	err = r.db.DB.QueryRow(inspectionQuery, carID).Scan(
-		&inspection.ID, &inspection.CarID, &inspection.Station, &inspection.OverallPass,
-		&inspection.BrakeResult, &inspection.HandbrakeResult, &inspection.AlignmentResult, &inspection.NoiseResult, &inspection.EmissionResult,
-		&inspection.HornResult, &inspection.SpeedometerResult, &inspection.HighLowBeamResult, &inspection.SignalLightsResult,
-		&inspection.OtherLightsResult, &inspection.WindshieldResult, &inspection.SteeringResult, &inspection.WheelsTiresResult,
-		&inspection.FuelTankResult, &inspection.ChassisResult, &inspection.BodyResult, &inspection.DoorsFloorResult, &inspection.SeatbeltResult, &inspection.WiperResult,
-		&inspection.CreatedAt, &inspection.UpdatedAt,
-	)
-
-	if err != nil {
-		if err == sql.ErrNoRows {
-			// No inspection found is OK
-			inspection = nil
-		} else {
-			return nil, nil, nil, fmt.Errorf("failed to get inspection: %w", err)
-		}
-	}
-
-	return car, images, inspection, nil
+	return r.GetCarByID(carID)
 }
 
 // GetCarsBySellerID retrieves all cars for a seller

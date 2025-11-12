@@ -112,9 +112,22 @@ interface AdminManagedCar {
   brandName: string | null;
   modelName: string | null;
   submodelName: string | null;
+  year: number | null;
   status: string;
   listedDate: string; 
   soldBy: string | null; 
+  price: number | null; 
+  mileage: number | null;
+}
+
+interface AdminUpdateCarRequest {
+  brandName?: string;
+  modelName?: string;
+  submodelName?: string;
+  year?: number;
+  price?: number;
+  mileage?: number;
+  status?: string;
 }
 
 interface MarketPrice {
@@ -157,6 +170,7 @@ export type {
   AdminUpdateUserError,
   AdminCreateUserRequest,
   AdminManagedCar,
+  AdminUpdateCarRequest,
   UserType,
   UserRole,
   MarketPrice,

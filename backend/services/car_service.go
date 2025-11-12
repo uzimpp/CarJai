@@ -231,6 +231,15 @@ func (s *CarService) GetManagedCars() (*[]models.AdminManagedCar, error) {
 	return cars, nil
 }
 
+func (s *CarService) UpdateCarByAdmin(carID int, req models.AdminUpdateCarRequest) (*models.Car, error) {
+	updatedCar, err := s.carRepo.UpdateCarByAdmin(carID, req)
+	if err != nil {
+		return nil, err 
+	}
+
+	return updatedCar, nil
+}
+
 // GetCarsBySellerID retrieves all cars for a seller
 func (s *CarService) GetCarsBySellerID(sellerID int) ([]models.Car, error) {
 	return s.carRepo.GetCarsBySellerID(sellerID)
@@ -748,12 +757,24 @@ func (s *CarService) DeleteCarImage(imageID, userID int, isAdmin bool) error {
 	return s.imageRepo.DeleteCarImage(imageID)
 }
 
-// GetCarWithImages retrieves a car with its image metadata and inspection data (optimized with fewer queries)
+/// GetCarWithImages retrieves a car with its image metadata and inspection data
 func (s *CarService) GetCarWithImages(carID int) (*models.CarWithImages, error) {
-	// Use optimized method that fetches everything in 3 queries instead of separate calls
-	car, images, inspection, err := s.carRepo.GetCarWithImagesAndInspection(carID)
+	// 1. Get the car
+	car, err := s.carRepo.GetCarByID(carID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get car: %w", err)
+	}
+
+	// 2. Get the images
+	images, err := s.imageRepo.GetCarImagesMetadata(carID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get images: %w", err)
+	}
+
+	// 3. Get the inspection data (it's okay if it's not found)
+	inspection, err := s.inspectionRepo.GetInspectionByCarID(carID)
+	if err != nil && err != sql.ErrNoRows {
+		return nil, fmt.Errorf("failed to get inspection data: %w", err)
 	}
 
 	return &models.CarWithImages{
