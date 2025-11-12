@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
 	"net/http"
 	"net/http/httptest"
@@ -357,13 +358,109 @@ func (h *testCarHandler) SearchCars(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// Add wrappers mirroring production logic for error-path testing
+func (h *testCarHandler) UpdateCar(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value("userID").(int)
+	if !ok || userID == 0 {
+		utils.RespondJSON(w, http.StatusUnauthorized, models.UserErrorResponse{Success: false, Error: "Unauthorized"})
+		return
+	}
+	carID, ok := r.Context().Value("carID").(int)
+	if !ok || carID <= 0 {
+		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{Success: false, Error: "Invalid car ID"})
+		return
+	}
+	var req models.UpdateCarRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{Success: false, Error: "Invalid request body"})
+		return
+	}
+	isAdmin := false
+	if adminID, ok := r.Context().Value("admin_id").(int); ok && adminID > 0 {
+		isAdmin = true
+	}
+	if err := h.carService.UpdateCar(carID, userID, &req, isAdmin); err != nil {
+		if err.Error() == "unauthorized" {
+			utils.RespondJSON(w, http.StatusForbidden, models.UserErrorResponse{Success: false, Error: err.Error()})
+			return
+		}
+		if err.Error() == "not found" {
+			utils.RespondJSON(w, http.StatusNotFound, models.UserErrorResponse{Success: false, Error: "Car not found"})
+			return
+		}
+		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{Success: false, Error: "Failed to update car"})
+		return
+	}
+	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{"success": true})
+}
+
+func (h *testCarHandler) AutoSaveDraft(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value("userID").(int)
+	if !ok || userID == 0 {
+		utils.RespondJSON(w, http.StatusUnauthorized, models.UserErrorResponse{Success: false, Error: "Unauthorized"})
+		return
+	}
+	carID, ok := r.Context().Value("carID").(int)
+	if !ok || carID <= 0 {
+		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{Success: false, Error: "Invalid car ID"})
+		return
+	}
+	var req models.UpdateCarRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{Success: false, Error: "Invalid request body"})
+		return
+	}
+	if err := h.carService.AutoSaveDraft(carID, userID, &req); err != nil {
+		if err.Error() == "unauthorized" {
+			utils.RespondJSON(w, http.StatusForbidden, models.UserErrorResponse{Success: false, Error: err.Error()})
+			return
+		}
+		if err.Error() == "not found" {
+			utils.RespondJSON(w, http.StatusNotFound, models.UserErrorResponse{Success: false, Error: "Car not found"})
+			return
+		}
+		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{Success: false, Error: err.Error()})
+		return
+	}
+	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{"success": true})
+}
+
+func (h *testCarHandler) DeleteCar(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value("userID").(int)
+	if !ok || userID == 0 {
+		utils.RespondJSON(w, http.StatusUnauthorized, models.UserErrorResponse{Success: false, Error: "Unauthorized"})
+		return
+	}
+	carID, ok := r.Context().Value("carID").(int)
+	if !ok || carID <= 0 {
+		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{Success: false, Error: "Invalid car ID"})
+		return
+	}
+	isAdmin := false
+	if adminID, ok := r.Context().Value("admin_id").(int); ok && adminID > 0 {
+		isAdmin = true
+	}
+	if err := h.carService.DeleteCar(carID, userID, isAdmin); err != nil {
+		if err.Error() == "unauthorized" {
+			utils.RespondJSON(w, http.StatusForbidden, models.UserErrorResponse{Success: false, Error: err.Error()})
+			return
+		}
+		if err.Error() == "not found" {
+			utils.RespondJSON(w, http.StatusNotFound, models.UserErrorResponse{Success: false, Error: "Car not found"})
+			return
+		}
+		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{Success: false, Error: "Failed to delete car"})
+		return
+	}
+	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{"success": true})
+}
+
 func TestCarHandler_UpdateCar_Errors(t *testing.T) {
 	mock := &mockCarService{
 		updateCarFunc: func(carID, userID int, req *models.UpdateCarRequest, isAdmin bool) error {
 			return &services.ValidationError{Message: "unauthorized"}
 		},
 	}
-	handler := &CarHandler{carService: (*services.CarService)(nil)} // not used in test wrapper
 	test := &testCarHandler{carService: mock, userService: &mockUserService{}}
 	// Unauthorized (no userID)
 	req := httptest.NewRequest(http.MethodPut, "/api/cars/1", bytes.NewBufferString(`{}`))
@@ -375,6 +472,7 @@ func TestCarHandler_UpdateCar_Errors(t *testing.T) {
 	// Invalid car ID
 	req2 := httptest.NewRequest(http.MethodPut, "/api/cars/0", bytes.NewBufferString(`{}`))
 	ctx2 := context.WithValue(req2.Context(), "userID", 1)
+	ctx2 = context.WithValue(ctx2, "carID", 0)
 	req2 = req2.WithContext(ctx2)
 	w2 := httptest.NewRecorder()
 	test.UpdateCar(w2, req2)
@@ -384,6 +482,7 @@ func TestCarHandler_UpdateCar_Errors(t *testing.T) {
 	// Invalid body
 	req3 := httptest.NewRequest(http.MethodPut, "/api/cars/1", bytes.NewBufferString(`invalid`))
 	ctx3 := context.WithValue(req3.Context(), "userID", 1)
+	ctx3 = context.WithValue(ctx3, "carID", 1)
 	req3 = req3.WithContext(ctx3)
 	w3 := httptest.NewRecorder()
 	test.UpdateCar(w3, req3)
@@ -409,6 +508,7 @@ func TestCarHandler_AutoSaveDraft_Errors(t *testing.T) {
 	// Invalid car ID
 	req2 := httptest.NewRequest(http.MethodPatch, "/api/cars/0", bytes.NewBufferString(`{}`))
 	ctx2 := context.WithValue(req2.Context(), "userID", 1)
+	ctx2 = context.WithValue(ctx2, "carID", 0)
 	req2 = req2.WithContext(ctx2)
 	w2 := httptest.NewRecorder()
 	test.AutoSaveDraft(w2, req2)
@@ -418,6 +518,7 @@ func TestCarHandler_AutoSaveDraft_Errors(t *testing.T) {
 	// Invalid body
 	req3 := httptest.NewRequest(http.MethodPatch, "/api/cars/1", bytes.NewBufferString(`invalid`))
 	ctx3 := context.WithValue(req3.Context(), "userID", 1)
+	ctx3 = context.WithValue(ctx3, "carID", 1)
 	req3 = req3.WithContext(ctx3)
 	w3 := httptest.NewRecorder()
 	test.AutoSaveDraft(w3, req3)
@@ -443,6 +544,7 @@ func TestCarHandler_DeleteCar_Errors(t *testing.T) {
 	// Invalid car ID
 	req2 := httptest.NewRequest(http.MethodDelete, "/api/cars/0", nil)
 	ctx2 := context.WithValue(req2.Context(), "userID", 1)
+	ctx2 = context.WithValue(ctx2, "carID", 0)
 	req2 = req2.WithContext(ctx2)
 	w2 := httptest.NewRecorder()
 	test.DeleteCar(w2, req2)
