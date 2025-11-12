@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"encoding/json"
 	"context"
 	"net/http"
 	"net/http/httptest"

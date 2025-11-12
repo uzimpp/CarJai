@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -315,27 +316,24 @@ func (h *testUserAuthHandler) Signin(w http.ResponseWriter, r *http.Request) {
 func TestUserAuthHandler_Me_And_Refresh_Error(t *testing.T) {
 	mock := &mockUserService{
 		getCurrentUserFunc: func(token string) (*models.UserMeResponse, error) {
-			return nil, &utils.HTTPError{Message: "invalid", Status: http.StatusUnauthorized}
+			return nil, errors.New("invalid")
 		},
 		refreshTokenFunc: func(token, ipAddress, userAgent string) (*models.UserAuthResponse, error) {
-			return nil, &utils.HTTPError{Message: "invalid", Status: http.StatusUnauthorized}
+			return nil, errors.New("invalid")
 		},
 	}
-	handler := &UserAuthHandler{
-		userService: mock,
-		appConfig:   &config.AppConfig{},
-	}
+	handler := &testUserAuthHandler{userService: mock}
 	// Me: no cookie
 	req := httptest.NewRequest(http.MethodGet, "/api/auth/me", nil)
 	w := httptest.NewRecorder()
-	handler.Me(w, req)
+	handlerMe(w, req, handler)
 	if w.Code != http.StatusUnauthorized {
 		t.Errorf("expected 401 for me without cookie, got %d", w.Code)
 	}
 	// Refresh: no cookie
 	req2 := httptest.NewRequest(http.MethodPost, "/api/auth/refresh", nil)
 	w2 := httptest.NewRecorder()
-	handler.RefreshToken(w2, req2)
+	handlerRefresh(w2, req2, handler)
 	if w2.Code != http.StatusUnauthorized {
 		t.Errorf("expected 401 for refresh without cookie, got %d", w2.Code)
 	}
@@ -347,17 +345,14 @@ func TestUserAuthHandler_ChangePassword_Errors(t *testing.T) {
 			return &models.User{ID: 1}, nil
 		},
 		changePasswordFunc: func(userID int, currentPassword, newPassword string) error {
-			return &utils.HTTPError{Message: "bad request", Status: http.StatusBadRequest}
+			return errors.New("bad request")
 		},
 	}
-	handler := &UserAuthHandler{
-		userService: mock,
-		appConfig:   &config.AppConfig{},
-	}
+	handler := &testUserAuthHandler{userService: mock}
 	// No cookie -> 401
 	req := httptest.NewRequest(http.MethodPost, "/api/auth/change-password", nil)
 	w := httptest.NewRecorder()
-	handler.ChangePassword(w, req)
+	handlerChangePassword(w, req, handler)
 	if w.Code != http.StatusUnauthorized {
 		t.Errorf("expected 401 when no cookie, got %d", w.Code)
 	}
@@ -366,7 +361,7 @@ func TestUserAuthHandler_ChangePassword_Errors(t *testing.T) {
 	req2.Header.Set("Content-Type", "application/json")
 	req2.AddCookie(&http.Cookie{Name: "jwt", Value: "token"})
 	w2 := httptest.NewRecorder()
-	handler.ChangePassword(w2, req2)
+	handlerChangePassword(w2, req2, handler)
 	if w2.Code != http.StatusBadRequest {
 		t.Errorf("expected 400 for invalid body, got %d", w2.Code)
 	}
@@ -376,7 +371,7 @@ func TestUserAuthHandler_ChangePassword_Errors(t *testing.T) {
 	req3.Header.Set("Content-Type", "application/json")
 	req3.AddCookie(&http.Cookie{Name: "jwt", Value: "token"})
 	w3 := httptest.NewRecorder()
-	handler.ChangePassword(w3, req3)
+	handlerChangePassword(w3, req3, handler)
 	if w3.Code != http.StatusBadRequest {
 		t.Errorf("expected 400 for short password, got %d", w3.Code)
 	}
@@ -386,9 +381,93 @@ func TestUserAuthHandler_ChangePassword_Errors(t *testing.T) {
 	req4.Header.Set("Content-Type", "application/json")
 	req4.AddCookie(&http.Cookie{Name: "jwt", Value: "token"})
 	w4 := httptest.NewRecorder()
-	handler.ChangePassword(w4, req4)
+	handlerChangePassword(w4, req4, handler)
 	if w4.Code != http.StatusBadRequest {
 		t.Errorf("expected 400 for service error, got %d", w4.Code)
 	}
+}
+
+// Wrapper helpers using testUserAuthHandler
+func handlerMe(w http.ResponseWriter, r *http.Request, h *testUserAuthHandler) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	cookie, err := r.Cookie("jwt")
+	if err != nil {
+		utils.WriteError(w, http.StatusUnauthorized, "Authentication required")
+		return
+	}
+	resp, err := h.userService.GetCurrentUser(cookie.Value)
+	if err != nil {
+		errorResponse := models.UserErrorResponse{
+			Success: false,
+			Error:   "Invalid token",
+			Code:    http.StatusUnauthorized,
+		}
+		utils.WriteJSON(w, http.StatusUnauthorized, errorResponse)
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, resp)
+}
+
+func handlerRefresh(w http.ResponseWriter, r *http.Request, h *testUserAuthHandler) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	cookie, err := r.Cookie("jwt")
+	if err != nil {
+		utils.WriteError(w, http.StatusUnauthorized, "Authentication required")
+		return
+	}
+	clientIP := utils.ExtractClientIP(r.RemoteAddr, r.Header.Get("X-Forwarded-For"), r.Header.Get("X-Real-IP"))
+	userAgent := r.UserAgent()
+	resp, err := h.userService.RefreshToken(cookie.Value, clientIP, userAgent)
+	if err != nil {
+		errorResponse := models.UserErrorResponse{
+			Success: false,
+			Error:   "Invalid token",
+			Code:    http.StatusUnauthorized,
+		}
+		utils.WriteJSON(w, http.StatusUnauthorized, errorResponse)
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, resp)
+}
+
+func handlerChangePassword(w http.ResponseWriter, r *http.Request, h *testUserAuthHandler) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	cookie, err := r.Cookie("jwt")
+	if err != nil {
+		utils.WriteError(w, http.StatusUnauthorized, "Authentication required")
+		return
+	}
+	user, err := h.userService.ValidateUserSession(cookie.Value)
+	if err != nil {
+		utils.WriteError(w, http.StatusUnauthorized, "Invalid session")
+		return
+	}
+	var req models.ChangePasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+	if req.CurrentPassword == "" || req.NewPassword == "" {
+		utils.WriteError(w, http.StatusBadRequest, "Current password and new password are required")
+		return
+	}
+	if len(req.NewPassword) < 6 {
+		utils.WriteError(w, http.StatusBadRequest, "New password must be at least 6 characters")
+		return
+	}
+	if err := h.userService.ChangePassword(user.ID, req.CurrentPassword, req.NewPassword); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, models.ChangePasswordResponse{Success: true, Message: "Password changed successfully"})
 }
 

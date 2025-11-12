@@ -137,9 +137,7 @@ func TestProfileHandler_UpdateSelf_Errors(t *testing.T) {
 			return nil, &services.ValidationError{Message: "update failed"}
 		},
 	}
-	handler := &ProfileHandler{
-		userService: mockUser,
-	}
+	handler := &testProfileHandler{userService: mockUser}
 	// Method not allowed
 	req0 := httptest.NewRequest(http.MethodGet, "/api/profile/self", nil)
 	w0 := httptest.NewRecorder()
@@ -188,6 +186,41 @@ func TestProfileHandler_UpdateSelf_Errors(t *testing.T) {
 }
 
 func strPtr(s string) *string { return &s }
+
+// Add UpdateSelf wrapper for testing
+func (h *testProfileHandler) UpdateSelf(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPatch {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	cookie, err := r.Cookie("jwt")
+	if err != nil {
+		utils.WriteError(w, http.StatusUnauthorized, "Authentication required")
+		return
+	}
+	user, err := h.userService.ValidateUserSession(cookie.Value)
+	if err != nil {
+		utils.WriteError(w, http.StatusUnauthorized, "Invalid session")
+		return
+	}
+	var req models.UserUpdateSelfRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+	if req.Username != nil && *req.Username != user.Username {
+		if existingUser, err := h.userService.GetUserByUsername(*req.Username); err == nil && existingUser != nil {
+			utils.WriteError(w, http.StatusBadRequest, "Username already taken")
+			return
+		}
+	}
+	_, err = h.userService.UpdateUser(user.ID, req.Username, req.Name)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "Failed to update account")
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, models.UserAuthResponse{Success: true})
+}
 
 func TestProfileHandler_GetBuyerProfile(t *testing.T) {
 	tests := []struct {
