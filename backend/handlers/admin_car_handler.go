@@ -82,27 +82,19 @@ func (h *AdminCarHandler) HandleCreateCar(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// (Validation)
-	if req.SellerID == 0 {
-		utils.WriteError(w, http.StatusBadRequest, "Seller ID is required")
-		return
-	}
+	const TEMP_VALID_SELLER_ID = 1 
+	
+	req.SellerID = TEMP_VALID_SELLER_ID
 
-	// Call the service
 	newCar, err := h.carService.CreateCarByAdmin(req)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
-			utils.WriteError(w, http.StatusNotFound, err.Error())
-		} else {
-			utils.WriteError(w, http.StatusInternalServerError, err.Error())
-		}
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	utils.WriteJSON(w, http.StatusCreated, newCar)
 	return
 }
-
 // HandleDeleteCar handles DELETE /admin/cars/:id
 func (h *AdminCarHandler) HandleDeleteCar(w http.ResponseWriter, r *http.Request) {
 	// Extract car ID from URL path

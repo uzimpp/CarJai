@@ -479,9 +479,6 @@ func (r *CarRepository) UpdateCarByAdmin(carID int, req AdminUpdateCarRequest) (
 // CreateCarByAdmin creates a new car listing associated with a seller
 func (r *CarRepository) CreateCarByAdmin(req AdminCreateCarRequest) (*Car, error) {
 	status := "draft"
-	if req.Status != nil {
-		status = *req.Status
-	}
 
 	car := &Car{
 		SellerID:     req.SellerID,
