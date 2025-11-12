@@ -42,6 +42,30 @@ func (h *AdminUserHandler) HandleGetUsers(w http.ResponseWriter, r *http.Request
 	utils.WriteJSON(w, http.StatusOK, response)
 }
 
+// HandleCreateUser handles POST /admin/users
+func (h *AdminUserHandler) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
+	var req models.AdminCreateUserRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	// Call the service
+	createdUser, err := h.userService.CreateUserByAdmin(req)
+	if err != nil {
+		// Check for specific errors like "username taken"
+		if strings.Contains(err.Error(), "already exists") || strings.Contains(err.Error(), "is already taken") {
+			utils.WriteError(w, http.StatusConflict, err.Error())
+		} else {
+			utils.WriteError(w, http.StatusInternalServerError, "Failed to create user")
+		}
+		return
+	}
+
+	// Return the newly created user's public data
+	utils.WriteJSON(w, http.StatusCreated, createdUser.ToPublic())
+}
+
 // HandleUpdateUser handles PATCH /admin/users/:id
 func (h *AdminUserHandler) HandleUpdateUser(w http.ResponseWriter, r *http.Request) {
 	// Extract user ID from URL path
