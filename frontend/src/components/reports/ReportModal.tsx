@@ -26,31 +26,21 @@ export default function ReportModal({
 
   if (!isOpen) return null;
 
-  // UI topic definitions mapped to backend tokens
-  const carTopicOptions: { id: string; label: string; token: string; autoSub?: string[] }[] = [
-    {
-      id: "cond_mismatch",
-      label: "False information",
-      token: "false_information",
-      autoSub: ["condition_mismatch"],
-    },
-    {
-      id: "fake_details",
-      label: "Fake details (tick which items are untrue)",
-      token: "false_information",
-    },
-    { id: "car_not_exist", label: "This car does not exist", token: "fraud" },
-    { id: "already_sold", label: "This car has already been sold", token: "false_information", autoSub: ["already_sold"] },
-    { id: "edited_photo", label: "The car's photo has been edited/doctored", token: "false_information", autoSub: ["edited_photo"] },
+  const carTopicOptions: { id: string; label: string; token: string }[] = [
+    { id: "cond_mismatch", label: "False information", token: "cond_mismatch" },
+    { id: "fake_details", label: "Fake details (tick which items are untrue)", token: "fake_details" },
+    { id: "car_not_exist", label: "This car does not exist", token: "car_not_exist" },
+    { id: "already_sold", label: "This car has already been sold", token: "already_sold" },
+    { id: "edited_photo", label: "The car's photo has been edited/doctored", token: "edited_photo" },
     { id: "other", label: "Other (Please specify)", token: "other" },
   ];
 
   const sellerTopicOptions: { id: string; label: string; token: string }[] = [
     { id: "fraud", label: "Fraud", token: "fraud" },
-    { id: "contact_unreachable", label: "Contact information is unreachable", token: "scam" },
-    { id: "no_show", label: "No-show for the appointment", token: "fraud" },
-    { id: "selling_fake_car", label: "Selling a fake car", token: "fraud" },
-    { id: "impersonation", label: "Impersonating someone else's information", token: "fraud" },
+    { id: "contact_unreachable", label: "Contact information is unreachable", token: "contact_unreachable" },
+    { id: "no_show", label: "No-show for the appointment", token: "no_show" },
+    { id: "selling_fake_car", label: "Selling a fake car", token: "selling_fake_car" },
+    { id: "impersonation", label: "Impersonating someone else's information", token: "impersonation" },
     { id: "other", label: "Other (Please specify)", token: "other" },
   ];
 
@@ -90,7 +80,6 @@ export default function ReportModal({
         if (target === "car") {
           const opt = carTopicOptions.find((o) => o.id === topicId)!;
           const sub: string[] = [];
-          if (opt.autoSub && opt.autoSub.length > 0) sub.push(...opt.autoSub);
           if (topicId === "fake_details") {
             sub.push(...(fakeDetailItems.length > 0 ? fakeDetailItems : []));
           }

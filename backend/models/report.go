@@ -84,6 +84,24 @@ func (r *ReportRepository) HasRecentDuplicate(reporterID int, reportType string,
     return true, nil
 }
 
+func (r *ReportRepository) HasRecentDuplicateByTopic(reporterID int, reportType string, targetID int, topic string, days int) (bool, error) {
+    var query string
+    if reportType == "car" {
+        query = `SELECT 1 FROM reports WHERE reporter_id=$1 AND report_type='car' AND car_id=$2 AND topic=$3 AND created_at >= NOW() - INTERVAL '` + fmt.Sprintf("%d", days) + ` days' LIMIT 1`
+    } else {
+        query = `SELECT 1 FROM reports WHERE reporter_id=$1 AND report_type='seller' AND seller_id=$2 AND topic=$3 AND created_at >= NOW() - INTERVAL '` + fmt.Sprintf("%d", days) + ` days' LIMIT 1`
+    }
+    var exists int
+    err := r.db.DB.QueryRow(query, reporterID, targetID, topic).Scan(&exists)
+    if err == sql.ErrNoRows {
+        return false, nil
+    }
+    if err != nil {
+        return false, err
+    }
+    return true, nil
+}
+
 func (r *ReportRepository) GetReportByID(id int) (*Report, error) {
     query := `SELECT id, report_type, car_id, seller_id, reporter_id, topic, sub_topics, description, status, created_at, reviewed_at, reviewed_by_admin_id, admin_notes FROM reports WHERE id=$1`
     row := r.db.DB.QueryRow(query, id)

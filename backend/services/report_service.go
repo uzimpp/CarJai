@@ -18,6 +18,11 @@ var carTopics = map[string]struct{}{
     "illegal_item": {},
     "safety_issue": {},
     "other": {},
+    "cond_mismatch": {},
+    "fake_details": {},
+    "car_not_exist": {},
+    "already_sold": {},
+    "edited_photo": {},
 }
 
 var sellerTopics = map[string]struct{}{
@@ -25,6 +30,10 @@ var sellerTopics = map[string]struct{}{
     "fraud": {},
     "scam": {},
     "other": {},
+    "contact_unreachable": {},
+    "no_show": {},
+    "selling_fake_car": {},
+    "impersonation": {},
 }
 
 type ReportService struct {
@@ -50,22 +59,19 @@ func (s *ReportService) SubmitCarReport(reporterID, carID int, topic string, sub
     if _, ok := carTopics[topic]; !ok {
         return 0, fmt.Errorf("invalid topic")
     }
-    if topic == "false_information" && len(subTopics) == 0 {
-        return 0, fmt.Errorf("sub_topics required for false_information")
-    }
 
     // Verify car exists
     if _, err := s.carService.GetCarByID(carID); err != nil {
         return 0, err
     }
 
-    // Prevent duplicate report within 30 days
-    dup, err := s.repo.HasRecentDuplicate(reporterID, "car", carID, 30)
+    // Prevent duplicate report within 3 days
+    dup, err := s.repo.HasRecentDuplicateByTopic(reporterID, "car", carID, topic, 3)
     if err != nil {
         return 0, err
     }
     if dup {
-        return 0, fmt.Errorf("%w: duplicate report within 30 days", ErrConflict)
+        return 0, fmt.Errorf("%w: duplicate report within 3 days", ErrConflict)
     }
 
     subJSON, _ := json.Marshal(subTopics)
@@ -91,13 +97,13 @@ func (s *ReportService) SubmitSellerReport(reporterID, sellerID int, topic strin
         return 0, err
     }
 
-    // Prevent duplicate report within 30 days
-    dup, err := s.repo.HasRecentDuplicate(reporterID, "seller", sellerID, 30)
+    // Prevent duplicate report within 3 days
+    dup, err := s.repo.HasRecentDuplicateByTopic(reporterID, "seller", sellerID, topic, 3)
     if err != nil {
         return 0, err
     }
     if dup {
-        return 0, fmt.Errorf("%w: duplicate report within 30 days", ErrConflict)
+        return 0, fmt.Errorf("%w: duplicate report within 3 days", ErrConflict)
     }
 
     subJSON, _ := json.Marshal(subTopics)
