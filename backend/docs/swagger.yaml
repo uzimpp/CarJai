@@ -1402,6 +1402,206 @@ paths:
         '500':
           description: Database commit failed
 
+  # --- Admin User Management ---
+  /admin/users:
+    get:
+      tags:
+        - Admin
+      summary: Get all managed users
+      description: Retrieves a list of all users (buyers/sellers) in the system for admin management.
+      security:
+        - CookieAuth: []
+      responses:
+        '200':
+          description: A list of managed users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUsersListResponse'
+        '401':
+          description: Unauthorized
+    post:
+      tags:
+        - Admin
+      summary: Create a new managed user
+      description: Creates a new user with standard credentials.
+      security:
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminCreateUserRequest'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPublic'
+        '400':
+          description: Invalid request body
+        '401':
+          description: Unauthorized
+        '409':
+          description: Username or email already exists
+
+  /admin/users/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: The ID of the user to manage
+        schema:
+          type: integer
+    patch:
+      tags:
+        - Admin
+      summary: Update a managed user
+      description: Updates a user's details (name, username, email).
+      security:
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminUpdateUserRequest'
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPublic'
+        '400':
+          description: Invalid request body
+        '401':
+          description: Unauthorized
+        '404':
+          description: User not found
+        '409':
+          description: Username or email already taken
+    delete:
+      tags:
+        - Admin
+      summary: Delete a managed user
+      description: Permanently deletes a user from the database.
+      security:
+        - CookieAuth: []
+      responses:
+        '200':
+          description: User deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: User not found
+        '409':
+          description: Cannot delete user (e.g., foreign key constraint)
+
+  # --- Admin Car Management ---
+  /admin/cars:
+    get:
+      tags:
+        - Admin
+      summary: Get all managed cars
+      description: Retrieves a list of all car listings in the system for admin management.
+      security:
+        - CookieAuth: []
+      responses:
+        '200':
+          description: A list of managed cars
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCarsListResponse'
+        '401':
+          description: Unauthorized
+    post:
+      tags:
+        - Admin
+      summary: Create a new managed car
+      description: Creates a new car listing assigned to a specific seller ID.
+      security:
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminCreateCarRequest'
+      responses:
+        '201':
+          description: Car created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Car' 
+        '400':
+          description: Invalid request body (e.g., missing sellerId)
+        '401':
+          description: Unauthorized
+        '404':
+          description: Seller ID not found
+
+  /admin/cars/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: The ID of the car to manage
+        schema:
+          type: integer
+    patch:
+      tags:
+        - Admin
+      summary: Update a managed car
+      description: Updates details of a car listing (e.g., price, status, brand).
+      security:
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminUpdateCarRequest'
+      responses:
+        '200':
+          description: Car updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Car' 
+        '400':
+          description: Invalid request body
+        '401':
+          description: Unauthorized
+        '404':
+          description: Car not found
+    delete:
+      tags:
+        - Admin
+      summary: Delete a managed car
+      description: Permanently deletes a car listing from the database.
+      security:
+        - CookieAuth: []
+      responses:
+        '200':
+          description: Car deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Car not found
+
   # Favorites
   /api/favorites/my:
     get:
@@ -2034,4 +2234,216 @@ components:
         updated_count:
           type: integer
           example: 10
+
+    # --- NEW: Schemas for Admin User Management ---
+    UserPublic:
+      type: object
+      description: Publicly safe user information
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        username:
+          type: string
+        name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    
+    AdminManagedUser:
+      type: object
+      description: User data for the admin management table
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          example: "user"
+        email:
+          type: string
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+        username:
+          type: string
+        name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        role:
+          type: string
+          example: "Seller"
+
+    AdminUsersListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminManagedUser'
+        total:
+          type: integer
+          example: 1
+    
+    AdminCreateUserRequest:
+      type: object
+      required: [name, username, email, password]
+      properties:
+        name:
+          type: string
+          example: "New User"
+        username:
+          type: string
+          example: "newuser123"
+        email:
+          type: string
+          format: email
+          example: "new@user.com"
+        password:
+          type: string
+          format: password
+          example: "password123"
+
+    AdminUpdateUserRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+          example: "Updated Name"
+        username:
+          type: string
+          nullable: true
+          example: "updateduser"
+        email:
+          type: string
+          format: email
+          nullable: true
+          example: "updated@user.com"
+
+    # --- NEW: Schemas for Admin Car Management ---
+    AdminManagedCar:
+      type: object
+      description: Car data for the admin management table
+      properties:
+        id:
+          type: integer
+        brandName:
+          type: string
+          nullable: true
+          example: "TOYOTA"
+        modelName:
+          type: string
+          nullable: true
+          example: "HILUX VIGO"
+        submodelName:
+          type: string
+          nullable: true
+          example: "2.5 E"
+        year:
+          type: integer
+          nullable: true
+          example: 2014
+        status:
+          type: string
+          example: "active"
+        listedDate:
+          type: string
+          format: date-time
+          description: "Corresponds to created_at"
+        soldBy:
+          type: string
+          nullable: true
+          description: "Name of the seller (from users table)"
+          example: "Demo Seller"
+        price:
+          type: integer
+          nullable: true
+          example: 350000
+        mileage:
+          type: integer
+          nullable: true
+          example: 150000
+    
+    AdminCarsListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminManagedCar'
+        total:
+          type: integer
+          example: 10
+
+    AdminCreateCarRequest:
+      type: object
+      required: [sellerId]
+      properties:
+        sellerId:
+          type: integer
+          description: "The ID of the user (seller) who owns this car"
+          example: 1
+        brandName:
+          type: string
+          nullable: true
+        modelName:
+          type: string
+          nullable: true
+        submodelName:
+          type: string
+          nullable: true
+        year:
+          type: integer
+          nullable: true
+        price:
+          type: integer
+          nullable: true
+        mileage:
+          type: integer
+          nullable: true
+        status:
+          type: string
+          nullable: true
+          enum: [draft, active, sold, deleted]
+          default: "draft"
+
+    AdminUpdateCarRequest:
+      type: object
+      properties:
+        brandName:
+          type: string
+          nullable: true
+        modelName:
+          type: string
+          nullable: true
+        submodelName:
+          type: string
+          nullable: true
+        year:
+          type: integer
+          nullable: true
+        price:
+          type: integer
+          nullable: true
+        mileage:
+          type: integer
+          nullable: true
+        status:
+          type: string
+          nullable: true
+          enum: [draft, active, sold, deleted]
 }
