@@ -95,7 +95,7 @@ func AdminRoutes(
 		applyAdminAuthMiddleware(adminExtractionHandler.HandleImportMarketPrices))
 
 	// --- Admin Reports Routes ---
-	// Handle routes with IDs in path first (more specific): /admin/reports/{id}/resolve, /admin/reports/{id}/dismiss
+	// Handler for action routes with IDs: /admin/reports/{id}/resolve, /admin/reports/{id}/dismiss
 	router.HandleFunc(basePath+"/reports/",
 		applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
 			path := r.URL.Path
@@ -108,9 +108,15 @@ func AdminRoutes(
 			}
 		}))
 	
-	// GET: List all reports with optional filters (less specific, registered after)
+	// Handler for list endpoint: GET /admin/reports
 	router.HandleFunc(basePath+"/reports",
-		applyAdminAuthMiddleware(adminReportsHandler.ListReports))
+		applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodGet {
+				adminReportsHandler.ListReports(w, r)
+			} else {
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			}
+		}))
 	
 	// Handle routes with IDs in path: /admin/users/{id}/ban
 	router.HandleFunc(basePath+"/users/",

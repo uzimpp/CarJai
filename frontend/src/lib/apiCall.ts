@@ -7,7 +7,9 @@ export async function apiCall<T>(
   const url = endpoint;
 
   // Prepare headers - only set Content-Type for JSON, let browser set it for FormData
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = {
+    "X-Requested-With": "XMLHttpRequest", // Mark as API request
+  };
 
   // If body is not FormData, set JSON content type
   if (options.body && !(options.body instanceof FormData)) {

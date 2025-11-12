@@ -6,7 +6,6 @@ const nextConfig: NextConfig = {
   skipTrailingSlashRedirect: true,
 
   async rewrites() {
-    // ... (ส่วน Logic การหา backendUrl ของคุณถูกต้องแล้ว) ...
     const isDocker = process.env.DOCKER_ENV === "true";
     const isDev = process.env.NODE_ENV === "development";
 
@@ -19,19 +18,34 @@ const nextConfig: NextConfig = {
       backendUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.carjai.com";
     }
 
-    return [
-      // *** นี่คือ Rule ที่ต้องเอาคอมเมนต์ออก ***
-      // มันจะจับคู่ /admin/auth/signin และส่งต่อไปที่ backend
-      {
-        source: "/admin/:path*",
-        destination: `${backendUrl}/admin/:path*`,
-      },
-      // Rule นี้สำหรับ API ส่วนของ User (ถูกต้องอยู่แล้ว)
-      {
-        source: "/api/:path*",
-        destination: `${backendUrl}/api/:path*`,
-      },
-    ];
+    return {
+      beforeFiles: [
+        // These rewrites are checked before pages/public files
+        // They will match API requests with X-Requested-With header
+        {
+          source: "/admin/:path*",
+          has: [
+            {
+              type: "header",
+              key: "x-requested-with",
+              value: "XMLHttpRequest",
+            },
+          ],
+          destination: `${backendUrl}/admin/:path*`,
+        },
+      ],
+      afterFiles: [
+        // These rewrites are checked after pages but before dynamic routes
+        {
+          source: "/admin/:path*",
+          destination: `${backendUrl}/admin/:path*`,
+        },
+        {
+          source: "/api/:path*",
+          destination: `${backendUrl}/api/:path*`,
+        },
+      ],
+    };
   },
 };
 
