@@ -325,6 +325,113 @@ function AddUserModal({
   );
 }
 
+function DeleteConfirmationModal({
+  user,
+  isOpen,
+  onClose,
+  onConfirm,
+}: {
+  user: AdminManagedUser | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (userId: number) => Promise<void>;
+}) {
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setError(null);
+    }
+  }, [isOpen]);
+
+  if (!isOpen || !user) return null;
+
+  const handleConfirm = async () => {
+    setIsDeleting(true);
+    setError(null);
+    try {
+      await onConfirm(user.id);
+      onClose(); 
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete user");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4">
+        <div className="p-6">
+          <div className="flex items-start justify-between mb-4">
+            <h2 className="text-2xl font-bold text-gray-900">Delete User</h2>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600"
+              disabled={isDeleting}
+            >
+              <svg>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <div className="mb-4">
+            <p className="text-gray-700">
+              Are you sure you want to delete this user?
+            </p>
+            <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <strong>Name:</strong> {user.name}
+              <br />
+              <strong>Username:</strong> {user.username}
+            </div>
+            <p className="text-sm text-red-600 mt-2">
+              This action cannot be undone.
+            </p>
+          </div>
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600">
+              {error}
+            </div>
+          )}
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleConfirm();
+            }}
+          >
+            <div className="flex gap-3 pt-4">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                No, Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isDeleting ? "Deleting..." : "Yes, Delete"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminUsersPage() {
   const { loading: authLoading, isAuthenticated } = useAdminAuth();
   const [users, setUsers] = useState<AdminManagedUser[]>([]);
@@ -339,6 +446,8 @@ export default function AdminUsersPage() {
   const [editingUser, setEditingUser] = useState<AdminManagedUser | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [deletingUser, setDeletingUser] = useState<AdminManagedUser | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   // Load users from API
   useEffect(() => {
@@ -506,6 +615,35 @@ export default function AdminUsersPage() {
       setIsAddModalOpen(false);
     } catch (err) {
       console.error("Failed to create user:", err);
+      throw err;
+    }
+  };
+
+  const handleOpenDeleteModal = (user: AdminManagedUser) => {
+    setDeletingUser(user);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async (userId: number) => {
+    try {
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(
+          errData.error || `Failed to delete user: ${response.statusText}`
+        );
+      }
+
+      setUsers((prevUsers) =>
+        prevUsers.filter((user) => user.id !== userId)
+      );
+      setDeletingUser(null);
+      setIsDeleteModalOpen(false);
+    } catch (err) {
+      console.error("Failed to delete user:", err);
       throw err;
     }
   };
@@ -741,6 +879,7 @@ export default function AdminUsersPage() {
                       </button>
                       <button
                         type="button"
+                        onClick={() => handleOpenDeleteModal(user)}
                         className="p-(--space-2xs) rounded-lg text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors"
                         aria-label={`Delete ${user.name}`}
                       >
@@ -790,6 +929,15 @@ export default function AdminUsersPage() {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSave={handleCreateUser}
+      />
+      <DeleteConfirmationModal
+        user={deletingUser}
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeletingUser(null);
+        }}
+        onConfirm={handleConfirmDelete}
       />
     </div>
   );
