@@ -77,7 +77,7 @@ erDiagram
         int budget_max "Nullable"
     }
 
-  %% --- Google OAuth (010) ---
+    %% --- Google OAuth (010) ---
     %% Additional columns (added via migration 010)
     %% users.google_id UK "UNIQUE Nullable"
     %% users.auth_provider "Nullable (e.g., 'google')"
