@@ -196,8 +196,6 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 			services.AdminJWT,
 			services.Extraction,
 			services.Report,
-			services.User,
-			services.Car,
 			adminPrefix,
 			appConfig.CORSAllowedOrigins,
 			appConfig.AdminIPWhitelist,
