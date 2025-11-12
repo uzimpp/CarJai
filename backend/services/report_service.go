@@ -50,9 +50,6 @@ func (s *ReportService) SubmitCarReport(reporterID, carID int, topic string, sub
     if _, ok := carTopics[topic]; !ok {
         return 0, fmt.Errorf("invalid topic")
     }
-    if len(description) < 20 {
-        return 0, fmt.Errorf("description must be at least 20 characters")
-    }
     if topic == "false_information" && len(subTopics) == 0 {
         return 0, fmt.Errorf("sub_topics required for false_information")
     }
@@ -82,9 +79,6 @@ func (s *ReportService) SubmitSellerReport(reporterID, sellerID int, topic strin
 
     if _, ok := sellerTopics[topic]; !ok {
         return 0, fmt.Errorf("invalid topic")
-    }
-    if len(description) < 30 {
-        return 0, fmt.Errorf("description must be at least 30 characters")
     }
 
     // Prevent self-report (seller reporting themselves)
