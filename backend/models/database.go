@@ -612,6 +612,142 @@ func (r *UserRepository) UpdatePassword(userID int, passwordHash string) error {
 	return nil
 }
 
+func (r *UserRepository) GetManagedUsers() (*[]AdminManagedUser, error) {
+	var users []AdminManagedUser
+	query := `
+		SELECT
+			u.id,
+			u.username,
+			u.name,
+			u.email,
+			u.created_at,
+			u.updated_at,
+			'user' AS type,
+			COALESCE(
+				(SELECT 'Seller' FROM sellers s WHERE s.id = u.id LIMIT 1),
+				(SELECT 'Buyer' FROM buyers b WHERE b.id = u.id LIMIT 1),
+				'No role'
+			) AS role
+		FROM
+			users u
+		ORDER BY
+			u.created_at DESC
+	`
+
+	rows, err := r.db.DB.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("error querying managed users: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var user AdminManagedUser
+		err := rows.Scan(
+			&user.ID,
+			&user.Username,
+			&user.Name,
+			&user.Email, 
+			&user.CreatedAt,
+			&user.UpdatedAt,
+			&user.Type,
+			&user.Role,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan managed user: %w", err)
+		}
+		users = append(users, user)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating managed users: %w", err)
+	}
+
+	return &users, nil
+}
+
+// UpdateUserByAdmin updates user details from the admin panel
+// [TASK 3]
+func (r *UserRepository) UpdateUserByAdmin(userID int, data AdminUpdateUserRequest) (*User, error) {
+	query := "UPDATE users SET "
+	args := []interface{}{}
+	argNum := 1
+	updates := []string{}
+
+	if data.Name != nil {
+		updates = append(updates, fmt.Sprintf("name = $%d", argNum))
+		args = append(args, *data.Name)
+		argNum++
+	}
+	if data.Username != nil {
+		updates = append(updates, fmt.Sprintf("username = $%d", argNum))
+		args = append(args, *data.Username)
+		argNum++
+	}
+	if data.Email != nil {
+		updates = append(updates, fmt.Sprintf("email = $%d", argNum))
+		args = append(args, *data.Email)
+		argNum++
+	}
+
+	if len(updates) == 0 {
+		return r.GetUserByID(userID)
+	}
+
+	updates = append(updates, fmt.Sprintf("updated_at = $%d", argNum))
+	args = append(args, time.Now())
+	argNum++
+
+	// String query
+	query += strings.Join(updates, ", ")
+	query += fmt.Sprintf(" WHERE id = $%d", argNum)
+	args = append(args, userID)
+
+	result, err := r.db.DB.Exec(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute admin update: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get rows affected: %w", err)
+	}
+	if rowsAffected == 0 {
+		return nil, fmt.Errorf("user not found")
+	}
+
+	return r.GetUserByID(userID)
+}
+
+// DeleteUser deletes a user by ID
+// !! WARNING: This is a hard delete.
+func (r *UserRepository) DeleteUser(userID int) error {
+	// We should delete related data first if not using ON DELETE CASCADE
+	// (e.g., from sellers, buyers, favorites, etc.)
+	// For this task, we assume related data is handled (e.g., in service) or has CASCADE delete.
+
+	query := `DELETE FROM users WHERE id = $1`
+
+	result, err := r.db.DB.Exec(query, userID)
+	if err != nil {
+		// Check for foreign key violation
+		if strings.Contains(err.Error(), "violates foreign key constraint") {
+			return fmt.Errorf("cannot delete user, they are still linked to other data (e.g., buyer/seller profile)")
+		}
+		return fmt.Errorf("failed to delete user: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("user not found")
+	}
+
+	return nil
+}
+
 // UserSessionRepository handles user session-related database operations
 type UserSessionRepository struct {
 	db *Database
@@ -681,6 +817,23 @@ func (r *UserSessionRepository) DeleteUserSession(token string) error {
 	}
 
 	return nil
+}
+
+// DeleteAllSessionsForUser deletes all sessions for a specific user ID
+func (r *UserSessionRepository) DeleteAllSessionsForUser(userID int) (int64, error) {
+	query := `DELETE FROM user_sessions WHERE user_id = $1`
+
+	result, err := r.db.DB.Exec(query, userID)
+	if err != nil {
+		return 0, fmt.Errorf("failed to delete sessions for user: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	return rowsAffected, nil
 }
 
 // CleanupExpiredUserSessions removes all expired user sessions

@@ -176,7 +176,7 @@ func (s *CarService) EstimateCarPrice(carID int) (int64, error) {
 
 		failedCount := 0
 		for _, field := range inspectionFields {
-			if field == nil || *field == false {
+			if field == nil || !*field {
 				failedCount++
 			}
 		}
@@ -220,6 +220,42 @@ func (s *CarService) CreateCar(sellerID int) (*models.Car, error) {
 // GetCarByID retrieves a car by ID
 func (s *CarService) GetCarByID(carID int) (*models.Car, error) {
 	return s.carRepo.GetCarByID(carID)
+}
+
+// GetManagedCars retrieves all cars for the admin panel
+func (s *CarService) GetManagedCars() (*[]models.AdminManagedCar, error) {
+	cars, err := s.carRepo.GetManagedCars()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get managed cars: %w", err)
+	}
+	return cars, nil
+}
+
+func (s *CarService) UpdateCarByAdmin(carID int, req models.AdminUpdateCarRequest) (*models.Car, error) {
+	updatedCar, err := s.carRepo.UpdateCarByAdmin(carID, req)
+	if err != nil {
+		return nil, err 
+	}
+
+	return updatedCar, nil
+}
+
+// CreateCarByAdmin handles admin creation of a new car
+func (s *CarService) CreateCarByAdmin(req models.AdminCreateCarRequest) (*models.Car, error) {
+	newCar, err := s.carRepo.CreateCarByAdmin(req)
+	if err != nil {
+		return nil, err
+	}
+	return newCar, nil
+}
+
+// DeleteCarByAdmin handles admin deletion of a car
+func (s *CarService) DeleteCarByAdmin(carID int) error {
+	err := s.carRepo.DeleteCar(carID)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // GetCarsBySellerID retrieves all cars for a seller
@@ -739,12 +775,24 @@ func (s *CarService) DeleteCarImage(imageID, userID int, isAdmin bool) error {
 	return s.imageRepo.DeleteCarImage(imageID)
 }
 
-// GetCarWithImages retrieves a car with its image metadata and inspection data (optimized with fewer queries)
+/// GetCarWithImages retrieves a car with its image metadata and inspection data
 func (s *CarService) GetCarWithImages(carID int) (*models.CarWithImages, error) {
-	// Use optimized method that fetches everything in 3 queries instead of separate calls
-	car, images, inspection, err := s.carRepo.GetCarWithImagesAndInspection(carID)
+	// 1. Get the car
+	car, err := s.carRepo.GetCarByID(carID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get car: %w", err)
+	}
+
+	// 2. Get the images
+	images, err := s.imageRepo.GetCarImagesMetadata(carID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get images: %w", err)
+	}
+
+	// 3. Get the inspection data (it's okay if it's not found)
+	inspection, err := s.inspectionRepo.GetInspectionByCarID(carID)
+	if err != nil && err != sql.ErrNoRows {
+		return nil, fmt.Errorf("failed to get inspection data: %w", err)
 	}
 
 	return &models.CarWithImages{

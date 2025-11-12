@@ -60,7 +60,7 @@ var brandSet = map[string]bool{
 	"SUBARU": true, "SUZUKI": true, "TATA": true, "TESLA": true, "THAIRUNG": true,
 	"TOYOTA": true, "VOLKSWAGEN": true, "VOLVO": true, "WULING": true, "XPENG": true,
 	"ZEEKR": true,
-	"AJ": true, "APRILIA": true, "ARIIC": true, "BAJAJ": true, "BENELLI": true,
+	"AJ":    true, "APRILIA": true, "ARIIC": true, "BAJAJ": true, "BENELLI": true,
 	"CFMOTO": true, "DECO": true, "DUCATI": true, "EM": true, "GPX": true, "H SEM": true,
 	"HAONAIQI": true, "HARLEY DAVIDSON": true, "HUSQVARNA": true, "INDIAN": true,
 	"JRD": true, "KAVALLO": true, "KAWASAKI": true, "KTM": true, "LAMBRETTA": true, "LION": true,
@@ -85,17 +85,17 @@ var singleModelBrands = map[string]bool{
 }
 var knownModelPrefixes = map[string]bool{
 	// TOYOTA
-	"HILUX CHAMP":       true,
-	"HILUX REVO":        true,
-	"HILUX VIGO":        true,
-	"COROLLA ALTIS":     true,
-	"COROLLA CROSS":     true,
-	"LAND CRUISER":      true,
-	"YARIS ATIV":        true,
-	"YARIS CROSS":       true,
+	"HILUX CHAMP":   true,
+	"HILUX REVO":    true,
+	"HILUX VIGO":    true,
+	"COROLLA ALTIS": true,
+	"COROLLA CROSS": true,
+	"LAND CRUISER":  true,
+	"YARIS ATIV":    true,
+	"YARIS CROSS":   true,
 	// FORD
-	"RANGER DOUBLE CAB": true,
-	"RANGER SUPER CAB":  true,
+	"RANGER DOUBLE CAB":   true,
+	"RANGER SUPER CAB":    true,
 	"RANGER STANDARD CAB": true,
 	// MITSUBISHI
 	"PAJERO SPORT": true,
@@ -224,11 +224,11 @@ func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, file
 
 	var tempPrices []MarketPrice
 	var currentBrand string
-	var currentModel string 
+	var currentModel string
 	currentPage := 1
 	currentState := ExpectingHeaderOrSubModel
 	var tempSubModel string
-	var tempLine string 
+	var tempLine string
 	var tempYearStart, tempYearEnd int
 	lines := strings.Split(fullText, "\n")
 
@@ -312,7 +312,7 @@ func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, file
 						currentModel = tempLine // e.g., "HILUX (STANDARD CAB)"
 						pocResponse.DebugLog = append(pocResponse.DebugLog, fmt.Sprintf("Page ~%d, Line %d: (dataRegex) Detected Header: '%s'", currentPage, lineNum+1, currentModel))
 					}
-					tempLine = "" 
+					tempLine = ""
 				}
 
 				marketPrice := MarketPrice{
@@ -332,7 +332,7 @@ func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, file
 					marketPrice.Model = finalModelToUse
 					marketPrice.SubModel = finalSubModelToUse
 				} else {
-					marketPrice.Model = currentModel      // e.g., "HILUX (STANDARD CAB)"
+					marketPrice.Model = currentModel         // e.g., "HILUX (STANDARD CAB)"
 					marketPrice.SubModel = extractedSubModel // e.g., "HILUX VIGO"
 				}
 
@@ -369,18 +369,18 @@ func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, file
 					tempYearEnd = yearEnd
 					currentState = ExpectingPrice
 					pocResponse.DebugLog = append(pocResponse.DebugLog, fmt.Sprintf("Page ~%d, Line %d: State 1 -> 2. '%s' was SubModel-L1. Got Year. Waiting for Price.", currentPage, lineNum+1, tempSubModel))
-					tempLine = "" 
+					tempLine = ""
 				}
 			} else if !priceRegex.MatchString(line) {
 				if _, isJunk := junkSet[tempLine]; isJunk {
 					pocResponse.DebugLog = append(pocResponse.DebugLog, fmt.Sprintf("Page ~%d, Line %d: (Junk Case) Discarding Junk Header: '%s'. Retrying with '%s'.", currentPage, lineNum+1, tempLine, line))
-					tempLine = line 
+					tempLine = line
 					currentState = ExpectingYearOrSubModel // Back to State 1
 				} else {
 					currentModel = tempLine
-					tempSubModel = line 
+					tempSubModel = line
 					currentState = ExpectingYear
-					tempLine = "" 
+					tempLine = ""
 
 					headerMsg := fmt.Sprintf("Page ~%d, Line %d: State 1 -> 3. (AUDI Case) '%s' was Model Header. Set SubModel-L1: '%s'. Waiting for Year.", currentPage, lineNum+1, currentModel, tempSubModel)
 					pocResponse.DebugLog = append(pocResponse.DebugLog, headerMsg)
@@ -422,7 +422,7 @@ func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, file
 					CreatedAt: now,
 					UpdatedAt: now,
 				}
-		
+
 				if currentModel == "" {
 					finalModel, finalSubModel := splitModelSubModel(tempSubModel, currentBrand)
 					marketPrice.Model = finalModel
@@ -437,7 +437,7 @@ func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, file
 				} else {
 					pocResponse.FinalPrices = append(pocResponse.FinalPrices, marketPrice)
 				}
-				
+
 				currentState = ExpectingHeaderOrSubModel
 				tempSubModel = ""
 				tempLine = ""
@@ -448,7 +448,7 @@ func (s *ExtractionService) ExtractMarketPricesFromPDF(ctx context.Context, file
 				tempLine = ""
 			}
 		}
-	} 
+	}
 
 	log.Printf("PDF parsing finished. Found %d records.", len(pocResponse.FinalPrices))
 	pocResponse.DebugLog = append(pocResponse.DebugLog, fmt.Sprintf("PDF parsing finished. Found %d records.", len(pocResponse.FinalPrices)))
@@ -527,6 +527,56 @@ func (s *ExtractionService) CommitMarketPrices(ctx context.Context, pricesToComm
 	}
 	log.Printf("Database commit loop completed. Inserted: %d, Updated: %d", insertedCount, updatedCount)
 	return
+}
+
+// GetAllMarketPrices retrieves every market price record from the database.
+func (s *ExtractionService) GetAllMarketPrices(ctx context.Context) ([]MarketPrice, error) {
+	query := `
+		SELECT
+			brand,
+			model,
+			sub_model,
+			year_start,
+			year_end,
+			price_min_thb,
+			price_max_thb,
+			created_at,
+			updated_at
+		FROM market_price
+		ORDER BY brand, model, sub_model, year_start, year_end;
+	`
+
+	rows, err := s.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query market prices: %w", err)
+	}
+	defer rows.Close()
+
+	// Initialize with empty slice instead of nil to ensure JSON array response
+	prices := make([]MarketPrice, 0)
+	for rows.Next() {
+		var price MarketPrice
+		if scanErr := rows.Scan(
+			&price.Brand,
+			&price.Model,
+			&price.SubModel,
+			&price.YearStart,
+			&price.YearEnd,
+			&price.PriceMin,
+			&price.PriceMax,
+			&price.CreatedAt,
+			&price.UpdatedAt,
+		); scanErr != nil {
+			return nil, fmt.Errorf("failed to scan market price row: %w", scanErr)
+		}
+		prices = append(prices, price)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating over market price rows: %w", err)
+	}
+
+	return prices, nil
 }
 
 // --- Import Function ---

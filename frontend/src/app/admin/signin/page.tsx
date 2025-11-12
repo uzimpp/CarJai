@@ -80,7 +80,7 @@ export default function AdminSigninPage() {
   }
 
   return (
-    <div className="flex items-center justify-center px-(--space-m) max-w-[1536px] mx-auto w-full">
+    <div className="flex items-center justify-center min-h-screen px-(--space-m) max-w-[1536px] mx-auto w-full">
       <div className="flex flex-col max-w-md w-full">
         <div className="text-center mb-(--space-l)">
           <h2 className="text-5 font-bold line-height-0">Admin Portal</h2>

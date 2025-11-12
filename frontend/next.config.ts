@@ -2,6 +2,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Prevent Next.js from redirecting URLs with/without trailing slashes
+  skipTrailingSlashRedirect: true,
+
   async rewrites() {
     // ... (ส่วน Logic การหา backendUrl ของคุณถูกต้องแล้ว) ...
     const isDocker = process.env.DOCKER_ENV === "true";
@@ -17,13 +20,28 @@ const nextConfig: NextConfig = {
     }
 
     return [
-      // *** นี่คือ Rule ที่ต้องเอาคอมเมนต์ออก ***
-      // มันจะจับคู่ /admin/auth/signin และส่งต่อไปที่ backend
+      {
+        source: "/api/admin/users",
+        destination: `${backendUrl}/admin/users`,
+      },
+      {
+        source: "/api/admin/users/:path*",
+        destination: `${backendUrl}/admin/users/:path*`,
+      },
+
+      {
+        source: "/api/admin/cars",
+        destination: `${backendUrl}/admin/cars`,
+      },
+      {
+        source: "/api/admin/cars/:path*",
+        destination: `${backendUrl}/admin/cars/:path*`,
+      },
+      
       {
         source: "/admin/:path*",
         destination: `${backendUrl}/admin/:path*`,
       },
-      // Rule นี้สำหรับ API ส่วนของ User (ถูกต้องอยู่แล้ว)
       {
         source: "/api/:path*",
         destination: `${backendUrl}/api/:path*`,
