@@ -2,6 +2,15 @@
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer 
+} from 'recharts';
 
 interface DashboardStats {
   totalUsers: number;
@@ -296,32 +305,57 @@ export default function AdminDashboard() {
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon"></div>
               </div>
             ) : (
-              <div className="h-64 bg-gray-50 rounded-xl p-4 flex items-end justify-between gap-1">
-                {chartData.map((point, index) => {
-                  const height = (point.value / maxChartValue) * 100;
-                  return (
-                    <div
-                      key={index}
-                      className="h-full flex-1 flex flex-col items-center group relative"
-                    >
-                      <div
-                        className="w-full bg-maroon rounded-t transition-all hover:bg-red group-hover:opacity-80"
-                        style={{ height: `${height}%` }}
-                        title={`${point.value} on ${new Date(
-                          point.date
-                        ).toLocaleDateString()}`}
-                      />
-                      {index % 5 === 0 && (
-                        <span className="text-xs text-gray-500 mt-1 transform -rotate-45 origin-left">
-                          {new Date(point.date).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                          })}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
+              <div className="h-64 w-full bg-gray-50 rounded-xl p-4">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={chartData}
+                    margin={{
+                      top: 5,
+                      right: 10,
+                      left: -20,
+                      bottom: 5,
+                    }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                    <XAxis
+                      dataKey="date"
+                      tickFormatter={(dateStr) =>
+                        new Date(dateStr).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        })
+                      }
+                      interval={4}
+                      tick={{ fontSize: 12, fill: '#6b7280' }}
+                    />
+                    <YAxis 
+                      allowDecimals={false} 
+                      tick={{ fontSize: 12, fill: '#6b7280' }} 
+                    />
+                    <Tooltip
+                      contentStyle={{ 
+                        borderRadius: '8px', 
+                        boxShadow: 'var(--shadow-md)', 
+                        border: 'none' 
+                      }}
+                      labelFormatter={(dateStr) =>
+                        new Date(dateStr).toLocaleDateString("en-US", {
+                          month: "long",
+                          day: "numeric",
+                        })
+                      }
+                      formatter={(value: number) => [value, 'Logins']}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="value" 
+                      stroke="#880808" 
+                      strokeWidth={2.5}
+                      dot={{ r: 3, fill: '#880808' }}
+                      activeDot={{ r: 5 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
             )}
             <p className="text-sm text-gray-500 mt-2 text-center">
