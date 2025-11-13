@@ -42,13 +42,21 @@ export default function AdminDashboard() {
     const fetchDashboardData = async () => {
       setIsLoading(true);
       try {
-        const statsResponse = await fetch("/admin/dashboard/stats");
+        const [statsResponse, chartResponse] = await Promise.all([
+          fetch("/admin/dashboard/stats"),
+          fetch("/admin/dashboard/chart?period=30d"),
+        ]);
         if (!statsResponse.ok) {
           throw new Error("Failed to fetch stats");
         }
+        if (!chartResponse.ok) {
+          throw new Error("Failed to fetch chart data");
+        }
         const statsData: DashboardStats = await statsResponse.json();
+        const chartData: ChartDataPoint[] = await chartResponse.json();
         
         setStats(statsData);
+        setChartData(chartData);
 
         setRecentReports([
           {
@@ -98,19 +106,15 @@ export default function AdminDashboard() {
           },
         ]);
 
-        // Generate placeholder chart data (last 30 days)
-        const chartPoints: ChartDataPoint[] = [];
-        for (let i = 29; i >= 0; i--) {
-          const date = new Date();
-          date.setDate(date.getDate() - i);
-          chartPoints.push({
-            date: date.toISOString().split("T")[0],
-            value: Math.floor(Math.random() * 50) + 20,
-          });
-        }
-        setChartData(chartPoints);
-      } catch (error) {
+      }catch (error) {
         console.error("Failed to fetch dashboard data:", error);
+        setStats({
+          totalUsers: 0,
+          activeCars: 0,
+          soldCars: 0,
+          pendingReports: 0,
+        });
+        setChartData([]);
       } finally {
         setIsLoading(false);
       }
