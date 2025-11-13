@@ -42,21 +42,13 @@ export default function AdminDashboard() {
     const fetchDashboardData = async () => {
       setIsLoading(true);
       try {
-        // TODO: Replace with actual API calls
-        // Example:
-        // const [statsRes, reportsRes, chartRes] = await Promise.all([
-        //   apiCall("/admin/dashboard/stats"),
-        //   apiCall("/admin/reports/recent?limit=5"),
-        //   apiCall("/admin/dashboard/chart?period=30d"),
-        // ]);
-
-        // Placeholder data
-        setStats({
-          totalUsers: 1234,
-          activeCars: 567,
-          soldCars: 89,
-          pendingReports: 23,
-        });
+        const statsResponse = await fetch("/admin/dashboard/stats");
+        if (!statsResponse.ok) {
+          throw new Error("Failed to fetch stats");
+        }
+        const statsData: DashboardStats = await statsResponse.json();
+        
+        setStats(statsData);
 
         setRecentReports([
           {
