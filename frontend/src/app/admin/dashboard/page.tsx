@@ -302,7 +302,7 @@ export default function AdminDashboard() {
                   return (
                     <div
                       key={index}
-                      className="flex-1 flex flex-col items-center group relative"
+                      className="h-full flex-1 flex flex-col items-center group relative"
                     >
                       <div
                         className="w-full bg-maroon rounded-t transition-all hover:bg-red group-hover:opacity-80"

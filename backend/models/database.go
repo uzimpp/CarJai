@@ -179,48 +179,6 @@ func (r *SessionRepository) GetSessionByToken(token string) (*AdminSession, erro
 	return session, nil
 }
 
-// GetUserActivityChartData retrieves user activity for the dashboard chart
-func (r *UserSessionRepository) GetUserActivityChartData(days int) (*[]ChartDataPoint, error) {
-	var chartData []ChartDataPoint
-	query := `
-		SELECT
-			TO_CHAR(day_series.day, 'YYYY-MM-DD') AS date,
-			COUNT(DISTINCT us.user_id) AS value
-		FROM
-			(SELECT generate_series(
-				DATE_TRUNC('day', NOW() - ($1 * INTERVAL '1 day') + INTERVAL '1 day'),
-				DATE_TRUNC('day', NOW()),
-				'1 day'
-			)::date AS day) AS day_series
-		LEFT JOIN
-			user_sessions us ON DATE_TRUNC('day', us.created_at) = day_series.day
-		GROUP BY
-			day_series.day
-		ORDER BY
-			day_series.day ASC;
-	`
-
-	rows, err := r.db.DB.Query(query, days)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query user activity chart data: %w", err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var point ChartDataPoint
-		if err := rows.Scan(&point.Date, &point.Value); err != nil {
-			return nil, fmt.Errorf("failed to scan chart data point: %w", err)
-		}
-		chartData = append(chartData, point)
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating chart data: %w", err)
-	}
-
-	return &chartData, nil
-}
-
 // DeleteSession deletes a session by token
 func (r *SessionRepository) DeleteSession(token string) error {
 	query := `DELETE FROM admin_sessions WHERE token = $1`
@@ -857,6 +815,50 @@ func (r *UserSessionRepository) GetUserSessionByToken(token string) (*UserSessio
 	}
 
 	return session, nil
+}
+
+// GetUserActivityChartData retrieves user activity for the dashboard chart
+func (r *UserSessionRepository) GetUserActivityChartData(days int) (*[]ChartDataPoint, error) {
+	var chartData []ChartDataPoint
+	query := `
+		SELECT
+			TO_CHAR(day_series.day, 'YYYY-MM-DD') AS date,
+			COUNT(DISTINCT us.user_id) AS value
+		FROM
+			(SELECT generate_series(
+				DATE_TRUNC('day', NOW() - ($1 * INTERVAL '1 day') + INTERVAL '1 day'),
+				DATE_TRUNC('day', NOW()),
+				'1 day'
+			)::date AS day) AS day_series
+		LEFT JOIN
+			user_sessions us ON 
+				us.created_at >= day_series.day AND 
+				us.created_at < (day_series.day + INTERVAL '1 day')
+		GROUP BY
+			day_series.day
+		ORDER BY
+			day_series.day ASC;
+	`
+
+	rows, err := r.db.DB.Query(query, days)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query user activity chart data: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var point ChartDataPoint
+		if err := rows.Scan(&point.Date, &point.Value); err != nil {
+			return nil, fmt.Errorf("failed to scan chart data point: %w", err)
+		}
+		chartData = append(chartData, point)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating chart data: %w", err)
+	}
+
+	return &chartData, nil
 }
 
 // DeleteUserSession deletes a user session by token

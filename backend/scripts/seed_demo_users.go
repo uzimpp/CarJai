@@ -164,7 +164,7 @@ func createUser(db *sql.DB, email, username, name, hashedPassword string, create
 	
 	_, err = tx.Exec(sessionQuery, userID, fakeToken, "127.0.0.1", "demo-seeder", expiresAt, createdAt)
 	if err != nil {
-		log.Printf("Warning: Failed to create demo session for user %d: %v", userID, err)
+		return 0, fmt.Errorf("failed to create demo session: %w", err)
 	}
 
 
