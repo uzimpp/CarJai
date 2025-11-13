@@ -153,11 +153,26 @@ func createUser(db *sql.DB, email, username, name, hashedPassword string, create
 		}
 	}
 
-	// Step 3: Commit Transaction
+	// Step 3: Insert a fake session for this user at the same time
+	// This is what populates the graph
+	sessionQuery := `
+		INSERT INTO user_sessions (user_id, token, ip_address, user_agent, expires_at, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6)
+	`
+	fakeToken := fmt.Sprintf("demo-session-token-%d-%s", userID, createdAt.Format(time.RFC3339Nano))
+	expiresAt := time.Now().Add(time.Hour * 24 * 30)
+	
+	_, err = tx.Exec(sessionQuery, userID, fakeToken, "127.0.0.1", "demo-seeder", expiresAt, createdAt)
+	if err != nil {
+		log.Printf("Warning: Failed to create demo session for user %d: %v", userID, err)
+	}
+
+
+	// Step 4: Commit Transaction (was Step 3)
 	return userID, tx.Commit()
 }
 
-// getProvinceNames ดึงชื่อจังหวัด (ภาษาไทย) จาก table 'provinces'
+// getProvinceNames from table 'provinces'
 func getProvinceNames(db *sql.DB) ([]string, error) {
 	rows, err := db.Query(`SELECT name_th FROM provinces WHERE name_th IS NOT NULL ORDER BY id`)
 	if err != nil {
