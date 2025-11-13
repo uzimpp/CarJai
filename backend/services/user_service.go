@@ -617,3 +617,12 @@ func (s *UserService) GetTotalUsersCount() (int, error) {
 	}
 	return count, nil
 }
+
+// GetUserActivityChartData retrieves daily user login counts for the chart
+func (s *UserService) GetUserActivityChartData(days int) (*[]models.ChartDataPoint, error) {
+	data, err := s.userSessionRepo.GetUserActivityChartData(days)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user activity chart: %w", err)
+	}
+	return data, nil
+}

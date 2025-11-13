@@ -93,6 +93,10 @@ func AdminRoutes(
 		applyAdminAuthMiddleware(adminDashboardHandler.HandleGetStats),
 	)
 
+	router.HandleFunc(basePath+"/dashboard/chart",
+		applyAdminAuthMiddleware(adminDashboardHandler.HandleGetChartData),
+	)
+
 	// --- Market Price Routes ---
 	// GET: Retrieve all market prices from the database
 	// POST: Upload PDF and directly import to database

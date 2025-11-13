@@ -90,3 +90,25 @@ func (h *AdminDashboardHandler) HandleGetStats(w http.ResponseWriter, r *http.Re
 		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
 	}
 }
+
+// HandleGetChartData handles GET /admin/dashboard/chart
+func (h *AdminDashboardHandler) HandleGetChartData(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	days := 30 
+
+	chartData, err := h.userService.GetUserActivityChartData(days)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get chart data: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(chartData); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
+	}
+}
