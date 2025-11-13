@@ -213,6 +213,20 @@ func (s *UserService) Signin(emailOrUsername, password, ipAddress, userAgent str
 		return nil, fmt.Errorf("invalid credentials")
 	}
 
+	// Check if user is banned by checking seller/buyer status
+	var sellerStatus, buyerStatus string
+	if s.profileService != nil {
+		sellerStatus, _ = s.profileService.GetSellerStatus(user.ID)
+		buyerStatus, _ = s.profileService.GetBuyerStatus(user.ID)
+	}
+	
+	if sellerStatus == "banned" || buyerStatus == "banned" {
+		return nil, fmt.Errorf("your account has been banned")
+	}
+	if sellerStatus == "suspended" || buyerStatus == "suspended" {
+		return nil, fmt.Errorf("your account has been suspended")
+	}
+
 	// Generate session
 	sessionID := utils.GenerateSecureSessionID()
 	token, expiresAt, err := s.jwtManager.GenerateToken(utils.NewUserTokenRequest(
@@ -349,6 +363,20 @@ func (s *UserService) SigninWithGoogleIDToken(idToken, ipAddress, userAgent stri
 			}
 			user = newUser
 		}
+	}
+
+	// Check if user is banned by checking seller/buyer status
+	var sellerStatus, buyerStatus string
+	if s.profileService != nil {
+		sellerStatus, _ = s.profileService.GetSellerStatus(user.ID)
+		buyerStatus, _ = s.profileService.GetBuyerStatus(user.ID)
+	}
+	
+	if sellerStatus == "banned" || buyerStatus == "banned" {
+		return nil, fmt.Errorf("your account has been banned")
+	}
+	if sellerStatus == "suspended" || buyerStatus == "suspended" {
+		return nil, fmt.Errorf("your account has been suspended")
 	}
 
 	// Generate session

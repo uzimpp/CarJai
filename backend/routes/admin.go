@@ -121,27 +121,7 @@ func AdminRoutes(
 			}
 		}))
 	
-	// Handle routes with IDs in path: /admin/users/{id}/ban
-	router.HandleFunc(basePath+"/users/",
-		applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
-			path := r.URL.Path
-			if strings.HasSuffix(path, "/ban") && r.Method == http.MethodPost {
-				adminReportsHandler.BanUser(w, r)
-			} else {
-				http.NotFound(w, r)
-			}
-		}))
-	
-	// Handle routes with IDs in path: /admin/cars/{id}/remove
-	router.HandleFunc(basePath+"/cars/",
-		applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
-			path := r.URL.Path
-			if strings.HasSuffix(path, "/remove") && r.Method == http.MethodPost {
-				adminReportsHandler.RemoveCar(w, r)
-			} else {
-				http.NotFound(w, r)
-			}
-		}))
+    
 	// GET /admin/users (List users)
 	// POST /admin/users (Create user)
 	router.HandleFunc(basePath+"/users",
@@ -157,19 +137,23 @@ func AdminRoutes(
 		}),
 	)
 
-	// This handler catches /admin/users/1, /admin/users/2, etc.
-	router.HandleFunc(basePath+"/users/",
-		applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
-			switch r.Method {
-			case http.MethodPatch:
-				adminUserHandler.HandleUpdateUser(w, r)
-			case http.MethodDelete:
-				adminUserHandler.HandleDeleteUser(w, r)
-			default:
-				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			}
-		}),
-	)
+    router.HandleFunc(basePath+"/users/",
+        applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+            path := r.URL.Path
+            if strings.HasSuffix(path, "/ban") && r.Method == http.MethodPost {
+                adminReportsHandler.BanUser(w, r)
+                return
+            }
+            switch r.Method {
+            case http.MethodPatch:
+                adminUserHandler.HandleUpdateUser(w, r)
+            case http.MethodDelete:
+                adminUserHandler.HandleDeleteUser(w, r)
+            default:
+                http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+            }
+        }),
+    )
 
 	// --- Admin Car Management Routes ---
 	// GET /admin/cars
@@ -186,18 +170,23 @@ func AdminRoutes(
 		}),
 	)
 
-	router.HandleFunc(basePath+"/cars/",
-		applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
-			switch r.Method {
-			case http.MethodPatch:
-				adminCarHandler.HandleUpdateCar(w, r)
-			case http.MethodDelete:
-				adminCarHandler.HandleDeleteCar(w, r)
-			default:
-				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			}
-		}),
-	)
+    router.HandleFunc(basePath+"/cars/",
+        applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+            path := r.URL.Path
+            if strings.HasSuffix(path, "/remove") && r.Method == http.MethodPost {
+                adminReportsHandler.RemoveCar(w, r)
+                return
+            }
+            switch r.Method {
+            case http.MethodPatch:
+                adminCarHandler.HandleUpdateCar(w, r)
+            case http.MethodDelete:
+                adminCarHandler.HandleDeleteCar(w, r)
+            default:
+                http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+            }
+        }),
+    )
 
 	// --- Health Check & Root ---
 	// Health check and Root only need Global IP Whitelist and general logging

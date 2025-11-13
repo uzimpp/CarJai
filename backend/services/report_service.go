@@ -155,10 +155,31 @@ func (s *ReportService) BanSeller(sellerID, adminID int, notes *string) (int, er
             _ = tx.Rollback()
         }
     }()
+    
+    // Update seller status to 'banned'
+    _, err = tx.Exec("UPDATE sellers SET status = 'banned' WHERE id = $1", sellerID)
+    if err != nil {
+        return 0, fmt.Errorf("failed to update seller status: %w", err)
+    }
+    
+    // Update buyer status to 'banned' (if user is also a buyer)
+    _, err = tx.Exec("UPDATE buyers SET status = 'banned' WHERE id = $1", sellerID)
+    if err != nil {
+        return 0, fmt.Errorf("failed to update buyer status: %w", err)
+    }
+    
+    // Invalidate all user sessions
+    _, err = tx.Exec("DELETE FROM user_sessions WHERE user_id = $1", sellerID)
+    if err != nil {
+        return 0, fmt.Errorf("failed to invalidate user sessions: %w", err)
+    }
+    
+    // Log the admin action
     id, err := s.repo.LogSellerAdminActionTx(tx, sellerID, adminID, "ban", notes, nil)
     if err != nil {
         return 0, err
     }
+    
     if err = tx.Commit(); err != nil {
         return 0, err
     }
