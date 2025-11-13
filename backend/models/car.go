@@ -525,6 +525,19 @@ func (r *CarRepository) CreateCarByAdmin(req AdminCreateCarRequest) (*Car, error
 	return car, nil
 }
 
+// CountCarsByStatus counts cars by a specific status
+func (r *CarRepository) CountCarsByStatus(status string) (int, error) {
+	var count int
+	query := `SELECT COUNT(*) FROM cars WHERE status = $1`
+
+	err := r.db.DB.QueryRow(query, status).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count cars by status: %w", err)
+	}
+
+	return count, nil
+}
+
 // GetCarsBySellerID retrieves all cars for a seller
 func (r *CarRepository) GetCarsBySellerID(sellerID int) ([]Car, error) {
 	query := `

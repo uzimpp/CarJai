@@ -748,6 +748,19 @@ func (r *UserRepository) DeleteUser(userID int) error {
 	return nil
 }
 
+// CountAllUsers counts the total number of users
+func (r *UserRepository) CountAllUsers() (int, error) {
+	var count int
+	query := `SELECT COUNT(*) FROM users`
+
+	err := r.db.DB.QueryRow(query).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count users: %w", err)
+	}
+
+	return count, nil
+}
+
 // UserSessionRepository handles user session-related database operations
 type UserSessionRepository struct {
 	db *Database

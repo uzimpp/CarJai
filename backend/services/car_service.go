@@ -1016,6 +1016,15 @@ type TranslatedCarDisplay struct {
 	InspectionDisplay *InspectionDisplay `json:"inspection,omitempty"`
 }
 
+// GetCarCountByStatus retrieves the count of cars by status
+func (s *CarService) GetCarCountByStatus(status string) (int, error) {
+	count, err := s.carRepo.CountCarsByStatus(status)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get car count for status %s: %w", status, err)
+	}
+	return count, nil
+}
+
 type ImagesDisplay struct {
 	Images []ImageMetadata `json:"images,omitempty"`
 }

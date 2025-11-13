@@ -608,3 +608,12 @@ func (s *UserService) IsSeller(userID int) (bool, error) {
 	
 	return roles.Seller, nil
 }
+
+// GetTotalUsersCount retrieves the total count of users
+func (s *UserService) GetTotalUsersCount() (int, error) {
+	count, err := s.userRepo.CountAllUsers()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get user count: %w", err)
+	}
+	return count, nil
+}
