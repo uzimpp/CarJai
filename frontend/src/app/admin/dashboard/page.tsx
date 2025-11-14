@@ -162,6 +162,80 @@ const DonutChartComponent = ({ buyers, sellers }: { buyers: number, sellers: num
   );
 };
 
+const CarStatusDonutChart = ({ active, sold }: { active: number, sold: number }) => {
+  const data = [
+    { name: 'Active', value: active }, 
+    { name: 'Sold', value: sold },  
+  ];
+  const COLORS = ['#16A34A', '#2563EB']; 
+
+  const total = active + sold; 
+  if (total === 0) {
+    return (
+      <div className="h-96 flex items-center justify-center text-gray-500"> 
+        No car data
+      </div>
+    );
+  }
+
+  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, value }: PieLabelRenderProps) => {
+    if (percent === undefined || value === undefined || midAngle === undefined || innerRadius === undefined || outerRadius === undefined || cx === undefined || cy === undefined) {
+      return null;
+    };
+    const RADIAN = Math.PI / 180;
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+    const x = cx + radius * Math.cos(-midAngle! * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle! * RADIAN);
+
+    return (
+      <text
+        x={x}
+        y={y}
+        fill="white"
+        textAnchor="middle"
+        dominantBaseline="central"
+        className="text-xs sm:text-sm font-bold"
+      >
+        {`${value!} (${(percent! * 100).toFixed(0)}%)`}
+      </text>
+    );
+  }
+  
+  return (
+    <div className="h-96 w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie
+            data={data}
+            cx="50%"
+            cy="50%"
+            labelLine={false}
+            label={renderCustomizedLabel}
+            outerRadius="80%"
+            innerRadius="40%"
+            fill="#8884d8"
+            dataKey="value"
+            paddingAngle={5}
+          >
+            {data.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            ))}
+          </Pie>
+          <Tooltip formatter={(value: number) => [value, 'Cars']} />
+          <Legend 
+            iconType="circle" 
+            wrapperStyle={{ 
+              paddingTop: '20px',
+              paddingBottom: '20px',
+              fontSize: '14px' 
+            }} 
+          />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
 export default function AdminDashboard() {
   const { adminUser } = useAdminAuth();
   const [stats, setStats] = useState<DashboardStats>({
@@ -557,12 +631,13 @@ export default function AdminDashboard() {
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon"></div>
                 </div>
             ) : (
-              <div className="h-96 flex items-center justify-center bg-gray-50 rounded-xl">
-                <p className="text-gray-400">Placeholder for new chart</p>
-              </div>
+              <CarStatusDonutChart 
+                active={stats.activeCars} 
+                sold={stats.soldCars} 
+              />
             )}
             <p className="text-sm text-gray-500 mt-2 text-center">
-              Coming soon...
+              Active vs. Sold listings
             </p>
           </div>
         </div>
