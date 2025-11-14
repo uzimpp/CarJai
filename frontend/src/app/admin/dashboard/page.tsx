@@ -152,6 +152,7 @@ const DonutChartComponent = ({ buyers, sellers }: { buyers: number, sellers: num
             iconType="circle" 
             wrapperStyle={{ 
               paddingTop: '20px',
+              paddingBottom: '20px',
               fontSize: '14px' 
             }} 
           />
