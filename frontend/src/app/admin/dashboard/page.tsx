@@ -597,29 +597,10 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* --- Row 2: Top Brands & placeholder --- */}
+        {/* --- Row 2: Top Brands & Car Status --- */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-(--space-m) mb-(--space-l)">
-          
-          {/* Col 2.1: Top 10 Brands (Bar) */}
-          <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m) h-[450px]">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-1 font-bold text-gray-900">
-                Top 10 Brands
-              </h2>
-            </div>
-            {isLoading ? (
-              <div className="h-96 flex items-center justify-center bg-gray-50 rounded-xl">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon"></div>
-              </div>
-            ) : (
-              <TopBrandsChart data={topBrandsData} />
-            )}
-            <p className="text-sm text-gray-500 mt-2 text-center">
-              Top 10 active listings by brand
-            </p>
-          </div>
 
-          {/* Col 2.2: Placeholder */}
+          {/* Col 2.1: Car Status (Donut) */}
           <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m) h-[450px]">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-1 font-bold text-gray-900">
@@ -640,6 +621,26 @@ export default function AdminDashboard() {
               Active vs. Sold listings
             </p>
           </div>
+
+          {/* Col 2.2: Top 10 Brands (Bar) */}
+          <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m) h-[450px]">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-1 font-bold text-gray-900">
+                Top 10 Brands
+              </h2>
+            </div>
+            {isLoading ? (
+              <div className="h-96 flex items-center justify-center bg-gray-50 rounded-xl">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon"></div>
+              </div>
+            ) : (
+              <TopBrandsChart data={topBrandsData} />
+            )}
+            <p className="text-sm text-gray-500 mt-2 text-center">
+              Top 10 active listings by brand
+            </p>
+          </div>
+
         </div>
 
 
