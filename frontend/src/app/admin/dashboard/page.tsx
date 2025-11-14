@@ -459,25 +459,6 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* API Integration Note */}
-        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-(--space-m) mt-(--space-l)">
-          <p className="text-sm text-yellow-800">
-            <strong>Note:</strong> This dashboard currently displays placeholder
-            data. Connect to the following API endpoints to display real-time
-            data:
-          </p>
-          <ul className="text-sm text-yellow-800 mt-2 ml-4 list-disc">
-            <li>
-              <code>/admin/dashboard/stats</code> - Get dashboard statistics
-            </li>
-            <li>
-              <code>/admin/reports/recent?limit=5</code> - Get recent reports
-            </li>
-            <li>
-              <code>/admin/dashboard/chart?period=30d</code> - Get chart data
-            </li>
-          </ul>
-        </div>
       </main>
     </div>
   );
