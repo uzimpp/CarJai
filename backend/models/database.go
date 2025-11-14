@@ -767,6 +767,31 @@ func (r *UserRepository) CountAllUsers() (int, error) {
 	return count, nil
 }
 
+// CountTotalBuyers counts the total number of buyers
+func (r *UserRepository) CountTotalBuyers() (int, error) {
+	var count int
+	query := `SELECT COUNT(*) FROM buyers`
+
+	err := r.db.DB.QueryRow(query).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count buyers: %w", err)
+	}
+
+	return count, nil
+}
+
+// CountTotalSellers counts the total number of sellers
+func (r *UserRepository) CountTotalSellers() (int, error) {
+	var count int
+	query := `SELECT COUNT(*) FROM sellers`
+
+	err := r.db.DB.QueryRow(query).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count sellers: %w", err)
+	}
+
+	return count, nil
+}
 // UserSessionRepository handles user session-related database operations
 type UserSessionRepository struct {
 	db *Database

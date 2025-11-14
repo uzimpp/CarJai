@@ -618,6 +618,24 @@ func (s *UserService) GetTotalUsersCount() (int, error) {
 	return count, nil
 }
 
+// GetTotalBuyerCount retrieves the total count of buyers
+func (s *UserService) GetTotalBuyerCount() (int, error) {
+	count, err := s.userRepo.CountTotalBuyers()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get buyer count: %w", err)
+	}
+	return count, nil
+}
+
+// GetTotalSellerCount retrieves the total count of sellers
+func (s *UserService) GetTotalSellerCount() (int, error) {
+	count, err := s.userRepo.CountTotalSellers()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get seller count: %w", err)
+	}
+	return count, nil
+}
+
 // GetUserActivityChartData retrieves daily user login counts for the chart
 func (s *UserService) GetUserActivityChartData(days int) (*[]models.ChartDataPoint, error) {
 	data, err := s.userSessionRepo.GetUserActivityChartData(days)
