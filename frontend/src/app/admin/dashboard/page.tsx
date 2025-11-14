@@ -604,7 +604,7 @@ export default function AdminDashboard() {
           <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m) h-[450px]">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-1 font-bold text-gray-900">
-                Mystery Chart
+                Active vs. Sold listings
               </h2>
             </div>
             {isLoading ? (
