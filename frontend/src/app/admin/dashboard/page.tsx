@@ -447,7 +447,7 @@ export default function AdminDashboard() {
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon"></div>
               </div>
             ) : (
-              <div className="h-64 w-full bg-gray-50 rounded-xl p-4">
+              <div className="h-80 w-full bg-gray-50 rounded-xl p-4">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
                     data={chartData}
