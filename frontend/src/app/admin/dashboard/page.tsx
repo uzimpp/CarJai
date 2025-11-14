@@ -9,7 +9,12 @@ import {
   YAxis, 
   CartesianGrid, 
   Tooltip, 
-  ResponsiveContainer 
+  ResponsiveContainer,
+  PieChart,        
+  Pie,          
+  Cell,          
+  Legend,
+  type PieLabelRenderProps
 } from 'recharts';
 
 interface DashboardStats {
@@ -17,6 +22,8 @@ interface DashboardStats {
   activeCars: number;
   soldCars: number;
   pendingReports: number;
+  totalBuyers: number;    
+  totalSellers: number;   
 }
 
 interface RecentReport {
@@ -34,6 +41,79 @@ interface ChartDataPoint {
   value: number;
 }
 
+const DonutChartComponent = ({ buyers, sellers }: { buyers: number, sellers: number }) => {
+  const data = [
+    { name: 'Buyers', value: buyers },
+    { name: 'Sellers', value: sellers },
+  ];
+  const COLORS = ['#880808', '#B03A2E']; 
+
+  const total = buyers + sellers;
+  if (total === 0) {
+    return (
+      <div className="h-64 flex items-center justify-center text-gray-500">
+        No user data
+      </div>
+    );
+  }
+
+  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, value }: PieLabelRenderProps) => {
+    if (percent === undefined || value === undefined || midAngle === undefined || innerRadius === undefined || outerRadius === undefined || cx === undefined || cy === undefined) {
+      return null;
+    };
+    const RADIAN = Math.PI / 180;
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+    const x = cx + radius * Math.cos(-midAngle! * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle! * RADIAN);
+
+    return (
+      <text
+        x={x}
+        y={y}
+        fill="white"
+        textAnchor="middle"
+        dominantBaseline="central"
+        className="text-xs sm:text-sm font-bold"
+      >
+        {`${value!} (${(percent! * 100).toFixed(0)}%)`}
+      </text>
+    );
+  }
+  
+  return (
+    <div className="h-64 w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie
+            data={data}
+            cx="50%"
+            cy="50%"
+            labelLine={false}
+            label={renderCustomizedLabel}
+            outerRadius="80%"
+            innerRadius="40%"
+            fill="#8884d8"
+            dataKey="value"
+            paddingAngle={5}
+          >
+            {data.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            ))}
+          </Pie>
+          <Tooltip formatter={(value: number) => [value, 'Users']} />
+          <Legend 
+            iconType="circle" 
+            wrapperStyle={{ 
+              paddingTop: '20px',
+              fontSize: '14px' 
+            }} 
+          />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
 export default function AdminDashboard() {
   const { adminUser } = useAdminAuth();
   const [stats, setStats] = useState<DashboardStats>({
@@ -41,6 +121,8 @@ export default function AdminDashboard() {
     activeCars: 0,
     soldCars: 0,
     pendingReports: 0,
+    totalBuyers: 0,     
+    totalSellers: 0,   
   });
   const [recentReports, setRecentReports] = useState<RecentReport[]>([]);
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
@@ -122,6 +204,8 @@ export default function AdminDashboard() {
           activeCars: 0,
           soldCars: 0,
           pendingReports: 0,
+          totalBuyers: 0,     
+          totalSellers: 0,
         });
         setChartData([]);
       } finally {
@@ -361,9 +445,34 @@ export default function AdminDashboard() {
             <p className="text-sm text-gray-500 mt-2 text-center">
               Daily activity trends
             </p>
+
+            <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m)">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-1 font-bold text-gray-900">
+                  User Roles
+                </h2>
+              </div>
+
+              {isLoading ? (
+                <div className="h-64 flex items-center justify-center bg-gray-50 rounded-xl">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon"></div>
+                </div>
+              ) : (
+                <DonutChartComponent 
+                  buyers={stats.totalBuyers} 
+                  sellers={stats.totalSellers} 
+                />
+              )}
+              <p className="text-sm text-gray-500 mt-2 text-center">
+                Buyer vs. Seller distribution
+              </p>
+            </div>
           </div>
 
-          {/* Recent Reports */}
+          
+        </div>
+        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m) mt-(--space-l)">
+            {/* Recent Reports */}
           <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m)">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-1 font-bold text-gray-900">Recent Reports</h2>
