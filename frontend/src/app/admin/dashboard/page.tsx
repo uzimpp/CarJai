@@ -14,7 +14,9 @@ import {
   Pie,          
   Cell,          
   Legend,
-  type PieLabelRenderProps
+  type PieLabelRenderProps,
+  BarChart, 
+  Bar,
 } from 'recharts';
 
 interface DashboardStats {
@@ -40,6 +42,51 @@ interface ChartDataPoint {
   date: string;
   value: number;
 }
+
+interface BrandDataPoint {
+  brand: string;
+  count: number;
+}
+
+const TopBrandsChart = ({ data }: { data: BrandDataPoint[] }) => {
+  if (!data || data.length === 0) {
+    return (
+      <div className="h-96 flex items-center justify-center text-gray-500">
+        No brand data
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-96 w-full"> {/* (hegiht 384px) */}
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart
+          data={data}
+          layout="vertical" 
+          margin={{ top: 5, right: 20, left: 30, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+          <XAxis 
+            type="number" 
+            allowDecimals={false} 
+            tick={{ fontSize: 12, fill: '#6b7280' }} 
+          />
+          <YAxis
+            type="category"
+            dataKey="brand" 
+            width={80} 
+            tick={{ fontSize: 12, fill: '#6b7280' }}
+          />
+          <Tooltip
+            contentStyle={{ borderRadius: '8px', boxShadow: 'var(--shadow-md)', border: 'none' }}
+            formatter={(value: number) => [value, 'Cars']}
+          />
+          <Bar dataKey="count" fill="#880808" />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
 
 const DonutChartComponent = ({ buyers, sellers }: { buyers: number, sellers: number }) => {
   const data = [
@@ -126,6 +173,7 @@ export default function AdminDashboard() {
   });
   const [recentReports, setRecentReports] = useState<RecentReport[]>([]);
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
+  const [topBrandsData, setTopBrandsData] = useState<BrandDataPoint[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Fetch dashboard data
@@ -133,9 +181,10 @@ export default function AdminDashboard() {
     const fetchDashboardData = async () => {
       setIsLoading(true);
       try {
-        const [statsResponse, chartResponse] = await Promise.all([
+        const [statsResponse, chartResponse, brandsResponse] = await Promise.all([
           fetch("/admin/dashboard/stats"),
           fetch("/admin/dashboard/chart?period=30d"),
+          fetch("/admin/dashboard/top-brands"),
         ]);
         if (!statsResponse.ok) {
           throw new Error("Failed to fetch stats");
@@ -143,11 +192,16 @@ export default function AdminDashboard() {
         if (!chartResponse.ok) {
           throw new Error("Failed to fetch chart data");
         }
+        if (!brandsResponse.ok) { 
+          throw new Error("Failed to fetch top brands data");
+        }
         const statsData: DashboardStats = await statsResponse.json();
         const chartData: ChartDataPoint[] = await chartResponse.json();
+        const brandsData: BrandDataPoint[] = await brandsResponse.json();
         
         setStats(statsData);
         setChartData(chartData);
+        setTopBrandsData(brandsData);
 
         setRecentReports([
           {
@@ -208,6 +262,7 @@ export default function AdminDashboard() {
           totalSellers: 0,
         });
         setChartData([]);
+        setTopBrandsData([]);
       } finally {
         setIsLoading(false);
       }
@@ -377,8 +432,8 @@ export default function AdminDashboard() {
 
         {/* Charts and Recent Reports Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-(--space-m)">
-          {/* Activity Chart */}
-          <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m)">
+          {/* แถวที่ 1: Line Chart (เต็มความกว้าง) */}
+          <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m) mb-(--space-m)">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-1 font-bold text-gray-900">
                 Activity Overview (Last 30 Days)
@@ -393,12 +448,7 @@ export default function AdminDashboard() {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
                     data={chartData}
-                    margin={{
-                      top: 5,
-                      right: 10,
-                      left: -20,
-                      bottom: 5,
-                    }}
+                    margin={{ top: 5, right: 10, left: -20, bottom: 5 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
                     <XAxis
@@ -445,16 +495,21 @@ export default function AdminDashboard() {
             <p className="text-sm text-gray-500 mt-2 text-center">
               Daily activity trends
             </p>
+          </div>
 
-            <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m)">
+          {/* แถวที่ 2: Donut และ Bar Charts (Grid 2-column) */}
+          {/* (ผมตั้งความสูง Card ไว้ที่ h-[450px] เพื่อให้มีพื้นที่) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-(--space-m) mb-(--space-l)">
+            
+            {/* Column 1: Donut Chart */}
+            <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m) h-[450px]">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-1 font-bold text-gray-900">
                   User Roles
                 </h2>
               </div>
-
               {isLoading ? (
-                <div className="h-64 flex items-center justify-center bg-gray-50 rounded-xl">
+                <div className="h-96 flex items-center justify-center bg-gray-50 rounded-xl">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon"></div>
                 </div>
               ) : (
@@ -467,10 +522,30 @@ export default function AdminDashboard() {
                 Buyer vs. Seller distribution
               </p>
             </div>
-          </div>
 
+            {/* Column 2: Top Brands Bar Chart (ใหม่) */}
+            <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m) h-[450px]">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-1 font-bold text-gray-900">
+                  Top 10 Brands
+                </h2>
+              </div>
+              {isLoading ? (
+                <div className="h-96 flex items-center justify-center bg-gray-50 rounded-xl">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon"></div>
+                </div>
+              ) : (
+                <TopBrandsChart data={topBrandsData} />
+              )}
+              <p className="text-sm text-gray-500 mt-2 text-center">
+                Top 10 active listings by brand
+              </p>
+            </div>
           
+          </div>
         </div>
+
+
         <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m) mt-(--space-l)">
             {/* Recent Reports */}
           <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m)">
