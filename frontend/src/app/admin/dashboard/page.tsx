@@ -330,6 +330,7 @@ export default function AdminDashboard() {
             </div>
           </div>
 
+          
           {/* Active Cars */}
           <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m)">
             <div className="flex items-center justify-between">
@@ -430,10 +431,11 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Charts and Recent Reports Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-(--space-m)">
-          {/* แถวที่ 1: Line Chart (เต็มความกว้าง) */}
-          <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m) mb-(--space-m)">
+        {/* --- Row 1: Activity Chart & User Roles --- */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-(--space-m) mb-(--space-l)">
+          
+          {/* Col 1.1: Activity Chart (Line) */}
+          <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m) h-[450px]">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-1 font-bold text-gray-900">
                 Activity Overview (Last 30 Days)
@@ -497,51 +499,70 @@ export default function AdminDashboard() {
             </p>
           </div>
 
-          {/* แถวที่ 2: Donut และ Bar Charts (Grid 2-column) */}
-          {/* (ผมตั้งความสูง Card ไว้ที่ h-[450px] เพื่อให้มีพื้นที่) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-(--space-m) mb-(--space-l)">
-            
-            {/* Column 1: Donut Chart */}
-            <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m) h-[450px]">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-1 font-bold text-gray-900">
-                  User Roles
-                </h2>
-              </div>
-              {isLoading ? (
-                <div className="h-96 flex items-center justify-center bg-gray-50 rounded-xl">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon"></div>
-                </div>
-              ) : (
-                <DonutChartComponent 
-                  buyers={stats.totalBuyers} 
-                  sellers={stats.totalSellers} 
-                />
-              )}
-              <p className="text-sm text-gray-500 mt-2 text-center">
-                Buyer vs. Seller distribution
-              </p>
+          {/* Col 1.2: User Roles (Donut) */}
+          <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m) h-[450px]">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-1 font-bold text-gray-900">
+                User Roles
+              </h2>
             </div>
+            {isLoading ? (
+              <div className="h-96 flex items-center justify-center bg-gray-50 rounded-xl">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon"></div>
+              </div>
+            ) : (
+              <DonutChartComponent 
+                buyers={stats.totalBuyers} 
+                sellers={stats.totalSellers} 
+              />
+            )}
+            <p className="text-sm text-gray-500 mt-2 text-center">
+              Buyer vs. Seller distribution
+            </p>
+          </div>
+        </div>
 
-            {/* Column 2: Top Brands Bar Chart (ใหม่) */}
-            <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m) h-[450px]">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-1 font-bold text-gray-900">
-                  Top 10 Brands
-                </h2>
+        {/* --- Row 2: Top Brands & placeholder --- */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-(--space-m) mb-(--space-l)">
+          
+          {/* Col 2.1: Top 10 Brands (Bar) */}
+          <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m) h-[450px]">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-1 font-bold text-gray-900">
+                Top 10 Brands
+              </h2>
+            </div>
+            {isLoading ? (
+              <div className="h-96 flex items-center justify-center bg-gray-50 rounded-xl">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon"></div>
               </div>
-              {isLoading ? (
+            ) : (
+              <TopBrandsChart data={topBrandsData} />
+            )}
+            <p className="text-sm text-gray-500 mt-2 text-center">
+              Top 10 active listings by brand
+            </p>
+          </div>
+
+          {/* Col 2.2: Placeholder */}
+          <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m) h-[450px]">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-1 font-bold text-gray-900">
+                Mystery Chart
+              </h2>
+            </div>
+            {isLoading ? (
                 <div className="h-96 flex items-center justify-center bg-gray-50 rounded-xl">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon"></div>
                 </div>
-              ) : (
-                <TopBrandsChart data={topBrandsData} />
-              )}
-              <p className="text-sm text-gray-500 mt-2 text-center">
-                Top 10 active listings by brand
-              </p>
-            </div>
-          
+            ) : (
+              <div className="h-96 flex items-center justify-center bg-gray-50 rounded-xl">
+                <p className="text-gray-400">Placeholder for new chart</p>
+              </div>
+            )}
+            <p className="text-sm text-gray-500 mt-2 text-center">
+              Coming soon...
+            </p>
           </div>
         </div>
 
