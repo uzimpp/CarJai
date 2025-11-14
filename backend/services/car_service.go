@@ -1272,3 +1272,12 @@ func (s *CarService) TranslateCarForDisplay(car *models.Car, lang string) (*Tran
 	}
 	return display, nil
 }
+
+// GetTopBrandsChartData retrieves top 10 brand data for the chart
+func (s *CarService) GetTopBrandsChartData() ([]models.BrandDataPoint, error) {
+	data, err := s.carRepo.GetTopBrandsByCount()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get top brands chart data: %w", err)
+	}
+	return data, nil
+}

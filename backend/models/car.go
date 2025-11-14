@@ -82,6 +82,12 @@ type Drivetrain struct {
 	CreatedAt time.Time `json:"createdAt" db:"created_at"`
 }
 
+// BrandDataPoint (used for charts)
+type BrandDataPoint struct {
+	Brand string `json:"brand" db:"brand"`
+	Count int    `json:"count" db:"count"`
+}
+
 // Request and Response models
 // Note: CreateCarRequest removed - POST /api/cars doesn't need a request body
 // It just creates an empty draft based on authenticated seller ID
@@ -401,6 +407,46 @@ func (r *CarRepository) GetManagedCars() (*[]AdminManagedCar, error) {
 	}
 
 	return &cars, nil
+}
+
+// GetTopBrandsByCount retrieves the top 10 brands by car count
+func (r *CarRepository) GetTopBrandsByCount() ([]BrandDataPoint, error) {
+	var results []BrandDataPoint
+	
+	query := `
+		SELECT
+			brand_name AS brand,
+			COUNT(id) AS count
+		FROM
+			cars
+		WHERE
+			status = 'active' AND brand_name IS NOT NULL AND brand_name != ''
+		GROUP BY
+			brand_name
+		ORDER BY
+			count DESC
+		LIMIT 10;
+	`
+
+	rows, err := r.db.DB.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query top brands: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var point BrandDataPoint
+		if err := rows.Scan(&point.Brand, &point.Count); err != nil {
+			return nil, fmt.Errorf("failed to scan top brand data point: %w", err)
+		}
+		results = append(results, point)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating top brands: %w", err)
+	}
+
+	return results, nil
 }
 
 // UpdateCarByAdmin updates a car's details from the admin panel

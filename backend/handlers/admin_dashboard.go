@@ -127,3 +127,23 @@ func (h *AdminDashboardHandler) HandleGetChartData(w http.ResponseWriter, r *htt
 		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
 	}
 }
+
+// HandleGetTopBrandsChart handles GET /admin/dashboard/top-brands
+func (h *AdminDashboardHandler) HandleGetTopBrandsChart(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	data, err := h.carService.GetTopBrandsChartData()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get top brands chart data: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
+	}
+}
