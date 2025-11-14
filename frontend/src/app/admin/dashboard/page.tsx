@@ -81,7 +81,7 @@ const DonutChartComponent = ({ buyers, sellers }: { buyers: number, sellers: num
   }
   
   return (
-    <div className="h-64 w-full">
+    <div className="h-96 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie
