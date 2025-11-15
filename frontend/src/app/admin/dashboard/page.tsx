@@ -57,6 +57,19 @@ const TopBrandsChart = ({ data }: { data: BrandDataPoint[] }) => {
     );
   }
 
+  const COLORS = [
+    '#880808', // 1. Darkest Maroon
+    '#991a1a',
+    '#aa2b2b',
+    '#bb3d3d',
+    '#cc4e4e', // 5.
+    '#dd5f5f',
+    '#ee7070',
+    '#ff8181',
+    '#ff9292',
+    '#ffa3a3'  // 10. Lightest Red
+  ];
+
   return (
     <div className="h-96 w-full"> {/* (hegiht 384px) */}
       <ResponsiveContainer width="100%" height="100%">
@@ -81,7 +94,11 @@ const TopBrandsChart = ({ data }: { data: BrandDataPoint[] }) => {
             contentStyle={{ borderRadius: '8px', boxShadow: 'var(--shadow-md)', border: 'none' }}
             formatter={(value: number) => [value, 'Cars']}
           />
-          <Bar dataKey="count" fill="#880808" />
+          <Bar dataKey="count">
+            {data.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            ))}
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     </div>
