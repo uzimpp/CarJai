@@ -13,13 +13,15 @@ import (
 type AdminDashboardHandler struct {
 	userService *services.UserService
 	carService  *services.CarService
+    reportService *services.ReportService
 }
 
 // NewAdminDashboardHandler creates a new handler for dashboard operations
-func NewAdminDashboardHandler(us *services.UserService, cs *services.CarService) *AdminDashboardHandler {
+func NewAdminDashboardHandler(us *services.UserService, cs *services.CarService, rs *services.ReportService) *AdminDashboardHandler { 
 	return &AdminDashboardHandler{
 		userService: us,
 		carService:  cs,
+		reportService: rs,
 	}
 }
 
@@ -40,11 +42,11 @@ func (h *AdminDashboardHandler) HandleGetStats(w http.ResponseWriter, r *http.Re
         return
     }
 
-    var totalUsers, activeCars, soldCars, totalBuyers, totalSellers int
-    var errUsers, errActive, errSold, errBuyers, errSellers error
+    var totalUsers, activeCars, soldCars, totalBuyers, totalSellers, pendingReports int 
+    var errUsers, errActive, errSold, errBuyers, errSellers, errReports error
     var wg sync.WaitGroup
 
-    wg.Add(5)
+    wg.Add(6)
 
     // 1. Total Users
     go func() {
@@ -76,11 +78,25 @@ func (h *AdminDashboardHandler) HandleGetStats(w http.ResponseWriter, r *http.Re
         totalSellers, errSellers = h.userService.GetTotalSellerCount()
     }()
 
+    go func() {
+        defer wg.Done()
+        pendingReports, errReports = h.reportService.GetPendingReportCount()
+    }()
+
     wg.Wait() 
 
-    if errUsers != nil { /* ... */ }
-    if errActive != nil { /* ... */ }
-    if errSold != nil { /* ... */ }
+    if errUsers != nil {
+        http.Error(w, fmt.Sprintf("Failed to get user count: %v", errUsers), http.StatusInternalServerError)
+        return
+    }
+    if errActive != nil {
+        http.Error(w, fmt.Sprintf("Failed to get active car count: %v", errActive), http.StatusInternalServerError)
+        return
+    }
+    if errSold != nil {
+        http.Error(w, fmt.Sprintf("Failed to get sold car count: %v", errSold), http.StatusInternalServerError)
+        return
+    }
     if errBuyers != nil {
         http.Error(w, fmt.Sprintf("Failed to get buyer count: %v", errBuyers), http.StatusInternalServerError)
         return
@@ -89,12 +105,16 @@ func (h *AdminDashboardHandler) HandleGetStats(w http.ResponseWriter, r *http.Re
         http.Error(w, fmt.Sprintf("Failed to get seller count: %v", errSellers), http.StatusInternalServerError)
         return
     }
+    if errReports != nil {
+        http.Error(w, fmt.Sprintf("Failed to get report count: %v", errReports), http.StatusInternalServerError)
+        return
+    }
 
     stats := DashboardStatsResponse{
         TotalUsers:     totalUsers,
         ActiveCars:     activeCars,
         SoldCars:       soldCars,
-        PendingReports: 0, 
+        PendingReports: pendingReports,
         TotalBuyers:    totalBuyers,  
         TotalSellers:   totalSellers,
     }

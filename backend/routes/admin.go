@@ -39,7 +39,7 @@ func AdminRoutes(
 	adminCarHandler := handlers.NewAdminCarHandler(carService)
 
 	// Create Handler for Dashboard
-	adminDashboardHandler := handlers.NewAdminDashboardHandler(userService, carService)
+	adminDashboardHandler := handlers.NewAdminDashboardHandler(userService, carService, reportService)
 
 	// Create router
 	router := http.NewServeMux()
