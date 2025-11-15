@@ -214,6 +214,32 @@ erDiagram
         timestamp viewed_at "NOT NULL DEFAULT NOW()"
     }
 
+    reports {
+        int id PK "SERIAL"
+        varchar report_type "NOT NULL CHECK IN ('car','seller')"
+        int car_id FK "REFERENCES cars(id) ON DELETE CASCADE"
+        int seller_id FK "REFERENCES sellers(id) ON DELETE CASCADE"
+        int reporter_id FK "NOT NULL, REFERENCES users(id) ON DELETE CASCADE"
+        varchar topic "NOT NULL"
+        jsonb sub_topics "DEFAULT '[]'"
+        text description "NOT NULL"
+        varchar status "NOT NULL DEFAULT 'pending' CHECK IN ('pending','reviewed','resolved','dismissed')"
+        timestamp created_at "DEFAULT NOW()"
+        timestamp reviewed_at "Nullable"
+        int reviewed_by_admin_id FK "REFERENCES admins(id) ON DELETE SET NULL"
+        text admin_notes "Nullable"
+    }
+
+    seller_admin_actions {
+        int id PK "SERIAL"
+        int seller_id FK "NOT NULL, REFERENCES sellers(id) ON DELETE CASCADE"
+        int admin_id FK "NOT NULL, REFERENCES admins(id) ON DELETE CASCADE"
+        varchar action "NOT NULL CHECK IN ('ban','suspend','warn')"
+        text notes "Nullable"
+        timestamp suspend_until "Nullable"
+        timestamp created_at "DEFAULT NOW()"
+    }
+
     %% --- Market Data Table (007) ---
     market_price {
         int id PK "SERIAL"
@@ -230,16 +256,22 @@ erDiagram
     %% --- Relationships ---
     admins ||--o{ admin_sessions : "has"
     admins ||--o{ admin_ip_whitelist : "manages"
+    admins ||--o{ reports : "reviews"
+    admins ||--o{ seller_admin_actions : "performs"
 
     users ||--o{ user_sessions : "has"
     users ||--o| sellers : "is (1:1)"
     users ||--o| buyers : "is (1:1)"
+    users ||--o{ reports : "files"
 
     sellers ||--o{ seller_contacts : "has"
     sellers ||--o{ cars : "sells"
+    sellers ||--o{ reports : "is target"
+    sellers ||--o{ seller_admin_actions : "subject"
 
     cars ||--o{ car_images : "has"
     cars ||--o{ car_inspection_results : "has"
+    cars ||--o{ reports : "is target"
     
     %% --- Car Foreign Keys to Reference Tables ---
     cars }o--|| body_types : "uses"

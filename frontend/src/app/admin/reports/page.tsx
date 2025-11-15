@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
+import { apiCall } from "@/lib/apiCall";
 
 type ReportType = "user" | "car";
 type ReportStatus = "pending" | "resolved" | "dismissed";
@@ -42,30 +43,30 @@ export default function AdminReportsPage() {
         setIsLoading(true);
         setError(null);
 
-        // TODO: Replace with actual admin reports API endpoint
-        // const params = new URLSearchParams();
-        // if (filterType !== "all") params.append("type", filterType);
-        // if (filterStatus !== "all") params.append("status", filterStatus);
-        //
-        // const result = await apiCall<{
-        //   success: boolean;
-        //   data: FraudReport[];
-        // }>(`/admin/reports?${params.toString()}`, {
-        //   method: "GET",
-        // });
-        //
-        // if (result.success && result.data) {
-        //   setReports(result.data);
-        // } else {
-        //   setError("Failed to load reports");
-        // }
+        const params = new URLSearchParams();
+        if (filterType !== "all") params.append("type", filterType);
+        if (filterStatus !== "all") params.append("status", filterStatus);
 
-        // Placeholder: Empty reports for now
-        setReports([]);
+        const result = await apiCall<{
+          success: boolean;
+          data: FraudReport[];
+          total: number;
+        }>(`/admin/reports?${params.toString()}`, {
+          method: "GET",
+        });
+
+        if (result.success && result.data) {
+          setReports(result.data);
+        } else {
+          setError("Failed to load reports");
+        }
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "An unexpected error occurred"
-        );
+        const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred";
+        // Don't show authentication errors - the auth system will handle redirects
+        if (!errorMessage.includes("Authentication") && !errorMessage.includes("Unauthorized")) {
+          setError(errorMessage);
+        }
+        setReports([]);
       } finally {
         setIsLoading(false);
       }
@@ -73,19 +74,32 @@ export default function AdminReportsPage() {
 
     if (!authLoading && isAuthenticated) {
       fetchReports();
+    } else if (!authLoading && !isAuthenticated) {
+      setIsLoading(false);
+      setReports([]);
     }
   }, [filterType, filterStatus, authLoading, isAuthenticated]);
 
   const handleResolve = async (reportId: number) => {
     setActionLoading(reportId);
     try {
-      // TODO: Replace with actual API call
-      // await apiCall(`/admin/reports/${reportId}/resolve`, {
-      //   method: "POST",
-      // });
+      await apiCall(`/admin/reports/${reportId}/resolve`, {
+        method: "POST",
+      });
       // Refresh reports
-      // fetchReports();
-      alert("Report resolved (API integration pending)");
+      const params = new URLSearchParams();
+      if (filterType !== "all") params.append("type", filterType);
+      if (filterStatus !== "all") params.append("status", filterStatus);
+      const result = await apiCall<{
+        success: boolean;
+        data: FraudReport[];
+        total: number;
+      }>(`/admin/reports?${params.toString()}`, {
+        method: "GET",
+      });
+      if (result.success && result.data) {
+        setReports(result.data);
+      }
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to resolve report");
     } finally {
@@ -98,13 +112,23 @@ export default function AdminReportsPage() {
 
     setActionLoading(reportId);
     try {
-      // TODO: Replace with actual API call
-      // await apiCall(`/admin/reports/${reportId}/dismiss`, {
-      //   method: "POST",
-      // });
+      await apiCall(`/admin/reports/${reportId}/dismiss`, {
+        method: "POST",
+      });
       // Refresh reports
-      // fetchReports();
-      alert("Report dismissed (API integration pending)");
+      const params = new URLSearchParams();
+      if (filterType !== "all") params.append("type", filterType);
+      if (filterStatus !== "all") params.append("status", filterStatus);
+      const result = await apiCall<{
+        success: boolean;
+        data: FraudReport[];
+        total: number;
+      }>(`/admin/reports?${params.toString()}`, {
+        method: "GET",
+      });
+      if (result.success && result.data) {
+        setReports(result.data);
+      }
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to dismiss report");
     } finally {
@@ -117,15 +141,13 @@ export default function AdminReportsPage() {
 
     setActionLoading(reportId);
     try {
-      // TODO: Replace with actual API call
-      // await apiCall(`/admin/users/${userId}/ban`, {
-      //   method: "POST",
-      // });
-      // await handleResolve(reportId);
-      alert("User banned (API integration pending)");
+      await apiCall(`/admin/users/${userId}/ban`, {
+        method: "POST",
+      });
+      // Resolve the report after banning
+      await handleResolve(reportId);
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to ban user");
-    } finally {
       setActionLoading(null);
     }
   };
@@ -135,15 +157,13 @@ export default function AdminReportsPage() {
 
     setActionLoading(reportId);
     try {
-      // TODO: Replace with actual API call
-      // await apiCall(`/admin/cars/${carId}/remove`, {
-      //   method: "POST",
-      // });
-      // await handleResolve(reportId);
-      alert("Car listing removed (API integration pending)");
+      await apiCall(`/admin/cars/${carId}/remove`, {
+        method: "POST",
+      });
+      // Resolve the report after removing car
+      await handleResolve(reportId);
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to remove car");
-    } finally {
       setActionLoading(null);
     }
   };
@@ -329,39 +349,30 @@ export default function AdminReportsPage() {
             </svg>
             <p className="text-gray-600">
               {reports.length === 0
-                ? "No reports found. API integration pending."
+                ? "No reports found."
                 : "No reports match the current filters."}
             </p>
-            {reports.length === 0 && (
-              <p className="text--1 text-gray-500 mt-2">
-                Connect to{" "}
-                <code className="bg-gray-100 px-2 py-1 rounded">
-                  /admin/reports
-                </code>{" "}
-                endpoint to display reports.
-              </p>
-            )}
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
             {/* Column headers - desktop */}
-            <div className="hidden md:grid md:grid-cols-[1.3fr_1.6fr_1.4fr_1.2fr_1fr_220px] gap-(--space-2xs) px-(--space-m) py-(--space-2xs) bg-gray-50">
-              <div className="text--1 font-medium text-gray-500 uppercase tracking-wider">
+            <div className="hidden md:grid md:grid-cols-[200px_250px_180px_150px_140px_1fr] gap-4 px-(--space-m) py-(--space-s) bg-gray-50 border-b border-gray-200">
+              <div className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 Subject
               </div>
-              <div className="text--1 font-medium text-gray-500 uppercase tracking-wider">
+              <div className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 Reported By
               </div>
-              <div className="text--1 font-medium text-gray-500 uppercase tracking-wider">
+              <div className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 Reason
               </div>
-              <div className="text--1 font-medium text-gray-500 uppercase tracking-wider">
+              <div className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 Date
               </div>
-              <div className="text--1 font-medium text-gray-500 uppercase tracking-wider">
+              <div className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 Status
               </div>
-              <div className="text--1 font-medium text-gray-500 uppercase tracking-wider text-center">
+              <div className="text-xs font-semibold text-gray-600 uppercase tracking-wider text-right">
                 Actions
               </div>
             </div>
@@ -375,12 +386,12 @@ export default function AdminReportsPage() {
               return (
                 <div
                   key={report.id}
-                  className="px-(--space-m) py-(--space-s) grid grid-cols-1 md:grid-cols-[1.3fr_1.6fr_1.4fr_1.2fr_1fr_220px] items-start gap-(--space-2xs)"
+                  className="px-(--space-m) py-(--space-m) grid grid-cols-1 md:grid-cols-[200px_250px_180px_150px_140px_1fr] items-center gap-4 hover:bg-gray-50 transition-colors"
                 >
-                  {/* Subject + badges (mobile shows both here) */}
-                  <div className="flex items-start gap-(--space-s)">
+                  {/* Subject + badges */}
+                  <div className="flex items-center gap-2">
                     <span
-                      className={`px-(--space-s) py-(--space-3xs) rounded-full text--1 font-medium ${
+                      className={`px-2 py-1 rounded-md text-xs font-medium whitespace-nowrap ${
                         report.type === "user"
                           ? "bg-blue-100 text-blue-700"
                           : "bg-orange-100 text-orange-700"
@@ -388,75 +399,82 @@ export default function AdminReportsPage() {
                     >
                       {report.type === "user" ? "User" : "Car"}
                     </span>
-                    <div className="min-w-0">
-                      <p className="text-0 font-medium text-gray-900 truncate">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-gray-900 truncate">
                         {subjectText}
                       </p>
-                      <p className="text--1 text-gray-600 md:hidden mt-0.5">
+                      <p className="text-xs text-gray-600 md:hidden mt-1">
                         {report.reason}
                       </p>
-                      <p className="text--2 text-gray-500 md:hidden">
-                        {new Date(report.createdAt).toLocaleString()}
+                      <p className="text-xs text-gray-500 md:hidden mt-0.5">
+                        {new Date(report.createdAt).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
 
                   {/* Reported By */}
-                  <div className="hidden md:block text-0 text-gray-900 truncate">
-                    {report.reportedByName} ({report.reportedByEmail})
+                  <div className="hidden md:block">
+                    <p className="text-sm text-gray-900 font-medium truncate">
+                      {report.reportedByName}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">
+                      {report.reportedByEmail}
+                    </p>
                   </div>
 
                   {/* Reason */}
-                  <div className="hidden md:block text-0 text-gray-700 truncate">
+                  <div className="hidden md:block text-sm text-gray-700 truncate">
                     {report.reason}
                   </div>
 
                   {/* Date */}
-                  <div className="hidden md:block text--1 text-gray-500">
-                    {new Date(report.createdAt).toLocaleString()}
+                  <div className="hidden md:block text-xs text-gray-500">
+                    {new Date(report.createdAt).toLocaleDateString()}
+                    <br />
+                    {new Date(report.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>
 
                   {/* Status */}
-                  <div className="hidden md:flex items-center gap-2">
+                  <div className="hidden md:block">
                     <span
-                      className={`px-(--space-s) py-(--space-3xs) rounded-full text--1 font-medium ${
+                      className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
                         report.status === "pending"
-                          ? "bg-red-100 text-red-700"
+                          ? "bg-red-100 text-red-800"
                           : report.status === "resolved"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-gray-100 text-gray-700"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-gray-100 text-gray-800"
                       }`}
                     >
                       {report.status.charAt(0).toUpperCase() +
                         report.status.slice(1)}
                     </span>
                     {report.resolvedBy && report.status !== "pending" && (
-                      <span className="text--2 text-gray-500">
+                      <p className="text-xs text-gray-500 mt-1">
                         by {report.resolvedBy}
-                      </span>
+                      </p>
                     )}
                   </div>
 
                   {/* Actions */}
-                  <div className="mt-(--space-xs) md:mt-0 flex flex-wrap md:justify-center gap-(--space-2xs)">
+                  <div className="mt-3 md:mt-0 flex flex-wrap md:justify-end gap-2">
                     {report.status === "pending" ? (
                       <>
                         <button
                           onClick={() => handleResolve(report.id)}
                           disabled={actionLoading === report.id}
-                          className="px-(--space-m) py-(--space-2xs) rounded-lg bg-green-600 hover:bg-green-700 text-white text-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                           {actionLoading === report.id
-                            ? "Processing..."
+                            ? "..."
                             : "Resolve"}
                         </button>
                         <button
                           onClick={() => handleDismiss(report.id)}
                           disabled={actionLoading === report.id}
-                          className="px-(--space-m) py-(--space-2xs) rounded-lg bg-gray-600 hover:bg-gray-700 text-white text-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-3 py-1.5 rounded-lg bg-gray-600 hover:bg-gray-700 text-white text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                           {actionLoading === report.id
-                            ? "Processing..."
+                            ? "..."
                             : "Dismiss"}
                         </button>
                         {report.type === "user" && report.targetUserId && (
@@ -465,10 +483,10 @@ export default function AdminReportsPage() {
                               handleBanUser(report.targetUserId!, report.id)
                             }
                             disabled={actionLoading === report.id}
-                            className="px-(--space-m) py-(--space-2xs) rounded-lg bg-red-600 hover:bg-red-700 text-white text-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                           >
                             {actionLoading === report.id
-                              ? "Processing..."
+                              ? "..."
                               : "Ban User"}
                           </button>
                         )}
@@ -478,27 +496,23 @@ export default function AdminReportsPage() {
                               handleRemoveCar(report.targetCarId!, report.id)
                             }
                             disabled={actionLoading === report.id}
-                            className="px-(--space-m) py-(--space-2xs) rounded-lg bg-red-600 hover:bg-red-700 text-white text-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                           >
                             {actionLoading === report.id
-                              ? "Processing..."
+                              ? "..."
                               : "Remove Car"}
                           </button>
                         )}
                       </>
                     ) : (
-                      <span className="text--1 text-gray-500">
+                      <span className="text-xs text-gray-500 italic">
                         {report.status === "resolved"
                           ? "Resolved"
                           : "Dismissed"}
-                        {report.resolvedBy &&
-                          ` by ${report.resolvedBy}${
+                        {report.resolvedAt &&
+                          ` on ${new Date(
                             report.resolvedAt
-                              ? ` on ${new Date(
-                                  report.resolvedAt
-                                ).toLocaleString()}`
-                              : ""
-                          }`}
+                          ).toLocaleDateString()}`}
                       </span>
                     )}
                   </div>
