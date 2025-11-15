@@ -30,7 +30,7 @@ interface DashboardStats {
 
 interface RecentReport {
   id: number;
-  reportType: "user" | "car"; 
+  reportType: "seller" | "car";
   carId: number | null;        
   sellerId: number | null;    
   description: string;         
@@ -631,6 +631,7 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m) mt-(--space-l)">
           {/* Recent Reports */}
           <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m) mt-(--space-l)">
+            
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-1 font-bold text-gray-900">Recent Reports</h2>
               <Link
@@ -644,14 +645,14 @@ export default function AdminDashboard() {
               <div className="h-64 flex items-center justify-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon"></div>
               </div>
-            ) : recentReports.length === 0 ? (
+            ) : !recentReports || recentReports.length === 0 ? (
               <div className="h-64 flex items-center justify-center text-gray-500">
                 <p>No recent reports</p>
               </div>
             ) : (
               <div className="space-y-(--space-s) max-h-64 overflow-y-auto">
                 {recentReports.map((report) => {
-                  const isUserReport = report.reportType === "user";
+                  const isUserReport = report.reportType === "seller";
                   const targetId = isUserReport ? report.sellerId : report.carId;
 
                   return (
