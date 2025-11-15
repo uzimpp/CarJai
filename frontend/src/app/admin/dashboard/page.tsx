@@ -2,6 +2,7 @@
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import type { DashboardStats, RecentReport, ChartDataPoint, BrandDataPoint } from "@/types/admin";
 import { 
   AreaChart, 
   Area,
@@ -18,36 +19,6 @@ import {
   BarChart, 
   Bar,
 } from 'recharts';
-
-interface DashboardStats {
-  totalUsers: number;
-  activeCars: number;
-  soldCars: number;
-  pendingReports: number;
-  totalBuyers: number;    
-  totalSellers: number;   
-}
-
-interface RecentReport {
-  id: number;
-  reportType: "seller" | "car";
-  carId: number | null;        
-  sellerId: number | null;    
-  description: string;         
-  reporterId: number;     
-  createdAt: string;
-  status: "pending" | "resolved" | "dismissed";
-}
-
-interface ChartDataPoint {
-  date: string;
-  value: number;
-}
-
-interface BrandDataPoint {
-  brand: string;
-  count: number;
-}
 
 const TopBrandsChart = ({ data }: { data: BrandDataPoint[] }) => {
   if (!data || data.length === 0) {
