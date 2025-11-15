@@ -126,6 +126,9 @@ const DonutChartComponent = ({ buyers, sellers }: { buyers: number, sellers: num
     if (percent === undefined || value === undefined || midAngle === undefined || innerRadius === undefined || outerRadius === undefined || cx === undefined || cy === undefined) {
       return null;
     };
+    if (value === 0) {
+      return null; 
+    }
     const RADIAN = Math.PI / 180;
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
     const x = cx + radius * Math.cos(-midAngle! * RADIAN);
@@ -155,8 +158,8 @@ const DonutChartComponent = ({ buyers, sellers }: { buyers: number, sellers: num
             cy="50%"
             labelLine={false}
             label={renderCustomizedLabel}
-            outerRadius="80%"
-            innerRadius="40%"
+            outerRadius="90%"
+            innerRadius="30%"
             fill="#8884d8"
             dataKey="value"
             paddingAngle={5}
@@ -200,6 +203,9 @@ const CarStatusDonutChart = ({ active, sold }: { active: number, sold: number })
     if (percent === undefined || value === undefined || midAngle === undefined || innerRadius === undefined || outerRadius === undefined || cx === undefined || cy === undefined) {
       return null;
     };
+    if (value === 0) {
+      return null; 
+    }
     const RADIAN = Math.PI / 180;
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
     const x = cx + radius * Math.cos(-midAngle! * RADIAN);
@@ -229,8 +235,8 @@ const CarStatusDonutChart = ({ active, sold }: { active: number, sold: number })
             cy="50%"
             labelLine={false}
             label={renderCustomizedLabel}
-            outerRadius="80%"
-            innerRadius="40%"
+            outerRadius="90%"
+            innerRadius="30%"
             fill="#8884d8"
             dataKey="value"
             paddingAngle={5}
