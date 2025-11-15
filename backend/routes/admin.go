@@ -19,6 +19,7 @@ func AdminRoutes(
 	jwtManager *utils.JWTManager,
 	// Add ExtractionService
 	extractionService *services.ExtractionService,
+	reportService *services.ReportService,
 	adminPrefix string,
 	allowedOrigins []string,
 	allowedIPs []string,
@@ -31,6 +32,8 @@ func AdminRoutes(
 	adminIPHandler := handlers.NewAdminIPHandler(adminService)
 	// Create Handler for Extraction
 	adminExtractionHandler := handlers.NewAdminExtractionHandler(extractionService)
+	// Create Handler for Reports
+	adminReportsHandler := handlers.NewAdminReportsHandler(reportService, userService, carService, adminService)
 	// Create Handler for user and car management
 	adminUserHandler := handlers.NewAdminUserHandler(adminService, userService)
 	adminCarHandler := handlers.NewAdminCarHandler(carService)
@@ -110,6 +113,31 @@ func AdminRoutes(
 	router.HandleFunc(basePath+"/market-price/upload",
 		applyAdminAuthMiddleware(adminExtractionHandler.HandleImportMarketPrices))
 
+	// --- Admin Reports Routes ---
+	// Handler for action routes with IDs: /admin/reports/{id}/resolve, /admin/reports/{id}/dismiss
+	router.HandleFunc(basePath+"/reports/",
+		applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+			path := r.URL.Path
+			if strings.HasSuffix(path, "/resolve") && r.Method == http.MethodPost {
+				adminReportsHandler.ResolveReport(w, r)
+			} else if strings.HasSuffix(path, "/dismiss") && r.Method == http.MethodPost {
+				adminReportsHandler.DismissReport(w, r)
+			} else {
+				http.NotFound(w, r)
+			}
+		}))
+	
+	// Handler for list endpoint: GET /admin/reports
+	router.HandleFunc(basePath+"/reports",
+		applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodGet {
+				adminReportsHandler.ListReports(w, r)
+			} else {
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			}
+		}))
+	
+    
 	// GET /admin/users (List users)
 	// POST /admin/users (Create user)
 	router.HandleFunc(basePath+"/users",
@@ -125,19 +153,23 @@ func AdminRoutes(
 		}),
 	)
 
-	// This handler catches /admin/users/1, /admin/users/2, etc.
-	router.HandleFunc(basePath+"/users/",
-		applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
-			switch r.Method {
-			case http.MethodPatch:
-				adminUserHandler.HandleUpdateUser(w, r)
-			case http.MethodDelete:
-				adminUserHandler.HandleDeleteUser(w, r)
-			default:
-				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			}
-		}),
-	)
+    router.HandleFunc(basePath+"/users/",
+        applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+            path := r.URL.Path
+            if strings.HasSuffix(path, "/ban") && r.Method == http.MethodPost {
+                adminReportsHandler.BanUser(w, r)
+                return
+            }
+            switch r.Method {
+            case http.MethodPatch:
+                adminUserHandler.HandleUpdateUser(w, r)
+            case http.MethodDelete:
+                adminUserHandler.HandleDeleteUser(w, r)
+            default:
+                http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+            }
+        }),
+    )
 
 	// --- Admin Car Management Routes ---
 	// GET /admin/cars
@@ -154,18 +186,23 @@ func AdminRoutes(
 		}),
 	)
 
-	router.HandleFunc(basePath+"/cars/",
-		applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
-			switch r.Method {
-			case http.MethodPatch:
-				adminCarHandler.HandleUpdateCar(w, r)
-			case http.MethodDelete:
-				adminCarHandler.HandleDeleteCar(w, r)
-			default:
-				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			}
-		}),
-	)
+    router.HandleFunc(basePath+"/cars/",
+        applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+            path := r.URL.Path
+            if strings.HasSuffix(path, "/remove") && r.Method == http.MethodPost {
+                adminReportsHandler.RemoveCar(w, r)
+                return
+            }
+            switch r.Method {
+            case http.MethodPatch:
+                adminCarHandler.HandleUpdateCar(w, r)
+            case http.MethodDelete:
+                adminCarHandler.HandleDeleteCar(w, r)
+            default:
+                http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+            }
+        }),
+    )
 
 	// --- Health Check & Root ---
 	// Health check and Root only need Global IP Whitelist and general logging

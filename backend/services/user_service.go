@@ -1,16 +1,16 @@
 package services
 
 import (
-    "encoding/json"
-    "fmt"
-    "net/http"
-    "net/url"
-    "strings"
-    "time"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/url"
+	"strings"
+	"time"
 
-    "github.com/uzimpp/CarJai/backend/models"
-    "github.com/uzimpp/CarJai/backend/utils"
-    "golang.org/x/crypto/bcrypt"
+	"github.com/uzimpp/CarJai/backend/models"
+	"github.com/uzimpp/CarJai/backend/utils"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // UserService handles user-related business logic
@@ -213,6 +213,20 @@ func (s *UserService) Signin(emailOrUsername, password, ipAddress, userAgent str
 		return nil, fmt.Errorf("invalid credentials")
 	}
 
+	// Check if user is banned by checking seller/buyer status
+	var sellerStatus, buyerStatus string
+	if s.profileService != nil {
+		sellerStatus, _ = s.profileService.GetSellerStatus(user.ID)
+		buyerStatus, _ = s.profileService.GetBuyerStatus(user.ID)
+	}
+	
+	if sellerStatus == "banned" || buyerStatus == "banned" {
+		return nil, fmt.Errorf("your account has been banned")
+	}
+	if sellerStatus == "suspended" || buyerStatus == "suspended" {
+		return nil, fmt.Errorf("your account has been suspended")
+	}
+
 	// Generate session
 	sessionID := utils.GenerateSecureSessionID()
 	token, expiresAt, err := s.jwtManager.GenerateToken(utils.NewUserTokenRequest(
@@ -249,166 +263,180 @@ func (s *UserService) Signin(emailOrUsername, password, ipAddress, userAgent str
 
 // SigninWithGoogleIDToken validates a Google ID token and signs in (or creates) the user
 func (s *UserService) SigninWithGoogleIDToken(idToken, ipAddress, userAgent string) (*models.UserAuthResponse, error) {
-    // Validate Google ID token using tokeninfo endpoint (simple server-side validation)
-    clientID := utils.GetEnv("GOOGLE_CLIENT_ID")
-    if clientID == "" {
-        return nil, fmt.Errorf("google client id not configured")
-    }
+	// Validate Google ID token using tokeninfo endpoint (simple server-side validation)
+	clientID := utils.GetEnv("GOOGLE_CLIENT_ID")
+	if clientID == "" {
+		return nil, fmt.Errorf("google client id not configured")
+	}
 
-    tokenInfoURL := "https://oauth2.googleapis.com/tokeninfo?id_token=" + url.QueryEscape(idToken)
-    resp, err := http.Get(tokenInfoURL)
-    if err != nil {
-        return nil, fmt.Errorf("failed to validate google id token: %w", err)
-    }
-    defer resp.Body.Close()
+	tokenInfoURL := "https://oauth2.googleapis.com/tokeninfo?id_token=" + url.QueryEscape(idToken)
+	resp, err := http.Get(tokenInfoURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to validate google id token: %w", err)
+	}
+	defer resp.Body.Close()
 
-    if resp.StatusCode != http.StatusOK {
-        var errBody map[string]interface{}
-        _ = json.NewDecoder(resp.Body).Decode(&errBody)
-        return nil, fmt.Errorf("invalid google id token: status %d", resp.StatusCode)
-    }
+	if resp.StatusCode != http.StatusOK {
+		var errBody map[string]interface{}
+		_ = json.NewDecoder(resp.Body).Decode(&errBody)
+		return nil, fmt.Errorf("invalid google id token: status %d", resp.StatusCode)
+	}
 
-    var ti struct {
-        Sub           string `json:"sub"`
-        Aud           string `json:"aud"`
-        Email         string `json:"email"`
-        EmailVerified string `json:"email_verified"`
-        Name          string `json:"name"`
-    }
-    if err := json.NewDecoder(resp.Body).Decode(&ti); err != nil {
-        return nil, fmt.Errorf("failed to parse token info: %w", err)
-    }
+	var ti struct {
+		Sub           string `json:"sub"`
+		Aud           string `json:"aud"`
+		Email         string `json:"email"`
+		EmailVerified string `json:"email_verified"`
+		Name          string `json:"name"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&ti); err != nil {
+		return nil, fmt.Errorf("failed to parse token info: %w", err)
+	}
 
-    if ti.Aud != clientID {
-        return nil, fmt.Errorf("invalid token audience")
-    }
-    if ti.Email == "" || !(ti.EmailVerified == "true" || ti.EmailVerified == "1") {
-        return nil, fmt.Errorf("email not verified by google")
-    }
-    if ti.Sub == "" {
-        return nil, fmt.Errorf("missing google user id")
-    }
+	if ti.Aud != clientID {
+		return nil, fmt.Errorf("invalid token audience")
+	}
+	if ti.Email == "" || !(ti.EmailVerified == "true" || ti.EmailVerified == "1") {
+		return nil, fmt.Errorf("email not verified by google")
+	}
+	if ti.Sub == "" {
+		return nil, fmt.Errorf("missing google user id")
+	}
 
-    // Try finding user by Google ID
-    user, err := s.userRepo.GetUserByGoogleID(ti.Sub)
-    if err != nil {
-        // If not found by Google ID, try by email
-        user, err = s.userRepo.GetUserByEmail(ti.Email)
-        if err == nil && user != nil {
-            // Link Google account to existing user
-            if err := s.userRepo.LinkGoogleAccount(user.ID, ti.Sub); err != nil {
-                return nil, fmt.Errorf("failed to link google account: %w", err)
-            }
-            gid := ti.Sub
-            provider := "google"
-            linked := time.Now()
-            user.GoogleID = &gid
-            user.AuthProvider = &provider
-            user.LinkedAt = &linked
-        } else {
-            // Create new user
-            baseUsername := generateUsernameFromEmail(ti.Email)
-            username := baseUsername
-            // Ensure unique username with limited attempts
-            for i := 0; i < 5; i++ {
-                if existing, err := s.userRepo.GetUserByUsername(username); err != nil || existing == nil {
-                    break
-                }
-                username = baseUsername
-                if len(username) > 16 {
-                    username = username[:16]
-                }
-                suffix := utils.GenerateSecureSessionID()
-                if len(suffix) > 4 {
-                    suffix = suffix[:4]
-                }
-                username = username + suffix
-            }
+	// Try finding user by Google ID
+	user, err := s.userRepo.GetUserByGoogleID(ti.Sub)
+	if err != nil {
+		// If not found by Google ID, try by email
+		user, err = s.userRepo.GetUserByEmail(ti.Email)
+		if err == nil && user != nil {
+			// Link Google account to existing user
+			if err := s.userRepo.LinkGoogleAccount(user.ID, ti.Sub); err != nil {
+				return nil, fmt.Errorf("failed to link google account: %w", err)
+			}
+			gid := ti.Sub
+			provider := "google"
+			linked := time.Now()
+			user.GoogleID = &gid
+			user.AuthProvider = &provider
+			user.LinkedAt = &linked
+		} else {
+			// Create new user
+			baseUsername := generateUsernameFromEmail(ti.Email)
+			username := baseUsername
+			// Ensure unique username with limited attempts
+			for i := 0; i < 5; i++ {
+				if existing, err := s.userRepo.GetUserByUsername(username); err != nil || existing == nil {
+					break
+				}
+				username = baseUsername
+				if len(username) > 16 {
+					username = username[:16]
+				}
+				suffix := utils.GenerateSecureSessionID()
+				if len(suffix) > 4 {
+					suffix = suffix[:4]
+				}
+				username = username + suffix
+			}
 
-            displayName := ti.Name
-            if strings.TrimSpace(displayName) == "" {
-                displayName = baseUsername
-            }
+			displayName := ti.Name
+			if strings.TrimSpace(displayName) == "" {
+				displayName = baseUsername
+			}
 
-            gid := ti.Sub
-            provider := "google"
-            now := time.Now()
+			gid := ti.Sub
+			provider := "google"
+			now := time.Now()
 
-            newUser := &models.User{
-                Email:        ti.Email,
-                Username:     username,
-                Name:         displayName,
-                PasswordHash: "",
-                GoogleID:     &gid,
-                AuthProvider: &provider,
-                LinkedAt:     &now,
-            }
+			newUser := &models.User{
+				Email:        ti.Email,
+				Username:     username,
+				Name:         displayName,
+				PasswordHash: "",
+				GoogleID:     &gid,
+				AuthProvider: &provider,
+				LinkedAt:     &now,
+			}
 
-            if err := s.userRepo.CreateUserWithGoogle(newUser); err != nil {
-                return nil, fmt.Errorf("failed to create user: %w", err)
-            }
-            user = newUser
-        }
-    }
+			if err := s.userRepo.CreateUserWithGoogle(newUser); err != nil {
+				return nil, fmt.Errorf("failed to create user: %w", err)
+			}
+			user = newUser
+		}
+	}
 
-    // Generate session
-    sessionID := utils.GenerateSecureSessionID()
-    token, expiresAt, err := s.jwtManager.GenerateToken(utils.NewUserTokenRequest(
-        user.ID, user.Email, utils.AuthGoogle, sessionID,
-    ))
-    if err != nil {
-        return nil, fmt.Errorf("failed to generate token: %w", err)
-    }
+	// Check if user is banned by checking seller/buyer status
+	var sellerStatus, buyerStatus string
+	if s.profileService != nil {
+		sellerStatus, _ = s.profileService.GetSellerStatus(user.ID)
+		buyerStatus, _ = s.profileService.GetBuyerStatus(user.ID)
+	}
+	
+	if sellerStatus == "banned" || buyerStatus == "banned" {
+		return nil, fmt.Errorf("your account has been banned")
+	}
+	if sellerStatus == "suspended" || buyerStatus == "suspended" {
+		return nil, fmt.Errorf("your account has been suspended")
+	}
 
-    // Create session record
-    session := &models.UserSession{
-        UserID:    user.ID,
-        Token:     token,
-        IPAddress: ipAddress,
-        UserAgent: userAgent,
-        ExpiresAt: expiresAt,
-    }
+	// Generate session
+	sessionID := utils.GenerateSecureSessionID()
+	token, expiresAt, err := s.jwtManager.GenerateToken(utils.NewUserTokenRequest(
+		user.ID, user.Email, utils.AuthGoogle, sessionID,
+	))
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate token: %w", err)
+	}
 
-    if err := s.userSessionRepo.CreateUserSession(session); err != nil {
-        return nil, fmt.Errorf("failed to create session: %w", err)
-    }
+	// Create session record
+	session := &models.UserSession{
+		UserID:    user.ID,
+		Token:     token,
+		IPAddress: ipAddress,
+		UserAgent: userAgent,
+		ExpiresAt: expiresAt,
+	}
 
-    return &models.UserAuthResponse{
-        Success: true,
-        Data: models.UserAuthData{
-            User:      user.ToPublic(),
-            Token:     token,
-            ExpiresAt: expiresAt,
-        },
-        Message: "Sign in with Google successful",
-    }, nil
+	if err := s.userSessionRepo.CreateUserSession(session); err != nil {
+		return nil, fmt.Errorf("failed to create session: %w", err)
+	}
+
+	return &models.UserAuthResponse{
+		Success: true,
+		Data: models.UserAuthData{
+			User:      user.ToPublic(),
+			Token:     token,
+			ExpiresAt: expiresAt,
+		},
+		Message: "Sign in with Google successful",
+	}, nil
 }
 
 // generateUsernameFromEmail creates a safe username from email local-part
 func generateUsernameFromEmail(email string) string {
-    local := email
-    if at := strings.Index(email, "@"); at != -1 {
-        local = email[:at]
-    }
-    // only allow [a-z0-9_], lowercase
-    local = strings.ToLower(local)
-    var b strings.Builder
-    for _, r := range local {
-        if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '_' {
-            b.WriteRune(r)
-        }
-    }
-    uname := b.String()
-    if len(uname) < 3 {
-        uname = "user_" + utils.GenerateSecureSessionID()
-        if len(uname) > 12 {
-            uname = uname[:12]
-        }
-    }
-    if len(uname) > 20 {
-        uname = uname[:20]
-    }
-    return uname
+	local := email
+	if at := strings.Index(email, "@"); at != -1 {
+		local = email[:at]
+	}
+	// only allow [a-z0-9_], lowercase
+	local = strings.ToLower(local)
+	var b strings.Builder
+	for _, r := range local {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '_' {
+			b.WriteRune(r)
+		}
+	}
+	uname := b.String()
+	if len(uname) < 3 {
+		uname = "user_" + utils.GenerateSecureSessionID()
+		if len(uname) > 12 {
+			uname = uname[:12]
+		}
+	}
+	if len(uname) > 20 {
+		uname = uname[:20]
+	}
+	return uname
 }
 
 // Signout invalidates a user session
@@ -600,12 +628,12 @@ func (s *UserService) IsSeller(userID int) (bool, error) {
 	if s.profileService == nil {
 		return false, fmt.Errorf("profile service not initialized")
 	}
-	
+
 	roles, err := s.profileService.GetRolesForUser(userID)
 	if err != nil {
 		return false, err
 	}
-	
+
 	return roles.Seller, nil
 }
 
@@ -643,4 +671,9 @@ func (s *UserService) GetUserActivityChartData(days int) (*[]models.ChartDataPoi
 		return nil, fmt.Errorf("failed to get user activity chart: %w", err)
 	}
 	return data, nil
+}
+
+// GetUserByID retrieves a user by ID
+func (s *UserService) GetUserByID(userID int) (*models.User, error) {
+	return s.userRepo.GetUserByID(userID)
 }
