@@ -7,6 +7,7 @@ import (
 	"sync" 
 
 	"github.com/uzimpp/CarJai/backend/services"
+    "github.com/uzimpp/CarJai/backend/models"
 )
 
 // AdminDashboardHandler handles dashboard-related requests
@@ -164,6 +165,31 @@ func (h *AdminDashboardHandler) HandleGetTopBrandsChart(w http.ResponseWriter, r
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(data); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
+	}
+}
+
+// HandleGetRecentReports handles GET /admin/dashboard/recent-reports
+func (h *AdminDashboardHandler) HandleGetRecentReports(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	filters := models.ReportFilters{
+		Status: "pending", 
+		Limit:  5,
+		Offset: 0,
+	}
+	reports, _, err := h.reportService.ListReports(filters)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get recent reports: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(reports); err != nil {
 		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
 	}
 }
