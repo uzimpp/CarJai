@@ -3,8 +3,8 @@ import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
-  LineChart, 
-  Line, 
+  AreaChart, 
+  Area,
   XAxis, 
   YAxis, 
   CartesianGrid, 
@@ -540,10 +540,16 @@ export default function AdminDashboard() {
             ) : (
               <div className="h-80 w-full bg-gray-50 rounded-xl p-4">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
+                  <AreaChart
                     data={chartData}
                     margin={{ top: 5, right: 10, left: -20, bottom: 5 }}
                   >
+                    <defs>
+                    <linearGradient id="areaColor" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#880808" stopOpacity={0.3}/> 
+                      <stop offset="95%" stopColor="#880808" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
                     <XAxis
                       dataKey="date"
@@ -574,15 +580,16 @@ export default function AdminDashboard() {
                       }
                       formatter={(value: number) => [value, 'Logins']}
                     />
-                    <Line
+                    <Area
                       type="monotone"
                       dataKey="value" 
                       stroke="#880808" 
                       strokeWidth={2.5}
-                      dot={{ r: 3, fill: '#880808' }}
-                      activeDot={{ r: 5 }}
+                      fill="url(#areaColor)" 
+                      dot={{ r: 2, fill: '#880808' }}    
+                      activeDot={{ r: 4, fill: '#880808' }} 
                     />
-                  </LineChart>
+                  </AreaChart>
                 </ResponsiveContainer>
               </div>
             )}
