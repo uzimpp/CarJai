@@ -3,8 +3,12 @@ export async function apiCall<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  // Always use relative URLs to go through Next.js rewrites (secure same-origin cookies)
-  const url = endpoint;
+  // For admin reports endpoint, use direct backend URL to avoid conflict with page route
+  let url = endpoint;
+  if (endpoint.startsWith("/admin/reports") && !endpoint.includes("/resolve") && !endpoint.includes("/dismiss")) {
+    const backendUrl = typeof window !== "undefined" ? "http://localhost:8080" : "http://backend:8080";
+    url = `${backendUrl}${endpoint}`;
+  }
 
   // Prepare headers - only set Content-Type for JSON, let browser set it for FormData
   const headers: Record<string, string> = {};

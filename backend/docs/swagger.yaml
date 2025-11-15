@@ -1493,16 +1493,70 @@ paths:
       responses:
         '200':
           description: User deleted successfully
+  # Admin Reports
+  /admin/reports:
+    get:
+      tags:
+        - Admin
+      summary: List reports
+      description: Returns admin reports filtered by type and status.
+      security:
+        - AdminCookieAuth: []
+      parameters:
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum: [user, car]
+          description: Report target type. Maps to backend types 'seller' or 'car'.
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, reviewed, resolved, dismissed]
+          description: Report status filter.
+      responses:
+        '200':
+          description: Reports list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminReportsListResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden (IP not whitelisted)
+        '500':
+          description: Server error
+
+  /admin/reports/{id}/resolve:
+    post:
+      tags:
+        - Admin
+      summary: Resolve a report
+      security:
+        - AdminCookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Report resolved
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BasicResponse'
+        '400':
+          description: Invalid request
         '401':
           description: Unauthorized
         '404':
-          description: User not found
-        '409':
-          description: Cannot delete user (e.g., foreign key constraint)
+          description: Car not found
+        '500':
+          description: Server error
 
   # --- Admin Car Management ---
   /admin/cars:
@@ -1593,14 +1647,102 @@ paths:
       responses:
         '200':
           description: Car deleted successfully
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Report not found
+        '500':
+          description: Server error
+
+  /admin/reports/{id}/dismiss:
+    post:
+      tags:
+        - Admin
+      summary: Dismiss a report
+      security:
+        - AdminCookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Report dismissed
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BasicResponse'
+ 
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Report not found
+        '500':
+          description: Server error
+
+  /admin/users/{id}/ban:
+    post:
+      tags:
+        - Admin
+      summary: Ban a user (seller)
+      security:
+        - AdminCookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: User banned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicResponse'
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthorized
+        '404':
+          description: User not found
+        '500':
+          description: Server error
+
+  /admin/cars/{id}/remove:
+    post:
+      tags:
+        - Admin
+      summary: Remove a car listing
+      security:
+        - AdminCookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Car removed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicResponse'
+        '400':
+          description: Invalid request
         '401':
           description: Unauthorized
         '404':
           description: Car not found
+        '500':
+          description: Server error
 
   # Favorites
   /api/favorites/my:
@@ -1733,6 +1875,77 @@ paths:
         '403':
           description: Forbidden - Only buyers can remove favourites
 
+  # Reports
+  /api/reports/cars/{id}:
+    post:
+      tags:
+        - Reports
+      summary: Submit car report
+      description: Submit a report about a specific car listing. Requires authentication.
+      security:
+        - CookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Target car ID to report
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CarReportRequest'
+      responses:
+        '201':
+          description: Report submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateReportResponse'
+        '400':
+          description: Invalid request (e.g., missing fields, invalid topic, car not found)
+        '401':
+          description: Unauthorized
+        '409':
+          description: Duplicate report within 3 days
+
+  /api/reports/sellers/{id}:
+    post:
+      tags:
+        - Reports
+      summary: Submit seller report
+      description: Submit a report about a seller (user). Requires authentication.
+      security:
+        - CookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Target seller ID to report
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SellerReportRequest'
+      responses:
+        '201':
+          description: Report submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateReportResponse'
+        '400':
+          description: Invalid request (e.g., missing fields, invalid topic, self-report, seller not found)
+        '401':
+          description: Unauthorized
+        '409':
+          description: Duplicate report within 3 days
+
 components:
   securitySchemes:
     CookieAuth:
@@ -1740,8 +1953,127 @@ components:
       in: cookie
       name: jwt
       description: JWT token stored in HTTP cookie
+    AdminCookieAuth:
+      type: apiKey
+      in: cookie
+      name: admin_jwt
+      description: Admin JWT token stored in HTTP cookie
 
   schemas:
+    AdminReport:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          enum: [user, car]
+        reportedById:
+          type: integer
+        reportedByName:
+          type: string
+        reportedByEmail:
+          type: string
+          format: email
+        targetUserId:
+          type: integer
+          nullable: true
+        targetUserName:
+          type: string
+          nullable: true
+        targetCarId:
+          type: integer
+          nullable: true
+        targetCarTitle:
+          type: string
+          nullable: true
+        reason:
+          type: string
+        description:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [pending, reviewed, resolved, dismissed]
+        createdAt:
+          type: string
+          format: date-time
+        resolvedAt:
+          type: string
+          format: date-time
+          nullable: true
+        resolvedBy:
+          type: string
+          nullable: true
+
+    AdminReportsListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminReport'
+        total:
+          type: integer
+
+    AdminErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+        code:
+          type: integer
+    CarReportRequest:
+      type: object
+      required:
+        - topic
+        - description
+      properties:
+        topic:
+          type: string
+          description: Main reason for the report
+          enum: [false_information, fraud, illegal_item, safety_issue, other, cond_mismatch, fake_details, car_not_exist, already_sold, edited_photo]
+        subTopics:
+          type: array
+          description: Additional reasons or details
+          items:
+            type: string
+        description:
+          type: string
+          description: Detailed explanation of the issue
+    SellerReportRequest:
+      type: object
+      required:
+        - topic
+        - description
+      properties:
+        topic:
+          type: string
+          description: Main reason for the report
+          enum: [harassment, fraud, scam, other, contact_unreachable, no_show, selling_fake_car, impersonation]
+        subTopics:
+          type: array
+          description: Additional reasons or details
+          items:
+            type: string
+        description:
+          type: string
+          description: Detailed explanation of the issue
+    CreateReportResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        id:
+          type: integer
+          description: Created report ID
+        message:
+          type: string
     Car:
       type: object
       properties:
@@ -2446,4 +2778,3 @@ components:
           type: string
           nullable: true
           enum: [draft, active, sold, deleted]
-}
