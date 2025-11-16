@@ -752,7 +752,10 @@ export default function AdminUsersPage() {
         <div className="bg-white rounded-3xl shadow-[var(--shadow-md)]">
           <div className="divide-y divide-gray-200">
             {/* Column Headers - Hidden on mobile, visible on md+ */}
-            <div className="hidden md:grid md:grid-cols-[1fr_1fr_1fr_1fr_80px] gap-(--space-2xs) p-(--space-xs) bg-gray-50 rounded-t-lg">
+            <div className="hidden md:grid md:grid-cols-[80px_1fr_1fr_1fr_1fr_80px] gap-(--space-2xs) p-(--space-xs) bg-gray-50 rounded-t-lg">
+              <div className="text--1 font-medium text-gray-500 uppercase tracking-wider">
+                User ID
+              </div>
               <div className="text--1 font-medium text-gray-500 uppercase tracking-wider">
                 Username
               </div>
@@ -816,8 +819,12 @@ export default function AdminUsersPage() {
                 {paginatedUsers.map((user) => (
                   <div
                     key={user.id}
-                    className="grid grid-cols-[1fr_auto] md:grid-cols-[1fr_1fr_1fr_1fr_80px] gap-(--space-2xs) p-(--space-xs) transition-colors items-center hover:bg-gray-50"
-                  >
+                    className="grid grid-cols-[1fr_auto] md:grid-cols-[80px_1fr_1fr_1fr_1fr_80px] gap-(--space-2xs) p-(--space-xs) transition-colors items-center hover:bg-gray-50"
+                   >
+                    {/* User ID - hidden on mobile, visible on md+ */}
+                    <div className="hidden md:block text--1 text-gray-900">
+                      {user.id}
+                    </div>
                     {/* Username - hidden on mobile, visible on md+ */}
                     <div className="hidden md:block text--1 text-gray-900">
                       {user.username}
@@ -830,6 +837,10 @@ export default function AdminUsersPage() {
                       {/* Username on mobile - only show if exists */}
                       <div className="text--1 text-gray-500 md:hidden">
                         {user.username}
+                      </div>
+                      {/* User ID on mobile */}
+                      <div className="text--1 text-gray-400 md:hidden">
+                        ID: {user.id}
                       </div>
                     </div>
 
