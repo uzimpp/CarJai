@@ -128,3 +128,29 @@ func (h *AdminUserHandler) HandleDeleteUser(w http.ResponseWriter, r *http.Reque
 	}
 	utils.WriteJSON(w, http.StatusOK, response)
 }
+
+// HandleGetUser handles GET /admin/users/:id
+func (h *AdminUserHandler) HandleGetUser(w http.ResponseWriter, r *http.Request) {
+	// Extract user ID from URL path
+	parts := strings.Split(r.URL.Path, "/")
+	idStr := parts[len(parts)-1]
+	userID, err := strconv.Atoi(idStr)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid user ID")
+		return
+	}
+
+	// Call the service
+	user, err := h.userService.GetUserByID(userID)
+	if err != nil {
+		if strings.Contains(err.Error(), "user not found") {
+			utils.WriteError(w, http.StatusNotFound, err.Error())
+		} else {
+			utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		}
+		return
+	}
+
+	// Return the user's public data
+	utils.WriteJSON(w, http.StatusOK, user.ToPublic())
+}

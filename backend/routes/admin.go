@@ -145,6 +145,8 @@ func AdminRoutes(
                 return
             }
             switch r.Method {
+			case http.MethodGet:
+                adminUserHandler.HandleGetUser(w, r)
             case http.MethodPatch:
                 adminUserHandler.HandleUpdateUser(w, r)
             case http.MethodDelete:
