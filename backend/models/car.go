@@ -152,7 +152,6 @@ type AdminCreateCarRequest struct {
 	Year         *int    `json:"year,omitempty"`
 	Price        *int    `json:"price,omitempty"`
 	Mileage      *int    `json:"mileage,omitempty"`
-	Status       *string `json:"status,omitempty"`
 }
 
 // AdminCarsListResponse is the response for GET /admin/cars
