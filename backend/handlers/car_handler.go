@@ -1086,7 +1086,7 @@ func (h *CarHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// UploadBook handles POST /api/cars/book - Upload vehicle registration book and create draft car
+// UploadBook handles POST /api/cars/{id}/book - Upload vehicle registration book to existing car
 func (h *CarHandler) UploadBook(w http.ResponseWriter, r *http.Request) {
 	// Check method
 	if r.Method != http.MethodPost {
@@ -1421,126 +1421,6 @@ func (h *CarHandler) RestoreProgress(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)
-}
-
-// RedirectToDraft handles POST /api/cars/{id}/redirect-to-draft
-func (h *CarHandler) RedirectToDraft(w http.ResponseWriter, r *http.Request) {
-	// Check method
-	if r.Method != http.MethodPost {
-		utils.RespondJSON(w, http.StatusMethodNotAllowed, models.UserErrorResponse{
-			Success: false,
-			Error:   "Method not allowed",
-		})
-		return
-	}
-
-	// Get user from context
-	userID, ok := r.Context().Value("userID").(int)
-	if !ok {
-		utils.RespondJSON(w, http.StatusUnauthorized, models.UserErrorResponse{
-			Success: false,
-			Error:   "Unauthorized",
-		})
-		return
-	}
-
-	// Parse request body
-	var req struct {
-		TargetCarID int `json:"targetCarId"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid request body",
-		})
-		return
-	}
-
-	// Extract car ID from URL
-	carID, err := extractIDFromPath(r.URL.Path, "/api/cars/")
-	if err != nil {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid car ID",
-		})
-		return
-	}
-
-	// Validate target car ID
-	if req.TargetCarID <= 0 {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Target car ID is required",
-		})
-		return
-	}
-
-	// Check ownership of both cars
-	currentCar, err := h.carService.GetCarByID(carID)
-	if err != nil {
-		utils.RespondJSON(w, http.StatusNotFound, models.UserErrorResponse{
-			Success: false,
-			Error:   "Current car not found",
-		})
-		return
-	}
-
-	if currentCar.SellerID != userID {
-		utils.RespondJSON(w, http.StatusForbidden, models.UserErrorResponse{
-			Success: false,
-			Error:   "You can only redirect your own cars",
-		})
-		return
-	}
-
-	targetCar, err := h.carService.GetCarByID(req.TargetCarID)
-	if err != nil {
-		utils.RespondJSON(w, http.StatusNotFound, models.UserErrorResponse{
-			Success: false,
-			Error:   "Target car not found",
-		})
-		return
-	}
-
-	if targetCar.SellerID != userID {
-		utils.RespondJSON(w, http.StatusForbidden, models.UserErrorResponse{
-			Success: false,
-			Error:   "You can only redirect to your own cars",
-		})
-		return
-	}
-
-	// Check that both cars are drafts
-	if currentCar.Status != "draft" {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Can only redirect from draft cars",
-		})
-		return
-	}
-
-	if targetCar.Status != "draft" {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Can only redirect to draft cars",
-		})
-		return
-	}
-
-	// Delete the current car (even if it has progress, user chose to redirect)
-	if err := h.carService.DeleteCar(carID, userID, false); err != nil {
-		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
-			Success: false,
-			Error:   fmt.Sprintf("Failed to delete current car: %v", err),
-		})
-		return
-	}
-
-	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{
-		"success":         true,
-		"message":         "Redirected to existing draft successfully",
-		"redirectToCarId": req.TargetCarID,
-	})
 }
 
 // Helper function to extract ID from URL path

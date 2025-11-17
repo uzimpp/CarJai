@@ -769,41 +769,6 @@ paths:
         '500':
           description: Internal server error
 
-  /api/cars/{id}/redirect-to-draft:
-    post:
-      tags:
-        - Cars
-      summary: Redirect to existing draft and delete current car
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                targetCarId:
-                  type: integer
-      responses:
-        '200':
-          description: Redirected to draft successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  message:
-                    type: string
-                  redirectToCarId:
-                    type: integer
-
   /api/cars/{id}/estimate:
     get:
       tags:
@@ -850,25 +815,6 @@ paths:
           description: Unauthorized
         '404':
           description: Car not found
-
-  /api/cars/book:
-    post:
-      tags:
-        - Cars
-      summary: Upload vehicle registration book
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              properties:
-                book_file:
-                  type: string
-                  format: binary
-      responses:
-        '200':
-          description: Book uploaded successfully
 
   /api/cars/images/{image_id}:
     get:
@@ -1047,25 +993,6 @@ paths:
           description: Profile updated successfully
 
   /api/profile/buyer:
-    get:
-      tags:
-        - Profile
-      summary: Get buyer profile
-      responses:
-        '200':
-          description: Buyer profile
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  province:
-                    type: string
-                  budget_min:
-                    type: integer
-                  budget_max:
-                    type: integer
-
     put:
       tags:
         - Profile
@@ -1091,25 +1018,6 @@ paths:
           description: Buyer profile updated successfully
 
   /api/profile/seller:
-    get:
-      tags:
-        - Profile
-      summary: Get seller profile
-      responses:
-        '200':
-          description: Seller profile
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  display_name:
-                    type: string
-                  about:
-                    type: string
-                  map_link:
-                    type: string
-
     put:
       tags:
         - Profile

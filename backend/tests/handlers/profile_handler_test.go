@@ -25,9 +25,9 @@ func TestProfileHandler_Profile(t *testing.T) {
 		expectedStatus      int
 	}{
 		{
-			name:      "Successful get",
-			method:    "GET",
-			hasCookie: true,
+			name:        "Successful get",
+			method:      "GET",
+			hasCookie:   true,
 			cookieValue: "test-token",
 			validateSessionFunc: func(token string) (*models.User, error) {
 				return &models.User{ID: 1, Username: "testuser"}, nil
@@ -47,7 +47,7 @@ func TestProfileHandler_Profile(t *testing.T) {
 			name:           "Method not allowed",
 			method:         "POST",
 			hasCookie:      true,
-			cookieValue:     "test-token",
+			cookieValue:    "test-token",
 			expectedStatus: http.StatusMethodNotAllowed,
 		},
 	}
@@ -222,108 +222,6 @@ func (h *testProfileHandler) UpdateSelf(w http.ResponseWriter, r *http.Request) 
 	utils.WriteJSON(w, http.StatusOK, models.UserAuthResponse{Success: true})
 }
 
-func TestProfileHandler_GetBuyerProfile(t *testing.T) {
-	tests := []struct {
-		name                string
-		method              string
-		hasCookie           bool
-		cookieValue         string
-		validateSessionFunc func(token string) (*models.User, error)
-		getBuyerFunc        func(userID int) (*models.Buyer, error)
-		expectedStatus      int
-	}{
-		{
-			name:      "Successful get",
-			method:    "GET",
-			hasCookie: true,
-			cookieValue: "test-token",
-			validateSessionFunc: func(token string) (*models.User, error) {
-				return &models.User{ID: 1}, nil
-			},
-			getBuyerFunc: func(userID int) (*models.Buyer, error) {
-				return &models.Buyer{ID: 1}, nil
-			},
-			expectedStatus: http.StatusOK,
-		},
-		{
-			name:      "Buyer not found",
-			method:    "GET",
-			hasCookie: true,
-			cookieValue: "test-token",
-			validateSessionFunc: func(token string) (*models.User, error) {
-				return &models.User{ID: 1}, nil
-			},
-			getBuyerFunc: func(userID int) (*models.Buyer, error) {
-				return nil, &services.ValidationError{Message: "not found"}
-			},
-			expectedStatus: http.StatusNotFound,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mockProfileService := &mockProfileService{
-				getBuyerByUserIDFunc: tt.getBuyerFunc,
-			}
-			mockUserService := &mockUserService{
-				validateUserSessionFunc: tt.validateSessionFunc,
-			}
-
-			handler := &testProfileHandler{
-				profileService: mockProfileService,
-				userService:    mockUserService,
-			}
-
-			req := httptest.NewRequest(tt.method, "/api/profile/buyer", nil)
-			if tt.hasCookie {
-				req.AddCookie(&http.Cookie{
-					Name:  "jwt",
-					Value: tt.cookieValue,
-				})
-			}
-			w := httptest.NewRecorder()
-
-			handler.GetBuyerProfile(w, req)
-
-			if w.Code != tt.expectedStatus {
-				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
-			}
-		})
-	}
-}
-
-func (h *testProfileHandler) GetBuyerProfile(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	cookie, err := r.Cookie("jwt")
-	if err != nil {
-		utils.WriteError(w, http.StatusUnauthorized, "Authentication required")
-		return
-	}
-
-	user, err := h.userService.ValidateUserSession(cookie.Value)
-	if err != nil {
-		utils.WriteError(w, http.StatusUnauthorized, "Invalid session")
-		return
-	}
-
-	buyer, err := h.profileService.GetBuyerByUserID(user.ID)
-	if err != nil {
-		utils.WriteError(w, http.StatusNotFound, "Buyer profile not found")
-		return
-	}
-
-	response := models.BuyerResponse{
-		Success: true,
-		Data:    *buyer,
-	}
-
-	utils.WriteJSON(w, http.StatusOK, response)
-}
-
 func TestProfileHandler_UpsertBuyerProfile(t *testing.T) {
 	tests := []struct {
 		name                string
@@ -336,9 +234,9 @@ func TestProfileHandler_UpsertBuyerProfile(t *testing.T) {
 		expectedStatus      int
 	}{
 		{
-			name:      "Successful upsert",
-			method:    "PUT",
-			hasCookie: true,
+			name:        "Successful upsert",
+			method:      "PUT",
+			hasCookie:   true,
 			cookieValue: "test-token",
 			requestBody: models.BuyerRequest{},
 			validateSessionFunc: func(token string) (*models.User, error) {
@@ -353,7 +251,7 @@ func TestProfileHandler_UpsertBuyerProfile(t *testing.T) {
 			name:           "Invalid request body",
 			method:         "PUT",
 			hasCookie:      true,
-			cookieValue:     "test-token",
+			cookieValue:    "test-token",
 			requestBody:    "invalid json",
 			expectedStatus: http.StatusBadRequest,
 		},
@@ -438,4 +336,3 @@ func (h *testProfileHandler) UpsertBuyerProfile(w http.ResponseWriter, r *http.R
 
 	utils.WriteJSON(w, http.StatusOK, response)
 }
-

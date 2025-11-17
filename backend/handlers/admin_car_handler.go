@@ -93,7 +93,6 @@ func (h *AdminCarHandler) HandleCreateCar(w http.ResponseWriter, r *http.Request
 	}
 
 	utils.WriteJSON(w, http.StatusCreated, newCar)
-	return
 }
 // HandleDeleteCar handles DELETE /admin/cars/:id
 func (h *AdminCarHandler) HandleDeleteCar(w http.ResponseWriter, r *http.Request) {

@@ -114,41 +114,6 @@ func (h *ProfileHandler) UpdateSelf(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusOK, response)
 }
 
-// GetBuyerProfile returns the buyer profile for the authenticated user
-func (h *ProfileHandler) GetBuyerProfile(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// Get authenticated user from cookie
-	cookie, err := r.Cookie("jwt")
-	if err != nil {
-		utils.WriteError(w, http.StatusUnauthorized, "Authentication required")
-		return
-	}
-
-	user, err := h.userService.ValidateUserSession(cookie.Value)
-	if err != nil {
-		utils.WriteError(w, http.StatusUnauthorized, "Invalid session")
-		return
-	}
-
-	// Get buyer profile
-	buyer, err := h.profileService.GetBuyerByUserID(user.ID)
-	if err != nil {
-		utils.WriteError(w, http.StatusNotFound, "Buyer profile not found")
-		return
-	}
-
-	response := models.BuyerResponse{
-		Success: true,
-		Data:    *buyer,
-	}
-
-	utils.WriteJSON(w, http.StatusOK, response)
-}
-
 // UpsertBuyerProfile creates or updates the buyer profile for the authenticated user
 func (h *ProfileHandler) UpsertBuyerProfile(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
@@ -187,51 +152,6 @@ func (h *ProfileHandler) UpsertBuyerProfile(w http.ResponseWriter, r *http.Reque
 		Success: true,
 		Data:    *buyer,
 		Message: "Buyer profile updated successfully",
-	}
-
-	utils.WriteJSON(w, http.StatusOK, response)
-}
-
-// GetSellerProfile returns the seller profile for the authenticated user
-func (h *ProfileHandler) GetSellerProfile(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// Get authenticated user from cookie
-	cookie, err := r.Cookie("jwt")
-	if err != nil {
-		utils.WriteError(w, http.StatusUnauthorized, "Authentication required")
-		return
-	}
-
-	user, err := h.userService.ValidateUserSession(cookie.Value)
-	if err != nil {
-		utils.WriteError(w, http.StatusUnauthorized, "Invalid session")
-		return
-	}
-
-	// Get seller profile
-	seller, err := h.profileService.GetSellerByUserID(user.ID)
-	if err != nil {
-		utils.WriteError(w, http.StatusNotFound, "Seller profile not found")
-		return
-	}
-
-	// Get seller contacts
-	contacts, err := h.profileService.GetSellerContacts(user.ID)
-	if err != nil {
-		// Return seller without contacts if contacts fetch fails
-		contacts = []models.SellerContact{}
-	}
-
-	response := models.SellerResponse{
-		Success: true,
-		Data: models.SellerData{
-			Seller:   *seller,
-			Contacts: contacts,
-		},
 	}
 
 	utils.WriteJSON(w, http.StatusOK, response)

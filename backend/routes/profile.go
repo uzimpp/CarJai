@@ -42,20 +42,14 @@ func ProfileRoutes(
 		),
 	)
 
-	// Buyer profile routes (GET/PUT) - handles /api/profile/buyer
+	// Buyer profile routes (PUT) - handles /api/profile/buyer
 	router.HandleFunc("/api/profile/buyer",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				middleware.GeneralRateLimit()(
 					middleware.LoggingMiddleware(
 						func(w http.ResponseWriter, r *http.Request) {
-							if r.Method == http.MethodGet {
-								profileHandler.GetBuyerProfile(w, r)
-							} else if r.Method == http.MethodPut {
-								profileHandler.UpsertBuyerProfile(w, r)
-							} else {
-								http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-							}
+							profileHandler.UpsertBuyerProfile(w, r)
 						},
 					),
 				),
@@ -63,16 +57,14 @@ func ProfileRoutes(
 		),
 	)
 
-	// Seller profile routes (GET/PUT) - handles /api/profile/seller
+	// Seller profile routes (PUT) - handles /api/profile/seller
 	router.HandleFunc("/api/profile/seller",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				middleware.GeneralRateLimit()(
 					middleware.LoggingMiddleware(
 						func(w http.ResponseWriter, r *http.Request) {
-							if r.Method == http.MethodGet {
-								profileHandler.GetSellerProfile(w, r)
-							} else if r.Method == http.MethodPut {
+							if r.Method == http.MethodPut {
 								profileHandler.UpsertSellerProfile(w, r)
 							} else {
 								http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
