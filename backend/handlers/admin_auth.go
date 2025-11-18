@@ -206,3 +206,20 @@ func (h *AdminAuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) 
 
 	utils.WriteJSON(w, http.StatusOK, response)
 }
+
+// HandleGetAdmins handles GET /admin/admins
+func (h *AdminAuthHandler) HandleGetAdmins(w http.ResponseWriter, r *http.Request) {
+	admins, err := h.adminService.GetManagedAdmins()
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "Failed to retrieve admins")
+		return
+	}
+
+	response := models.AdminAdminsListResponse{
+		Success: true,
+		Data:    admins,
+		Total:   len(admins),
+	}
+
+	utils.WriteJSON(w, http.StatusOK, response)
+}

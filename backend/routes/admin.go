@@ -85,6 +85,10 @@ func AdminRoutes(
 	router.HandleFunc(basePath+"/auth/me", applyAdminAuthMiddleware(adminAuthHandler.Me))
 	router.HandleFunc(basePath+"/auth/refresh", applyAdminAuthMiddleware(adminAuthHandler.RefreshToken))
 
+	router.HandleFunc(basePath+"/admins",
+		applyAdminAuthMiddleware(adminAuthHandler.HandleGetAdmins),
+	)
+
 	// --- Admin IP Whitelist Management Routes ---
 	router.HandleFunc(basePath+"/ip-whitelist", applyAdminAuthMiddleware(adminIPHandler.GetWhitelistedIPs))
 	router.HandleFunc(basePath+"/ip-whitelist/add", applyAdminAuthMiddleware(adminIPHandler.AddIPToWhitelist))

@@ -246,3 +246,18 @@ func (s *AdminService) GetWhitelistedIPs(adminID int) ([]models.AdminIPWhitelist
 func (s *AdminService) GetAdminByID(adminID int) (*models.Admin, error) {
 	return s.adminRepo.GetAdminByID(adminID)
 }
+
+// GetManagedAdmins retrieves all admins for management
+func (s *AdminService) GetManagedAdmins() ([]models.AdminPublic, error) {
+	admins, err := s.adminRepo.GetAdmins()
+	if err != nil {
+		return nil, err
+	}
+
+	publicAdmins := make([]models.AdminPublic, len(admins))
+	for i, admin := range admins {
+		publicAdmins[i] = admin.ToPublic()
+	}
+
+	return publicAdmins, nil
+}

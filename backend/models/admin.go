@@ -115,6 +115,13 @@ type AdminErrorResponse struct {
 	Code    int    `json:"code,omitempty"`
 }
 
+// AdminAdminsListResponse is the response for GET /admin/admins
+type AdminAdminsListResponse struct {
+	Success bool          `json:"success"`
+	Data    []AdminPublic `json:"data"`
+	Total   int           `json:"total"`
+}
+
 // ToPublic converts Admin to AdminPublic (removes sensitive data)
 func (a *Admin) ToPublic() AdminPublic {
 	return AdminPublic{

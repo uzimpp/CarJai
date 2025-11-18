@@ -123,6 +123,39 @@ func (r *AdminRepository) ValidateAdminCredentials(username, password string) (*
 	return admin, nil
 }
 
+// GetAdmins retrieves all admin users
+func (r *AdminRepository) GetAdmins() ([]Admin, error) {
+	var admins []Admin
+	query := `
+		SELECT id, username, name, last_login_at, created_at
+		FROM admins
+		ORDER BY created_at DESC`
+
+	rows, err := r.db.DB.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get admins: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var admin Admin
+		err := rows.Scan(
+			&admin.ID, &admin.Username, &admin.Name,
+			&admin.LastSigninAt, &admin.CreatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan admin: %w", err)
+		}
+		admins = append(admins, admin)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating admins: %w", err)
+	}
+
+	return admins, nil
+}
+
 // SessionRepository handles session-related database operations
 type SessionRepository struct {
 	db *Database
