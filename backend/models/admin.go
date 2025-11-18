@@ -10,6 +10,7 @@ type Admin struct {
 	Username     string     `json:"username" db:"username"`
 	PasswordHash string     `json:"-" db:"password_hash"`
 	Name         string     `json:"name" db:"name"`
+	Role         string     `json:"role" db:"role"`
 	LastSigninAt *time.Time `json:"last_signin_at" db:"last_login_at"`
 	CreatedAt    time.Time  `json:"created_at" db:"created_at"`
 }
@@ -59,6 +60,7 @@ type AdminPublic struct {
 	ID           int        `json:"id"`
 	Username     string     `json:"username"`
 	Name         string     `json:"name"`
+	Role         string     `json:"role"`
 	LastSigninAt *time.Time `json:"last_signin_at"`
 	CreatedAt    time.Time  `json:"created_at"`
 }
@@ -128,6 +130,7 @@ func (a *Admin) ToPublic() AdminPublic {
 		ID:           a.ID,
 		Username:     a.Username,
 		Name:         a.Name,
+		Role:         a.Role,
 		LastSigninAt: a.LastSigninAt,
 		CreatedAt:    a.CreatedAt,
 	}
