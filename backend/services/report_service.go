@@ -230,3 +230,12 @@ func (s *ReportService) WarnSeller(sellerID, adminID int, notes *string) (int, e
 func (s *ReportService) IsConflict(err error) bool {
     return errors.Is(err, ErrConflict)
 }
+
+// GetPendingReportCount retrieves the count of all pending reports
+func (s *ReportService) GetPendingReportCount() (int, error) {
+	count, err := s.repo.CountPendingReports() 
+	if err != nil {
+		return 0, fmt.Errorf("failed to get pending report count: %w", err)
+	}
+	return count, nil
+}
