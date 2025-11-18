@@ -141,6 +141,12 @@ interface AdminCreateCarRequest {
   status?: string;
 }
 
+interface AdminAdminsListResponse {
+  success: boolean;
+  data: AdminUser[];
+  total: number;
+}
+
 interface MarketPrice {
   id: number;
   brand: string;
@@ -213,6 +219,7 @@ export type {
   AdminManagedCar,
   AdminUpdateCarRequest,
   AdminCreateCarRequest,
+  AdminAdminsListResponse,
   UserType,
   UserRole,
   MarketPrice,
