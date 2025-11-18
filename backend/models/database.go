@@ -126,8 +126,9 @@ func (r *AdminRepository) ValidateAdminCredentials(username, password string) (*
 // GetAdmins retrieves all admin users
 func (r *AdminRepository) GetAdmins() ([]Admin, error) {
 	var admins []Admin
+	
 	query := `
-		SELECT id, username, name, last_login_at, created_at
+		SELECT id, username, name, role, last_login_at, created_at
 		FROM admins
 		ORDER BY created_at DESC`
 
@@ -139,18 +140,26 @@ func (r *AdminRepository) GetAdmins() ([]Admin, error) {
 
 	for rows.Next() {
 		var admin Admin
+		var lastSigninAt sql.NullTime
+		
 		err := rows.Scan(
-			&admin.ID, &admin.Username, &admin.Name,
-			&admin.LastSigninAt, &admin.CreatedAt,
+			&admin.ID, 
+			&admin.Username, 
+			&admin.Name, 
+			&admin.Role,
+			&lastSigninAt, 
+			&admin.CreatedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan admin: %w", err)
 		}
+		
+		if lastSigninAt.Valid {
+			t := lastSigninAt.Time
+			admin.LastSigninAt = &t
+		}
+		
 		admins = append(admins, admin)
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating admins: %w", err)
 	}
 
 	return admins, nil

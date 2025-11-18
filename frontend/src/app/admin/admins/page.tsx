@@ -150,7 +150,7 @@ export default function AdminAdminsPage() {
         <div className="bg-white rounded-3xl shadow-[var(--shadow-md)]">
           <div className="divide-y divide-gray-200">
             {/* Column Headers */}
-            <div className="hidden md:grid md:grid-cols-[80px_1fr_1fr_1fr_1fr] gap-(--space-2xs) p-(--space-xs) bg-gray-50 rounded-t-lg">
+            <div className="hidden md:grid md:grid-cols-[80px_1fr_1fr_1fr_1fr_1fr] gap-(--space-2xs) p-(--space-xs) bg-gray-50 rounded-t-lg">
               <div className="text--1 font-medium text-gray-500 uppercase tracking-wider">
                 ID
               </div>
@@ -160,6 +160,7 @@ export default function AdminAdminsPage() {
               <div className="text--1 font-medium text-gray-500 uppercase tracking-wider">
                 Name
               </div>
+              <div className="text--1 font-medium text-gray-500 uppercase tracking-wider">Role</div>
               <div className="text--1 font-medium text-gray-500 uppercase tracking-wider">
                 Last Login
               </div>
@@ -192,7 +193,7 @@ export default function AdminAdminsPage() {
                 {paginatedAdmins.map((admin) => (
                   <div
                     key={admin.id}
-                    className="grid grid-cols-[1fr_auto] md:grid-cols-[80px_1fr_1fr_1fr_1fr] gap-(--space-2xs) p-(--space-xs) transition-colors items-center hover:bg-gray-50"
+                    className="grid grid-cols-[1fr_auto] md:grid-cols-[80px_1fr_1fr_1fr_1fr_1fr] gap-(--space-2xs) p-(--space-xs) transition-colors items-center hover:bg-gray-50"
                   >
                     {/* ID */}
                     <div className="hidden md:block text--1 text-gray-900">
@@ -209,6 +210,19 @@ export default function AdminAdminsPage() {
                     {/* Name */}
                     <div className="text--1 text-gray-600">
                       {admin.name}
+                    </div>
+                    
+                    {/* Role */}
+                    <div className="hidden md:block">
+                    <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${
+                        admin.role === "super_admin"
+                            ? "bg-purple-100 text-purple-800"
+                            : "bg-blue-100 text-blue-800"
+                        }`}
+                    >
+                        {admin.role ? admin.role.replace("_", " ") : "Admin"}
+                    </span>
                     </div>
 
                     {/* Last Login */}
