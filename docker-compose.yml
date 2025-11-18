@@ -11,16 +11,15 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/migrations:/docker-entrypoint-initdb.d
-      - ./scripts/healthcheck-db.sh:/usr/local/bin/healthcheck-db.sh:ro
     networks:
       - carjai-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "sh /usr/local/bin/healthcheck-db.sh"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
-      retries: 1
-      start_period: 30s
+      retries: 3
+      start_period: 10s
 
   # Backend Go API service
   backend:
@@ -59,7 +58,6 @@ services:
       GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
     volumes:
       - ./frontend/public/assets:/app/frontend/public/assets:ro
-      - ./scripts/healthcheck-backend.sh:/usr/local/bin/healthcheck-backend.sh:ro
     networks:
       - carjai-network
     depends_on:
@@ -67,10 +65,10 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "sh /usr/local/bin/healthcheck-backend.sh"]
+      test: ["CMD-SHELL", "wget --tries=1 --spider http://localhost:8080/health || exit 1"]
       interval: 30s
-      timeout: 5s
-      retries: 1
+      timeout: 10s
+      retries: 3
       start_period: 40s
 
   # Frontend Next.js service
@@ -86,8 +84,6 @@ services:
       NODE_ENV: ${NODE_ENV}
       NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-    volumes:
-      - ./scripts/healthcheck-frontend.sh:/usr/local/bin/healthcheck-frontend.sh:ro
     networks:
       - carjai-network
     depends_on:
@@ -95,10 +91,10 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "sh /usr/local/bin/healthcheck-frontend.sh"]
+      test: ["CMD-SHELL", "wget --tries=1 --spider http://localhost:3000 || exit 1"]
       interval: 30s
-      timeout: 5s
-      retries: 1
+      timeout: 10s
+      retries: 3
       start_period: 40s
 
 networks:

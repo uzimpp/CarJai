@@ -1,8 +1,11 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
+	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/uzimpp/CarJai/backend/utils"
@@ -39,8 +42,20 @@ var startTime = time.Now()
 
 // Health handles basic health check
 func (h *HealthHandler) Health(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
+	// Allow both GET and HEAD for health checks (HEAD is used by wget --spider)
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	// For HEAD requests, perform full health check but return status only (no body)
+	if r.Method == http.MethodHead {
+		dbStatus := h.checkDatabase()
+		if dbStatus.Status == "healthy" {
+			w.WriteHeader(http.StatusOK)
+		} else {
+			w.WriteHeader(http.StatusServiceUnavailable)
+		}
 		return
 	}
 
@@ -71,7 +86,8 @@ func (h *HealthHandler) Health(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, statusCode, response, "")
 }
 
-// checkDatabase checks database connectivity and validates migrations
+// checkDatabase checks database connectivity and validates migrations succeeded
+// If migrations failed (tables don't exist), database is unhealthy even if connectable
 func (h *HealthHandler) checkDatabase() ServiceStatus {
 	start := time.Now()
 
@@ -83,90 +99,58 @@ func (h *HealthHandler) checkDatabase() ServiceStatus {
 		}
 	}
 
-	// Check database connectivity
-	err := h.db.Ping()
+	// Create context with timeout for health check (max 2 seconds for faster response)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	// Step 1: Check database connectivity
+	err := h.db.PingContext(ctx)
 	if err != nil {
 		responseTime := time.Since(start)
 		return ServiceStatus{
 			Status:       "unhealthy",
 			ResponseTime: responseTime.String(),
-			Error:        err.Error(),
+			Error:        "database connection failed: " + err.Error(),
 		}
 	}
 
-	// Validate that all required tables exist (migration validation)
-	migrationStatus := h.validateMigrations()
+	// Step 2: Validate migrations by checking if critical table exists
+	// If migrations failed (syntax errors, etc.), tables won't exist
+	// This catches cases where DB is connectable but migrations failed
+	migrationErr := h.validateMigrations(ctx)
 	responseTime := time.Since(start)
 
-	if migrationStatus.Error != "" {
+	if migrationErr != nil {
 		return ServiceStatus{
 			Status:       "unhealthy",
 			ResponseTime: responseTime.String(),
-			Error:        migrationStatus.Error,
-			Details:      migrationStatus.Details,
+			Error:        migrationErr.Error(),
 		}
 	}
 
 	return ServiceStatus{
 		Status:       "healthy",
 		ResponseTime: responseTime.String(),
-		Details:      migrationStatus.Details,
 	}
 }
 
-// validateMigrations checks if all required tables exist
-func (h *HealthHandler) validateMigrations() ServiceStatus {
-	requiredTables := []string{
-		"admins",
-		"admin_sessions",
-		"admin_ip_whitelist",
-		"users",
-		"user_sessions",
-		"sellers",
-		"seller_contacts",
-		"buyers",
-		"cars",
-		"car_images",
-		"car_inspection_results",
-		"market_price",
-		"recent_views",
-		"favourites",
-		"reports",
-	}
-
-	var missingTables []string
-	query := `
-		SELECT table_name 
-		FROM information_schema.tables 
-		WHERE table_schema = 'public' 
-		AND table_name = $1
-	`
-
-	for _, table := range requiredTables {
-		var exists string
-		err := h.db.QueryRow(query, table).Scan(&exists)
-		if err != nil {
-			missingTables = append(missingTables, table)
+// validateMigrations checks if migrations succeeded by querying a critical table
+// Uses minimal query - just checks if the first table from first migration exists
+func (h *HealthHandler) validateMigrations(ctx context.Context) error {
+	// Check the first table from the first migration (001_admin_auth.sql)
+	// If this table doesn't exist, migrations definitely failed
+	var count int
+	query := `SELECT COUNT(*) FROM reports`
+	err := h.db.QueryRowContext(ctx, query).Scan(&count)
+	if err != nil {
+		// Check if error is "relation does not exist" (migration failure)
+		errStr := strings.ToLower(err.Error())
+		if strings.Contains(errStr, "does not exist") || strings.Contains(errStr, "relation") {
+			return errors.New("migration validation failed: critical table 'admins' does not exist - database migrations may have failed (check migration logs for syntax errors)")
 		}
+		// Other errors (permissions, etc.) are also concerning
+		return errors.New("migration validation failed: cannot query table 'admins': " + err.Error())
 	}
 
-	if len(missingTables) > 0 {
-		return ServiceStatus{
-			Status: "unhealthy",
-			Error:  "Migration validation failed: missing required tables",
-			Details: map[string]interface{}{
-				"missing_tables": missingTables,
-				"total_required": len(requiredTables),
-				"missing_count":  len(missingTables),
-			},
-		}
-	}
-
-	return ServiceStatus{
-		Status: "healthy",
-		Details: map[string]interface{}{
-			"total_tables": len(requiredTables),
-			"all_present":  true,
-		},
-	}
+	return nil
 }

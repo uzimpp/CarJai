@@ -47,7 +47,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const data = await adminAuthAPI.getIPWhitelist();
       if (data.success && data.data) {
-        setIpWhitelist(data.data);
+        setIpWhitelist(data.data as AdminIPWhitelist[]);
       }
     } catch {
       // Ignore fetch errors
@@ -152,7 +152,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
           setAdminSession(sessionResponse.data.session);
         }
         if (whitelistData.success && whitelistData.data) {
-          setIpWhitelist(whitelistData.data);
+          setIpWhitelist(whitelistData.data as AdminIPWhitelist[]);
         }
       } catch {
         // Ignore post-signin data fetch errors
