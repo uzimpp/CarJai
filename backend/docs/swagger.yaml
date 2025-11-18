@@ -14,7 +14,7 @@ security:
 
 paths:
   # Health Check
-  /health/:
+  /health:
     get:
       tags:
         - Health

@@ -42,7 +42,7 @@ func (h *CarHandler) GetPriceEstimate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get user from context (ensure user is logged in)
-	_, ok := r.Context().Value("userID").(int)
+	_, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
 		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
@@ -79,7 +79,7 @@ func (h *CarHandler) CreateCar(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get user from context (set by auth middleware)
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
 		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
@@ -190,7 +190,7 @@ func (h *CarHandler) GetMyCars(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get user from context
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
 		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
@@ -326,7 +326,7 @@ func (h *CarHandler) SearchCars(w http.ResponseWriter, r *http.Request) {
 // UpdateCar handles PUT /api/cars/{id}
 func (h *CarHandler) UpdateCar(w http.ResponseWriter, r *http.Request) {
 	// Get user from context
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
 		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
@@ -341,7 +341,7 @@ func (h *CarHandler) UpdateCar(w http.ResponseWriter, r *http.Request) {
 
 	// Check if user is admin
 	isAdmin := false
-	if adminID, ok := r.Context().Value("admin_id").(int); ok && adminID > 0 {
+	if adminID, ok := r.Context().Value(middleware.AdminIDKey).(int); ok && adminID > 0 {
 		isAdmin = true
 	}
 
@@ -372,7 +372,7 @@ func (h *CarHandler) UpdateCar(w http.ResponseWriter, r *http.Request) {
 // AutoSaveDraft handles PATCH /api/cars/{id}/draft - Auto-save without strict validation
 func (h *CarHandler) AutoSaveDraft(w http.ResponseWriter, r *http.Request) {
 	// Get user from context
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
 		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
@@ -433,7 +433,7 @@ func (h *CarHandler) HandleCarCRUD(w http.ResponseWriter, r *http.Request) {
 // DeleteCar handles DELETE /api/cars/{id}
 func (h *CarHandler) DeleteCar(w http.ResponseWriter, r *http.Request) {
 	// Get user from context
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
 		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
@@ -448,7 +448,7 @@ func (h *CarHandler) DeleteCar(w http.ResponseWriter, r *http.Request) {
 
 	// Check if user is admin
 	isAdmin := false
-	if adminID, ok := r.Context().Value("admin_id").(int); ok && adminID > 0 {
+	if adminID, ok := r.Context().Value(middleware.AdminIDKey).(int); ok && adminID > 0 {
 		isAdmin = true
 	}
 
@@ -478,7 +478,7 @@ func (h *CarHandler) DiscardCar(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get user from context
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
 		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
@@ -493,7 +493,7 @@ func (h *CarHandler) DiscardCar(w http.ResponseWriter, r *http.Request) {
 
 	// Check if user is admin
 	isAdmin := false
-	if adminID, ok := r.Context().Value("admin_id").(int); ok && adminID > 0 {
+	if adminID, ok := r.Context().Value(middleware.AdminIDKey).(int); ok && adminID > 0 {
 		isAdmin = true
 	}
 
@@ -523,7 +523,7 @@ func (h *CarHandler) UploadCarImages(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get user from context
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
 		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
@@ -552,7 +552,7 @@ func (h *CarHandler) UploadCarImages(w http.ResponseWriter, r *http.Request) {
 
 	// Check if user is admin
 	isAdmin := false
-	if adminID, ok := r.Context().Value("admin_id").(int); ok && adminID > 0 {
+	if adminID, ok := r.Context().Value(middleware.AdminIDKey).(int); ok && adminID > 0 {
 		isAdmin = true
 	}
 
@@ -626,7 +626,7 @@ func (h *CarHandler) GetCarImage(w http.ResponseWriter, r *http.Request) {
 // DeleteCarImage handles DELETE /api/cars/images/{id}
 func (h *CarHandler) DeleteCarImage(w http.ResponseWriter, r *http.Request) {
 	// Get user from context
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
 		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
@@ -641,7 +641,7 @@ func (h *CarHandler) DeleteCarImage(w http.ResponseWriter, r *http.Request) {
 
 	// Check if user is admin
 	isAdmin := false
-	if adminID, ok := r.Context().Value("admin_id").(int); ok && adminID > 0 {
+	if adminID, ok := r.Context().Value(middleware.AdminIDKey).(int); ok && adminID > 0 {
 		isAdmin = true
 	}
 
@@ -671,7 +671,7 @@ func (h *CarHandler) ReorderImages(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get user from context
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
 		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
@@ -693,7 +693,7 @@ func (h *CarHandler) ReorderImages(w http.ResponseWriter, r *http.Request) {
 
 	// Check if user is admin
 	isAdmin := false
-	if adminID, ok := r.Context().Value("admin_id").(int); ok && adminID > 0 {
+	if adminID, ok := r.Context().Value(middleware.AdminIDKey).(int); ok && adminID > 0 {
 		isAdmin = true
 	}
 
@@ -719,7 +719,7 @@ func (h *CarHandler) Review(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get user from context
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
 		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
@@ -741,7 +741,7 @@ func (h *CarHandler) Review(w http.ResponseWriter, r *http.Request) {
 
 	// Check if user is admin
 	isAdmin := false
-	if adminID, ok := r.Context().Value("admin_id").(int); ok && adminID > 0 {
+	if adminID, ok := r.Context().Value(middleware.AdminIDKey).(int); ok && adminID > 0 {
 		isAdmin = true
 	}
 
@@ -769,7 +769,7 @@ func (h *CarHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get user from context
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
 		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
@@ -793,7 +793,7 @@ func (h *CarHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 
 	// Check if user is admin
 	isAdmin := false
-	if adminID, ok := r.Context().Value("admin_id").(int); ok && adminID > 0 {
+	if adminID, ok := r.Context().Value(middleware.AdminIDKey).(int); ok && adminID > 0 {
 		isAdmin = true
 	}
 
@@ -832,7 +832,7 @@ func (h *CarHandler) UploadBook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get user from context (set by auth middleware)
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
 		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
@@ -911,7 +911,7 @@ func (h *CarHandler) UploadInspection(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get user from context (set by auth middleware)
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
 		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
@@ -1014,7 +1014,7 @@ func (h *CarHandler) RestoreProgress(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get user from context (set by auth middleware)
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
 		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return

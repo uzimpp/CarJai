@@ -171,8 +171,6 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 		routes.UserAuthRoutes(services.User, services.UserJWT, appConfig.CORSAllowedOrigins, appConfig))
 	mux.Handle("/api/profile/",
 		routes.ProfileRoutes(services.Profile, services.User, services.Car, appConfig.CORSAllowedOrigins))
-	mux.Handle("/api/sellers/",
-		routes.PublicSellerRoutes(services.Profile, services.Car, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/cars",
 		routes.CarRoutes(services.Car, services.User, services.Profile, services.OCR, services.Scraper, services.UserJWT, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/cars/",
@@ -201,7 +199,7 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 			appConfig.AdminIPWhitelist,
 		),
 	)
-	mux.Handle("/health/",
+	mux.Handle("/health",
 		routes.HealthRoutes(db, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/recent-views",
 		routes.RecentViewsRoutes(services.RecentViews, services.Profile, services.User, services.UserJWT, appConfig.CORSAllowedOrigins))

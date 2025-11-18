@@ -17,7 +17,8 @@ func HealthRoutes(db interface{}, allowedOrigins []string) *http.ServeMux {
 	router := http.NewServeMux()
 
 	// Health check endpoints (GET)
-	router.HandleFunc("/",
+	// Use "/" to match the root of the mounted router
+	router.HandleFunc("/health",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				middleware.LoggingMiddleware(

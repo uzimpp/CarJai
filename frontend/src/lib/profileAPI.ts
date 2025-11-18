@@ -54,9 +54,9 @@ export const profileAPI = {
     });
   },
 
-  // Get seller profile data (efficient - returns only seller data, not full profile)
-  async getSellerProfile(): Promise<SellerResponse> {
-    return apiCall("/api/profile/seller", {
+  // Get seller profile data (public endpoint for displaying seller profile)
+  async getSellerProfile(id: string | number): Promise<SellerResponse> {
+    return apiCall(`/api/profile/seller/${id}`, {
       method: "GET",
     });
   },

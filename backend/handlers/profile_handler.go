@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/uzimpp/CarJai/backend/middleware"
 	"github.com/uzimpp/CarJai/backend/models"
 	"github.com/uzimpp/CarJai/backend/services"
 	"github.com/uzimpp/CarJai/backend/utils"
@@ -33,16 +34,10 @@ func (h *ProfileHandler) Profile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get authenticated user from cookie
-	cookie, err := r.Cookie("jwt")
-	if err != nil {
-		utils.WriteError(w, http.StatusUnauthorized, "Authentication required")
-		return
-	}
-
-	user, err := h.userService.ValidateUserSession(cookie.Value)
-	if err != nil {
-		utils.WriteError(w, http.StatusUnauthorized, "Invalid session")
+	// Get authenticated user from context (set by auth middleware)
+	user, ok := middleware.GetUserFromContext(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
@@ -63,16 +58,10 @@ func (h *ProfileHandler) UpdateSelf(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get authenticated user from cookie
-	cookie, err := r.Cookie("jwt")
-	if err != nil {
-		utils.WriteError(w, http.StatusUnauthorized, "Authentication required")
-		return
-	}
-
-	user, err := h.userService.ValidateUserSession(cookie.Value)
-	if err != nil {
-		utils.WriteError(w, http.StatusUnauthorized, "Invalid session")
+	// Get authenticated user from context (set by auth middleware)
+	user, ok := middleware.GetUserFromContext(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
@@ -148,43 +137,41 @@ func (h *ProfileHandler) UpdateSelf(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusOK, *profileData, "")
 }
 
-// GetSellerProfile returns the seller profile for the authenticated user (efficient endpoint for seller data only)
+// GetSellerProfile returns the seller profile for displaying (public endpoint, takes seller ID from URL)
 func (h *ProfileHandler) GetSellerProfile(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Get authenticated user from cookie
-	cookie, err := r.Cookie("jwt")
+	// Extract seller ID from URL path (seller ID is the same as user ID in sellers table)
+	sellerID, err := utils.ExtractIDFromPath(r.URL.Path, "/api/profile/seller/")
 	if err != nil {
-		utils.WriteError(w, http.StatusUnauthorized, "Authentication required")
+		utils.WriteError(w, http.StatusBadRequest, "Invalid seller ID")
 		return
 	}
 
-	user, err := h.userService.ValidateUserSession(cookie.Value)
-	if err != nil {
-		utils.WriteError(w, http.StatusUnauthorized, "Invalid session")
-		return
-	}
-
-	// Get seller profile
-	seller, err := h.profileService.GetSellerByUserID(user.ID)
+	// Get seller profile by seller ID (which is the user ID)
+	seller, err := h.profileService.GetSellerByUserID(sellerID)
 	if err != nil {
 		utils.WriteError(w, http.StatusNotFound, "Seller profile not found")
 		return
 	}
 
 	// Get seller contacts
-	contacts, err := h.profileService.GetSellerContacts(user.ID)
+	contacts, err := h.profileService.GetSellerContacts(sellerID)
 	if err != nil {
 		// Return seller without contacts if contacts fetch fails
 		contacts = []models.SellerContact{}
 	}
 
 	// Get seller's cars (lightweight list items only)
-	// Default to English labels, can be extended to support lang query param if needed
-	cars, err := h.carService.GetCarListItemsBySellerID(user.ID, "en")
+	// Get language preference (default to English)
+	lang := r.URL.Query().Get("lang")
+	if lang == "" {
+		lang = "en"
+	}
+	cars, err := h.carService.GetCarListItemsBySellerID(sellerID, lang)
 	if err != nil {
 		// Return seller without cars if cars fetch fails
 		cars = []models.CarListItem{}

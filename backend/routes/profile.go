@@ -19,6 +19,9 @@ func ProfileRoutes(
 	// Create handler instance
 	profileHandler := handlers.NewProfileHandler(profileService, userService, carService)
 
+	// Create auth middleware
+	authMiddleware := middleware.NewUserAuthMiddleware(userService)
+
 	// Create router
 	router := http.NewServeMux()
 
@@ -29,24 +32,26 @@ func ProfileRoutes(
 			middleware.SecurityHeadersMiddleware(
 				middleware.GeneralRateLimit()(
 					middleware.LoggingMiddleware(
-						func(w http.ResponseWriter, r *http.Request) {
-							switch r.Method {
-							case http.MethodGet:
-								profileHandler.Profile(w, r)
-							case http.MethodPatch:
-								profileHandler.UpdateSelf(w, r)
-							default:
-								http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-							}
-						},
+						authMiddleware.RequireAuth(
+							func(w http.ResponseWriter, r *http.Request) {
+								switch r.Method {
+								case http.MethodGet:
+									profileHandler.Profile(w, r)
+								case http.MethodPatch:
+									profileHandler.UpdateSelf(w, r)
+								default:
+									http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+								}
+							},
+						),
 					),
 				),
 			),
 		),
 	)
 
-	// Seller profile route (GET) - efficient endpoint for seller data only
-	router.HandleFunc("/api/profile/seller",
+	// Seller profile route (GET) - public endpoint for displaying seller profile by ID
+	router.HandleFunc("/api/profile/seller/",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				middleware.GeneralRateLimit()(
