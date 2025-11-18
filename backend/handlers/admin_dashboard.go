@@ -1,13 +1,13 @@
 package handlers
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"sync"
 
 	"github.com/uzimpp/CarJai/backend/models"
 	"github.com/uzimpp/CarJai/backend/services"
+	"github.com/uzimpp/CarJai/backend/utils"
 )
 
 // AdminDashboardHandler handles dashboard-related requests
@@ -39,7 +39,7 @@ type DashboardStatsResponse struct {
 // HandleGetStats handles GET /admin/dashboard/stats
 func (h *AdminDashboardHandler) HandleGetStats(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
@@ -87,27 +87,27 @@ func (h *AdminDashboardHandler) HandleGetStats(w http.ResponseWriter, r *http.Re
 	wg.Wait()
 
 	if errUsers != nil {
-		http.Error(w, fmt.Sprintf("Failed to get user count: %v", errUsers), http.StatusInternalServerError)
+		utils.WriteError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get user count: %v", errUsers))
 		return
 	}
 	if errActive != nil {
-		http.Error(w, fmt.Sprintf("Failed to get active car count: %v", errActive), http.StatusInternalServerError)
+		utils.WriteError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get active car count: %v", errActive))
 		return
 	}
 	if errSold != nil {
-		http.Error(w, fmt.Sprintf("Failed to get sold car count: %v", errSold), http.StatusInternalServerError)
+		utils.WriteError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get sold car count: %v", errSold))
 		return
 	}
 	if errBuyers != nil {
-		http.Error(w, fmt.Sprintf("Failed to get buyer count: %v", errBuyers), http.StatusInternalServerError)
+		utils.WriteError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get buyer count: %v", errBuyers))
 		return
 	}
 	if errSellers != nil {
-		http.Error(w, fmt.Sprintf("Failed to get seller count: %v", errSellers), http.StatusInternalServerError)
+		utils.WriteError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get seller count: %v", errSellers))
 		return
 	}
 	if errReports != nil {
-		http.Error(w, fmt.Sprintf("Failed to get report count: %v", errReports), http.StatusInternalServerError)
+		utils.WriteError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get report count: %v", errReports))
 		return
 	}
 
@@ -120,17 +120,13 @@ func (h *AdminDashboardHandler) HandleGetStats(w http.ResponseWriter, r *http.Re
 		TotalSellers:   totalSellers,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(stats); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
-	}
+	utils.WriteJSON(w, http.StatusOK, stats, "")
 }
 
 // HandleGetChartData handles GET /admin/dashboard/chart
 func (h *AdminDashboardHandler) HandleGetChartData(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
@@ -138,41 +134,33 @@ func (h *AdminDashboardHandler) HandleGetChartData(w http.ResponseWriter, r *htt
 
 	chartData, err := h.userService.GetUserActivityChartData(days)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to get chart data: %v", err), http.StatusInternalServerError)
+		utils.WriteError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get chart data: %v", err))
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(chartData); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
-	}
+	utils.WriteJSON(w, http.StatusOK, chartData, "")
 }
 
 // HandleGetTopBrandsChart handles GET /admin/dashboard/top-brands
 func (h *AdminDashboardHandler) HandleGetTopBrandsChart(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
 	data, err := h.carService.GetTopBrandsChartData()
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to get top brands chart data: %v", err), http.StatusInternalServerError)
+		utils.WriteError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get top brands chart data: %v", err))
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(data); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
-	}
+	utils.WriteJSON(w, http.StatusOK, data, "")
 }
 
 // HandleGetRecentReports handles GET /admin/dashboard/recent-reports
 func (h *AdminDashboardHandler) HandleGetRecentReports(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
@@ -183,13 +171,9 @@ func (h *AdminDashboardHandler) HandleGetRecentReports(w http.ResponseWriter, r 
 	}
 	reports, _, err := h.reportService.ListReports(filters)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to get recent reports: %v", err), http.StatusInternalServerError)
+		utils.WriteError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get recent reports: %v", err))
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(reports); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
-	}
+	utils.WriteJSON(w, http.StatusOK, reports, "")
 }
