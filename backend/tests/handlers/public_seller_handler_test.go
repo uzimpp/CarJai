@@ -68,7 +68,6 @@ func TestPublicSellerHandler_GetSeller(t *testing.T) {
 
 type testPublicSellerHandler struct {
 	profileService *mockProfileService
-	carService     *mockCarService
 }
 
 func (h *testPublicSellerHandler) GetSeller(w http.ResponseWriter, r *http.Request) {
@@ -89,14 +88,10 @@ func (h *testPublicSellerHandler) GetSeller(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	response := models.SellerResponse{
-		Success: true,
-		Data: models.SellerData{
-			Seller:   *seller,
-			Contacts: []models.SellerContact{},
-		},
+	response := models.SellerData{
+		Seller:   *seller,
+		Contacts: []models.SellerContact{},
 	}
 
-	utils.WriteJSON(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, response, "")
 }
-

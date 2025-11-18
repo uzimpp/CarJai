@@ -1,13 +1,13 @@
 package services
 
 import (
+	"database/sql"
 	"fmt"
 	"io"
+	"math"
 	"mime/multipart"
 	"net/http"
 	"time"
-	"math"
-	"database/sql"
 
 	"github.com/uzimpp/CarJai/backend/models"
 	"github.com/uzimpp/CarJai/backend/utils"
@@ -60,12 +60,13 @@ var AllowedImageTypes = map[string]bool{
 
 // CarService handles car-related business logic
 type CarService struct {
-	carRepo        *models.CarRepository
-	imageRepo      *models.CarImageRepository
-	inspectionRepo *models.InspectionRepository
-	colorRepo      *models.CarColorRepository
-	fuelRepo       *models.CarFuelRepository
-	marketPriceRepo   *models.MarketPriceRepository
+	carRepo         *models.CarRepository
+	imageRepo       *models.CarImageRepository
+	inspectionRepo  *models.InspectionRepository
+	colorRepo       *models.CarColorRepository
+	fuelRepo        *models.CarFuelRepository
+	marketPriceRepo *models.MarketPriceRepository
+	translator      *CarTranslator
 }
 
 // NewCarService creates a new car service
@@ -78,12 +79,13 @@ func NewCarService(
 	marketPriceRepo *models.MarketPriceRepository,
 ) *CarService {
 	return &CarService{
-		carRepo:        carRepo,
-		imageRepo:      imageRepo,
-		inspectionRepo: inspectionRepo,
-		colorRepo:      colorRepo,
-		fuelRepo:       fuelRepo,
-		marketPriceRepo:   marketPriceRepo,
+		carRepo:         carRepo,
+		imageRepo:       imageRepo,
+		inspectionRepo:  inspectionRepo,
+		colorRepo:       colorRepo,
+		fuelRepo:        fuelRepo,
+		marketPriceRepo: marketPriceRepo,
+		translator:      NewCarTranslator(carRepo, imageRepo, fuelRepo, colorRepo),
 	}
 }
 
@@ -100,7 +102,6 @@ func (s *CarService) EstimateCarPrice(carID int) (int64, error) {
 	if err != nil && err != sql.ErrNoRows {
 		return 0, fmt.Errorf("failed to check inspection data: %w", err)
 	}
-
 
 	// 3. Check for required fields for estimation
 
@@ -122,7 +123,6 @@ func (s *CarService) EstimateCarPrice(carID int) (int64, error) {
 
 	// 6. Calculate Condition Score (Adjustment Factor)
 	adjustmentFactor := 1.0
-
 
 	if car.ConditionRating != nil {
 		adjustmentFactor += (float64(*car.ConditionRating) - 3.0) * 0.05
@@ -189,8 +189,6 @@ func (s *CarService) EstimateCarPrice(carID int) (int64, error) {
 		}
 	}
 
-
-
 	// 8. Calculate final price
 	finalPrice := float64(basePrice) * adjustmentFactor
 
@@ -234,7 +232,7 @@ func (s *CarService) GetManagedCars() (*[]models.AdminManagedCar, error) {
 func (s *CarService) UpdateCarByAdmin(carID int, req models.AdminUpdateCarRequest) (*models.Car, error) {
 	updatedCar, err := s.carRepo.UpdateCarByAdmin(carID, req)
 	if err != nil {
-		return nil, err 
+		return nil, err
 	}
 
 	return updatedCar, nil
@@ -263,48 +261,190 @@ func (s *CarService) GetCarsBySellerID(sellerID int) ([]models.Car, error) {
 	return s.carRepo.GetCarsBySellerID(sellerID)
 }
 
-// GetCarsBySellerIDWithImages retrieves all cars for a seller with their images
-func (s *CarService) GetCarsBySellerIDWithImages(sellerID int) ([]models.CarListingWithImages, error) {
+// batchTranslateCarsToListItems efficiently converts cars to CarListItem using batch fetching
+// This method collects all unique codes and car IDs, then fetches related data in batches
+// to avoid N+1 query problems
+func (s *CarService) batchTranslateCarsToListItems(cars []models.Car, lang string) ([]models.CarListItem, error) {
+	if len(cars) == 0 {
+		return []models.CarListItem{}, nil
+	}
+
+	if lang == "" {
+		lang = "en"
+	}
+
+	// Collect all car IDs
+	carIDs := make([]int, len(cars))
+	for i, car := range cars {
+		carIDs[i] = car.ID
+	}
+
+	// Collect unique codes for batch label lookup
+	bodyTypeCodes := make(map[string]bool)
+	transmissionCodes := make(map[string]bool)
+	drivetrainCodes := make(map[string]bool)
+
+	for _, car := range cars {
+		if car.BodyTypeCode != nil && *car.BodyTypeCode != "" {
+			bodyTypeCodes[*car.BodyTypeCode] = true
+		}
+		if car.TransmissionCode != nil && *car.TransmissionCode != "" {
+			transmissionCodes[*car.TransmissionCode] = true
+		}
+		if car.DrivetrainCode != nil && *car.DrivetrainCode != "" {
+			drivetrainCodes[*car.DrivetrainCode] = true
+		}
+	}
+
+	// Batch fetch all related data
+	imagesMap, err := s.imageRepo.GetCarImagesMetadataBatch(carIDs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to batch fetch images: %w", err)
+	}
+
+	fuelsMap, err := s.fuelRepo.GetCarFuelsBatch(carIDs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to batch fetch fuels: %w", err)
+	}
+
+	colorsMap, err := s.colorRepo.GetCarColorsBatch(carIDs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to batch fetch colors: %w", err)
+	}
+
+	// Batch fetch labels
+	bodyTypeLabels := make(map[string]string)
+	if len(bodyTypeCodes) > 0 {
+		codes := make([]string, 0, len(bodyTypeCodes))
+		for code := range bodyTypeCodes {
+			codes = append(codes, code)
+		}
+		labels, err := s.carRepo.GetBodyTypeLabelsByCodes(codes, lang)
+		if err == nil {
+			bodyTypeLabels = labels
+		}
+	}
+
+	transmissionLabels := make(map[string]string)
+	if len(transmissionCodes) > 0 {
+		codes := make([]string, 0, len(transmissionCodes))
+		for code := range transmissionCodes {
+			codes = append(codes, code)
+		}
+		labels, err := s.carRepo.GetTransmissionLabelsByCodes(codes, lang)
+		if err == nil {
+			transmissionLabels = labels
+		}
+	}
+
+	drivetrainLabels := make(map[string]string)
+	if len(drivetrainCodes) > 0 {
+		codes := make([]string, 0, len(drivetrainCodes))
+		for code := range drivetrainCodes {
+			codes = append(codes, code)
+		}
+		labels, err := s.carRepo.GetDrivetrainLabelsByCodes(codes, lang)
+		if err == nil {
+			drivetrainLabels = labels
+		}
+	}
+
+	// Collect all unique fuel and color codes for batch label lookup
+	allFuelCodes := make(map[string]bool)
+	allColorCodes := make(map[string]bool)
+	for _, fuelCodes := range fuelsMap {
+		for _, code := range fuelCodes {
+			allFuelCodes[code] = true
+		}
+	}
+	for _, colorCodes := range colorsMap {
+		for _, code := range colorCodes {
+			allColorCodes[code] = true
+		}
+	}
+
+	// Batch fetch fuel and color labels
+	fuelLabelsMap := make(map[string]string)
+	if len(allFuelCodes) > 0 {
+		codes := make([]string, 0, len(allFuelCodes))
+		for code := range allFuelCodes {
+			codes = append(codes, code)
+		}
+		labels, err := s.carRepo.GetFuelLabelsByCodesMap(codes, lang)
+		if err == nil {
+			fuelLabelsMap = labels
+		}
+	}
+
+	colorLabelsMap := make(map[string]string)
+	if len(allColorCodes) > 0 {
+		codes := make([]string, 0, len(allColorCodes))
+		for code := range allColorCodes {
+			codes = append(codes, code)
+		}
+		labels, err := s.carRepo.GetColorLabelsByCodesMap(codes, lang)
+		if err == nil {
+			colorLabelsMap = labels
+		}
+	}
+
+	// Convert each car to CarListItem using batch data and translator
+	var items []models.CarListItem
+	for _, car := range cars {
+		// Get related data for this car from batch maps
+		images := imagesMap[car.ID]
+		fuelCodes := fuelsMap[car.ID]
+		colorCodes := colorsMap[car.ID]
+
+		// Use translator to convert car to CarListItem
+		item, err := s.translator.TranslateCarToListItem(
+			&car,
+			lang,
+			images,
+			fuelCodes,
+			colorCodes,
+			bodyTypeLabels,
+			transmissionLabels,
+			drivetrainLabels,
+			fuelLabelsMap,
+			colorLabelsMap,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to translate car %d: %w", car.ID, err)
+		}
+
+		items = append(items, item)
+	}
+
+	return items, nil
+}
+
+// GetCarListItemsByIDs retrieves lightweight car list items by car IDs
+// Returns CarListItem objects with translated labels for optimal performance
+// Used for: favorites, recent views, and other scenarios where we have specific car IDs
+func (s *CarService) GetCarListItemsByIDs(carIDs []int, lang string) ([]models.CarListItem, error) {
+	if len(carIDs) == 0 {
+		return []models.CarListItem{}, nil
+	}
+
+	cars, err := s.carRepo.GetCarsByIDs(carIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.batchTranslateCarsToListItems(cars, lang)
+}
+
+// GetCarListItemsBySellerID retrieves lightweight car list items for a seller
+// Returns only essential fields needed for listing/display, with translated labels
+// Used for: seller profile, seller dashboard listings
+func (s *CarService) GetCarListItemsBySellerID(sellerID int, lang string) ([]models.CarListItem, error) {
 	cars, err := s.carRepo.GetCarsBySellerID(sellerID)
 	if err != nil {
 		return nil, err
 	}
 
-	var listings []models.CarListingWithImages
-	for _, car := range cars {
-		// Get images for this car
-		images, err := s.imageRepo.GetCarImagesMetadata(car.ID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get images for car %d: %w", car.ID, err)
-		}
-
-		// Combine everything into a flat listing structure
-		listing := models.CarListingWithImages{
-			ID:               car.ID,
-			SellerID:         car.SellerID,
-			Year:             car.Year,
-			Mileage:          car.Mileage,
-			Price:            car.Price,
-			ProvinceID:       car.ProvinceID,
-			ConditionRating:  car.ConditionRating,
-			BodyTypeCode:     car.BodyTypeCode,
-			TransmissionCode: car.TransmissionCode,
-			DrivetrainCode:   car.DrivetrainCode,
-			Seats:            car.Seats,
-			Doors:            car.Doors,
-			BrandName:        car.BrandName,
-			ModelName:        car.ModelName,
-			SubmodelName:     car.SubmodelName,
-			Status:           car.Status,
-			CreatedAt:        car.CreatedAt,
-			UpdatedAt:        car.UpdatedAt,
-			Images:           images,
-		}
-
-		listings = append(listings, listing)
-	}
-
-	return listings, nil
+	return s.batchTranslateCarsToListItems(cars, lang)
 }
 
 // SearchActiveCars retrieves active car listings with search/filter support
@@ -323,8 +463,9 @@ func (s *CarService) SearchActiveCars(req *models.SearchCarsRequest) ([]models.C
 	return s.carRepo.GetActiveCars(req)
 }
 
-// SearchActiveCarsWithImages retrieves active car listings with images and details
-func (s *CarService) SearchActiveCarsWithImages(req *models.SearchCarsRequest) ([]models.CarListingWithImages, int, error) {
+// SearchActiveCarsAsListItems retrieves active car listings as lightweight list items
+// Returns CarListItem with translated labels for optimal performance in browse/search
+func (s *CarService) SearchActiveCarsAsListItems(req *models.SearchCarsRequest, lang string) ([]models.CarListItem, int, error) {
 	// Set defaults
 	if req.Status == "" {
 		req.Status = "active"
@@ -335,6 +476,9 @@ func (s *CarService) SearchActiveCarsWithImages(req *models.SearchCarsRequest) (
 	if req.Offset < 0 {
 		req.Offset = 0
 	}
+	if lang == "" {
+		lang = "en"
+	}
 
 	// Get cars from repository
 	cars, total, err := s.carRepo.GetActiveCars(req)
@@ -342,42 +486,13 @@ func (s *CarService) SearchActiveCarsWithImages(req *models.SearchCarsRequest) (
 		return nil, 0, err
 	}
 
-	// Enrich with images
-	var listings []models.CarListingWithImages
-	for _, car := range cars {
-		// Get images for this car
-		images, err := s.imageRepo.GetCarImagesMetadata(car.ID)
-		if err != nil {
-			return nil, 0, fmt.Errorf("failed to get images for car %d: %w", car.ID, err)
-		}
-
-		// Combine everything into a flat listing structure
-		listing := models.CarListingWithImages{
-			ID:               car.ID,
-			SellerID:         car.SellerID,
-			Year:             car.Year,
-			Mileage:          car.Mileage,
-			Price:            car.Price,
-			ProvinceID:       car.ProvinceID,
-			ConditionRating:  car.ConditionRating,
-			BodyTypeCode:     car.BodyTypeCode,
-			TransmissionCode: car.TransmissionCode,
-			DrivetrainCode:   car.DrivetrainCode,
-			Seats:            car.Seats,
-			Doors:            car.Doors,
-			BrandName:        car.BrandName,
-			ModelName:        car.ModelName,
-			SubmodelName:     car.SubmodelName,
-			Status:           car.Status,
-			CreatedAt:        car.CreatedAt,
-			UpdatedAt:        car.UpdatedAt,
-			Images:           images,
-		}
-
-		listings = append(listings, listing)
+	// Convert to CarListItem using batch translation
+	items, err := s.batchTranslateCarsToListItems(cars, lang)
+	if err != nil {
+		return nil, 0, err
 	}
 
-	return listings, total, nil
+	return items, total, nil
 }
 
 // UpdateCar updates a car listing with step-2 guards and validations
@@ -439,7 +554,7 @@ func (s *CarService) AutoSaveDraft(carID, userID int, req *models.UpdateCarReque
 	}
 
 	// Map text fields to IDs if provided
-	if err := s.mapTextFieldsToIDs(req, car); err != nil {
+	if err := s.mapTextFieldsToIDs(req); err != nil {
 		// Log error but don't fail - autosave is lenient
 		// In production, you might want to return issues in stepStatus
 	}
@@ -471,7 +586,7 @@ func (s *CarService) AutoSaveDraft(carID, userID int, req *models.UpdateCarReque
 }
 
 // mapTextFieldsToIDs maps text field inputs to their corresponding code fields
-func (s *CarService) mapTextFieldsToIDs(req *models.UpdateCarRequest, car *models.Car) error {
+func (s *CarService) mapTextFieldsToIDs(req *models.UpdateCarRequest) error {
 	// Map province name to ID (provinces still use IDs, not codes)
 	if req.ProvinceNameTh != nil && *req.ProvinceNameTh != "" {
 		if id, err := s.carRepo.LookupProvinceByName(*req.ProvinceNameTh); err == nil && id != nil {
@@ -775,7 +890,7 @@ func (s *CarService) DeleteCarImage(imageID, userID int, isAdmin bool) error {
 	return s.imageRepo.DeleteCarImage(imageID)
 }
 
-/// GetCarWithImages retrieves a car with its image metadata and inspection data
+// / GetCarWithImages retrieves a car with its image metadata and inspection data
 func (s *CarService) GetCarWithImages(carID int) (*models.CarWithImages, error) {
 	// 1. Get the car
 	car, err := s.carRepo.GetCarByID(carID)

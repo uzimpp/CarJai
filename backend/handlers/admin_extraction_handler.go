@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/uzimpp/CarJai/backend/models"
 	"github.com/uzimpp/CarJai/backend/services"
 	"github.com/uzimpp/CarJai/backend/utils"
 )
@@ -52,6 +53,7 @@ func (h *AdminExtractionHandler) HandleImportMarketPrices(w http.ResponseWriter,
 		utils.WriteError(w, http.StatusBadRequest, "Invalid file type. Only PDF is allowed.")
 		return
 	}
+
 	tempDir := os.TempDir()
 	tempFileName := fmt.Sprintf("market_price_upload_%d%s", time.Now().UnixNano(), filepath.Ext(fileHeader.Filename))
 	tempFilePath := filepath.Join(tempDir, tempFileName)
@@ -96,12 +98,12 @@ func (h *AdminExtractionHandler) HandleImportMarketPrices(w http.ResponseWriter,
 	log.Printf("Market price import from %s completed successfully. Inserted: %d, Updated: %d", tempFilePath, inserted, updated)
 
 	// --- Respond with Success ---
-	response := map[string]interface{}{
-		"message":        "Market prices imported successfully.",
-		"inserted_count": inserted,
-		"updated_count":  updated,
+	response := models.MarketPriceImportResponse{
+		Message:       "Market prices imported successfully.",
+		InsertedCount: inserted,
+		UpdatedCount:  updated,
 	}
-	utils.WriteJSON(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, response, "")
 	log.Println("Admin ImportMarketPrices request processed successfully.")
 }
 
@@ -124,5 +126,5 @@ func (h *AdminExtractionHandler) HandleGetMarketPrices(w http.ResponseWriter, r 
 	}
 
 	log.Printf("Successfully retrieved %d market prices.", len(prices))
-	utils.WriteJSON(w, http.StatusOK, prices)
+	utils.WriteJSON(w, http.StatusOK, prices, "")
 }

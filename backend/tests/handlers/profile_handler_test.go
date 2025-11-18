@@ -113,12 +113,7 @@ func (h *testProfileHandler) Profile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := models.ProfileResponse{
-		Success: true,
-		Data:    *profileData,
-	}
-
-	utils.WriteJSON(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, *profileData, "")
 }
 
 func TestProfileHandler_UpdateSelf_Errors(t *testing.T) {
@@ -219,120 +214,5 @@ func (h *testProfileHandler) UpdateSelf(w http.ResponseWriter, r *http.Request) 
 		utils.WriteError(w, http.StatusInternalServerError, "Failed to update account")
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, models.UserAuthResponse{Success: true})
-}
-
-func TestProfileHandler_UpsertBuyerProfile(t *testing.T) {
-	tests := []struct {
-		name                string
-		method              string
-		hasCookie           bool
-		cookieValue         string
-		requestBody         interface{}
-		validateSessionFunc func(token string) (*models.User, error)
-		upsertBuyerFunc     func(userID int, req models.BuyerRequest) (*models.Buyer, error)
-		expectedStatus      int
-	}{
-		{
-			name:        "Successful upsert",
-			method:      "PUT",
-			hasCookie:   true,
-			cookieValue: "test-token",
-			requestBody: models.BuyerRequest{},
-			validateSessionFunc: func(token string) (*models.User, error) {
-				return &models.User{ID: 1}, nil
-			},
-			upsertBuyerFunc: func(userID int, req models.BuyerRequest) (*models.Buyer, error) {
-				return &models.Buyer{ID: 1}, nil
-			},
-			expectedStatus: http.StatusOK,
-		},
-		{
-			name:           "Invalid request body",
-			method:         "PUT",
-			hasCookie:      true,
-			cookieValue:    "test-token",
-			requestBody:    "invalid json",
-			expectedStatus: http.StatusBadRequest,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mockProfileService := &mockProfileService{
-				upsertBuyerFunc: tt.upsertBuyerFunc,
-			}
-			mockUserService := &mockUserService{
-				validateUserSessionFunc: tt.validateSessionFunc,
-			}
-
-			handler := &testProfileHandler{
-				profileService: mockProfileService,
-				userService:    mockUserService,
-			}
-
-			var reqBody []byte
-			if tt.requestBody != nil {
-				if str, ok := tt.requestBody.(string); ok {
-					reqBody = []byte(str)
-				} else {
-					reqBody, _ = json.Marshal(tt.requestBody)
-				}
-			}
-			req := httptest.NewRequest(tt.method, "/api/profile/buyer", bytes.NewBuffer(reqBody))
-			req.Header.Set("Content-Type", "application/json")
-			if tt.hasCookie {
-				req.AddCookie(&http.Cookie{
-					Name:  "jwt",
-					Value: tt.cookieValue,
-				})
-			}
-			w := httptest.NewRecorder()
-
-			handler.UpsertBuyerProfile(w, req)
-
-			if w.Code != tt.expectedStatus {
-				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
-			}
-		})
-	}
-}
-
-func (h *testProfileHandler) UpsertBuyerProfile(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPut {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	cookie, err := r.Cookie("jwt")
-	if err != nil {
-		utils.WriteError(w, http.StatusUnauthorized, "Authentication required")
-		return
-	}
-
-	user, err := h.userService.ValidateUserSession(cookie.Value)
-	if err != nil {
-		utils.WriteError(w, http.StatusUnauthorized, "Invalid session")
-		return
-	}
-
-	var req models.BuyerRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
-		return
-	}
-
-	buyer, err := h.profileService.UpsertBuyer(user.ID, req)
-	if err != nil {
-		utils.WriteError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	response := models.BuyerResponse{
-		Success: true,
-		Data:    *buyer,
-		Message: "Buyer profile updated successfully",
-	}
-
-	utils.WriteJSON(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, nil, "Profile updated successfully")
 }

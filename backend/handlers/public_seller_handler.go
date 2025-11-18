@@ -46,15 +46,11 @@ func (h *PublicSellerHandler) GetSeller(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	response := models.SellerResponse{
-		Success: true,
-		Data: models.SellerData{
-			Seller:   *seller,
-			Contacts: []models.SellerContact{}, // Don't include contacts in basic profile view
-		},
+	response := models.PublicSellerResponse{
+		Seller:   *seller,
+		Contacts: []models.SellerContact{},
 	}
-
-	utils.WriteJSON(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, response, "")
 }
 
 // GetSellerContacts returns all contacts for a public seller
@@ -87,12 +83,10 @@ func (h *PublicSellerHandler) GetSellerContacts(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	response := map[string]interface{}{
-		"success":  true,
-		"contacts": contacts,
+	response := models.SellerContactsResponse{
+		Contacts: contacts,
 	}
-
-	utils.WriteJSON(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, response, "")
 }
 
 // GetSellerCars returns all active cars for a public seller
@@ -118,25 +112,29 @@ func (h *PublicSellerHandler) GetSellerCars(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Get all cars for this seller with images
-	cars, err := h.carService.GetCarsBySellerIDWithImages(seller.ID)
+	// Get language preference (default to English)
+	lang := r.URL.Query().Get("lang")
+	if lang == "" {
+		lang = "en"
+	}
+
+	// Get all cars for this seller as lightweight list items
+	allCars, err := h.carService.GetCarListItemsBySellerID(seller.ID, lang)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, "Failed to get seller cars")
 		return
 	}
 
 	// Filter to only active/published cars for public view
-	activeCars := []models.CarListingWithImages{}
-	for _, car := range cars {
+	activeCars := []models.CarListItem{}
+	for _, car := range allCars {
 		if car.Status == "active" {
 			activeCars = append(activeCars, car)
 		}
 	}
 
-	response := map[string]interface{}{
-		"success": true,
-		"cars":    activeCars,
+	response := models.SellerCarsResponse{
+		Cars: activeCars,
 	}
-
-	utils.WriteJSON(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, response, "")
 }

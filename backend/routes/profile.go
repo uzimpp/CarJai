@@ -12,27 +12,30 @@ import (
 func ProfileRoutes(
 	profileService *services.ProfileService,
 	userService *services.UserService,
+	carService *services.CarService,
 	allowedOrigins []string,
 ) *http.ServeMux {
 
 	// Create handler instance
-	profileHandler := handlers.NewProfileHandler(profileService, userService)
+	profileHandler := handlers.NewProfileHandler(profileService, userService, carService)
 
 	// Create router
 	router := http.NewServeMux()
 
 	// Profile routes (GET/PATCH) - handles /api/profile/self
+	// PATCH supports unified updates: account fields (username, name), buyer profile, and/or seller profile
 	router.HandleFunc("/api/profile/self",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				middleware.GeneralRateLimit()(
 					middleware.LoggingMiddleware(
 						func(w http.ResponseWriter, r *http.Request) {
-							if r.Method == http.MethodGet {
+							switch r.Method {
+							case http.MethodGet:
 								profileHandler.Profile(w, r)
-							} else if r.Method == http.MethodPatch {
+							case http.MethodPatch:
 								profileHandler.UpdateSelf(w, r)
-							} else {
+							default:
 								http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 							}
 						},
@@ -42,30 +45,15 @@ func ProfileRoutes(
 		),
 	)
 
-	// Buyer profile routes (PUT) - handles /api/profile/buyer
-	router.HandleFunc("/api/profile/buyer",
-		middleware.CORSMiddleware(allowedOrigins)(
-			middleware.SecurityHeadersMiddleware(
-				middleware.GeneralRateLimit()(
-					middleware.LoggingMiddleware(
-						func(w http.ResponseWriter, r *http.Request) {
-							profileHandler.UpsertBuyerProfile(w, r)
-						},
-					),
-				),
-			),
-		),
-	)
-
-	// Seller profile routes (PUT) - handles /api/profile/seller
+	// Seller profile route (GET) - efficient endpoint for seller data only
 	router.HandleFunc("/api/profile/seller",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				middleware.GeneralRateLimit()(
 					middleware.LoggingMiddleware(
 						func(w http.ResponseWriter, r *http.Request) {
-							if r.Method == http.MethodPut {
-								profileHandler.UpsertSellerProfile(w, r)
+							if r.Method == http.MethodGet {
+								profileHandler.GetSellerProfile(w, r)
 							} else {
 								http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 							}

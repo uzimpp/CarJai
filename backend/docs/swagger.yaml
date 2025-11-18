@@ -974,7 +974,14 @@ paths:
     patch:
       tags:
         - Profile
-      summary: Update current user profile
+      summary: Update current user profile (unified endpoint)
+      description: |
+        Unified endpoint for updating profile information. Supports updating:
+        - Account fields (username, name)
+        - Buyer profile (province, budget_min, budget_max)
+        - Seller profile (display_name, about, map_link, contacts)
+        
+        All fields are optional. You can update any combination of these in a single request.
       requestBody:
         required: true
         content:
@@ -982,66 +989,143 @@ paths:
             schema:
               type: object
               properties:
+                username:
+                  type: string
+                  minLength: 3
+                  maxLength: 20
+                  description: Account username
                 name:
                   type: string
+                  minLength: 2
                   maxLength: 100
-                email:
-                  type: string
-                  format: email
-      responses:
-        '200':
-          description: Profile updated successfully
-
-  /api/profile/buyer:
-    put:
-      tags:
-        - Profile
-      summary: Create or update buyer profile
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
+                  description: Account display name
+                buyer:
+                type: object
+                  description: Buyer profile data
               properties:
                 province:
                   type: string
                   maxLength: 100
-                budget_min:
+                    budgetMin:
                   type: integer
                   minimum: 0
-                budget_max:
+                    budgetMax:
                   type: integer
                   minimum: 0
-      responses:
-        '200':
-          description: Buyer profile updated successfully
-
-  /api/profile/seller:
-    put:
-      tags:
-        - Profile
-      summary: Create or update seller profile
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
+                seller:
+                type: object
+                  description: Seller profile data
+                  required:
+                    - displayName
+                properties:
+                    displayName:
+                    type: string
+                      maxLength: 50
+                  about:
+                    type: string
+                      maxLength: 200
+                    mapLink:
+                    type: string
+                    contacts:
+                      type: array
+                      items:
               type: object
               required:
-                - display_name
+                          - contactType
+                          - value
               properties:
-                display_name:
+                          contactType:
                   type: string
-                  maxLength: 50
-                about:
+                            maxLength: 20
+                          value:
                   type: string
-                  maxLength: 200
-                map_link:
+                          label:
                   type: string
+                            maxLength: 80
+            example:
+              username: "newusername"
+              name: "New Name"
+              buyer:
+                province: "Bangkok"
+                budgetMin: 300000
+                budgetMax: 1500000
+              seller:
+                displayName: "My Shop"
+                about: "About my shop"
+                contacts:
+                  - contactType: "phone"
+                    value: "0812345678"
+                    label: "Mobile"
       responses:
         '200':
-          description: Seller profile updated successfully
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+        '400':
+          description: Bad request (validation error or no fields provided)
+        '401':
+          description: Unauthorized
+
+  /api/profile/seller:
+    get:
+      tags:
+        - Profile
+      summary: Get seller profile (efficient endpoint)
+      description: |
+        Returns seller profile data including display_name, about, map_link, contacts, and lightweight car summaries.
+        More efficient than GET /api/profile/self when you only need seller information.
+        Useful for displaying seller info on car listing pages and managing seller's own listings.
+        Includes all cars (active, draft, sold, etc.) for the authenticated seller.
+        Car summaries contain essential fields (id, status, brand, model, submodel, year, price, mileage, bodyType, transmission, drivetrain, fuelTypes, colors, conditionRating, thumbnailUrl) for optimal performance.
+      responses:
+        '200':
+          description: Seller profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerResponse'
+              example:
+                success: true
+                data:
+                  seller:
+                    id: 1
+                    displayName: "My Car Shop"
+                    about: "Best cars in town"
+                    mapLink: "https://maps.google.com/..."
+                  contacts:
+                    - id: 1
+                      sellerId: 1
+                      contactType: "phone"
+                      value: "0812345678"
+                      label: "Mobile"
+                    - id: 2
+                      sellerId: 1
+                      contactType: "email"
+                      value: "contact@shop.com"
+                      label: "Business Email"
+                  cars:
+                    - id: 1
+                      sellerId: 1
+                      status: "active"
+                      brandName: "Toyota"
+                      modelName: "Camry"
+                      submodelName: "XLE"
+                      year: 2020
+                      price: 500000
+                      mileage: 50000
+                      bodyType: "Sedan"
+                      transmission: "Automatic"
+                      drivetrain: "FWD"
+                      fuelTypes: ["Gasoline"]
+                      colors: ["White", "Gray"]
+                      conditionRating: 4
+                      thumbnailUrl: "/api/cars/images/123"
+        '401':
+          description: Unauthorized
+        '404':
+          description: Seller profile not found
 
   # Reference Data
   /api/reference-data:
@@ -1668,11 +1752,11 @@ paths:
         Sellers are not allowed to use favourites and will receive 403.
       responses:
         '200':
-          description: Favourite car listings with images
+          description: Favourite car listings as lightweight list items
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CarListingWithImagesResponse'
+                $ref: '#/components/schemas/CarListItemListResponse'
               examples:
                 sample:
                   value:
@@ -2354,53 +2438,17 @@ components:
           type: string
           format: date-time
 
-    CarListingWithImages:
+    CarListItem:
       type: object
-      description: Compact car listing with images for favourites
+      description: Lightweight car listing item with translated labels for display
       properties:
         id:
           type: integer
         sellerId:
           type: integer
-        year:
-          type: integer
-          nullable: true
-        mileage:
-          type: integer
-          nullable: true
-        price:
-          type: integer
-          nullable: true
-        provinceId:
-          type: integer
-          nullable: true
-        conditionRating:
-          type: integer
-          nullable: true
-        bodyTypeCode:
-          type: string
-          nullable: true
-        transmissionCode:
-          type: string
-          nullable: true
-        drivetrainCode:
-          type: string
-          nullable: true
-        seats:
-          type: integer
-          nullable: true
-        doors:
-          type: integer
-          nullable: true
         status:
           type: string
           enum: [draft, active, sold, deleted]
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
         brandName:
           type: string
           nullable: true
@@ -2410,22 +2458,58 @@ components:
         submodelName:
           type: string
           nullable: true
-        images:
+        year:
+          type: integer
+          nullable: true
+        price:
+          type: integer
+          nullable: true
+        mileage:
+          type: integer
+          nullable: true
+        bodyType:
+          type: string
+          nullable: true
+          description: Display label (e.g., "Pickup")
+        transmission:
+          type: string
+          nullable: true
+          description: Display label (e.g., "Manual")
+        drivetrain:
+          type: string
+          nullable: true
+          description: Display label (e.g., "FWD")
+        fuelTypes:
           type: array
           items:
-            $ref: '#/components/schemas/CarImageMetadata'
+          type: string
+          description: Display labels (e.g., ["Gasoline", "LPG"])
+        colors:
+          type: array
+          items:
+          type: string
+          description: Display labels (e.g., ["White", "Gray"])
+        conditionRating:
+          type: integer
+          nullable: true
+        thumbnailUrl:
+          type: string
+          nullable: true
+          description: Image URL for thumbnail (e.g., "/api/cars/images/123")
 
-    CarListingWithImagesResponse:
+    CarListItemListResponse:
       type: object
+      description: Response containing a list of CarListItem objects
       properties:
         success:
           type: boolean
         data:
           type: array
           items:
-            $ref: '#/components/schemas/CarListingWithImages'
+            $ref: '#/components/schemas/CarListItem'
         message:
           type: string
+          nullable: true
 
     # --- NEW: Schemas for Market Price ---
     MarketPrice:

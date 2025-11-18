@@ -84,7 +84,8 @@ export default function SettingsPage() {
     try {
       setBuyerError(null);
       setBuyerSuccess(null);
-      const res = await profileAPI.upsertBuyerProfile(data);
+      // Use unified endpoint
+      const res = await profileAPI.updateSelf({ buyer: data });
       setBuyerSuccess("Buyer preferences saved successfully!");
       // Refresh auth context to get updated roles
       await validateSession();
@@ -93,10 +94,14 @@ export default function SettingsPage() {
         prev
           ? {
               ...prev,
-              buyer: res.data,
+              buyer: res.data.buyer,
               profiles: {
                 ...prev.profiles,
-                buyerComplete: true,
+                buyerComplete: res.data.buyer
+                  ? res.data.buyer.province !== null &&
+                    res.data.buyer.budgetMin !== null &&
+                    res.data.buyer.budgetMax !== null
+                  : false,
               },
             }
           : prev
@@ -112,7 +117,8 @@ export default function SettingsPage() {
     try {
       setSellerError(null);
       setSellerSuccess(null);
-      const res = await profileAPI.upsertSellerProfile(data);
+      // Use unified endpoint
+      const res = await profileAPI.updateSelf({ seller: data });
       setSellerSuccess("Seller settings saved successfully!");
       // Refresh auth context to get updated roles
       await validateSession();
@@ -125,7 +131,9 @@ export default function SettingsPage() {
               contacts: res.data.contacts || [],
               profiles: {
                 ...prev.profiles,
-                sellerComplete: true,
+                sellerComplete: res.data.seller
+                  ? res.data.seller.displayName.trim().length > 0
+                  : false,
               },
             }
           : prev

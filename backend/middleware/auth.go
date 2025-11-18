@@ -1,13 +1,11 @@
 package middleware
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 
-	"github.com/uzimpp/CarJai/backend/models"
 	"github.com/uzimpp/CarJai/backend/services"
 	"github.com/uzimpp/CarJai/backend/utils"
 )
@@ -32,7 +30,7 @@ func (m *AuthMiddleware) RequireAuth(next http.HandlerFunc) http.HandlerFunc {
 		// Get token from admin_jwt cookie
 		cookie, err := r.Cookie("admin_jwt")
 		if err != nil {
-			m.writeErrorResponse(w, http.StatusUnauthorized, "Authentication required")
+			utils.WriteError(w, http.StatusUnauthorized, "Authentication required")
 			return
 		}
 		token := cookie.Value
@@ -40,20 +38,20 @@ func (m *AuthMiddleware) RequireAuth(next http.HandlerFunc) http.HandlerFunc {
 		// Validate JWT token
 		claims, err := m.jwtManager.ValidateToken(token)
 		if err != nil {
-			m.writeErrorResponse(w, http.StatusUnauthorized, "Invalid or expired token")
+			utils.WriteError(w, http.StatusUnauthorized, "Invalid or expired token")
 			return
 		}
 
 		// Validate session in database
 		session, err := m.adminService.ValidateSession(token)
 		if err != nil {
-			m.writeErrorResponse(w, http.StatusUnauthorized, "Invalid session")
+			utils.WriteError(w, http.StatusUnauthorized, "Invalid session")
 			return
 		}
 
 		// Check if session admin ID matches token user ID
 		if session.AdminID != claims.UserID {
-			m.writeErrorResponse(w, http.StatusUnauthorized, "Session mismatch")
+			utils.WriteError(w, http.StatusUnauthorized, "Session mismatch")
 			return
 		}
 
@@ -73,14 +71,14 @@ func (m *AuthMiddleware) RequireIPWhitelist(next http.HandlerFunc) http.HandlerF
 		// Extract admin ID from context (set by RequireAuth)
 		adminIDStr := r.Header.Get("X-Admin-ID")
 		if adminIDStr == "" {
-			m.writeErrorResponse(w, http.StatusUnauthorized, "Admin ID not found")
+			utils.WriteError(w, http.StatusUnauthorized, "Admin ID not found")
 			return
 		}
 
 		// Convert admin ID to int
 		adminID, err := strconv.Atoi(adminIDStr)
 		if err != nil {
-			m.writeErrorResponse(w, http.StatusBadRequest, "Invalid admin ID")
+			utils.WriteError(w, http.StatusBadRequest, "Invalid admin ID")
 			return
 		}
 
@@ -92,14 +90,14 @@ func (m *AuthMiddleware) RequireIPWhitelist(next http.HandlerFunc) http.HandlerF
 		)
 
 		if clientIP == "" {
-			m.writeErrorResponse(w, http.StatusBadRequest, "Unable to determine client IP")
+			utils.WriteError(w, http.StatusBadRequest, "Unable to determine client IP")
 			return
 		}
 
 		// Get whitelisted IPs for admin
 		whitelistedIPs, err := m.adminService.GetWhitelistedIPs(adminID)
 		if err != nil {
-			m.writeErrorResponse(w, http.StatusInternalServerError, "Failed to check IP whitelist")
+			utils.WriteError(w, http.StatusInternalServerError, "Failed to check IP whitelist")
 			return
 		}
 
@@ -112,12 +110,12 @@ func (m *AuthMiddleware) RequireIPWhitelist(next http.HandlerFunc) http.HandlerF
 		// Check if IP is whitelisted
 		isWhitelisted, err := utils.IsIPWhitelisted(clientIP, ipList)
 		if err != nil {
-			m.writeErrorResponse(w, http.StatusInternalServerError, "Failed to validate IP address")
+			utils.WriteError(w, http.StatusInternalServerError, "Failed to validate IP address")
 			return
 		}
 
 		if !isWhitelisted {
-			m.writeErrorResponse(w, http.StatusForbidden, "IP address not authorized")
+			utils.WriteError(w, http.StatusForbidden, "IP address not authorized")
 			return
 		}
 
@@ -139,19 +137,19 @@ func (m *AuthMiddleware) RequireGlobalIPWhitelist(allowedIPs []string) func(http
 			)
 
 			if clientIP == "" {
-				m.writeErrorResponse(w, http.StatusBadRequest, "Unable to determine client IP")
+				utils.WriteError(w, http.StatusBadRequest, "Unable to determine client IP")
 				return
 			}
 
 			// Check if IP is whitelisted
 			isWhitelisted, err := utils.IsIPWhitelisted(clientIP, allowedIPs)
 			if err != nil {
-				m.writeErrorResponse(w, http.StatusInternalServerError, "Failed to validate IP address")
+				utils.WriteError(w, http.StatusInternalServerError, "Failed to validate IP address")
 				return
 			}
 
 			if !isWhitelisted {
-				m.writeErrorResponse(w, http.StatusForbidden, "Access denied: IP not whitelisted")
+				utils.WriteError(w, http.StatusForbidden, "Access denied: IP not whitelisted")
 				return
 			}
 			// IP is allowed, continue to next handler
@@ -166,7 +164,7 @@ func (m *AuthMiddleware) RequireAdminRoute(adminPrefix string) func(http.Handler
 		return func(w http.ResponseWriter, r *http.Request) {
 			// Check if request path starts with admin prefix
 			if !strings.HasPrefix(r.URL.Path, adminPrefix) {
-				m.writeErrorResponse(w, http.StatusNotFound, "Admin route not found")
+				utils.WriteError(w, http.StatusNotFound, "Admin route not found")
 				return
 			}
 
@@ -174,18 +172,4 @@ func (m *AuthMiddleware) RequireAdminRoute(adminPrefix string) func(http.Handler
 			next.ServeHTTP(w, r)
 		}
 	}
-}
-
-// writeErrorResponse writes a JSON error response
-func (m *AuthMiddleware) writeErrorResponse(w http.ResponseWriter, statusCode int, message string) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-
-	response := models.AdminErrorResponse{
-		Success: false,
-		Error:   message,
-		Code:    statusCode,
-	}
-
-	json.NewEncoder(w).Encode(response)
 }

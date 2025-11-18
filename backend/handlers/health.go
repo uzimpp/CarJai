@@ -2,9 +2,10 @@ package handlers
 
 import (
 	"database/sql"
-	"encoding/json"
 	"net/http"
 	"time"
+
+	"github.com/uzimpp/CarJai/backend/utils"
 )
 
 // HealthHandler handles health check endpoints
@@ -39,7 +40,7 @@ var startTime = time.Now()
 // Health handles basic health check
 func (h *HealthHandler) Health(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		h.writeErrorResponse(w, http.StatusMethodNotAllowed, "Method not allowed")
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
@@ -67,7 +68,7 @@ func (h *HealthHandler) Health(w http.ResponseWriter, r *http.Request) {
 		statusCode = http.StatusServiceUnavailable
 	}
 
-	h.writeJSONResponse(w, statusCode, response)
+	utils.WriteJSON(w, statusCode, response, "")
 }
 
 // checkDatabase checks database connectivity
@@ -97,25 +98,4 @@ func (h *HealthHandler) checkDatabase() ServiceStatus {
 		Status:       "healthy",
 		ResponseTime: responseTime.String(),
 	}
-}
-
-// writeJSONResponse writes a JSON response
-func (h *HealthHandler) writeJSONResponse(w http.ResponseWriter, statusCode int, data interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(data)
-}
-
-// writeErrorResponse writes a JSON error response
-func (h *HealthHandler) writeErrorResponse(w http.ResponseWriter, statusCode int, message string) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-
-	response := map[string]interface{}{
-		"success": false,
-		"error":   message,
-		"code":    statusCode,
-	}
-
-	json.NewEncoder(w).Encode(response)
 }
