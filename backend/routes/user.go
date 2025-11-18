@@ -141,5 +141,31 @@ func UserAuthRoutes(
 		),
 	)
 
+	// Forgot password (POST)
+	router.HandleFunc("/api/auth/forgot-password",
+		middleware.CORSMiddleware(allowedOrigins)(
+			middleware.SecurityHeadersMiddleware(
+				middleware.GeneralRateLimit()(
+					middleware.LoggingMiddleware(
+						userAuthHandler.ForgotPassword,
+					),
+				),
+			),
+		),
+	)
+
+	// Reset password (POST)
+	router.HandleFunc("/api/auth/reset-password",
+		middleware.CORSMiddleware(allowedOrigins)(
+			middleware.SecurityHeadersMiddleware(
+				middleware.GeneralRateLimit()(
+					middleware.LoggingMiddleware(
+						userAuthHandler.ResetPassword,
+					),
+				),
+			),
+		),
+	)
+
 	return router
 }

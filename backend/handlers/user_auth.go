@@ -600,3 +600,95 @@ func (h *UserAuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request)
 
 // getClientIP extracts the client IP address from the request
 // (removed) getClientIP: use utils.ExtractClientIP for a single, shared implementation
+
+// ForgotPassword handles forgot password requests
+func (h *UserAuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req models.ForgotPasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response := models.ForgotPasswordResponse{
+			Success: false,
+			Message: "Invalid request body",
+		}
+		utils.WriteJSON(w, http.StatusBadRequest, response)
+		return
+	}
+
+	// Basic validation
+	if req.Email == "" {
+		response := models.ForgotPasswordResponse{
+			Success: false,
+			Message: "Email is required",
+		}
+		utils.WriteJSON(w, http.StatusBadRequest, response)
+		return
+	}
+
+	// Request password reset (always returns success to prevent user enumeration)
+	_ = h.userService.RequestPasswordReset(req.Email)
+
+	// Always return success message
+	response := models.ForgotPasswordResponse{
+		Success: true,
+		Message: "If your email exists in our system, you will receive a password reset link shortly",
+	}
+	utils.WriteJSON(w, http.StatusOK, response)
+}
+
+// ResetPassword handles password reset with token
+func (h *UserAuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req models.ResetPasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response := models.ResetPasswordResponse{
+			Success: false,
+			Message: "Invalid request body",
+		}
+		utils.WriteJSON(w, http.StatusBadRequest, response)
+		return
+	}
+
+	// Validate request
+	if req.Token == "" || req.NewPassword == "" {
+		response := models.ResetPasswordResponse{
+			Success: false,
+			Message: "Token and new password are required",
+		}
+		utils.WriteJSON(w, http.StatusBadRequest, response)
+		return
+	}
+
+	if len(req.NewPassword) < 6 {
+		response := models.ResetPasswordResponse{
+			Success: false,
+			Message: "Password must be at least 6 characters long",
+		}
+		utils.WriteJSON(w, http.StatusBadRequest, response)
+		return
+	}
+
+	// Reset password
+	err := h.userService.ResetPasswordWithToken(req.Token, req.NewPassword)
+	if err != nil {
+		response := models.ResetPasswordResponse{
+			Success: false,
+			Message: err.Error(),
+		}
+		utils.WriteJSON(w, http.StatusBadRequest, response)
+		return
+	}
+
+	response := models.ResetPasswordResponse{
+		Success: true,
+		Message: "Password reset successfully. Please sign in with your new password.",
+	}
+	utils.WriteJSON(w, http.StatusOK, response)
+}

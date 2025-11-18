@@ -96,11 +96,24 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 	// Create profile service
 	profileService := services.NewProfileService(database)
 
+	// Create email service
+	emailService := services.NewEmailService(
+		appConfig.SMTPHost,
+		appConfig.SMTPPort,
+		appConfig.SMTPUsername,
+		appConfig.SMTPPassword,
+		appConfig.SMTPFrom,
+	)
+
 	// Create user service
 	userService := services.NewUserService(
 		userRepo,
 		userSessionRepo,
 		userJWTManager,
+		emailService,
+		appConfig.PasswordResetJWTSecret,
+		appConfig.PasswordResetTokenExpiration,
+		appConfig.FrontendURL,
 	)
 
 	// Set profile service on user service (to avoid circular dependency)

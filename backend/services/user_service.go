@@ -15,19 +15,37 @@ import (
 
 // UserService handles user-related business logic
 type UserService struct {
-	userRepo        *models.UserRepository
-	userSessionRepo *models.UserSessionRepository
-	jwtManager      *utils.JWTManager
-	profileService  *ProfileService
+	userRepo                     *models.UserRepository
+	userSessionRepo              *models.UserSessionRepository
+	jwtManager                   *utils.JWTManager
+	profileService               *ProfileService
+	emailService                 *EmailService
+	passwordResetJWTSecret       string
+	passwordResetTokenExpiration int
+	frontendURL                  string
+	resetRequestTracker          map[string][]time.Time // email -> timestamps for rate limiting
 }
 
 // NewUserService creates a new user service
-func NewUserService(userRepo *models.UserRepository, userSessionRepo *models.UserSessionRepository, jwtManager *utils.JWTManager) *UserService {
+func NewUserService(
+	userRepo *models.UserRepository,
+	userSessionRepo *models.UserSessionRepository,
+	jwtManager *utils.JWTManager,
+	emailService *EmailService,
+	passwordResetJWTSecret string,
+	passwordResetTokenExpiration int,
+	frontendURL string,
+) *UserService {
 	return &UserService{
-		userRepo:        userRepo,
-		userSessionRepo: userSessionRepo,
-		jwtManager:      jwtManager,
-		profileService:  nil, // Will be set later to avoid circular dependency
+		userRepo:                     userRepo,
+		userSessionRepo:              userSessionRepo,
+		jwtManager:                   jwtManager,
+		profileService:               nil, // Will be set later to avoid circular dependency
+		emailService:                 emailService,
+		passwordResetJWTSecret:       passwordResetJWTSecret,
+		passwordResetTokenExpiration: passwordResetTokenExpiration,
+		frontendURL:                  frontendURL,
+		resetRequestTracker:          make(map[string][]time.Time),
 	}
 }
 
@@ -125,6 +143,11 @@ func (s *UserService) CreateUserByAdmin(req models.AdminCreateUserRequest) (*mod
 
 // Signup creates a new user account
 func (s *UserService) Signup(email, password, username, name, ipAddress, userAgent string) (*models.UserAuthResponse, error) {
+	// Validate email format and domain
+	if err := utils.ValidateEmailForSignup(email); err != nil {
+		return nil, err
+	}
+
 	// Check if user already exists by email
 	existingUser, err := s.userRepo.GetUserByEmail(email)
 	if err == nil && existingUser != nil {
@@ -640,4 +663,122 @@ func (s *UserService) IsSeller(userID int) (bool, error) {
 // GetUserByID retrieves a user by ID
 func (s *UserService) GetUserByID(userID int) (*models.User, error) {
 	return s.userRepo.GetUserByID(userID)
+}
+
+// RequestPasswordReset handles forgot password request
+func (s *UserService) RequestPasswordReset(email string) error {
+	// Basic format validation
+	if !utils.IsValidEmailFormat(email) {
+		// Still return nil to prevent user enumeration
+		return nil
+	}
+
+	// Check rate limiting (max 3 requests per hour)
+	if s.isRateLimited(email) {
+		// Still return nil to prevent user enumeration
+		return nil
+	}
+
+	// Check if user exists
+	user, err := s.userRepo.GetUserByEmail(email)
+	if err != nil {
+		// User doesn't exist - return success anyway (no user enumeration)
+		return nil
+	}
+
+	// Generate password reset token
+	token, err := utils.GeneratePasswordResetToken(
+		user.ID,
+		user.Email,
+		s.passwordResetJWTSecret,
+		s.passwordResetTokenExpiration,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to generate reset token: %w", err)
+	}
+
+	// Build reset link
+	resetLink := fmt.Sprintf("%s/reset-password?token=%s", s.frontendURL, token)
+
+	// Send email
+	err = s.emailService.SendPasswordResetEmail(user.Email, resetLink)
+	if err != nil {
+		// Log error but don't expose to user
+		fmt.Printf("Failed to send reset email to %s: %v\n", user.Email, err)
+		return nil // Still return success
+	}
+
+	// Track request for rate limiting
+	s.trackResetRequest(email)
+
+	return nil
+}
+
+// ResetPasswordWithToken validates token and resets password
+func (s *UserService) ResetPasswordWithToken(token, newPassword string) error {
+	// Validate token
+	claims, err := utils.ValidatePasswordResetToken(token, s.passwordResetJWTSecret)
+	if err != nil {
+		return fmt.Errorf("invalid or expired token")
+	}
+
+	// Get user
+	user, err := s.userRepo.GetUserByID(claims.UserID)
+	if err != nil {
+		return fmt.Errorf("user not found")
+	}
+
+	// Verify email matches (extra security)
+	if user.Email != claims.Email {
+		return fmt.Errorf("token email mismatch")
+	}
+
+	// Hash new password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	// Update password
+	err = s.userRepo.UpdatePassword(user.ID, string(hashedPassword))
+	if err != nil {
+		return fmt.Errorf("failed to update password: %w", err)
+	}
+
+	// Invalidate all user sessions (force re-login)
+	_, _ = s.userSessionRepo.DeleteAllSessionsForUser(user.ID)
+
+	return nil
+}
+
+// isRateLimited checks if email has exceeded rate limit (3 requests per hour)
+func (s *UserService) isRateLimited(email string) bool {
+	now := time.Now()
+	oneHourAgo := now.Add(-1 * time.Hour)
+
+	// Get timestamps for this email
+	timestamps, exists := s.resetRequestTracker[email]
+	if !exists {
+		return false
+	}
+
+	// Filter out old timestamps
+	validTimestamps := []time.Time{}
+	for _, ts := range timestamps {
+		if ts.After(oneHourAgo) {
+			validTimestamps = append(validTimestamps, ts)
+		}
+	}
+
+	// Update tracker
+	s.resetRequestTracker[email] = validTimestamps
+
+	// Check if limit exceeded
+	return len(validTimestamps) >= 3
+}
+
+// trackResetRequest records a reset request timestamp
+func (s *UserService) trackResetRequest(email string) {
+	now := time.Now()
+	s.resetRequestTracker[email] = append(s.resetRequestTracker[email], now)
 }

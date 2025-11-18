@@ -4,7 +4,7 @@ CREATE TABLE buyers (
     province VARCHAR(100),
     budget_min INT,
     budget_max INT,
-    -- status VARCHAR(20) NOT NULL DEFAULT 'active',
+    status VARCHAR(20) NOT NULL DEFAULT 'active',
     CONSTRAINT chk_budget_nonneg CHECK (
         budget_min IS NULL
         OR budget_min >= 0

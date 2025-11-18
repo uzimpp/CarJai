@@ -329,3 +329,26 @@ type RecordViewResponse struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
 }
+
+// ForgotPasswordRequest represents the request payload for forgot password
+type ForgotPasswordRequest struct {
+	Email string `json:"email" validate:"required,email"`
+}
+
+// ForgotPasswordResponse represents the response for forgot password
+type ForgotPasswordResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+}
+
+// ResetPasswordRequest represents the request payload for reset password
+type ResetPasswordRequest struct {
+	Token       string `json:"token" validate:"required"`
+	NewPassword string `json:"new_password" validate:"required,min=6"`
+}
+
+// ResetPasswordResponse represents the response for reset password
+type ResetPasswordResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+}
