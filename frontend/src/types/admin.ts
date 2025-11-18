@@ -165,6 +165,36 @@ interface ImportMarketPriceResponse {
   updated_count: number;
 }
 
+interface DashboardStats {
+  totalUsers: number;
+  activeCars: number;
+  soldCars: number;
+  pendingReports: number;
+  totalBuyers: number;
+  totalSellers: number;
+}
+
+interface RecentReport {
+  id: number;
+  reportType: "seller" | "car";
+  carId: number | null;
+  sellerId: number | null;
+  description: string;
+  reporterId: number;
+  createdAt: string;
+  status: "pending" | "resolved" | "dismissed";
+}
+
+interface ChartDataPoint {
+  date: string;
+  value: number;
+}
+
+interface BrandDataPoint {
+  brand: string;
+  count: number;
+}
+
 export type {
   AdminUser,
   AdminSession,
@@ -188,4 +218,8 @@ export type {
   MarketPrice,
   MarketPriceResponse,
   ImportMarketPriceResponse,
+  DashboardStats,
+  RecentReport,
+  ChartDataPoint,
+  BrandDataPoint,
 };

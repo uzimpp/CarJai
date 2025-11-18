@@ -20,6 +20,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -mod=mod -a -installsuffix cgo -o main .
 
 # Build the seed script binary
 RUN CGO_ENABLED=0 GOOS=linux go build -mod=mod -a -installsuffix cgo -o seed_demo_cars ./scripts/seed_demo_cars.go
+RUN CGO_ENABLED=0 GOOS=linux go build -mod=mod -a -installsuffix cgo -o seed_demo_users ./scripts/seed_demo_users.go
 
 # Final stage
 FROM alpine:latest
@@ -45,7 +46,7 @@ COPY --from=builder /app/main .
 
 # Copy the seed script binary
 COPY --from=builder /app/seed_demo_cars ./scripts/
-
+COPY --from=builder /app/seed_demo_users ./scripts/
 # Copy scripts directory (for reference and helpers)
 COPY scripts/seed_demo_cars_docker.sh ./scripts/
 
