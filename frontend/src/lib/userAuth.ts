@@ -1,4 +1,3 @@
-// Authentication utilities and API functions
 import {
   AuthResponse,
   SigninRequest,

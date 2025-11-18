@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: CarJai API
-  description: CarJai platform API for car buying and selling
+  description: CarJai platform API for car buying, selling, and admin management
   version: 1.0.0
   contact:
     name: CarJai Team
@@ -240,6 +240,202 @@ paths:
           description: Bad request
         '401':
           description: Unauthorized
+
+  # Profile Management
+  /api/profile/self:
+    get:
+      tags:
+        - Profile
+      summary: Get current user profile
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  username:
+                    type: string
+                  email:
+                    type: string
+                  name:
+                    type: string
+                  created_at:
+                    type: string
+                    format: date-time
+
+    patch:
+      tags:
+        - Profile
+      summary: Update current user profile (unified endpoint)
+      description: |
+        Unified endpoint for updating profile information. Supports updating:
+        - Account fields (username, name)
+        - Buyer profile (province, budget_min, budget_max)
+        - Seller profile (display_name, about, map_link, contacts)
+        
+        All fields are optional. You can update any combination of these in a single request.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  minLength: 3
+                  maxLength: 20
+                  description: Account username
+                name:
+                  type: string
+                  minLength: 2
+                  maxLength: 100
+                  description: Account display name
+                buyer:
+                type: object
+                  description: Buyer profile data
+              properties:
+                province:
+                  type: string
+                  maxLength: 100
+                    budgetMin:
+                  type: integer
+                  minimum: 0
+                    budgetMax:
+                  type: integer
+                  minimum: 0
+                seller:
+                type: object
+                  description: Seller profile data
+                  required:
+                    - displayName
+                properties:
+                    displayName:
+                    type: string
+                      maxLength: 50
+                  about:
+                    type: string
+                      maxLength: 200
+                    mapLink:
+                    type: string
+                    contacts:
+                      type: array
+                      items:
+              type: object
+              required:
+                          - contactType
+                          - value
+              properties:
+                          contactType:
+                  type: string
+                            maxLength: 20
+                          value:
+                  type: string
+                          label:
+                  type: string
+                            maxLength: 80
+            example:
+              username: "newusername"
+              name: "New Name"
+              buyer:
+                province: "Bangkok"
+                budgetMin: 300000
+                budgetMax: 1500000
+              seller:
+                displayName: "My Shop"
+                about: "About my shop"
+                contacts:
+                  - contactType: "phone"
+                    value: "0812345678"
+                    label: "Mobile"
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+        '400':
+          description: Bad request (validation error or no fields provided)
+        '401':
+          description: Unauthorized
+
+  /api/profile/seller/{id}:
+    get:
+      tags:
+        - Profile
+      summary: Get seller profile by ID (public endpoint)
+      description: |
+        Public endpoint that returns seller profile data including display_name, about, map_link, contacts, and lightweight car summaries.
+        Useful for displaying seller info on car listing pages.
+        Car summaries contain essential fields (id, status, brand, model, submodel, year, price, mileage, bodyType, transmission, drivetrain, fuelTypes, colors, conditionRating, thumbnailUrl) for optimal performance.
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Seller ID (user ID)
+        - name: lang
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [en, th]
+            default: en
+          description: Language preference for car labels
+      responses:
+        '200':
+          description: Seller profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerResponse'
+              example:
+                success: true
+                data:
+                  seller:
+                    id: 1
+                    displayName: "My Car Shop"
+                    about: "Best cars in town"
+                    mapLink: "https://maps.google.com/..."
+                  contacts:
+                    - id: 1
+                      sellerId: 1
+                      contactType: "phone"
+                      value: "0812345678"
+                      label: "Mobile"
+                    - id: 2
+                      sellerId: 1
+                      contactType: "email"
+                      value: "contact@shop.com"
+                      label: "Business Email"
+                  cars:
+                    - id: 1
+                      sellerId: 1
+                      status: "active"
+                      brandName: "Toyota"
+                      modelName: "Camry"
+                      submodelName: "XLE"
+                      year: 2020
+                      price: 500000
+                      mileage: 50000
+                      bodyType: "Sedan"
+                      transmission: "Automatic"
+                      drivetrain: "FWD"
+                      fuelTypes: ["Gasoline"]
+                      colors: ["White", "Gray"]
+                      conditionRating: 4
+                      thumbnailUrl: "/api/cars/images/123"
+        '401':
+          description: Unauthorized
+        '404':
+          description: Seller profile not found
 
   # Car Management
   /api/cars/search:
@@ -855,284 +1051,326 @@ paths:
         '404':
           description: Image not found
 
-  # Seller Information
-  /api/sellers/{id}:
+  # Favorites
+  /api/favorites/my:
     get:
       tags:
-        - Sellers
-      summary: Get seller information
-      security: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Seller information
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Seller'
-        '404':
-          description: Seller not found
-
-  /api/sellers/{id}/contacts:
-    get:
-      tags:
-        - Sellers
-      summary: Get seller contacts
-      security: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Seller contacts
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  contacts:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        id:
-                          type: integer
-                        contact_type:
-                          type: string
-                        value:
-                          type: string
-                        label:
-                          type: string
-        '404':
-          description: Seller not found
-
-  /api/sellers/{id}/cars:
-    get:
-      tags:
-        - Sellers
-      summary: Get seller's cars
-      security: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Seller's cars
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  cars:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Car'
-        '404':
-          description: Seller not found
-
-  # Profile Management
-  /api/profile/self:
-    get:
-      tags:
-        - Profile
-      summary: Get current user profile
-      responses:
-        '200':
-          description: User profile
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    type: integer
-                  username:
-                    type: string
-                  email:
-                    type: string
-                  name:
-                    type: string
-                  created_at:
-                    type: string
-                    format: date-time
-
-    patch:
-      tags:
-        - Profile
-      summary: Update current user profile (unified endpoint)
+        - Favorites
+      summary: Get current user's favourite listings (buyer-only)
+      operationId: getMyFavourites
+      x-roles:
+        - buyer
+      security:
+        - CookieAuth: []
       description: |
-        Unified endpoint for updating profile information. Supports updating:
-        - Account fields (username, name)
-        - Buyer profile (province, budget_min, budget_max)
-        - Seller profile (display_name, about, map_link, contacts)
-        
-        All fields are optional. You can update any combination of these in a single request.
+        Buyer-only endpoint. Returns the authenticated buyer's favourite car listings with images.
+        Sellers are not allowed to use favourites and will receive 403.
+      responses:
+        '200':
+          description: Favourite car listings as lightweight list items
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CarListItemListResponse'
+              examples:
+                sample:
+                  value:
+                    success: true
+                    data:
+                      - id: 101
+                        sellerId: 5
+                        year: 2019
+                        mileage: 35000
+                        price: 420000
+                        provinceId: 10
+                        conditionRating: 4
+                        bodyTypeCode: "SEDAN"
+                        transmissionCode: "AT"
+                        drivetrainCode: "FWD"
+                        seats: 5
+                        doors: 4
+                        status: "active"
+                        createdAt: "2024-12-01T10:00:00Z"
+                        updatedAt: "2024-12-10T10:00:00Z"
+                        brandName: "TOYOTA"
+                        modelName: "COROLLA"
+                        submodelName: "1.8E"
+                        images:
+                          - id: 1
+                            carId: 101
+                            imageType: "image/jpeg"
+                            imageSize: 204800
+                            displayOrder: 1
+                            uploadedAt: "2024-12-01T11:00:00Z"
+        '401':
+          description: Unauthorized - Authentication required
+        '403':
+          description: Forbidden - Only buyers can access favourites
+
+  /api/favorites/{carId}:
+    post:
+      tags:
+        - Favorites
+      summary: Add a car to favourites (buyer-only)
+      operationId: addFavourite
+      x-roles:
+        - buyer
+      security:
+        - CookieAuth: []
+      description: |
+        Buyer-only endpoint. Adds the specified car to the authenticated buyer's favourites.
+        Sellers are not allowed to use favourites and will receive 403.
+      parameters:
+        - name: carId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Favourite added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicResponse'
+              examples:
+                success:
+                  value:
+                    success: true
+                    message: "Car 101 added to favourites"
+        '400':
+          description: Bad request - Invalid car ID or car not active
+        '401':
+          description: Unauthorized - Authentication required
+        '403':
+          description: Forbidden - Only buyers can add favourites
+
+    delete:
+      tags:
+        - Favorites
+      summary: Remove a car from favourites (buyer-only)
+      operationId: removeFavourite
+      x-roles:
+        - buyer
+      security:
+        - CookieAuth: []
+      description: |
+        Buyer-only endpoint. Removes the specified car from the authenticated buyer's favourites.
+        Sellers are not allowed to use favourites and will receive 403.
+      parameters:
+        - name: carId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Favourite removed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicResponse'
+              examples:
+                success:
+                  value:
+                    success: true
+                    message: "Car 101 removed from favourites"
+        '401':
+          description: Unauthorized - Authentication required
+        '404':
+          description: Favourite not found
+        '403':
+          description: Forbidden - Only buyers can remove favourites
+
+  # Recent Views
+  /api/recent-views:
+    post:
+      tags:
+        - Recent Views
+      summary: Record a car view (buyer-only)
+      operationId: recordView
+      x-roles:
+        - buyer
+      security:
+        - CookieAuth: []
+      description: |
+        Buyer-only endpoint. Records a car view for the authenticated buyer.
+        Sellers are not allowed to record views and will receive 403.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              properties:
-                username:
-                  type: string
-                  minLength: 3
-                  maxLength: 20
-                  description: Account username
-                name:
-                  type: string
-                  minLength: 2
-                  maxLength: 100
-                  description: Account display name
-                buyer:
-                type: object
-                  description: Buyer profile data
-              properties:
-                province:
-                  type: string
-                  maxLength: 100
-                    budgetMin:
-                  type: integer
-                  minimum: 0
-                    budgetMax:
-                  type: integer
-                  minimum: 0
-                seller:
-                type: object
-                  description: Seller profile data
-                  required:
-                    - displayName
-                properties:
-                    displayName:
-                    type: string
-                      maxLength: 50
-                  about:
-                    type: string
-                      maxLength: 200
-                    mapLink:
-                    type: string
-                    contacts:
-                      type: array
-                      items:
-              type: object
               required:
-                          - contactType
-                          - value
+                - car_id
               properties:
-                          contactType:
-                  type: string
-                            maxLength: 20
-                          value:
-                  type: string
-                          label:
-                  type: string
-                            maxLength: 80
-            example:
-              username: "newusername"
-              name: "New Name"
-              buyer:
-                province: "Bangkok"
-                budgetMin: 300000
-                budgetMax: 1500000
-              seller:
-                displayName: "My Shop"
-                about: "About my shop"
-                contacts:
-                  - contactType: "phone"
-                    value: "0812345678"
-                    label: "Mobile"
+                car_id:
+                  type: integer
+                  minimum: 1
+                  description: ID of the car being viewed
+                  example: 101
       responses:
         '200':
-          description: Profile updated successfully
+          description: View recorded successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProfileResponse'
+                $ref: '#/components/schemas/BasicResponse'
+              examples:
+                success:
+                  value:
+                    success: true
+                    message: "View recorded successfully"
         '400':
-          description: Bad request (validation error or no fields provided)
+          description: Bad request - Invalid car ID or car not active
         '401':
-          description: Unauthorized
+          description: Unauthorized - Authentication required
+        '403':
+          description: Forbidden - Only buyers can record recent views
+        '500':
+          description: Server error
 
-  /api/profile/seller:
     get:
       tags:
-        - Profile
-      summary: Get seller profile (efficient endpoint)
+        - Recent Views
+      summary: Get current user's recent views (buyer-only)
+      operationId: getRecentViews
+      x-roles:
+        - buyer
+      security:
+        - CookieAuth: []
       description: |
-        Returns seller profile data including display_name, about, map_link, contacts, and lightweight car summaries.
-        More efficient than GET /api/profile/self when you only need seller information.
-        Useful for displaying seller info on car listing pages and managing seller's own listings.
-        Includes all cars (active, draft, sold, etc.) for the authenticated seller.
-        Car summaries contain essential fields (id, status, brand, model, submodel, year, price, mileage, bodyType, transmission, drivetrain, fuelTypes, colors, conditionRating, thumbnailUrl) for optimal performance.
+        Buyer-only endpoint. Returns the authenticated buyer's recent car views as CarListItem objects.
+        Sellers are not allowed to access recent views and will receive 403.
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Maximum number of recent views to return (default: 20, max: 100)
+        - name: lang
+          in: query
+          required: false
+          schema:
+            type: string
+            default: "en"
+          description: Language preference for translated labels (default: "en")
       responses:
         '200':
-          description: Seller profile retrieved successfully
+          description: Recent car views as lightweight list items
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SellerResponse'
-              example:
-                success: true
-                data:
-                  seller:
-                    id: 1
-                    displayName: "My Car Shop"
-                    about: "Best cars in town"
-                    mapLink: "https://maps.google.com/..."
-                  contacts:
-                    - id: 1
-                      sellerId: 1
-                      contactType: "phone"
-                      value: "0812345678"
-                      label: "Mobile"
-                    - id: 2
-                      sellerId: 1
-                      contactType: "email"
-                      value: "contact@shop.com"
-                      label: "Business Email"
-                  cars:
-                    - id: 1
-                      sellerId: 1
-                      status: "active"
-                      brandName: "Toyota"
-                      modelName: "Camry"
-                      submodelName: "XLE"
-                      year: 2020
-                      price: 500000
-                      mileage: 50000
-                      bodyType: "Sedan"
-                      transmission: "Automatic"
-                      drivetrain: "FWD"
-                      fuelTypes: ["Gasoline"]
-                      colors: ["White", "Gray"]
-                      conditionRating: 4
-                      thumbnailUrl: "/api/cars/images/123"
+                $ref: '#/components/schemas/CarListItemListResponse'
+              examples:
+                sample:
+                  value:
+                    success: true
+                    data:
+                      - id: 101
+                        sellerId: 5
+                        year: 2019
+                        mileage: 35000
+                        price: 420000
+                        provinceId: 10
+                        conditionRating: 4
+                        bodyType: "Sedan"
+                        transmission: "Automatic"
+                        drivetrain: "FWD"
+                        status: "active"
+                        brandName: "TOYOTA"
+                        modelName: "COROLLA"
+                        submodelName: "1.8E"
+                        thumbnailUrl: "/api/cars/images/123"
+        '401':
+          description: Unauthorized - Authentication required
+        '403':
+          description: Forbidden - Only buyers can access recent views
+        '500':
+          description: Server error
+
+  # Reports
+  /api/reports/cars/{id}:
+    post:
+      tags:
+        - Reports
+      summary: Submit car report
+      description: Submit a report about a specific car listing. Requires authentication.
+      security:
+        - CookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Target car ID to report
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CarReportRequest'
+      responses:
+        '201':
+          description: Report submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateReportResponse'
+        '400':
+          description: Invalid request (e.g., missing fields, invalid topic, car not found)
         '401':
           description: Unauthorized
-        '404':
-          description: Seller profile not found
+        '409':
+          description: Duplicate report within 3 days
+
+  /api/reports/sellers/{id}:
+    post:
+      tags:
+        - Reports
+      summary: Submit seller report
+      description: Submit a report about a seller (user). Requires authentication.
+      security:
+        - CookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Target seller ID to report
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SellerReportRequest'
+      responses:
+        '201':
+          description: Report submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateReportResponse'
+        '400':
+          description: Invalid request (e.g., missing fields, invalid topic, self-report, seller not found)
+        '401':
+          description: Unauthorized
+        '409':
+          description: Duplicate report within 3 days
 
   # Reference Data
-  /api/reference-data:
+  /api/reference-data/all:
     get:
       tags:
         - Reference
-      summary: Get reference data for dropdowns and filters
+      summary: Get all reference data for dropdowns and filters
       description: Returns all reference data needed for car search filters. Labels are returned in the requested language (en or th).
       security: []
       parameters:
@@ -1199,6 +1437,118 @@ paths:
                     - id: 19
                       label: "Bangkok"
 
+  /api/reference-data/brands:
+    get:
+      tags:
+        - Reference
+      summary: Get all car brands
+      description: Returns list of all car brands. Labels are returned in the requested language (en or th).
+      security: []
+      parameters:
+        - name: lang
+          in: query
+          description: Language preference for labels
+          schema:
+            type: string
+            enum: [en, th]
+            default: en
+          example: "en"
+      responses:
+        '200':
+          description: List of brands
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        code:
+                          type: string
+                        label:
+                          type: string
+
+  /api/reference-data/models:
+    get:
+      tags:
+        - Reference
+      summary: Get all car models
+      description: Returns list of all car models. Labels are returned in the requested language (en or th).
+      security: []
+      parameters:
+        - name: lang
+          in: query
+          description: Language preference for labels
+          schema:
+            type: string
+            enum: [en, th]
+            default: en
+          example: "en"
+      responses:
+        '200':
+          description: List of models
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        code:
+                          type: string
+                        label:
+                          type: string
+
+  /api/reference-data/submodels:
+    get:
+      tags:
+        - Reference
+      summary: Get all car submodels
+      description: Returns list of all car submodels. Labels are returned in the requested language (en or th).
+      security: []
+      parameters:
+        - name: lang
+          in: query
+          description: Language preference for labels
+          schema:
+            type: string
+            enum: [en, th]
+            default: en
+          example: "en"
+      responses:
+        '200':
+          description: List of submodels
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        code:
+                          type: string
+                        label:
+                          type: string
+
+  # ============================================
+  # ADMIN APIs
+  # ============================================
+
   # Admin Authentication
   /admin/auth/signin:
     post:
@@ -1259,6 +1609,7 @@ paths:
         '401':
           description: Unauthorized
 
+  # Admin IP Whitelist Management
   /admin/ip-whitelist:
     get:
       tags:
@@ -1310,6 +1661,52 @@ paths:
         '400':
           description: Bad request
 
+  /admin/ip-whitelist/check:
+    post:
+      tags:
+        - Admin
+      summary: Check IP deletion impact
+      description: Checks if removing an IP address from the whitelist would affect any admin sessions.
+      security:
+        - AdminCookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+              properties:
+                id:
+                  type: integer
+                  description: IP whitelist entry ID to check
+      responses:
+        '200':
+          description: Impact check result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      willAffectSessions:
+                        type: boolean
+                        description: Whether removing this IP would affect active sessions
+                      affectedSessionCount:
+                        type: integer
+                        description: Number of sessions that would be affected
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '404':
+          description: IP address not found
+
   /admin/ip-whitelist/remove:
     delete:
       tags:
@@ -1328,15 +1725,37 @@ paths:
         '404':
           description: IP address not found
 
-  # --- NEW: Admin Market Price Management ---
-  /admin/market-price/import:
+  # Admin Market Price Management
+  /admin/market-price/data:
+    get:
+      tags:
+        - Admin
+      summary: Get all market prices from database
+      description: Retrieves all market price entries from the database.
+      security:
+        - AdminCookieAuth: []
+      responses:
+        '200':
+          description: List of market prices
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MarketPrice'
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+
+  /admin/market-price/upload:
     post:
       tags:
         - Admin
-      summary: Upload market price PDF for extraction
-      description: Uploads a PDF file. The service extracts the data and returns it as a JSON array without saving it to the database.
+      summary: Upload market price PDF and import to database
+      description: Uploads a PDF file, extracts the data, and directly imports it to the database.
       security:
-        - CookieAuth: []
+        - AdminCookieAuth: []
       requestBody:
         required: true
         content:
@@ -1350,51 +1769,207 @@ paths:
                   description: The market price PDF file to upload.
       responses:
         '200':
-          description: Extraction successful. Returns array of extracted data.
+          description: Import successful
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/MarketPrice'
+                $ref: '#/components/schemas/BasicResponse'
         '400':
           description: Bad request (e.g., no file, invalid file type)
         '401':
           description: Unauthorized
         '500':
-          description: Extraction failed on the server
+          description: Extraction or import failed on the server
 
-  /admin/market-price/commit:
-    post:
+  # Admin Dashboard
+  /admin/dashboard/stats:
+    get:
       tags:
         - Admin
-      summary: Commit extracted market price JSON to database
-      description: Receives a JSON array of market price data (e.g., from the /import endpoint) and upserts it into the database.
+      summary: Get dashboard statistics
+      description: Retrieves aggregated statistics for the main dashboard cards.
       security:
-        - CookieAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: array
-              items:
-                $ref: '#/components/schemas/MarketPrice'
+        - AdminCookieAuth: []
       responses:
         '200':
-          description: Commit successful. Returns insert/update counts.
+          description: Dashboard statistics
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CommitResponse'
-        '400':
-          description: Bad request (e.g., invalid JSON, empty array)
+                $ref: '#/components/schemas/DashboardStats'
         '401':
           description: Unauthorized
         '500':
-          description: Database commit failed
+          description: Server error
 
-  # --- Admin User Management ---
+  /admin/dashboard/chart:
+    get:
+      tags:
+        - Admin
+      summary: Get user activity chart data
+      description: Retrieves time-series data for user logins (Activity Overview).
+      security:
+        - AdminCookieAuth: []
+      parameters:
+        - in: query
+          name: period
+          schema:
+            type: string
+            example: "30d"
+          description: Time period for the chart (e.g., 30d).
+      responses:
+        '200':
+          description: Time-series data for user activity
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChartDataPoint'
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+
+  /admin/dashboard/top-brands:
+    get:
+      tags:
+        - Admin
+      summary: Get top 10 active brands data
+      description: Retrieves the top 10 active car brands by listing count.
+      security:
+        - AdminCookieAuth: []
+      responses:
+        '200':
+          description: List of top 10 brands and their counts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BrandDataPoint'
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+
+  /admin/dashboard/recent-reports:
+    get:
+      tags:
+        - Admin
+      summary: Get recent pending reports
+      description: Retrieves the 5 most recent 'pending' reports for the dashboard list.
+      security:
+        - AdminCookieAuth: []
+      responses:
+        '200':
+          description: List of recent 'pending' reports
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Report'
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+
+  # Admin Reports Management
+  /admin/reports:
+    get:
+      tags:
+        - Admin
+      summary: List reports
+      description: Returns admin reports filtered by type and status.
+      security:
+        - AdminCookieAuth: []
+      parameters:
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum: [user, car]
+          description: Report target type. Maps to backend types 'seller' or 'car'.
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, reviewed, resolved, dismissed]
+          description: Report status filter.
+      responses:
+        '200':
+          description: Reports list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminReportsListResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden (IP not whitelisted)
+        '500':
+          description: Server error
+
+  /admin/reports/{id}/resolve:
+    post:
+      tags:
+        - Admin
+      summary: Resolve a report
+      security:
+        - AdminCookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Report resolved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicResponse'
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Car not found
+        '500':
+          description: Server error
+
+  /admin/reports/{id}/dismiss:
+    post:
+      tags:
+        - Admin
+      summary: Dismiss a report
+      security:
+        - AdminCookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Report dismissed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicResponse'
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Report not found
+        '500':
+          description: Server error
+
+  # Admin User Management
   /admin/users:
     get:
       tags:
@@ -1485,47 +2060,12 @@ paths:
       responses:
         '200':
           description: User deleted successfully
-  # Admin Reports
-  /admin/reports:
-    get:
-      tags:
-        - Admin
-      summary: List reports
-      description: Returns admin reports filtered by type and status.
-      security:
-        - AdminCookieAuth: []
-      parameters:
-        - in: query
-          name: type
-          schema:
-            type: string
-            enum: [user, car]
-          description: Report target type. Maps to backend types 'seller' or 'car'.
-        - in: query
-          name: status
-          schema:
-            type: string
-            enum: [pending, reviewed, resolved, dismissed]
-          description: Report status filter.
-      responses:
-        '200':
-          description: Reports list
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AdminReportsListResponse'
-        '401':
-          description: Unauthorized
-        '403':
-          description: Forbidden (IP not whitelisted)
-        '500':
-          description: Server error
 
-  /admin/reports/{id}/resolve:
+  /admin/users/{id}/ban:
     post:
       tags:
         - Admin
-      summary: Resolve a report
+      summary: Ban a user (seller)
       security:
         - AdminCookieAuth: []
       parameters:
@@ -1536,7 +2076,7 @@ paths:
             type: integer
       responses:
         '200':
-          description: Report resolved
+          description: User banned
           content:
             application/json:
               schema:
@@ -1546,11 +2086,11 @@ paths:
         '401':
           description: Unauthorized
         '404':
-          description: Car not found
+          description: User not found
         '500':
           description: Server error
 
-  # --- Admin Car Management ---
+  # Admin Car Management
   /admin/cars:
     get:
       tags:
@@ -1644,66 +2184,7 @@ paths:
         '401':
           description: Unauthorized
         '404':
-          description: Report not found
-        '500':
-          description: Server error
-
-  /admin/reports/{id}/dismiss:
-    post:
-      tags:
-        - Admin
-      summary: Dismiss a report
-      security:
-        - AdminCookieAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Report dismissed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BasicResponse'
- 
-        '400':
-          description: Invalid request
-        '401':
-          description: Unauthorized
-        '404':
-          description: Report not found
-        '500':
-          description: Server error
-
-  /admin/users/{id}/ban:
-    post:
-      tags:
-        - Admin
-      summary: Ban a user (seller)
-      security:
-        - AdminCookieAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: User banned
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BasicResponse'
-        '400':
-          description: Invalid request
-        '401':
-          description: Unauthorized
-        '404':
-          description: User not found
+          description: Car not found
         '500':
           description: Server error
 
@@ -1937,6 +2418,118 @@ paths:
           description: Unauthorized
         '409':
           description: Duplicate report within 3 days
+
+  # Recent Views
+  /api/recent-views:
+    post:
+      tags:
+        - Recent Views
+      summary: Record a car view (buyer-only)
+      operationId: recordView
+      x-roles:
+        - buyer
+      security:
+        - CookieAuth: []
+      description: |
+        Buyer-only endpoint. Records a car view for the authenticated buyer.
+        Sellers are not allowed to record views and will receive 403.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - car_id
+              properties:
+                car_id:
+                  type: integer
+                  minimum: 1
+                  description: ID of the car being viewed
+                  example: 101
+      responses:
+        '200':
+          description: View recorded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicResponse'
+              examples:
+                success:
+                  value:
+                    success: true
+                    message: "View recorded successfully"
+        '400':
+          description: Bad request - Invalid car ID or car not active
+        '401':
+          description: Unauthorized - Authentication required
+        '403':
+          description: Forbidden - Only buyers can record recent views
+        '500':
+          description: Server error
+
+    get:
+      tags:
+        - Recent Views
+      summary: Get current user's recent views (buyer-only)
+      operationId: getRecentViews
+      x-roles:
+        - buyer
+      security:
+        - CookieAuth: []
+      description: |
+        Buyer-only endpoint. Returns the authenticated buyer's recent car views as CarListItem objects.
+        Sellers are not allowed to access recent views and will receive 403.
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Maximum number of recent views to return (default: 20, max: 100)
+        - name: lang
+          in: query
+          required: false
+          schema:
+            type: string
+            default: "en"
+          description: Language preference for translated labels (default: "en")
+      responses:
+        '200':
+          description: Recent car views as lightweight list items
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CarListItemListResponse'
+              examples:
+                sample:
+                  value:
+                    success: true
+                    data:
+                      - id: 101
+                        sellerId: 5
+                        year: 2019
+                        mileage: 35000
+                        price: 420000
+                        provinceId: 10
+                        conditionRating: 4
+                        bodyType: "Sedan"
+                        transmission: "Automatic"
+                        drivetrain: "FWD"
+                        status: "active"
+                        brandName: "TOYOTA"
+                        modelName: "COROLLA"
+                        submodelName: "1.8E"
+                        thumbnailUrl: "/api/cars/images/123"
+        '401':
+          description: Unauthorized - Authentication required
+        '403':
+          description: Forbidden - Only buyers can access recent views
+        '500':
+          description: Server error
 
   # --- Admin Dashboard ---
   /admin/dashboard/stats:

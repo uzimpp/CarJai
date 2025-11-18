@@ -1,4 +1,3 @@
-// Profile API functions and validation helpers
 import {
   ProfileResponse,
   BuyerRequest,
