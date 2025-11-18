@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
-import type { AdminManagedUser, AdminUpdateUserRequest, AdminCreateUserRequest,} from "@/types/admin";
+import type {
+  AdminManagedUser,
+  AdminUpdateUserRequest,
+  AdminCreateUserRequest,
+} from "@/types/admin";
 import PaginateControl from "@/components/ui/PaginateControl";
 
 // Edit User Modal Component
@@ -205,7 +209,7 @@ function AddUserModal({
 
     try {
       await onSave(formData);
-      onClose(); 
+      onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create user");
     } finally {
@@ -352,7 +356,7 @@ function DeleteConfirmationModal({
     setError(null);
     try {
       await onConfirm(user.id);
-      onClose(); 
+      onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete user");
     } finally {
@@ -446,7 +450,9 @@ export default function AdminUsersPage() {
   const [editingUser, setEditingUser] = useState<AdminManagedUser | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [deletingUser, setDeletingUser] = useState<AdminManagedUser | null>(null);
+  const [deletingUser, setDeletingUser] = useState<AdminManagedUser | null>(
+    null
+  );
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   // Load users from API
@@ -458,19 +464,38 @@ export default function AdminUsersPage() {
         setIsLoading(true);
         setError(null);
 
-        const response = await fetch('/api/admin/users');
-        
+        const response = await fetch("/api/admin/users");
+
         if (!response.ok) {
           throw new Error(`Failed to fetch users: ${response.statusText}`);
         }
-        
+
         const data = await response.json();
 
         if (data.success) {
-          setUsers(data.data); 
-          setTotal(data.total);
+          // Extract users and total from data.data (wrapped response)
+          const responseData = data.data as
+            | { users?: AdminManagedUser[]; total?: number }
+            | AdminManagedUser[]
+            | undefined;
+
+          if (Array.isArray(responseData)) {
+            // If data.data is directly an array (legacy format)
+            setUsers(responseData);
+            setTotal(responseData.length);
+          } else if (responseData && "users" in responseData) {
+            // If data.data is an object with users and total
+            const usersData = Array.isArray(responseData.users)
+              ? responseData.users
+              : [];
+            setUsers(usersData);
+            setTotal(responseData.total ?? usersData.length);
+          } else {
+            setUsers([]);
+            setTotal(0);
+          }
         } else {
-          throw new Error(data.error || 'Failed to fetch users');
+          throw new Error(data.error || "Failed to fetch users");
         }
 
         setIsLoading(false);
@@ -487,6 +512,12 @@ export default function AdminUsersPage() {
 
   // Filter users based on search and filters (client-side filtering for search/role)
   useEffect(() => {
+    // Ensure users is always an array to prevent "not iterable" errors
+    if (!Array.isArray(users)) {
+      setFilteredUsers([]);
+      return;
+    }
+
     let filtered = [...users];
 
     // Search filter
@@ -538,16 +569,18 @@ export default function AdminUsersPage() {
   ) => {
     try {
       const response = await fetch(`/api/admin/users/${userId}`, {
-        method: 'PATCH',
+        method: "PATCH",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(data),
       });
 
       if (!response.ok) {
         const errData = await response.json();
-        throw new Error(errData.error || `Failed to update user: ${response.statusText}`);
+        throw new Error(
+          errData.error || `Failed to update user: ${response.statusText}`
+        );
       }
 
       setUsers((prevUsers) =>
@@ -603,8 +636,8 @@ export default function AdminUsersPage() {
         email: createdUserPublic.email,
         created_at: createdUserPublic.created_at,
         updated_at: createdUserPublic.updated_at,
-        type: "user", 
-        role: "No role", 
+        type: "user",
+        role: "No role",
         roles: {
           buyer: false,
           seller: false,
@@ -637,9 +670,7 @@ export default function AdminUsersPage() {
         );
       }
 
-      setUsers((prevUsers) =>
-        prevUsers.filter((user) => user.id !== userId)
-      );
+      setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
       setDeletingUser(null);
       setIsDeleteModalOpen(false);
     } catch (err) {
@@ -673,7 +704,10 @@ export default function AdminUsersPage() {
           <h1 className="text-3 bold">User Management</h1>
         </div>
         <div className="flex flex-row justify-end items-center gap-2">
-          <button onClick={() => setIsAddModalOpen(true)} className="flex-1 px-4 py-2 bg-maroon text-white rounded-full hover:bg-red-700 transition-colors flex items-center justify-center gap-2 text-sm">
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="flex-1 px-4 py-2 bg-maroon text-white rounded-full hover:bg-red-700 transition-colors flex items-center justify-center gap-2 text-sm"
+          >
             <svg
               className="w-4 h-4"
               fill="none"
@@ -800,11 +834,6 @@ export default function AdminUsersPage() {
                 </svg>
                 <p className="text-gray-600 text-lg font-medium">
                   No users found
-                </p>
-                <p className="text-gray-500 text-sm mt-2">
-                  {searchQuery || roleFilter !== "all"
-                    ? "Try adjusting your search or filter criteria"
-                    : "API integration pending. Connect to /admin/users endpoint to display user data."}
                 </p>
               </div>
             ) : paginatedUsers.length === 0 ? (

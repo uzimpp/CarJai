@@ -54,7 +54,11 @@ export default function IPWhitelistPage() {
     try {
       // Check with backend if deletion would affect current session
       const checkRes = await adminAuthAPI.checkIPDeletionImpact(ip);
-      const wouldBlock = checkRes.would_block_session === true;
+      // Extract wouldBlockSession from the data object
+      const impactData = checkRes.data as
+        | { wouldBlockSession?: boolean }
+        | undefined;
+      const wouldBlock = impactData?.wouldBlockSession === true;
       setIsCurrentIP(wouldBlock);
       console.log("IP deletion check:", { ip, wouldBlock, response: checkRes });
     } catch (err) {

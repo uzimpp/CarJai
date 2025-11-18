@@ -4,11 +4,17 @@ CREATE TABLE sellers (
     display_name VARCHAR(50) NOT NULL,
     about VARCHAR(200),
     map_link TEXT,
-    -- status VARCHAR(20) NOT NULL DEFAULT 'active',
+    status VARCHAR(20) NOT NULL DEFAULT 'active',
     CONSTRAINT sellers_display_name_not_blank CHECK (trim(display_name) <> ''),
     CONSTRAINT chk_display_name_length CHECK (length(display_name) <= 50),
     CONSTRAINT chk_about_length CHECK (length(about) <= 200),
-    -- CONSTRAINT sellers_status_check CHECK (status IN ('active', 'banned', 'suspended'))
+    CONSTRAINT sellers_status_check CHECK (
+        status IN (
+            'active',
+            'banned',
+            'suspended'
+        )
+    )
 );
 
 -- Seller contacts

@@ -72,9 +72,16 @@ export const adminAuthAPI = {
   },
 
   async getMarketPrices(): Promise<MarketPrice[]> {
-    return apiCall<MarketPrice[]>("/admin/market-price/data", {
-      method: "GET",
-    });
+    const response = await apiCall<MarketPriceResponse>(
+      "/admin/market-price/data",
+      {
+        method: "GET",
+      }
+    );
+    // Extract the data array from the wrapped response
+    return response.success && Array.isArray(response.data)
+      ? response.data
+      : [];
   },
 
   async importMarketPrices(file: File): Promise<ImportMarketPriceResponse> {

@@ -4,7 +4,7 @@ CREATE TABLE buyers (
     province VARCHAR(100),
     budget_min INT,
     budget_max INT,
-    -- status VARCHAR(20) NOT NULL DEFAULT 'active',
+    status VARCHAR(20) NOT NULL DEFAULT 'active',
     CONSTRAINT chk_budget_nonneg CHECK (
         budget_min IS NULL
         OR budget_min >= 0
@@ -14,7 +14,13 @@ CREATE TABLE buyers (
         OR budget_max IS NULL
         OR budget_min <= budget_max
     ),
-    CONSTRAINT buyers_status_check CHECK (status IN ('active', 'banned', 'suspended'))
+    CONSTRAINT buyers_status_check CHECK (
+        status IN (
+            'active',
+            'banned',
+            'suspended'
+        )
+    )
 );
 
 -- Indexes

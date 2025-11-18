@@ -154,12 +154,8 @@ func (h *AdminAuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := models.AdminSigninResponse{
-		Admin:     adminData.Admin,
-		Token:     token,
-		ExpiresAt: adminData.Session.ExpiresAt,
-	}
-	utils.WriteJSON(w, http.StatusOK, response, "Admin information retrieved successfully")
+	// Return AdminMeData which includes both admin and session information
+	utils.WriteJSON(w, http.StatusOK, adminData, "Admin information retrieved successfully")
 }
 
 // RefreshToken handles token refresh

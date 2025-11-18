@@ -71,7 +71,7 @@ func (h *HealthHandler) Health(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, statusCode, response, "")
 }
 
-// checkDatabase checks database connectivity
+// checkDatabase checks database connectivity and validates migrations
 func (h *HealthHandler) checkDatabase() ServiceStatus {
 	start := time.Now()
 
@@ -83,10 +83,10 @@ func (h *HealthHandler) checkDatabase() ServiceStatus {
 		}
 	}
 
+	// Check database connectivity
 	err := h.db.Ping()
-	responseTime := time.Since(start)
-
 	if err != nil {
+		responseTime := time.Since(start)
 		return ServiceStatus{
 			Status:       "unhealthy",
 			ResponseTime: responseTime.String(),
@@ -94,8 +94,79 @@ func (h *HealthHandler) checkDatabase() ServiceStatus {
 		}
 	}
 
+	// Validate that all required tables exist (migration validation)
+	migrationStatus := h.validateMigrations()
+	responseTime := time.Since(start)
+
+	if migrationStatus.Error != "" {
+		return ServiceStatus{
+			Status:       "unhealthy",
+			ResponseTime: responseTime.String(),
+			Error:        migrationStatus.Error,
+			Details:      migrationStatus.Details,
+		}
+	}
+
 	return ServiceStatus{
 		Status:       "healthy",
 		ResponseTime: responseTime.String(),
+		Details:      migrationStatus.Details,
+	}
+}
+
+// validateMigrations checks if all required tables exist
+func (h *HealthHandler) validateMigrations() ServiceStatus {
+	requiredTables := []string{
+		"admins",
+		"admin_sessions",
+		"admin_ip_whitelist",
+		"users",
+		"user_sessions",
+		"sellers",
+		"seller_contacts",
+		"buyers",
+		"cars",
+		"car_images",
+		"car_inspection_results",
+		"market_price",
+		"recent_views",
+		"favourites",
+		"reports",
+	}
+
+	var missingTables []string
+	query := `
+		SELECT table_name 
+		FROM information_schema.tables 
+		WHERE table_schema = 'public' 
+		AND table_name = $1
+	`
+
+	for _, table := range requiredTables {
+		var exists string
+		err := h.db.QueryRow(query, table).Scan(&exists)
+		if err != nil {
+			missingTables = append(missingTables, table)
+		}
+	}
+
+	if len(missingTables) > 0 {
+		return ServiceStatus{
+			Status: "unhealthy",
+			Error:  "Migration validation failed: missing required tables",
+			Details: map[string]interface{}{
+				"missing_tables": missingTables,
+				"total_required": len(requiredTables),
+				"missing_count":  len(missingTables),
+			},
+		}
+	}
+
+	return ServiceStatus{
+		Status: "healthy",
+		Details: map[string]interface{}{
+			"total_tables": len(requiredTables),
+			"all_present":  true,
+		},
 	}
 }

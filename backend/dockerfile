@@ -28,11 +28,13 @@ FROM alpine:latest
 # - ca-certificates: HTTPS
 # - poppler-utils: pdftotext for PDF extraction
 # - chromium + fonts + nss: headless browser for scraping
+# - wget: for health checks
 RUN apk update && \
     apk add --no-cache \
     ca-certificates \
     poppler-utils \
-    chromium nss freetype harfbuzz ttf-freefont && \
+    chromium nss freetype harfbuzz ttf-freefont \
+    wget && \
     rm -rf /var/cache/apk/*
 
 # Tell chromedp where Chromium is

@@ -65,14 +65,24 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       const response = await adminAuthAPI.getCurrentAdmin();
       if (response.success) {
         setAdminUser(response.data.admin);
-        setAdminSession(response.data.session);
+        // Check if session exists in the response
+        if (response.data.session) {
+          setAdminSession(response.data.session);
+        } else {
+          console.warn(
+            "Session data not found in response. Response data:",
+            response.data
+          );
+          setAdminSession(null);
+        }
         setIsAuthenticated(true);
         // Fetch IP whitelist silently
         fetchIPWhitelist();
       } else {
         throw new Error("Invalid session");
       }
-    } catch {
+    } catch (error) {
+      console.error("Error validating admin session:", error);
       setAdminUser(null);
       setAdminSession(null);
       setIpWhitelist([]);
@@ -84,7 +94,12 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (mounted) {
-      validateSession();
+      // Wrap async call to prevent unhandled promise rejections
+      validateSession().catch((error) => {
+        // Errors are already handled inside validateSession, but we catch here
+        // to prevent unhandled promise rejections that cause Next.js errors
+        console.debug("Admin session validation error (handled):", error);
+      });
     }
   }, [mounted, validateSession]);
 
@@ -104,7 +119,12 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     // Only re-validate if transitioning between admin and non-admin areas
     // This prevents revalidating on every admin route change (e.g., /admin/dashboard -> /admin/users)
     if (wasAdminArea !== isAdminArea) {
-      validateSession();
+      // Wrap async call to prevent unhandled promise rejections
+      validateSession().catch((error) => {
+        // Errors are already handled inside validateSession, but we catch here
+        // to prevent unhandled promise rejections that cause Next.js errors
+        console.debug("Admin session validation error (handled):", error);
+      });
     }
   }, [pathname, mounted, validateSession]);
 

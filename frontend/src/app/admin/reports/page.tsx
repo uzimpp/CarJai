@@ -56,14 +56,20 @@ export default function AdminReportsPage() {
         });
 
         if (result.success && result.data) {
-          setReports(result.data);
+          // Ensure result.data is an array before setting it
+          const reportsData = Array.isArray(result.data) ? result.data : [];
+          setReports(reportsData);
         } else {
           setError("Failed to load reports");
         }
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred";
+        const errorMessage =
+          err instanceof Error ? err.message : "An unexpected error occurred";
         // Don't show authentication errors - the auth system will handle redirects
-        if (!errorMessage.includes("Authentication") && !errorMessage.includes("Unauthorized")) {
+        if (
+          !errorMessage.includes("Authentication") &&
+          !errorMessage.includes("Unauthorized")
+        ) {
           setError(errorMessage);
         }
         setReports([]);
@@ -98,7 +104,9 @@ export default function AdminReportsPage() {
         method: "GET",
       });
       if (result.success && result.data) {
-        setReports(result.data);
+        // Ensure result.data is an array before setting it
+        const reportsData = Array.isArray(result.data) ? result.data : [];
+        setReports(reportsData);
       }
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to resolve report");
@@ -127,7 +135,9 @@ export default function AdminReportsPage() {
         method: "GET",
       });
       if (result.success && result.data) {
-        setReports(result.data);
+        // Ensure result.data is an array before setting it
+        const reportsData = Array.isArray(result.data) ? result.data : [];
+        setReports(reportsData);
       }
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to dismiss report");
@@ -431,7 +441,10 @@ export default function AdminReportsPage() {
                   <div className="hidden md:block text-xs text-gray-500">
                     {new Date(report.createdAt).toLocaleDateString()}
                     <br />
-                    {new Date(report.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(report.createdAt).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </div>
 
                   {/* Status */}
@@ -464,18 +477,14 @@ export default function AdminReportsPage() {
                           disabled={actionLoading === report.id}
                           className="px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
-                          {actionLoading === report.id
-                            ? "..."
-                            : "Resolve"}
+                          {actionLoading === report.id ? "..." : "Resolve"}
                         </button>
                         <button
                           onClick={() => handleDismiss(report.id)}
                           disabled={actionLoading === report.id}
                           className="px-3 py-1.5 rounded-lg bg-gray-600 hover:bg-gray-700 text-white text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
-                          {actionLoading === report.id
-                            ? "..."
-                            : "Dismiss"}
+                          {actionLoading === report.id ? "..." : "Dismiss"}
                         </button>
                         {report.type === "user" && report.targetUserId && (
                           <button
@@ -485,9 +494,7 @@ export default function AdminReportsPage() {
                             disabled={actionLoading === report.id}
                             className="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                           >
-                            {actionLoading === report.id
-                              ? "..."
-                              : "Ban User"}
+                            {actionLoading === report.id ? "..." : "Ban User"}
                           </button>
                         )}
                         {report.type === "car" && report.targetCarId && (
@@ -498,9 +505,7 @@ export default function AdminReportsPage() {
                             disabled={actionLoading === report.id}
                             className="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                           >
-                            {actionLoading === report.id
-                              ? "..."
-                              : "Remove Car"}
+                            {actionLoading === report.id ? "..." : "Remove Car"}
                           </button>
                         )}
                       </>
