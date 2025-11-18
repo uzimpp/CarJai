@@ -701,7 +701,7 @@ func (s *UserService) RequestPasswordReset(email string) error {
 	resetLink := fmt.Sprintf("%s/reset-password?token=%s", s.frontendURL, token)
 
 	// Send email
-	err = s.emailService.SendPasswordResetEmail(user.Email, resetLink)
+	err = s.emailService.SendPasswordResetEmail(user.Email, resetLink, s.frontendURL)
 	if err != nil {
 		// Log error but don't expose to user
 		fmt.Printf("Failed to send reset email to %s: %v\n", user.Email, err)
