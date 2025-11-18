@@ -227,7 +227,7 @@ function SigninForm() {
                 <button
                   type="button"
                   onClick={() => setShowForgotPasswordModal(true)}
-                  className="text-0 text-maroon hover:text-maroon-dark underline"
+                  className="text-0 text-maroon hover:text-maroon-dark underline cursor-pointer"
                 >
                   Forgot password?
                 </button>
@@ -308,8 +308,8 @@ function SigninForm() {
 
       {/* Forgot Password Modal */}
       {showForgotPasswordModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-md w-full p-(--space-m)">
+        <div className="fixed inset-0 bg-gray-400 bg-opacity-20 backdrop-blur-[1px] flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full p-(--space-m) shadow-2xl">
             {!forgotPasswordSuccess ? (
               <>
                 <div className="flex justify-between items-center mb-(--space-s)">
