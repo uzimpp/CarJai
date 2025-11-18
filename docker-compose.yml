@@ -58,6 +58,7 @@ services:
       GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
     volumes:
       - ./frontend/public/assets:/app/frontend/public/assets:ro
+      - ./backend/tests/price2568.pdf:/app/tests/price2568.pdf:ro
     networks:
       - carjai-network
     depends_on:

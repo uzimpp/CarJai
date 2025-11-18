@@ -128,6 +128,12 @@ type SessionRepository struct {
 	db *Database
 }
 
+// ChartDataPoint (ใช้ร่วมกัน)
+type ChartDataPoint struct {
+	Date  string `json:"date"`
+	Value int    `json:"value"`
+}
+
 // NewSessionRepository creates a new session repository
 func NewSessionRepository(db *Database) *SessionRepository {
 	return &SessionRepository{db: db}
@@ -748,6 +754,44 @@ func (r *UserRepository) DeleteUser(userID int) error {
 	return nil
 }
 
+// CountAllUsers counts the total number of users
+func (r *UserRepository) CountAllUsers() (int, error) {
+	var count int
+	query := `SELECT COUNT(*) FROM users`
+
+	err := r.db.DB.QueryRow(query).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count users: %w", err)
+	}
+
+	return count, nil
+}
+
+// CountTotalBuyers counts the total number of buyers
+func (r *UserRepository) CountTotalBuyers() (int, error) {
+	var count int
+	query := `SELECT COUNT(*) FROM buyers`
+
+	err := r.db.DB.QueryRow(query).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count buyers: %w", err)
+	}
+
+	return count, nil
+}
+
+// CountTotalSellers counts the total number of sellers
+func (r *UserRepository) CountTotalSellers() (int, error) {
+	var count int
+	query := `SELECT COUNT(*) FROM sellers`
+
+	err := r.db.DB.QueryRow(query).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count sellers: %w", err)
+	}
+
+	return count, nil
+}
 // UserSessionRepository handles user session-related database operations
 type UserSessionRepository struct {
 	db *Database
@@ -796,6 +840,50 @@ func (r *UserSessionRepository) GetUserSessionByToken(token string) (*UserSessio
 	}
 
 	return session, nil
+}
+
+// GetUserActivityChartData retrieves user activity for the dashboard chart
+func (r *UserSessionRepository) GetUserActivityChartData(days int) (*[]ChartDataPoint, error) {
+	var chartData []ChartDataPoint
+	query := `
+		SELECT
+			TO_CHAR(day_series.day, 'YYYY-MM-DD') AS date,
+			COUNT(DISTINCT us.user_id) AS value
+		FROM
+			(SELECT generate_series(
+				DATE_TRUNC('day', NOW() - ($1 * INTERVAL '1 day') + INTERVAL '1 day'),
+				DATE_TRUNC('day', NOW()),
+				'1 day'
+			)::date AS day) AS day_series
+		LEFT JOIN
+			user_sessions us ON 
+				us.created_at >= day_series.day AND 
+				us.created_at < (day_series.day + INTERVAL '1 day')
+		GROUP BY
+			day_series.day
+		ORDER BY
+			day_series.day ASC;
+	`
+
+	rows, err := r.db.DB.Query(query, days)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query user activity chart data: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var point ChartDataPoint
+		if err := rows.Scan(&point.Date, &point.Value); err != nil {
+			return nil, fmt.Errorf("failed to scan chart data point: %w", err)
+		}
+		chartData = append(chartData, point)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating chart data: %w", err)
+	}
+
+	return &chartData, nil
 }
 
 // DeleteUserSession deletes a user session by token

@@ -271,3 +271,17 @@ func (r *ReportRepository) LogSellerAdminActionTx(tx *sql.Tx, sellerID, adminID 
 	err := tx.QueryRow(query, sellerID, adminID, action, notes, suspendUntil).Scan(&id)
 	return id, err
 }
+
+
+// CountPendingReports counts all reports with 'pending' status
+func (r *ReportRepository) CountPendingReports() (int, error) {
+	var count int
+	query := `SELECT COUNT(*) FROM reports WHERE status = 'pending'`
+
+	err := r.db.DB.QueryRow(query).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count pending reports: %w", err)
+	}
+
+	return count, nil
+}

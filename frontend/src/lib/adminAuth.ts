@@ -92,4 +92,18 @@ export const adminAuthAPI = {
       body: form,
     });
   },
+
+  // Ban a user
+  async banUser(userId: number): Promise<AdminActionResponse> {
+    return apiCall<AdminActionResponse>(`/admin/users/${userId}/ban`, {
+      method: "POST",
+    });
+  },
+
+  // Remove a car listing
+  async removeCar(carId: number): Promise<AdminActionResponse> {
+    return apiCall<AdminActionResponse>(`/admin/cars/${carId}/remove`, {
+      method: "POST",
+    });
+  },
 };

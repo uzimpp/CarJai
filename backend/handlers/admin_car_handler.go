@@ -78,13 +78,13 @@ func (h *AdminCarHandler) HandleCreateCar(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	const TEMP_VALID_SELLER_ID = 1
-
-	req.SellerID = TEMP_VALID_SELLER_ID
-
 	newCar, err := h.carService.CreateCarByAdmin(req)
 	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		if strings.Contains(err.Error(), "not found") {
+			utils.WriteError(w, http.StatusBadRequest, err.Error())
+		} else {
+			utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		}
 		return
 	}
 

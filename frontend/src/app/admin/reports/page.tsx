@@ -2,32 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
-import { apiCall } from "@/lib/apiCall";
+import { reportsAPI, type AdminReport } from "@/lib/reportsAPI";
+import { adminAuthAPI } from "@/lib/adminAuth";
+import { useToast } from "@/components/ui/Toast";
 
 type ReportType = "user" | "car";
-type ReportStatus = "pending" | "resolved" | "dismissed";
-
-interface FraudReport {
-  id: number;
-  type: ReportType;
-  reportedById: number;
-  reportedByName: string;
-  reportedByEmail: string;
-  targetUserId?: number;
-  targetUserName?: string;
-  targetCarId?: number;
-  targetCarTitle?: string;
-  reason: string;
-  description?: string;
-  status: ReportStatus;
-  createdAt: string;
-  resolvedAt?: string;
-  resolvedBy?: string;
-}
+type ReportStatus = "pending" | "resolved" | "dismissed" | "reviewed";
 
 export default function AdminReportsPage() {
   const { loading: authLoading, isAuthenticated } = useAdminAuth();
-  const [reports, setReports] = useState<FraudReport[]>([]);
+  const { showToast, ToastContainer } = useToast();
+  const [reports, setReports] = useState<AdminReport[]>([]);
+  const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<ReportType | "all">("all");
@@ -43,22 +29,14 @@ export default function AdminReportsPage() {
         setIsLoading(true);
         setError(null);
 
-        const params = new URLSearchParams();
-        if (filterType !== "all") params.append("type", filterType);
-        if (filterStatus !== "all") params.append("status", filterStatus);
-
-        const result = await apiCall<{
-          success: boolean;
-          data: FraudReport[];
-          total: number;
-        }>(`/admin/reports?${params.toString()}`, {
-          method: "GET",
+        const result = await reportsAPI.listReports({
+          type: filterType !== "all" ? filterType : undefined,
+          status: filterStatus !== "all" ? filterStatus : undefined,
         });
 
         if (result.success && result.data) {
-          // Ensure result.data is an array before setting it
-          const reportsData = Array.isArray(result.data) ? result.data : [];
-          setReports(reportsData);
+          setReports(result.data.reports);
+          setTotal(result.data.total);
         } else {
           setError("Failed to load reports");
         }
@@ -86,30 +64,30 @@ export default function AdminReportsPage() {
     }
   }, [filterType, filterStatus, authLoading, isAuthenticated]);
 
+  const refreshReports = async () => {
+    const result = await reportsAPI.listReports({
+      type: filterType !== "all" ? filterType : undefined,
+      status: filterStatus !== "all" ? filterStatus : undefined,
+    });
+    if (result.success && result.data) {
+      setReports(result.data.reports);
+      setTotal(result.data.total);
+    }
+  };
+
   const handleResolve = async (reportId: number) => {
     setActionLoading(reportId);
     try {
-      await apiCall(`/admin/reports/${reportId}/resolve`, {
-        method: "POST",
-      });
-      // Refresh reports
-      const params = new URLSearchParams();
-      if (filterType !== "all") params.append("type", filterType);
-      if (filterStatus !== "all") params.append("status", filterStatus);
-      const result = await apiCall<{
-        success: boolean;
-        data: FraudReport[];
-        total: number;
-      }>(`/admin/reports?${params.toString()}`, {
-        method: "GET",
-      });
-      if (result.success && result.data) {
-        // Ensure result.data is an array before setting it
-        const reportsData = Array.isArray(result.data) ? result.data : [];
-        setReports(reportsData);
+      const res = await reportsAPI.resolveReport(reportId);
+      if (!res.success) {
+        throw new Error(res.message || "Failed to resolve report");
       }
+      showToast("Report resolved successfully", "success");
+      await refreshReports();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to resolve report");
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to resolve report";
+      showToast(errorMessage, "error");
     } finally {
       setActionLoading(null);
     }
@@ -120,27 +98,16 @@ export default function AdminReportsPage() {
 
     setActionLoading(reportId);
     try {
-      await apiCall(`/admin/reports/${reportId}/dismiss`, {
-        method: "POST",
-      });
-      // Refresh reports
-      const params = new URLSearchParams();
-      if (filterType !== "all") params.append("type", filterType);
-      if (filterStatus !== "all") params.append("status", filterStatus);
-      const result = await apiCall<{
-        success: boolean;
-        data: FraudReport[];
-        total: number;
-      }>(`/admin/reports?${params.toString()}`, {
-        method: "GET",
-      });
-      if (result.success && result.data) {
-        // Ensure result.data is an array before setting it
-        const reportsData = Array.isArray(result.data) ? result.data : [];
-        setReports(reportsData);
+      const res = await reportsAPI.dismissReport(reportId);
+      if (!res.success) {
+        throw new Error(res.message || "Failed to dismiss report");
       }
+      showToast("Report dismissed successfully", "success");
+      await refreshReports();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to dismiss report");
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to dismiss report";
+      showToast(errorMessage, "error");
     } finally {
       setActionLoading(null);
     }
@@ -151,13 +118,17 @@ export default function AdminReportsPage() {
 
     setActionLoading(reportId);
     try {
-      await apiCall(`/admin/users/${userId}/ban`, {
-        method: "POST",
-      });
+      const res = await adminAuthAPI.banUser(userId);
+      if (!res.success) {
+        throw new Error(res.message || "Failed to ban user");
+      }
+      showToast("User banned successfully", "success");
       // Resolve the report after banning
       await handleResolve(reportId);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to ban user");
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to ban user";
+      showToast(errorMessage, "error");
       setActionLoading(null);
     }
   };
@@ -167,13 +138,17 @@ export default function AdminReportsPage() {
 
     setActionLoading(reportId);
     try {
-      await apiCall(`/admin/cars/${carId}/remove`, {
-        method: "POST",
-      });
+      const res = await adminAuthAPI.removeCar(carId);
+      if (!res.success) {
+        throw new Error(res.message || "Failed to remove car");
+      }
+      showToast("Car listing removed successfully", "success");
       // Resolve the report after removing car
       await handleResolve(reportId);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to remove car");
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to remove car";
+      showToast(errorMessage, "error");
       setActionLoading(null);
     }
   };
@@ -217,7 +192,7 @@ export default function AdminReportsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-(--space-m)">
         <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m)">
           <p className="text--1 text-gray-600 mb-1">Total Reports</p>
-          <p className="text-3xl font-bold text-gray-900">{reports.length}</p>
+          <p className="text-3xl font-bold text-gray-900">{total}</p>
         </div>
         <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m)">
           <p className="text--1 text-gray-600 mb-1">Pending</p>
@@ -527,6 +502,7 @@ export default function AdminReportsPage() {
           </div>
         )}
       </div>
+      {ToastContainer}
     </div>
   );
 }

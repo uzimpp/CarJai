@@ -2,28 +2,12 @@
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import type { DashboardStats, RecentReport, ChartDataPoint, BrandDataPoint } from "@/types/admin";
 
-interface DashboardStats {
-  totalUsers: number;
-  activeCars: number;
-  soldCars: number;
-  pendingReports: number;
-}
-
-interface RecentReport {
-  id: number;
-  type: "user" | "car";
-  targetId: number;
-  reason: string;
-  reportedBy: string;
-  createdAt: string;
-  status: "pending" | "resolved" | "dismissed";
-}
-
-interface ChartDataPoint {
-  date: string;
-  value: number;
-}
+import ActivityAreaChart from "@/components/dashboard/ActivityAreaChart";
+import UserRolesDonut from "@/components/dashboard/UserRolesDonut";
+import CarStatusDonut from "@/components/dashboard/CarStatusDonut";
+import TopBrandsChart from "@/components/dashboard/TopBrandsChart";
 
 export default function AdminDashboard() {
   const { adminUser } = useAdminAuth();
@@ -32,9 +16,12 @@ export default function AdminDashboard() {
     activeCars: 0,
     soldCars: 0,
     pendingReports: 0,
+    totalBuyers: 0,     
+    totalSellers: 0,   
   });
   const [recentReports, setRecentReports] = useState<RecentReport[]>([]);
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
+  const [topBrandsData, setTopBrandsData] = useState<BrandDataPoint[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Fetch dashboard data
@@ -42,83 +29,47 @@ export default function AdminDashboard() {
     const fetchDashboardData = async () => {
       setIsLoading(true);
       try {
-        // TODO: Replace with actual API calls
-        // Example:
-        // const [statsRes, reportsRes, chartRes] = await Promise.all([
-        //   apiCall("/admin/dashboard/stats"),
-        //   apiCall("/admin/reports/recent?limit=5"),
-        //   apiCall("/admin/dashboard/chart?period=30d"),
-        // ]);
-
-        // Placeholder data
-        setStats({
-          totalUsers: 1234,
-          activeCars: 567,
-          soldCars: 89,
-          pendingReports: 23,
-        });
-
-        setRecentReports([
-          {
-            id: 1,
-            type: "user",
-            targetId: 2345,
-            reason: "Suspicious listing behavior",
-            reportedBy: "buyer_123",
-            createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-            status: "pending",
-          },
-          {
-            id: 2,
-            type: "car",
-            targetId: 5678,
-            reason: "Potential price manipulation",
-            reportedBy: "buyer_456",
-            createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-            status: "pending",
-          },
-          {
-            id: 3,
-            type: "user",
-            targetId: 3456,
-            reason: "Fraudulent profile information",
-            reportedBy: "buyer_789",
-            createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-            status: "pending",
-          },
-          {
-            id: 4,
-            type: "car",
-            targetId: 6789,
-            reason: "Misleading vehicle description",
-            reportedBy: "buyer_012",
-            createdAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-            status: "pending",
-          },
-          {
-            id: 5,
-            type: "user",
-            targetId: 4567,
-            reason: "Suspicious transaction patterns",
-            reportedBy: "buyer_345",
-            createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-            status: "pending",
-          },
+        const [statsResponse, chartResponse, brandsResponse, recentReportsResponse] = await Promise.all([
+          fetch("/admin/dashboard/stats"),
+          fetch("/admin/dashboard/chart?period=30d"),
+          fetch("/admin/dashboard/top-brands"),
+          fetch("/admin/dashboard/recent-reports"),
         ]);
-
-        // Generate placeholder chart data (last 30 days)
-        const chartPoints: ChartDataPoint[] = [];
-        for (let i = 29; i >= 0; i--) {
-          const date = new Date();
-          date.setDate(date.getDate() - i);
-          chartPoints.push({
-            date: date.toISOString().split("T")[0],
-            value: Math.floor(Math.random() * 50) + 20,
-          });
+        if (!statsResponse.ok) {
+          throw new Error("Failed to fetch stats");
         }
-        setChartData(chartPoints);
-      } catch (error) {
+        if (!chartResponse.ok) {
+          throw new Error("Failed to fetch chart data");
+        }
+        if (!brandsResponse.ok) { 
+          throw new Error("Failed to fetch top brands data");
+        }
+        if (!recentReportsResponse.ok) {
+          throw new Error("Failed to fetch recent reports");
+        }
+        const statsData: DashboardStats = await statsResponse.json();
+        const chartData: ChartDataPoint[] = await chartResponse.json();
+        const brandsData: BrandDataPoint[] = await brandsResponse.json();
+        const recentReportsData: RecentReport[] = await recentReportsResponse.json();
+        
+        setStats(statsData);
+        setChartData(chartData);
+        setTopBrandsData(brandsData);
+        setRecentReports(recentReportsData);
+
+      }catch (error) {
         console.error("Failed to fetch dashboard data:", error);
+        setStats({
+          totalUsers: 0,
+          activeCars: 0,
+          soldCars: 0,
+          pendingReports: 0,
+          totalBuyers: 0,     
+          totalSellers: 0,
+        });
+        setChartData([]);
+        setTopBrandsData([]);
+        setRecentReports([]);
       } finally {
         setIsLoading(false);
       }
@@ -186,6 +137,7 @@ export default function AdminDashboard() {
             </div>
           </div>
 
+          
           {/* Active Cars */}
           <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m)">
             <div className="flex items-center justify-between">
@@ -286,10 +238,11 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Charts and Recent Reports Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-(--space-m)">
-          {/* Activity Chart */}
-          <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m)">
+        {/* --- Row 1: Activity Chart & User Roles --- */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-(--space-m) mb-(--space-l)">
+          
+          {/* Col 1.1: Activity Chart (Line) */}
+          <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m) h-[450px]">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-1 font-bold text-gray-900">
                 Activity Overview (Last 30 Days)
@@ -300,61 +253,109 @@ export default function AdminDashboard() {
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon"></div>
               </div>
             ) : (
-              <div className="h-64 bg-gray-50 rounded-xl p-4 flex items-end justify-between gap-1">
-                {chartData.map((point, index) => {
-                  const height = (point.value / maxChartValue) * 100;
-                  return (
-                    <div
-                      key={index}
-                      className="flex-1 flex flex-col items-center group relative"
-                    >
-                      <div
-                        className="w-full bg-maroon rounded-t transition-all hover:bg-red group-hover:opacity-80"
-                        style={{ height: `${height}%` }}
-                        title={`${point.value} on ${new Date(
-                          point.date
-                        ).toLocaleDateString()}`}
-                      />
-                      {index % 5 === 0 && (
-                        <span className="text-xs text-gray-500 mt-1 transform -rotate-45 origin-left">
-                          {new Date(point.date).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                          })}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+              <ActivityAreaChart data={chartData} />
             )}
             <p className="text-sm text-gray-500 mt-2 text-center">
               Daily activity trends
             </p>
           </div>
 
-          {/* Recent Reports */}
-          <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m)">
+          {/* Col 1.2: User Roles (Donut) */}
+          <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m) h-[450px]">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-1 font-bold text-gray-900">Recent Reports</h2>
-              <Link
-                href="/admin/reports"
-                className="text-sm text-maroon hover:underline"
-              >
-                View all →
-              </Link>
+              <h2 className="text-1 font-bold text-gray-900">
+                User Roles
+              </h2>
             </div>
             {isLoading ? (
-              <div className="h-64 flex items-center justify-center">
+              <div className="h-96 flex items-center justify-center bg-gray-50 rounded-xl">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon"></div>
               </div>
-            ) : recentReports.length === 0 ? (
-              <div className="h-64 flex items-center justify-center text-gray-500">
-                <p>No recent reports</p>
+            ) : (
+              <UserRolesDonut 
+                buyers={stats.totalBuyers} 
+                sellers={stats.totalSellers} 
+              />
+            )}
+            <p className="text-sm text-gray-500 mt-2 text-center">
+              Buyer vs. Seller distribution
+            </p>
+          </div>
+        </div>
+
+        {/* --- Row 2: Top Brands & Car Status --- */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-(--space-m) mb-(--space-l)">
+
+          {/* Col 2.1: Car Status (Donut) */}
+          <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m) h-[450px]">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-1 font-bold text-gray-900">
+                Car Status
+              </h2>
+            </div>
+            {isLoading ? (
+                <div className="h-96 flex items-center justify-center bg-gray-50 rounded-xl">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon"></div>
+                </div>
+            ) : (
+              <CarStatusDonut 
+                active={stats.activeCars} 
+                sold={stats.soldCars} 
+              />
+            )}
+            <p className="text-sm text-gray-500 mt-2 text-center">
+              Active vs. Sold listings
+            </p>
+          </div>
+
+          {/* Col 2.2: Top 10 Brands (Bar) */}
+          <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m) h-[450px]">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-1 font-bold text-gray-900">
+                Top 10 Brands
+              </h2>
+            </div>
+            {isLoading ? (
+              <div className="h-96 flex items-center justify-center bg-gray-50 rounded-xl">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon"></div>
               </div>
             ) : (
-              <div className="space-y-(--space-s) max-h-64 overflow-y-auto">
-                {recentReports.map((report) => (
+              <TopBrandsChart data={topBrandsData} />
+            )}
+            <p className="text-sm text-gray-500 mt-2 text-center">
+              Top 10 active listings by brand
+            </p>
+          </div>
+
+        </div>
+      
+        {/* Recent Reports */}
+        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m) mt-(--space-l)">
+          
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-1 font-bold text-gray-900">Recent Reports</h2>
+            <Link
+              href="/admin/reports"
+              className="text-sm text-maroon hover:underline"
+            >
+              View all →
+            </Link>
+          </div>
+          {isLoading ? (
+            <div className="h-64 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon"></div>
+            </div>
+          ) : !recentReports || recentReports.length === 0 ? (
+            <div className="h-64 flex items-center justify-center text-gray-500">
+              <p>No recent reports</p>
+            </div>
+          ) : (
+            <div className="space-y-(--space-s) max-h-64 overflow-y-auto">
+              {recentReports.map((report) => {
+                const isUserReport = report.reportType === "seller";
+                const targetId = isUserReport ? report.sellerId : report.carId;
+
+                return (
                   <Link
                     key={report.id}
                     href={`/admin/reports?id=${report.id}`}
@@ -362,10 +363,10 @@ export default function AdminDashboard() {
                   >
                     <div
                       className={`p-2 rounded-full flex-shrink-0 ${
-                        report.type === "user" ? "bg-red-100" : "bg-orange-100"
+                        isUserReport ? "bg-red-100" : "bg-orange-100"
                       }`}
                     >
-                      {report.type === "user" ? (
+                      {isUserReport ? ( 
                         <svg
                           className="w-5 h-5 text-red-600"
                           fill="none"
@@ -398,16 +399,14 @@ export default function AdminDashboard() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <p className="text-0 font-medium text-gray-900 truncate">
-                          {report.type === "user"
-                            ? `User #${report.targetId}`
-                            : `Car #${report.targetId}`}
+                          {isUserReport
+                            ? `User #${targetId}`
+                            : `Car #${targetId}`}
                         </p>
                         <span
                           className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                             report.status === "pending"
                               ? "bg-orange-100 text-orange-800"
-                              : report.status === "resolved"
-                              ? "bg-green-100 text-green-800"
                               : "bg-gray-100 text-gray-800"
                           }`}
                         >
@@ -415,19 +414,20 @@ export default function AdminDashboard() {
                         </span>
                       </div>
                       <p className="text--1 text-gray-600 truncate">
-                        {report.reason}
+                        {report.description}
                       </p>
                       <p className="text--2 text-gray-500 mt-1">
-                        Reported by {report.reportedBy} •{" "}
+                        Reported by User #{report.reporterId} •{" "}
                         {formatTimeAgo(report.createdAt)}
                       </p>
                     </div>
                   </Link>
-                ))}
-              </div>
-            )}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
+        
       </main>
     </div>
   );
