@@ -102,7 +102,42 @@ jobs:
         
       - name: Run unit tests
         working-directory: ./backend
-        run: go test -v ./tests/handlers/... || echo "Unit tests completed with some failures"
+        run: |
+          echo "🧪 Running unit tests for handlers..."
+          echo ""
+          echo "Test files to run:"
+          find tests/handlers -name "*_test.go" -type f | sed 's|^|  - |'
+          echo ""
+          
+          go test -v -coverprofile=coverage.out ./tests/handlers/... || {
+            echo ""
+            echo "❌ Unit tests failed!"
+            exit 1
+          }
+          echo ""
+          echo "✅ All unit tests passed!"
+          
+      - name: Generate test coverage report
+        working-directory: ./backend
+        if: always()
+        run: |
+          if [ -f coverage.out ]; then
+            echo "📊 Test Coverage Summary:"
+            go tool cover -func=coverage.out | tail -1
+            echo ""
+            echo "📈 Detailed coverage:"
+            go tool cover -func=coverage.out
+          else
+            echo "⚠️  No coverage file generated"
+          fi
+          
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-coverage
+          path: backend/coverage.out
+          retention-days: 7
         
       - name: Build Go binary
         working-directory: ./backend
@@ -264,10 +299,19 @@ jobs:
           # Step 1: Unit tests
           echo "📋 Step 1: Running unit tests (handlers)..."
           if [ -d "tests/handlers" ] && [ "$(ls -A tests/handlers/*_test.go 2>/dev/null)" ]; then
-            go test -v ./tests/handlers/... -count=1 || {
+            echo "Found test files:"
+            ls -1 tests/handlers/*_test.go | wc -l | xargs echo "  Total test files:"
+            echo ""
+            
+            go test -v -coverprofile=coverage-handlers.out ./tests/handlers/... -count=1 || {
               echo "❌ Unit tests failed!"
               exit 1
             }
+            echo ""
+            echo "📊 Handler Tests Coverage:"
+            if [ -f coverage-handlers.out ]; then
+              go tool cover -func=coverage-handlers.out | tail -1
+            fi
             echo "✅ Unit tests passed!"
           else
             echo "⚠️  No unit tests found, skipping..."
