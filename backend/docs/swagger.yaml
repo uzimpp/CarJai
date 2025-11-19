@@ -1402,6 +1402,113 @@ paths:
         '500':
           description: Database commit failed
 
+  # --- Admin Account Management ---
+  /admin/admins:
+    get:
+      tags:
+        - Admin Management
+      summary: List all admins
+      description: Retrieves a list of all admin users. Requires 'super_admin' role.
+      security:
+        - AdminCookieAuth: []
+      responses:
+        '200':
+          description: List of admins
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminListResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden (Super Admin only)
+
+    post:
+      tags:
+        - Admin Management
+      summary: Create a new admin
+      description: Creates a new admin user. Requires 'super_admin' role.
+      security:
+        - AdminCookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminCreateRequest'
+      responses:
+        '201':
+          description: Admin created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/AdminPublic'
+                  message:
+                    type: string
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden (Super Admin only)
+        '409':
+          description: Username already exists
+
+  /admin/admins/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Admin ID
+        schema:
+          type: integer
+    patch:
+      tags:
+        - Admin Management
+      summary: Update an admin
+      description: Updates admin details. Requires 'super_admin' role.
+      security:
+        - AdminCookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminUpdateRequest'
+      responses:
+        '200':
+          description: Admin updated successfully
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden (Super Admin only)
+        '404':
+          description: Admin not found
+
+    delete:
+      tags:
+        - Admin Management
+      summary: Delete an admin
+      description: Permanently removes an admin account. Requires 'super_admin' role.
+      security:
+        - AdminCookieAuth: []
+      responses:
+        '200':
+          description: Admin deleted successfully
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden (Super Admin only)
+        '404':
+          description: Admin not found
+
   # --- Admin User Management ---
   /admin/users:
     get:
@@ -2660,6 +2767,68 @@ components:
         updated_count:
           type: integer
           example: 10
+
+    # --- NEW: Schemas for Admin Account Management ---
+    AdminPublic:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+          enum: [admin, super_admin]
+        last_signin_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    AdminListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminPublic'
+        total:
+          type: integer
+
+    AdminCreateRequest:
+      type: object
+      required:
+        - username
+        - name
+        - password
+      properties:
+        username:
+          type: string
+          minLength: 3
+          example: "newadmin"
+        name:
+          type: string
+          example: "New Admin Name"
+        password:
+          type: string
+          minLength: 8
+          example: "securepass123"
+
+    AdminUpdateRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 3
+        name:
+          type: string
 
     # --- NEW: Schemas for Admin User Management ---
     UserPublic:
