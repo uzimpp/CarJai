@@ -51,12 +51,12 @@ func (r *AdminRepository) CreateAdmin(admin *Admin) error {
 func (r *AdminRepository) GetAdminByUsername(username string) (*Admin, error) {
 	admin := &Admin{}
 	query := `
-		SELECT id, username, password_hash, name, last_login_at, created_at
+		SELECT id, username, password_hash, name, role, last_login_at, created_at
 		FROM admins
 		WHERE username = $1`
 
 	err := r.db.DB.QueryRow(query, username).Scan(
-		&admin.ID, &admin.Username, &admin.PasswordHash, &admin.Name,
+		&admin.ID, &admin.Username, &admin.PasswordHash, &admin.Name, &admin.Role,
 		&admin.LastSigninAt, &admin.CreatedAt,
 	)
 
@@ -74,12 +74,12 @@ func (r *AdminRepository) GetAdminByUsername(username string) (*Admin, error) {
 func (r *AdminRepository) GetAdminByID(id int) (*Admin, error) {
 	admin := &Admin{}
 	query := `
-		SELECT id, username, password_hash, name, last_login_at, created_at
+		SELECT id, username, password_hash, name, role, last_login_at, created_at
 		FROM admins
 		WHERE id = $1`
 
 	err := r.db.DB.QueryRow(query, id).Scan(
-		&admin.ID, &admin.Username, &admin.PasswordHash, &admin.Name,
+		&admin.ID, &admin.Username, &admin.PasswordHash, &admin.Name, &admin.Role,
 		&admin.LastSigninAt, &admin.CreatedAt,
 	)
 

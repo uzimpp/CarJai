@@ -13,7 +13,8 @@ import { adminAuthAPI } from "@/lib/adminAuth";
 import { mutualLogout } from "@/lib/mutualLogout";
 
 interface AdminAuthContextType {
-  adminUser: AdminUser | null;
+  adminUser: AdminUser | null; 
+  admin: AdminUser | null;      
   adminSession: AdminSession | null;
   ipWhitelist: AdminIPWhitelist[];
   loading: boolean;
@@ -166,6 +167,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     <AdminAuthContext.Provider
       value={{
         adminUser,
+        admin: adminUser,
         adminSession,
         ipWhitelist,
         loading: loading || !mounted,

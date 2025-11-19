@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import type { AdminUser, AdminAdminsListResponse } from "@/types/admin";
 import PaginateControl from "@/components/ui/PaginateControl";
 
 export default function AdminAdminsPage() {
-  const { loading: authLoading, isAuthenticated } = useAdminAuth();
+  const { loading: authLoading, isAuthenticated, admin } = useAdminAuth();
+  const router = useRouter();
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [filteredAdmins, setFilteredAdmins] = useState<AdminUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -59,9 +61,14 @@ export default function AdminAdminsPage() {
   };
 
   useEffect(() => {
+    if (!authLoading && isAuthenticated && admin) {
+      if (admin.role !== 'super_admin') {
+        router.push('/admin/dashboard');
+      }
+    }
     if (authLoading || !isAuthenticated) return;
     fetchAdmins();
-  }, [authLoading, isAuthenticated]);
+  }, [authLoading, isAuthenticated, admin, router]);
 
   // Client-side filtering
   useEffect(() => {
@@ -143,6 +150,10 @@ export default function AdminAdminsPage() {
   }
 
   if (isAuthenticated === false) return null;
+
+  if (admin?.role !== 'super_admin') {
+    return null;
+  }
 
   return (
     <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full flex flex-col gap-(--space-s-m) relative">
