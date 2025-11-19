@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
-import type { AdminUser, AdminAdminsListResponse } from "@/types/admin"; // Import types จากไฟล์ของคุณ
+import type { AdminUser, AdminAdminsListResponse } from "@/types/admin";
 import PaginateControl from "@/components/ui/PaginateControl";
 
 export default function AdminAdminsPage() {

@@ -124,6 +124,13 @@ type AdminAdminsListResponse struct {
 	Total   int           `json:"total"`
 }
 
+// AdminCreateRequest represents the payload for creating a new admin
+type AdminCreateRequest struct {
+	Username string `json:"username" validate:"required,min=3,max=50"`
+	Name     string `json:"name" validate:"required,min=2,max=100"`
+	Password string `json:"password" validate:"required,min=8"`
+}
+
 // ToPublic converts Admin to AdminPublic (removes sensitive data)
 func (a *Admin) ToPublic() AdminPublic {
 	return AdminPublic{

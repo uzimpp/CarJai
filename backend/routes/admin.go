@@ -86,7 +86,16 @@ func AdminRoutes(
 	router.HandleFunc(basePath+"/auth/refresh", applyAdminAuthMiddleware(adminAuthHandler.RefreshToken))
 
 	router.HandleFunc(basePath+"/admins",
-		applyAdminAuthMiddleware(adminAuthHandler.HandleGetAdmins),
+		applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			case http.MethodGet:
+				adminAuthHandler.HandleGetAdmins(w, r)
+			case http.MethodPost:
+				adminAuthHandler.HandleCreateAdmin(w, r)
+			default:
+				utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+			}
+		}),
 	)
 
 	// --- Admin IP Whitelist Management Routes ---

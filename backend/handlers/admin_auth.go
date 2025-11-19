@@ -223,3 +223,47 @@ func (h *AdminAuthHandler) HandleGetAdmins(w http.ResponseWriter, r *http.Reques
 
 	utils.WriteJSON(w, http.StatusOK, response)
 }
+
+// HandleCreateAdmin handles POST /admin/admins
+func (h *AdminAuthHandler) HandleCreateAdmin(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	var req models.AdminCreateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	// Validation (Basic check, ideally use a validator library)
+	if req.Username == "" || req.Name == "" || req.Password == "" {
+		utils.WriteError(w, http.StatusBadRequest, "Username, Name, and Password are required")
+		return
+	}
+
+	serviceReq := services.CreateAdminRequest{
+		Username: req.Username,
+		Name:     req.Name,
+		Password: req.Password,
+	}
+
+	newAdmin, err := h.adminService.CreateAdmin(serviceReq)
+	if err != nil {
+		if err.Error() == "username already exists" {
+			utils.WriteError(w, http.StatusConflict, err.Error())
+			return
+		}
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response := map[string]interface{}{
+		"success": true,
+		"data":    newAdmin,
+		"message": "Admin created successfully",
+	}
+
+	utils.WriteJSON(w, http.StatusCreated, response)
+}

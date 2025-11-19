@@ -46,6 +46,13 @@ type SigninResponse struct {
 	ExpiresAt time.Time
 }
 
+// CreateAdminRequest structure for service layer
+type CreateAdminRequest struct {
+	Username string
+	Name     string
+	Password string
+}
+
 // Signin authenticates an admin user
 func (s *AdminService) Signin(req SigninRequest) (*SigninResponse, error) {
 	// Validate input
@@ -260,4 +267,38 @@ func (s *AdminService) GetManagedAdmins() ([]models.AdminPublic, error) {
 	}
 
 	return publicAdmins, nil
+}
+
+// CreateAdmin creates a new admin with role 'admin'
+func (s *AdminService) CreateAdmin(req CreateAdminRequest) (*models.AdminPublic, error) {
+	// 1. Check if username already exists
+	existingAdmin, _ := s.adminRepo.GetAdminByUsername(req.Username)
+	if existingAdmin != nil {
+		return nil, fmt.Errorf("username already exists")
+	}
+
+	// 2. Hash password
+	// Assuming utils.HashPassword exists since VerifyPassword is used in Signin
+	hashedPassword, err := utils.HashPassword(req.Password)
+	if err != nil {
+		return nil, fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	// 3. Prepare admin model
+	newAdmin := &models.Admin{
+		Username:     req.Username,
+		Name:         req.Name,
+		PasswordHash: hashedPassword,
+		Role:         "admin", // Force role to be admin
+	}
+
+	// 4. Save to database
+	err = s.adminRepo.CreateAdmin(newAdmin)
+	if err != nil {
+		return nil, err
+	}
+
+	// 5. Return public data
+	publicAdmin := newAdmin.ToPublic()
+	return &publicAdmin, nil
 }
