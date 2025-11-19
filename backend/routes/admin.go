@@ -130,12 +130,29 @@ func AdminRoutes(
 	router.HandleFunc(basePath+"/auth/refresh", applyAdminAuthMiddleware(adminAuthHandler.RefreshToken))
 
 	router.HandleFunc(basePath+"/admins",
+		applySuperAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path != basePath+"/admins" {
+                 return 
+			}
+			switch r.Method {
+			case http.MethodGet:
+				adminAuthHandler.HandleGetAdmins(w, r)
+			case http.MethodPost:
+				adminAuthHandler.HandleCreateAdmin(w, r)
+			default:
+				utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+			}
+		}),
+	)
+
+	router.HandleFunc(basePath+"/admins/",
         applySuperAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+            // Check method
             switch r.Method {
-            case http.MethodGet:
-                adminAuthHandler.HandleGetAdmins(w, r)
-            case http.MethodPost:
-                adminAuthHandler.HandleCreateAdmin(w, r)
+            case http.MethodPatch:
+                adminAuthHandler.HandleUpdateAdmin(w, r)
+            case http.MethodDelete:
+                adminAuthHandler.HandleDeleteAdmin(w, r)
             default:
                 utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
             }

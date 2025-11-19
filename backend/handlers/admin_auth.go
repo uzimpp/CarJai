@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"time"
+	"strings"
+	"strconv"
 
 	"github.com/uzimpp/CarJai/backend/middleware"
 	"github.com/uzimpp/CarJai/backend/models"
@@ -274,4 +276,60 @@ func (h *AdminAuthHandler) HandleCreateAdmin(w http.ResponseWriter, r *http.Requ
 	}
 
 	utils.WriteJSON(w, http.StatusCreated, response)
+}
+
+// HandleUpdateAdmin handles PATCH /admin/admins/{id}
+func (h *AdminAuthHandler) HandleUpdateAdmin(w http.ResponseWriter, r *http.Request) {
+	// Extract ID from URL (e.g., /admin/admins/1 -> 1)
+	parts := strings.Split(r.URL.Path, "/")
+	if len(parts) < 4 {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid admin ID")
+		return
+	}
+	idStr := parts[len(parts)-1]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid admin ID")
+		return
+	}
+
+	var req services.UpdateAdminRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	err = h.adminService.UpdateAdmin(id, req)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "Admin updated successfully"})
+}
+
+// HandleDeleteAdmin handles DELETE /admin/admins/{id}
+func (h *AdminAuthHandler) HandleDeleteAdmin(w http.ResponseWriter, r *http.Request) {
+	parts := strings.Split(r.URL.Path, "/")
+	if len(parts) < 4 {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid admin ID")
+		return
+	}
+	idStr := parts[len(parts)-1]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid admin ID")
+		return
+	}
+
+	// Prevent self-deletion (Optional but recommended)
+	// You can check X-Admin-ID header vs id here if needed
+
+	err = h.adminService.DeleteAdmin(id)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "Admin deleted successfully"})
 }

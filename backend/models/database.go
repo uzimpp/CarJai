@@ -167,6 +167,40 @@ func (r *AdminRepository) GetAdmins() ([]Admin, error) {
 	return admins, nil
 }
 
+// UpdateAdmin updates admin details
+func (r *AdminRepository) UpdateAdmin(id int, username, name string) error {
+	query := `UPDATE admins SET username = $1, name = $2 WHERE id = $3`
+	result, err := r.db.DB.Exec(query, username, name, id)
+	if err != nil {
+		return fmt.Errorf("failed to update admin: %w", err)
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return fmt.Errorf("admin not found")
+	}
+	return nil
+}
+
+// DeleteAdmin deletes an admin by ID
+func (r *AdminRepository) DeleteAdmin(id int) error {
+	query := `DELETE FROM admins WHERE id = $1`
+	result, err := r.db.DB.Exec(query, id)
+	if err != nil {
+		return fmt.Errorf("failed to delete admin: %w", err)
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return fmt.Errorf("admin not found")
+	}
+	return nil
+}
+
 // SessionRepository handles session-related database operations
 type SessionRepository struct {
 	db *Database

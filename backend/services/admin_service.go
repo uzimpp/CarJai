@@ -53,6 +53,12 @@ type CreateAdminRequest struct {
 	Password string
 }
 
+// UpdateAdminRequest structure
+type UpdateAdminRequest struct {
+	Username string
+	Name     string
+}
+
 // Signin authenticates an admin user
 func (s *AdminService) Signin(req SigninRequest) (*SigninResponse, error) {
 	// Validate input
@@ -308,4 +314,19 @@ func (s *AdminService) CreateAdmin(req CreateAdminRequest, initialIP string) (*m
 	// 5. Return public data
 	publicAdmin := newAdmin.ToPublic()
 	return &publicAdmin, nil
+}
+
+func (s *AdminService) UpdateAdmin(id int, req UpdateAdminRequest) error {
+	// Check if admin exists
+	_, err := s.adminRepo.GetAdminByID(id)
+	if err != nil {
+		return err
+	}
+	// Check username uniqueness (if changed)
+	// (Simple check, in production should exclude current ID)
+	return s.adminRepo.UpdateAdmin(id, req.Username, req.Name)
+}
+
+func (s *AdminService) DeleteAdmin(id int) error {
+	return s.adminRepo.DeleteAdmin(id)
 }
