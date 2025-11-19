@@ -19,39 +19,47 @@ export default function AdminAdminsPage() {
   // Filter states
   const [searchQuery, setSearchQuery] = useState("");
 
+  // --- Modal & Form States ---
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    username: "",
+    name: "",
+    password: "",
+  });
+  const [formError, setFormError] = useState<string | null>(null);
+
   // Load admins from API
+  const fetchAdmins = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const response = await fetch('/api/admin/admins');
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch admins: ${response.statusText}`);
+      }
+      
+      const data: AdminAdminsListResponse = await response.json();
+
+      if (data.success) {
+        setAdmins(data.data);
+      } else {
+        throw new Error('Failed to fetch admins');
+      }
+
+      setIsLoading(false);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "An unexpected error occurred"
+      );
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (authLoading || !isAuthenticated) return;
-
-    const fetchAdmins = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        const response = await fetch('/api/admin/admins');
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch admins: ${response.statusText}`);
-        }
-        
-        // ใช้ Type AdminAdminsListResponse ที่เราเพิ่มเข้าไป
-        const data: AdminAdminsListResponse = await response.json();
-
-        if (data.success) {
-          setAdmins(data.data);
-        } else {
-          throw new Error('Failed to fetch admins');
-        }
-
-        setIsLoading(false);
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "An unexpected error occurred"
-        );
-        setIsLoading(false);
-      }
-    };
-
     fetchAdmins();
   }, [authLoading, isAuthenticated]);
 
@@ -69,8 +77,40 @@ export default function AdminAdminsPage() {
     }
 
     setFilteredAdmins(filtered);
-    setPage(1); // Reset to page 1 when filter changes
+    setPage(1); 
   }, [admins, searchQuery]);
+
+  // --- Handle Create Admin ---
+  const handleCreateAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setFormError(null);
+
+    try {
+      const response = await fetch("/api/admin/admins", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to create admin");
+      }
+
+      // Success: Reset form, close modal, refresh list
+      setFormData({ username: "", name: "", password: "" });
+      setIsModalOpen(false);
+      fetchAdmins(); // Reload table
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   // Pagination logic
   const totalRows = filteredAdmins.length;
@@ -79,7 +119,6 @@ export default function AdminAdminsPage() {
   const endIndex = startIndex + rowsPerPage;
   const paginatedAdmins = filteredAdmins.slice(startIndex, endIndex);
 
-  // Format date helper
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "Never";
     const date = new Date(dateString);
@@ -92,7 +131,6 @@ export default function AdminAdminsPage() {
     });
   };
 
-  // Loading State
   if (authLoading || isAuthenticated === null) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -107,16 +145,115 @@ export default function AdminAdminsPage() {
   if (isAuthenticated === false) return null;
 
   return (
-    <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full flex flex-col gap-(--space-s-m)">
+    <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full flex flex-col gap-(--space-s-m) relative">
+      
+      {/* --- Modal Overlay --- */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="p-6 border-b border-gray-100">
+              <h3 className="text-xl font-semibold text-gray-900">Add New Admin</h3>
+              <p className="text-sm text-gray-500 mt-1">
+                Create a new account with Admin privileges.
+              </p>
+            </div>
+            
+            <form onSubmit={handleCreateAdmin} className="p-6 flex flex-col gap-4">
+              {formError && (
+                <div className="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100">
+                  {formError}
+                </div>
+              )}
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-gray-700">Username</label>
+                <input
+                  type="text"
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-maroon/20 focus:border-maroon"
+                  placeholder="e.g., admin_jane"
+                  value={formData.username}
+                  onChange={(e) => setFormData({...formData, username: e.target.value})}
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-gray-700">Full Name</label>
+                <input
+                  type="text"
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-maroon/20 focus:border-maroon"
+                  placeholder="e.g., Jane Doe"
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-gray-700">Password</label>
+                <input
+                  type="password"
+                  required
+                  minLength={8}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-maroon/20 focus:border-maroon"
+                  placeholder="Min 8 characters"
+                  value={formData.password}
+                  onChange={(e) => setFormData({...formData, password: e.target.value})}
+                />
+              </div>
+
+              <div className="flex gap-3 mt-4 justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setFormData({ username: "", name: "", password: "" });
+                    setFormError(null);
+                  }}
+                  className="px-4 py-2 text-gray-600 font-medium hover:bg-gray-50 rounded-lg transition-colors"
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="px-4 py-2 bg-maroon text-white font-medium rounded-lg hover:bg-maroon/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  style={{ backgroundColor: '#800000' }} // Fallback for custom color class
+                >
+                  {isSubmitting ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                      Creating...
+                    </>
+                  ) : (
+                    "Create Admin"
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-row justify-between items-center gap-(--space-2xs)">
         <div>
           <h1 className="text-3 bold">Admin Management</h1>
         </div>
-        {/* ปุ่ม Add Admin (เตรียมไว้สำหรับอนาคต) */}
-        {/* <div className="flex flex-row justify-end items-center gap-2">
-          <button className="...">Add Admin</button>
-        </div> */}
+        {/* --- Add Admin Button --- */}
+        <div className="flex flex-row justify-end items-center gap-2">
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="px-4 py-2 bg-maroon text-white text-sm font-medium rounded-full hover:bg-maroon/90 transition-all shadow-sm flex items-center gap-2"
+            style={{ backgroundColor: '#800000' }} // Use direct hex if class missing
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Add Admin
+          </button>
+        </div>
       </div>
 
       <section className="flex flex-col gap-(--space-s-m)">

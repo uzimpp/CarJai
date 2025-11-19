@@ -29,12 +29,14 @@ func NewAdminRepository(db *Database) *AdminRepository {
 
 // CreateAdmin creates a new admin user
 func (r *AdminRepository) CreateAdmin(admin *Admin) error {
+	// Update query to include role
 	query := `
-		INSERT INTO admins (username, password_hash, name)
-		VALUES ($1, $2, $3)
+		INSERT INTO admins (username, password_hash, name, role)
+		VALUES ($1, $2, $3, $4)
 		RETURNING id, created_at`
 
-	err := r.db.DB.QueryRow(query, admin.Username, admin.PasswordHash, admin.Name).Scan(
+	// Pass admin.Role to the query
+	err := r.db.DB.QueryRow(query, admin.Username, admin.PasswordHash, admin.Name, admin.Role).Scan(
 		&admin.ID, &admin.CreatedAt,
 	)
 
@@ -163,26 +165,6 @@ func (r *AdminRepository) GetAdmins() ([]Admin, error) {
 	}
 
 	return admins, nil
-}
-
-// CreateAdmin creates a new admin user
-func (r *AdminRepository) CreateAdmin(admin *Admin) error {
-	// Update query to include role
-	query := `
-		INSERT INTO admins (username, password_hash, name, role)
-		VALUES ($1, $2, $3, $4)
-		RETURNING id, created_at`
-
-	// Pass admin.Role to the query
-	err := r.db.DB.QueryRow(query, admin.Username, admin.PasswordHash, admin.Name, admin.Role).Scan(
-		&admin.ID, &admin.CreatedAt,
-	)
-
-	if err != nil {
-		return fmt.Errorf("failed to create admin: %w", err)
-	}
-
-	return nil
 }
 
 // SessionRepository handles session-related database operations
