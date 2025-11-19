@@ -38,6 +38,9 @@ func AdminRoutes(
 	adminUserHandler := handlers.NewAdminUserHandler(adminService, userService)
 	adminCarHandler := handlers.NewAdminCarHandler(carService)
 
+	// Create Handler for Dashboard
+	adminDashboardHandler := handlers.NewAdminDashboardHandler(userService, carService, reportService)
+
 	// Create router
 	router := http.NewServeMux()
 	basePath := strings.TrimSuffix(adminPrefix, "/")
@@ -87,6 +90,23 @@ func AdminRoutes(
 	router.HandleFunc(basePath+"/ip-whitelist/add", applyAdminAuthMiddleware(adminIPHandler.AddIPToWhitelist))
 	router.HandleFunc(basePath+"/ip-whitelist/check", applyAdminAuthMiddleware(adminIPHandler.CheckIPDeletionImpact))
 	router.HandleFunc(basePath+"/ip-whitelist/remove", applyAdminAuthMiddleware(adminIPHandler.RemoveIPFromWhitelist))
+
+	// --- Admin Dashboard Routes ---
+	router.HandleFunc(basePath+"/dashboard/stats",
+		applyAdminAuthMiddleware(adminDashboardHandler.HandleGetStats),
+	)
+
+	router.HandleFunc(basePath+"/dashboard/chart",
+		applyAdminAuthMiddleware(adminDashboardHandler.HandleGetChartData),
+	)
+
+	router.HandleFunc(basePath+"/dashboard/top-brands",
+		applyAdminAuthMiddleware(adminDashboardHandler.HandleGetTopBrandsChart),
+	)
+
+	router.HandleFunc(basePath+"/dashboard/recent-reports",
+		applyAdminAuthMiddleware(adminDashboardHandler.HandleGetRecentReports),
+	)
 
 	// --- Market Price Routes ---
 	// GET: Retrieve all market prices from the database
@@ -145,6 +165,8 @@ func AdminRoutes(
                 return
             }
             switch r.Method {
+			case http.MethodGet:
+                adminUserHandler.HandleGetUser(w, r)
             case http.MethodPatch:
                 adminUserHandler.HandleUpdateUser(w, r)
             case http.MethodDelete:

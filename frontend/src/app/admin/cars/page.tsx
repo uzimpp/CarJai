@@ -5,6 +5,19 @@ import { useAdminAuth } from "@/hooks/useAdminAuth";
 import type { AdminManagedCar, AdminUpdateCarRequest, AdminCreateCarRequest} from "@/types/admin";
 import PaginateControl from "@/components/ui/PaginateControl";
 
+function useDebounce(value: string, delay: number) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+  return debouncedValue;
+}
+
 // Edit Car Modal Component
 function EditCarModal({
   car,
@@ -263,33 +276,87 @@ function AddCarModal({
   onClose: () => void;
   onSave: (data: AdminCreateCarRequest) => Promise<void>;
 }) {
-  const [formData, setFormData] = useState<AdminCreateCarRequest>({
-    sellerId: 0,
+  const [sellerIdInput, setSellerIdInput] = useState("");
+  const [isValidating, setIsValidating] = useState(false);
+  const [sellerIdError, setSellerIdError] = useState<string | null>(null);
+  const [validSellerId, setValidSellerId] = useState<number | null>(null);
+  const [foundUserName, setFoundUserName] = useState(""); 
+
+  // --- Debounce ---
+  const debouncedSellerId = useDebounce(sellerIdInput, 500);
+  const [formData, setFormData] = useState<Omit<AdminCreateCarRequest, 'sellerId'>>({
     brandName: "",
     modelName: "",
     submodelName: "",
     year: undefined,
     price: 0,
     mileage: 0,
-    status: "draft",
   });
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const checkSellerId = async () => {
+      if (debouncedSellerId.trim() === "") {
+        setIsValidating(false);
+        setSellerIdError(null);
+        setValidSellerId(null);
+        setFoundUserName("");
+        return;
+      }
+
+      setIsValidating(true);
+      setSellerIdError(null);
+      setValidSellerId(null);
+      setFoundUserName("");
+
+      try {
+        const response = await fetch(`/api/admin/users/${debouncedSellerId}`);
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            throw new Error("User ID not found");
+          }
+          const errData = await response.json();
+          throw new Error(errData.error || "Failed to check ID");
+        }
+
+        const user = await response.json();
+        setValidSellerId(user.id);
+        setFoundUserName(user.name); 
+        setSellerIdError(null);
+
+      } catch (err) {
+        setValidSellerId(null);
+        setSellerIdError(err instanceof Error ? err.message : "Invalid ID");
+      } finally {
+        setIsValidating(false);
+      }
+    };
+
     if (isOpen) {
-      // Reset form
+      checkSellerId();
+    }
+  }, [debouncedSellerId, isOpen]); 
+
+
+  useEffect(() => {
+    if (isOpen) {
       setFormData({
-        sellerId: 0,
         brandName: "",
         modelName: "",
         submodelName: "",
         year: undefined,
         price: 0,
         mileage: 0,
-        status: "draft",
+        status: "",
       });
       setError(null);
+      setSellerIdInput("");
+      setIsValidating(false);
+      setSellerIdError(null);
+      setValidSellerId(null);
+      setFoundUserName("");
     }
   }, [isOpen]);
 
@@ -297,8 +364,9 @@ function AddCarModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.sellerId === 0) {
-      setError("Seller ID is required.");
+    if (!validSellerId) {
+      setSellerIdError("A valid Seller ID is required.");
+      setError(null); 
       return;
     }
     setIsSaving(true);
@@ -306,6 +374,7 @@ function AddCarModal({
 
     const payload: AdminCreateCarRequest = {
       ...formData,
+      sellerId: validSellerId,
       brandName: formData.brandName || undefined,
       modelName: formData.modelName || undefined,
       submodelName: formData.submodelName || undefined,
@@ -358,16 +427,30 @@ function AddCarModal({
               <input
                 type="number"
                 placeholder="Enter the User ID of the seller"
-                value={formData.sellerId === 0 ? "" : formData.sellerId}
+                value={sellerIdInput}
                 onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    sellerId: parseInt(e.target.value) || 0,
-                  })
+                  setSellerIdInput(e.target.value)
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent ${
+                  sellerIdError
+                    ? "border-red-500 focus:ring-red-500"
+                    : "border-gray-300 focus:ring-maroon"
+                }`}
                 required
               />
+
+              {/* --- Inline Error / Loading / Success --- */}
+              <div className="mt-1 text-sm h-5">
+                {isValidating && (
+                  <p className="text-gray-500">Checking...</p>
+                )}
+                {sellerIdError && (
+                  <p className="text-red-600">{sellerIdError}</p>
+                )}
+                {!isValidating && validSellerId && foundUserName && (
+                  <p className="text-green-600">✓ User found: {foundUserName}</p>
+                )}
+               </div>
             </div>
             
             {/* Brand */}
@@ -472,26 +555,6 @@ function AddCarModal({
               />
             </div>
 
-            {/* Status*/}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Status
-              </label>
-              <select
-                value={formData.status}
-                onChange={(e) =>
-                  setFormData({ ...formData, status: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent bg-white"
-                required
-              >
-                <option value="draft">Draft</option>
-                <option value="active">Active</option>
-                <option value="sold">Sold</option>
-                <option value="deleted">Deleted</option>
-              </select>
-            </div>
-
             <div className="flex gap-3 pt-4">
               <button
                 type="button"
@@ -502,10 +565,10 @@ function AddCarModal({
               </button>
               <button
                 type="submit"
-                disabled={isSaving}
+                disabled={isSaving || isValidating}
                 className="flex-1 px-4 py-2 bg-maroon text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSaving ? "Creating..." : "Create Car"}
+               >
+                {isSaving ? "Creating..." : (isValidating ? "Validating..." : "Create Car")}
               </button>
             </div>
           </form>
