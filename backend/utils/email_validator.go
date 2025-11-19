@@ -36,7 +36,14 @@ func HasValidEmailDomain(email string) bool {
 	// Check MX records
 	mxRecords, err := net.LookupMX(domain)
 	if err != nil {
-		return false
+		// If MX lookup fails, try A record as fallback
+		// Some domains might not have MX but can still receive email
+		_, err := net.LookupHost(domain)
+		if err != nil {
+			return false
+		}
+		// Domain exists, assume it can receive email
+		return true
 	}
 
 	return len(mxRecords) > 0

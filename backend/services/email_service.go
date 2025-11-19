@@ -29,7 +29,7 @@ func NewEmailService(host, port, username, password, from string) *EmailService 
 // SendPasswordResetEmail sends a password reset email
 func (s *EmailService) SendPasswordResetEmail(toEmail, resetLink string, frontendURL string) error {
 	subject := "Reset Your Password - CarJai"
-	body := s.buildPasswordResetEmailHTML(resetLink, frontendURL)
+	body := s.buildPasswordResetEmailHTML(resetLink)
 
 	// Compose message
 	message := []byte(
@@ -96,7 +96,7 @@ func (s *EmailService) SendPasswordResetEmail(toEmail, resetLink string, fronten
 }
 
 // buildPasswordResetEmailHTML creates the HTML email body
-func (s *EmailService) buildPasswordResetEmailHTML(resetLink string, frontendURL string) string {
+func (s *EmailService) buildPasswordResetEmailHTML(resetLink string) string {
 	return fmt.Sprintf(`
 <!DOCTYPE html>
 <html>
@@ -132,10 +132,7 @@ func (s *EmailService) buildPasswordResetEmailHTML(resetLink string, frontendURL
             font-weight: 700;
             letter-spacing: -0.5px;
         }
-        .header .logo { 
-            font-size: 48px;
-            margin-bottom: 10px;
-        }
+
         .content { 
             padding: 40px 30px;
             background-color: #ffffff;
@@ -248,8 +245,6 @@ func (s *EmailService) buildPasswordResetEmailHTML(resetLink string, frontendURL
 <body>
     <div class="email-wrapper">
         <div class="header">
-            <img src="%s/logo/logo.png" alt="CarJai Logo" style="width: 80px; height: 80px; margin-bottom: 10px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-            <div class="logo" style="display: none;">🚗</div>
             <h1>CarJai</h1>
         </div>
         <div class="content">
@@ -287,5 +282,5 @@ func (s *EmailService) buildPasswordResetEmailHTML(resetLink string, frontendURL
     </div>
 </body>
 </html>
-    `, frontendURL, resetLink, resetLink)
+    `, resetLink, resetLink)
 }
