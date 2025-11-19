@@ -237,11 +237,18 @@ func (h *AdminAuthHandler) HandleCreateAdmin(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// Validation (Basic check, ideally use a validator library)
+	// Validation
 	if req.Username == "" || req.Name == "" || req.Password == "" {
 		utils.WriteError(w, http.StatusBadRequest, "Username, Name, and Password are required")
 		return
 	}
+
+	// --- Extract Client IP ---
+	clientIP := utils.ExtractClientIP(
+		r.RemoteAddr,
+		r.Header.Get("X-Forwarded-For"),
+		r.Header.Get("X-Real-IP"),
+	)
 
 	serviceReq := services.CreateAdminRequest{
 		Username: req.Username,
@@ -249,7 +256,8 @@ func (h *AdminAuthHandler) HandleCreateAdmin(w http.ResponseWriter, r *http.Requ
 		Password: req.Password,
 	}
 
-	newAdmin, err := h.adminService.CreateAdmin(serviceReq)
+	newAdmin, err := h.adminService.CreateAdmin(serviceReq, clientIP)
+	
 	if err != nil {
 		if err.Error() == "username already exists" {
 			utils.WriteError(w, http.StatusConflict, err.Error())

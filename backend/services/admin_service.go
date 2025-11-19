@@ -270,7 +270,7 @@ func (s *AdminService) GetManagedAdmins() ([]models.AdminPublic, error) {
 }
 
 // CreateAdmin creates a new admin with role 'admin'
-func (s *AdminService) CreateAdmin(req CreateAdminRequest) (*models.AdminPublic, error) {
+func (s *AdminService) CreateAdmin(req CreateAdminRequest, initialIP string) (*models.AdminPublic, error) {
 	// 1. Check if username already exists
 	existingAdmin, _ := s.adminRepo.GetAdminByUsername(req.Username)
 	if existingAdmin != nil {
@@ -278,7 +278,6 @@ func (s *AdminService) CreateAdmin(req CreateAdminRequest) (*models.AdminPublic,
 	}
 
 	// 2. Hash password
-	// Assuming utils.HashPassword exists since VerifyPassword is used in Signin
 	hashedPassword, err := utils.HashPassword(req.Password)
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash password: %w", err)
@@ -289,13 +288,21 @@ func (s *AdminService) CreateAdmin(req CreateAdminRequest) (*models.AdminPublic,
 		Username:     req.Username,
 		Name:         req.Name,
 		PasswordHash: hashedPassword,
-		Role:         "admin", // Force role to be admin
+		Role:         "admin",
 	}
 
 	// 4. Save to database
 	err = s.adminRepo.CreateAdmin(newAdmin)
 	if err != nil {
 		return nil, err
+	}
+
+	// --- Auto-add Initial IP to Whitelist ---
+	if initialIP != "" {
+		err = s.ipWhitelistRepo.AddIPToWhitelist(newAdmin.ID, initialIP, "Initial IP (Auto-added upon creation)")
+		if err != nil {
+			fmt.Printf("Warning: Failed to auto-whitelist IP for new admin: %v\n", err)
+		}
 	}
 
 	// 5. Return public data
