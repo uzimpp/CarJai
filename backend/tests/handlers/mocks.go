@@ -15,6 +15,7 @@ type mockUserService struct {
 	signinFunc              func(emailOrUsername, password, ipAddress, userAgent string) (*models.UserAuthData, error)
 	signoutFunc             func(token string) (string, error)
 	getCurrentUserFunc      func(token string) (*models.UserMeData, error)
+	getUserByIDFunc         func(userID int) (*models.User, error)
 	refreshTokenFunc        func(token, ipAddress, userAgent string) (*models.UserAuthData, error)
 	changePasswordFunc      func(userID int, currentPassword, newPassword string) error
 	validateUserSessionFunc func(token string) (*models.User, error)
@@ -47,6 +48,13 @@ func (m *mockUserService) Signout(token string) (string, error) {
 func (m *mockUserService) GetCurrentUser(token string) (*models.UserMeData, error) {
 	if m.getCurrentUserFunc != nil {
 		return m.getCurrentUserFunc(token)
+	}
+	return nil, nil
+}
+
+func (m *mockUserService) GetUserByID(userID int) (*models.User, error) {
+	if m.getUserByIDFunc != nil {
+		return m.getUserByIDFunc(userID)
 	}
 	return nil, nil
 }
@@ -362,6 +370,7 @@ type mockAdminService struct {
 	signinFunc                func(req services.SigninRequest) (*services.SigninResponse, error)
 	signoutFunc               func(req services.SignoutRequest) error
 	getCurrentAdminFunc       func(token string) (*models.AdminMeData, error)
+	getAdminByIDFunc          func(adminID int) (*models.Admin, error)
 	addIPToWhitelistFunc      func(adminID int, ipAddress, description string) error
 	removeIPFromWhitelistFunc func(adminID int, ipAddress string) error
 	getWhitelistedIPsFunc     func(adminID int) ([]models.AdminIPWhitelist, error)
@@ -388,6 +397,13 @@ func (m *mockAdminService) GetCurrentAdmin(token string) (*models.AdminMeData, e
 	return nil, nil
 }
 
+func (m *mockAdminService) GetAdminByID(adminID int) (*models.Admin, error) {
+	if m.getAdminByIDFunc != nil {
+		return m.getAdminByIDFunc(adminID)
+	}
+	return nil, nil
+}
+
 func (m *mockAdminService) AddIPToWhitelist(adminID int, ipAddress, description string) error {
 	if m.addIPToWhitelistFunc != nil {
 		return m.addIPToWhitelistFunc(adminID, ipAddress, description)
@@ -407,6 +423,33 @@ func (m *mockAdminService) GetWhitelistedIPs(adminID int) ([]models.AdminIPWhite
 		return m.getWhitelistedIPsFunc(adminID)
 	}
 	return nil, nil
+}
+
+type mockReportService struct {
+	listReportsFunc        func(filters models.ReportFilters) ([]models.Report, int, error)
+	updateReportStatusFunc func(id int, status string, adminNotes *string, adminID int) error
+	banSellerFunc          func(sellerID, adminID int, notes *string) (int, error)
+}
+
+func (m *mockReportService) ListReports(filters models.ReportFilters) ([]models.Report, int, error) {
+	if m.listReportsFunc != nil {
+		return m.listReportsFunc(filters)
+	}
+	return nil, 0, nil
+}
+
+func (m *mockReportService) UpdateReportStatus(id int, status string, adminNotes *string, adminID int) error {
+	if m.updateReportStatusFunc != nil {
+		return m.updateReportStatusFunc(id, status, adminNotes, adminID)
+	}
+	return nil
+}
+
+func (m *mockReportService) BanSeller(sellerID, adminID int, notes *string) (int, error) {
+	if m.banSellerFunc != nil {
+		return m.banSellerFunc(sellerID, adminID, notes)
+	}
+	return 0, nil
 }
 
 // mockJWTManager is a mock implementation of JWTManager for testing

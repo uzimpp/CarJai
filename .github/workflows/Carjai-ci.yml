@@ -102,7 +102,61 @@ jobs:
         
       - name: Run unit tests
         working-directory: ./backend
-        run: go test -v ./tests/handlers/... || echo "Unit tests completed with some failures"
+        run: |
+          echo "🧪 Running unit tests for handlers..."
+          echo ""
+          echo "Test files to run:"
+          find tests/handlers -name "*_test.go" -type f | sed 's|^|  - |'
+          echo ""
+          
+          go test -v -coverprofile=coverage.out ./tests/handlers/... || {
+            echo ""
+            echo "❌ Unit tests failed!"
+            exit 1
+          }
+          echo ""
+          echo "✅ All unit tests passed!"
+          
+      - name: Generate test coverage report
+        working-directory: ./backend
+        if: always()
+        run: |
+          if [ -f coverage.out ]; then
+            echo "📊 Test Coverage Summary:"
+            go tool cover -func=coverage.out | tail -1
+            echo ""
+            echo "📈 Detailed coverage:"
+            go tool cover -func=coverage.out
+          else
+            echo "⚠️  No coverage file generated"
+          fi
+          
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-coverage
+          path: backend/coverage.out
+          retention-days: 7
+
+      - name: Calculate Maintainability Index
+        working-directory: ./backend
+        run: |
+          echo "📐 Calculating maintainability index with Lizard..."
+          python3 -m pip install --upgrade pip >/dev/null
+          python3 -m pip install lizard >/dev/null
+          echo ""
+          lizard -l go -m . | tee ../maintainability-report.txt
+          echo ""
+          echo "✅ Maintainability analysis completed!"
+
+      - name: Upload maintainability report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: maintainability-report
+          path: maintainability-report.txt
+          retention-days: 7
         
       - name: Build Go binary
         working-directory: ./backend
@@ -264,10 +318,19 @@ jobs:
           # Step 1: Unit tests
           echo "📋 Step 1: Running unit tests (handlers)..."
           if [ -d "tests/handlers" ] && [ "$(ls -A tests/handlers/*_test.go 2>/dev/null)" ]; then
-            go test -v ./tests/handlers/... -count=1 || {
+            echo "Found test files:"
+            ls -1 tests/handlers/*_test.go | wc -l | xargs echo "  Total test files:"
+            echo ""
+            
+            go test -v -coverprofile=coverage-handlers.out ./tests/handlers/... -count=1 || {
               echo "❌ Unit tests failed!"
               exit 1
             }
+            echo ""
+            echo "📊 Handler Tests Coverage:"
+            if [ -f coverage-handlers.out ]; then
+              go tool cover -func=coverage-handlers.out | tail -1
+            fi
             echo "✅ Unit tests passed!"
           else
             echo "⚠️  No unit tests found, skipping..."
@@ -282,115 +345,3 @@ jobs:
           
           echo "✅ All critical tests completed!"
 
-  # Docker Build
-  docker:
-    name: Docker Build
-    runs-on: ubuntu-latest
-    needs: [detect-environment, frontend, backend, tests]
-    if: needs.detect-environment.outputs.is-develop == 'true' || needs.detect-environment.outputs.is-main == 'true'
-
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        
-      - name: Login to Docker Hub
-        if: needs.detect-environment.outputs.is-main == 'true'
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-        
-      - name: Build frontend Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./frontend
-          file: ./frontend/dockerfile
-          push: ${{ needs.detect-environment.outputs.is-main == 'true' }}
-          tags: |
-            carjai-frontend:${{ needs.detect-environment.outputs.branch }}
-            ${{ needs.detect-environment.outputs.is-main == 'true' && 'carjai-frontend:latest' || '' }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          
-      - name: Build backend Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          file: ./backend/dockerfile
-          push: ${{ needs.detect-environment.outputs.is-main == 'true' }}
-          tags: |
-            carjai-backend:${{ needs.detect-environment.outputs.branch }}
-            ${{ needs.detect-environment.outputs.is-main == 'true' && 'carjai-backend:latest' || '' }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  # Staging Deployment (develop branch)
-  deploy-staging:
-    name: Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: [detect-environment, docker]
-    if: needs.detect-environment.outputs.is-develop == 'true'
-    environment: staging
-
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Deploy to staging server
-        run: |
-          echo "🚀 Deploying to staging environment..."
-          echo "Branch: ${{ needs.detect-environment.outputs.branch }}"
-          echo "Environment: ${{ needs.detect-environment.outputs.environment }}"
-          # Add your staging deployment commands here
-          # Example: SSH to staging server and pull latest images
-          # ssh user@staging-server "docker pull carjai-frontend:develop && docker pull carjai-backend:develop"
-          # ssh user@staging-server "docker-compose -f /path/to/staging/docker-compose.yml up -d"
-
-  # Integration Test with Docker Compose
-  # Integration Test job removed per policy to skip integration tests
-
-  # Production Deployment (main branch)
-  deploy-production:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    needs: [detect-environment, docker]
-    if: needs.detect-environment.outputs.is-main == 'true'
-    environment: production
-
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Deploy to production server
-        run: |
-          echo "🚀 Deploying to production environment..."
-          echo "Branch: ${{ needs.detect-environment.outputs.branch }}"
-          echo "Environment: ${{ needs.detect-environment.outputs.environment }}"
-          # Add your production deployment commands here
-          # Example: SSH to production server and pull latest images
-          # ssh user@production-server "docker pull carjai-frontend:latest && docker pull carjai-backend:latest"
-          # ssh user@production-server "docker-compose -f /path/to/production/docker-compose.yml up -d"
-          
-      - name: Health check production
-        run: |
-          echo "🔍 Performing health check on production..."
-          # Add health check commands
-          # curl -f https://your-production-domain.com/health || exit 1
-
-  # Notification
-  notify:
-    name: Send Notification
-    runs-on: ubuntu-latest
-    needs: [detect-environment, deploy-staging, deploy-production]
-    if: always() && (needs.detect-environment.outputs.is-develop == 'true' || needs.detect-environment.outputs.is-main == 'true')
-
-    steps:
-      - name: Notify deployment status
-        run: |
-          if [[ "${{ needs.deploy-staging.result }}" == "success" || "${{ needs.deploy-production.result }}" == "success" ]]; then
-            echo "✅ Deployment successful!"
-            # Add notification logic (Slack, Discord, email, etc.)
-          else
-            echo "❌ Deployment failed!"
-            # Add failure notification logic
-          fi
