@@ -1,6 +1,6 @@
 import Cta from "@/components/global/Cta";
 
-export default function PriceEstimation() {
+export default function Pricing() {
   return (
     <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full">
       {/* Hero Section */}
@@ -12,7 +12,8 @@ export default function PriceEstimation() {
           <div className="w-24 h-1 bg-gradient-to-r from-maroon to-red mx-auto mb-(--space-m)"></div>
           <p className="text-2 text-gray-600 max-w-3xl mx-auto leading-relaxed">
             Learn how we calculate estimated prices for second-hand cars using a
-            formula based on <span className="font-bold text-maroon">transparency</span> and
+            formula based on{" "}
+            <span className="font-bold text-maroon">transparency</span> and
             <span className="font-bold text-maroon"> accuracy</span>.
           </p>
         </div>
@@ -86,17 +87,13 @@ export default function PriceEstimation() {
                 <div className="text-red-600 font-bold text-1 mb-(--space-2xs)">
                   Min Price
                 </div>
-                <div className="text-0 text-gray-600">
-                  Minimum market value
-                </div>
+                <div className="text-0 text-gray-600">Minimum market value</div>
               </div>
               <div className="text-center p-(--space-m) bg-white rounded-lg">
                 <div className="text-green-600 font-bold text-1 mb-(--space-2xs)">
                   Max Price
                 </div>
-                <div className="text-0 text-gray-600">
-                  Maximum market value
-                </div>
+                <div className="text-0 text-gray-600">Maximum market value</div>
               </div>
               <div className="text-center p-(--space-m) bg-white rounded-lg">
                 <div className="text-purple-600 font-bold text-1 mb-(--space-2xs)">
@@ -116,8 +113,8 @@ export default function PriceEstimation() {
                 Adjustment Factors
               </h3>
               <div className="text-xl font-bold text-gray-800 mb-(--space-s)">
-                <span className="text-purple-600">Adjustment factors</span> = 1 + (
-                <span className="text-sky-400">Stars Points</span> +{" "}
+                <span className="text-purple-600">Adjustment factors</span> = 1
+                + (<span className="text-sky-400">Stars Points</span> +{" "}
                 <span className="text-sky-400">Mileage Points</span> +{" "}
                 <span className="text-sky-400">Inspection Points</span> +{" "}
                 <span className="text-sky-400">Special Deductions</span>) / 100
@@ -234,7 +231,9 @@ export default function PriceEstimation() {
               <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
                 <span className="text-white text-lg">📊</span>
               </div>
-              <h3 className="text-3 font-bold text-gray-900">Example Calculation</h3>
+              <h3 className="text-3 font-bold text-gray-900">
+                Example Calculation
+              </h3>
             </div>
             <div className="space-y-(--space-s) text-0 text-gray-700">
               <div>
