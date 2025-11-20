@@ -142,11 +142,7 @@ func (s *UserService) CreateUserByAdmin(req models.AdminCreateUserRequest) (*mod
 }
 
 // Signup creates a new user account
-func (s *UserService) Signup(email, password, username, name, ipAddress, userAgent string) (*models.UserAuthResponse, error) {
-	// Validate email format and domain
-	if err := utils.ValidateEmailForSignup(email); err != nil {
-		return nil, err
-	}
+func (s *UserService) Signup(email, password, username, name, ipAddress, userAgent string) (*models.UserAuthData, error) {
 
 	// Check if user already exists by email
 	existingUser, err := s.userRepo.GetUserByEmail(email)
