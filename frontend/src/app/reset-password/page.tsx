@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { resetPassword } from '@/lib/apiCall';
+import { authAPI } from '@/lib/userAuth';
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -45,7 +45,7 @@ function ResetPasswordForm() {
     setIsLoading(true);
 
     try {
-      await resetPassword(token, newPassword);
+      await authAPI.resetPassword(token, newPassword);
       setSuccess(true);
       // Redirect to signin after 2 seconds
       setTimeout(() => {

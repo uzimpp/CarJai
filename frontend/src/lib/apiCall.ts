@@ -67,21 +67,3 @@ export async function apiCall<T>(
   return data as T;
 }
 
-// Forgot password
-export async function forgotPassword(email: string) {
-  return apiCall<{ success: boolean; message: string }>('/api/auth/forgot-password', {
-    method: 'POST',
-    body: JSON.stringify({ email }),
-  });
-}
-
-// Reset password
-export async function resetPassword(token: string, newPassword: string) {
-  return apiCall<{ success: boolean; message: string }>('/api/auth/reset-password', {
-    method: 'POST',
-    body: JSON.stringify({
-      token,
-      new_password: newPassword,
-    }),
-  });
-}

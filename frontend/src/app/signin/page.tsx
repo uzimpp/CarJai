@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import { validation } from "@/lib/profileAPI";
 import GoogleSigninButton from "@/components/auth/GoogleSigninButton";
-import { forgotPassword } from "@/lib/apiCall";
+import { authAPI } from "@/lib/userAuth";
 
 function SigninForm() {
   const router = useRouter();
@@ -89,7 +89,7 @@ function SigninForm() {
     setForgotPasswordLoading(true);
 
     try {
-      await forgotPassword(forgotPasswordEmail);
+      await authAPI.forgotPassword(forgotPasswordEmail);
       setForgotPasswordSuccess(true);
     } catch (err) {
       const error = err as Error;
