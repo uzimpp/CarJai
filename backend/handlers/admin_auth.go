@@ -3,6 +3,8 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/uzimpp/CarJai/backend/middleware"
@@ -185,4 +187,130 @@ func (h *AdminAuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) 
 		ExpiresAt: expiresAt,
 	}
 	utils.WriteJSON(w, http.StatusOK, response, "Token refreshed successfully")
+}
+
+// HandleGetAdmins handles GET /admin/admins
+func (h *AdminAuthHandler) HandleGetAdmins(w http.ResponseWriter, r *http.Request) {
+	admins, err := h.adminService.GetManagedAdmins()
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "Failed to retrieve admins")
+		return
+	}
+
+	response := models.AdminAdminsListResponse{
+		Admins: admins,
+		Total:  len(admins),
+	}
+
+	utils.WriteJSON(w, http.StatusOK, response, "Admins retrieved successfully")
+}
+
+// HandleCreateAdmin handles POST /admin/admins
+func (h *AdminAuthHandler) HandleCreateAdmin(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	var req models.AdminCreateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	// Validation
+	if req.Username == "" || req.Name == "" || req.Password == "" {
+		utils.WriteError(w, http.StatusBadRequest, "Username, Name, and Password are required")
+		return
+	}
+
+	// --- Extract Client IP ---
+	clientIP := utils.ExtractClientIP(
+		r.RemoteAddr,
+		r.Header.Get("X-Forwarded-For"),
+		r.Header.Get("X-Real-IP"),
+	)
+
+	serviceReq := services.CreateAdminRequest{
+		Username: req.Username,
+		Name:     req.Name,
+		Password: req.Password,
+	}
+
+	newAdmin, err := h.adminService.CreateAdmin(serviceReq, clientIP)
+
+	if err != nil {
+		if err.Error() == "username already exists" {
+			utils.WriteError(w, http.StatusConflict, err.Error())
+			return
+		}
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response := models.AdminPublic{
+		ID:        newAdmin.ID,
+		Username:  newAdmin.Username,
+		Name:      newAdmin.Name,
+		Role:      newAdmin.Role,
+		CreatedAt: newAdmin.CreatedAt,
+	}
+
+	utils.WriteJSON(w, http.StatusCreated, response, "Admin created successfully")
+}
+
+// HandleUpdateAdmin handles PATCH /admin/admins/{id}
+func (h *AdminAuthHandler) HandleUpdateAdmin(w http.ResponseWriter, r *http.Request) {
+	// Extract ID from URL (e.g., /admin/admins/1 -> 1)
+	parts := strings.Split(r.URL.Path, "/")
+	if len(parts) < 4 {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid admin ID")
+		return
+	}
+	idStr := parts[len(parts)-1]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid admin ID")
+		return
+	}
+
+	var req services.UpdateAdminRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	err = h.adminService.UpdateAdmin(id, req)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, nil, "Admin updated successfully")
+}
+
+// HandleDeleteAdmin handles DELETE /admin/admins/{id}
+func (h *AdminAuthHandler) HandleDeleteAdmin(w http.ResponseWriter, r *http.Request) {
+	parts := strings.Split(r.URL.Path, "/")
+	if len(parts) < 4 {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid admin ID")
+		return
+	}
+	idStr := parts[len(parts)-1]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid admin ID")
+		return
+	}
+
+	// Prevent self-deletion (Optional but recommended)
+	// You can check X-Admin-ID header vs id here if needed
+
+	err = h.adminService.DeleteAdmin(id)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, nil, "Admin deleted successfully")
 }

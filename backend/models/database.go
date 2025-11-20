@@ -29,12 +29,14 @@ func NewAdminRepository(db *Database) *AdminRepository {
 
 // CreateAdmin creates a new admin user
 func (r *AdminRepository) CreateAdmin(admin *Admin) error {
+	// Update query to include role
 	query := `
-		INSERT INTO admins (username, password_hash, name)
-		VALUES ($1, $2, $3)
+		INSERT INTO admins (username, password_hash, name, role)
+		VALUES ($1, $2, $3, $4)
 		RETURNING id, created_at`
 
-	err := r.db.DB.QueryRow(query, admin.Username, admin.PasswordHash, admin.Name).Scan(
+	// Pass admin.Role to the query
+	err := r.db.DB.QueryRow(query, admin.Username, admin.PasswordHash, admin.Name, admin.Role).Scan(
 		&admin.ID, &admin.CreatedAt,
 	)
 
@@ -49,12 +51,12 @@ func (r *AdminRepository) CreateAdmin(admin *Admin) error {
 func (r *AdminRepository) GetAdminByUsername(username string) (*Admin, error) {
 	admin := &Admin{}
 	query := `
-		SELECT id, username, password_hash, name, last_login_at, created_at
+		SELECT id, username, password_hash, name, role, last_login_at, created_at
 		FROM admins
 		WHERE username = $1`
 
 	err := r.db.DB.QueryRow(query, username).Scan(
-		&admin.ID, &admin.Username, &admin.PasswordHash, &admin.Name,
+		&admin.ID, &admin.Username, &admin.PasswordHash, &admin.Name, &admin.Role,
 		&admin.LastSigninAt, &admin.CreatedAt,
 	)
 
@@ -72,12 +74,12 @@ func (r *AdminRepository) GetAdminByUsername(username string) (*Admin, error) {
 func (r *AdminRepository) GetAdminByID(id int) (*Admin, error) {
 	admin := &Admin{}
 	query := `
-		SELECT id, username, password_hash, name, last_login_at, created_at
+		SELECT id, username, password_hash, name, role, last_login_at, created_at
 		FROM admins
 		WHERE id = $1`
 
 	err := r.db.DB.QueryRow(query, id).Scan(
-		&admin.ID, &admin.Username, &admin.PasswordHash, &admin.Name,
+		&admin.ID, &admin.Username, &admin.PasswordHash, &admin.Name, &admin.Role,
 		&admin.LastSigninAt, &admin.CreatedAt,
 	)
 
@@ -121,6 +123,82 @@ func (r *AdminRepository) ValidateAdminCredentials(username, password string) (*
 
 	// Password validation will be handled by bcrypt in the service layer
 	return admin, nil
+}
+
+// GetAdmins retrieves all admin users
+func (r *AdminRepository) GetAdmins() ([]Admin, error) {
+	var admins []Admin
+	
+	query := `
+		SELECT id, username, name, role, last_login_at, created_at
+		FROM admins
+		ORDER BY created_at DESC`
+
+	rows, err := r.db.DB.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get admins: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var admin Admin
+		var lastSigninAt sql.NullTime
+		
+		err := rows.Scan(
+			&admin.ID, 
+			&admin.Username, 
+			&admin.Name, 
+			&admin.Role,
+			&lastSigninAt, 
+			&admin.CreatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan admin: %w", err)
+		}
+		
+		if lastSigninAt.Valid {
+			t := lastSigninAt.Time
+			admin.LastSigninAt = &t
+		}
+		
+		admins = append(admins, admin)
+	}
+
+	return admins, nil
+}
+
+// UpdateAdmin updates admin details
+func (r *AdminRepository) UpdateAdmin(id int, username, name string) error {
+	query := `UPDATE admins SET username = $1, name = $2 WHERE id = $3`
+	result, err := r.db.DB.Exec(query, username, name, id)
+	if err != nil {
+		return fmt.Errorf("failed to update admin: %w", err)
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return fmt.Errorf("admin not found")
+	}
+	return nil
+}
+
+// DeleteAdmin deletes an admin by ID
+func (r *AdminRepository) DeleteAdmin(id int) error {
+	query := `DELETE FROM admins WHERE id = $1`
+	result, err := r.db.DB.Exec(query, id)
+	if err != nil {
+		return fmt.Errorf("failed to delete admin: %w", err)
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return fmt.Errorf("admin not found")
+	}
+	return nil
 }
 
 // SessionRepository handles session-related database operations

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUserAuth } from "@/hooks/useUserAuth";
-import { apiCall } from "@/lib/apiCall";
+import { carsAPI } from "@/lib/carsAPI";
 import Link from "next/link";
 import { CarListing } from "@/types/car";
 import CarCard from "@/components/car/CarCard";
@@ -50,19 +50,36 @@ export default function MyListingsPage() {
 
       try {
         setIsLoadingListings(true);
-        const result = await apiCall<{
-          success: boolean;
-          data: CarListing[];
-          message?: string;
-        }>("/api/cars/my", {
-          method: "GET",
-        });
+        const result = await carsAPI.getMyCars();
 
         if (result.success && result.data) {
-          setListings(result.data);
-        } else {
+          // Backend returns Car[] but we need CarListing[] for display
+          // Convert Car objects to CarListing format
+          const carListings: CarListing[] = result.data.map((car) => ({
+            id: car.car.id,
+            sellerId: car.car.sellerId,
+            status: car.car.status,
+            brandName: car.car.brandName,
+            modelName: car.car.modelName,
+            submodelName: car.car.submodelName,
+            year: car.car.year,
+            price: car.car.price,
+            mileage: car.car.mileage,
+            bodyType: car.car.bodyType,
+            transmission: car.car.transmission,
+            drivetrain: car.car.drivetrain,
+            fuelTypes: car.car.fuelTypes,
+            colors: car.car.colors,
+            conditionRating: car.car.conditionRating,
+            thumbnailUrl:
+              car.images && car.images.length > 0
+                ? `/api/cars/images/${car.images[0].id}`
+                : undefined,
+          }));
+          setListings(carListings);
         }
       } catch {
+        // Error handled by state
       } finally {
         setIsLoadingListings(false);
       }
@@ -73,14 +90,7 @@ export default function MyListingsPage() {
 
   const handlePublish = async (carId: number) => {
     try {
-      const result = await apiCall<{ success: boolean; message?: string }>(
-        `/api/cars/${carId}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: "active" }),
-        }
-      );
+      const result = await carsAPI.updateStatus(carId, "active");
 
       if (result.success) {
         // Update the listing in state
@@ -102,14 +112,7 @@ export default function MyListingsPage() {
 
   const handleUnpublish = async (carId: number) => {
     try {
-      const result = await apiCall<{ success: boolean; message?: string }>(
-        `/api/cars/${carId}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: "draft" }),
-        }
-      );
+      const result = await carsAPI.updateStatus(carId, "draft");
 
       if (result.success) {
         setListings((prev) =>
@@ -132,12 +135,7 @@ export default function MyListingsPage() {
     if (!confirm("Are you sure you want to delete this listing?")) return;
 
     try {
-      const result = await apiCall<{ success: boolean; message?: string }>(
-        `/api/cars/${carId}`,
-        {
-          method: "DELETE",
-        }
-      );
+      const result = await carsAPI.delete(carId);
 
       if (result.success) {
         setListings((prev) => prev.filter((listing) => listing.id !== carId));

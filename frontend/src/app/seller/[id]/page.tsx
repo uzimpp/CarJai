@@ -329,7 +329,7 @@ export default function SellerPage() {
             throw e;
           }
         }}
-        suggestedSubtopics={DEFAULT_SELLER_SUBTOPICS}
+        suggestedSubtopics={DEFAULT_SELLER_SUBTOPICS as string[]}
       />
     </div>
   );

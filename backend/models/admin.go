@@ -10,6 +10,7 @@ type Admin struct {
 	Username     string     `json:"username" db:"username"`
 	PasswordHash string     `json:"-" db:"password_hash"`
 	Name         string     `json:"name" db:"name"`
+	Role         string     `json:"role" db:"role"`
 	LastSigninAt *time.Time `json:"last_signin_at" db:"last_login_at"`
 	CreatedAt    time.Time  `json:"created_at" db:"created_at"`
 }
@@ -59,6 +60,7 @@ type AdminPublic struct {
 	ID           int        `json:"id"`
 	Username     string     `json:"username"`
 	Name         string     `json:"name"`
+	Role         string     `json:"role"`
 	LastSigninAt *time.Time `json:"last_signin_at"`
 	CreatedAt    time.Time  `json:"created_at"`
 }
@@ -99,12 +101,26 @@ type IPDeletionImpactResponse struct {
 	WouldBlockSession bool `json:"wouldBlockSession"`
 }
 
+// AdminAdminsListResponse is the response for GET /admin/admins
+type AdminAdminsListResponse struct {
+	Admins []AdminPublic `json:"admins"`
+	Total  int           `json:"total"`
+}
+
+// AdminCreateRequest represents the payload for creating a new admin
+type AdminCreateRequest struct {
+	Username string `json:"username" validate:"required,min=3,max=50"`
+	Name     string `json:"name" validate:"required,min=2,max=100"`
+	Password string `json:"password" validate:"required,min=8"`
+}
+
 // ToPublic converts Admin to AdminPublic (removes sensitive data)
 func (a *Admin) ToPublic() AdminPublic {
 	return AdminPublic{
 		ID:           a.ID,
 		Username:     a.Username,
 		Name:         a.Name,
+		Role:         a.Role,
 		LastSigninAt: a.LastSigninAt,
 		CreatedAt:    a.CreatedAt,
 	}
