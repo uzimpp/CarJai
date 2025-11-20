@@ -9,11 +9,12 @@ import {
   AdminSigninRequest,
   AdminAuthResponse,
 } from "@/types/admin";
-import { adminAuthAPI } from "@/lib/adminAuth";
+import { adminAPI } from "@/lib/adminAPI";
 import { mutualLogout } from "@/lib/mutualLogout";
 
 interface AdminAuthContextType {
   adminUser: AdminUser | null;
+  admin: AdminUser | null;
   adminSession: AdminSession | null;
   ipWhitelist: AdminIPWhitelist[];
   loading: boolean;
@@ -45,7 +46,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchIPWhitelist = useCallback(async () => {
     try {
-      const data = await adminAuthAPI.getIPWhitelist();
+      const data = await adminAPI.getIPWhitelist();
       if (data.success && data.data) {
         setIpWhitelist(data.data as AdminIPWhitelist[]);
       }
@@ -62,7 +63,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const response = await adminAuthAPI.getCurrentAdmin();
+      const response = await adminAPI.getCurrentAdmin();
       if (response.success) {
         setAdminUser(response.data.admin);
         // Check if session exists in the response
@@ -131,7 +132,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const signin = useCallback(async (data: AdminSigninRequest) => {
     setLoading(true);
     try {
-      const response = await adminAuthAPI.signin(data);
+      const response = await adminAPI.signin(data);
 
       if (!response.success) {
         throw new Error(response.message || "Signin failed");
@@ -144,8 +145,8 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       // Fetch session and whitelist data silently
       try {
         const [sessionResponse, whitelistData] = await Promise.all([
-          adminAuthAPI.getCurrentAdmin(),
-          adminAuthAPI.getIPWhitelist(),
+          adminAPI.getCurrentAdmin(),
+          adminAPI.getIPWhitelist(),
         ]);
 
         if (sessionResponse.success) {
@@ -168,10 +169,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
 
   const signout = useCallback(async () => {
     try {
-      await Promise.all([
-        adminAuthAPI.signout(),
-        mutualLogout.clearUserSession(),
-      ]);
+      await Promise.all([adminAPI.signout(), mutualLogout.clearUserSession()]);
     } catch {
       // Ignore sign out API errors
     } finally {
@@ -186,6 +184,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     <AdminAuthContext.Provider
       value={{
         adminUser,
+        admin: adminUser,
         adminSession,
         ipWhitelist,
         loading: loading || !mounted,

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
+import { adminAPI } from "@/lib/adminAPI";
 import type {
   AdminManagedCar,
   AdminUpdateCarRequest,
@@ -284,11 +285,13 @@ function AddCarModal({
   const [isValidating, setIsValidating] = useState(false);
   const [sellerIdError, setSellerIdError] = useState<string | null>(null);
   const [validSellerId, setValidSellerId] = useState<number | null>(null);
-  const [foundUserName, setFoundUserName] = useState(""); 
+  const [foundUserName, setFoundUserName] = useState("");
 
   // --- Debounce ---
   const debouncedSellerId = useDebounce(sellerIdInput, 500);
-  const [formData, setFormData] = useState<Omit<AdminCreateCarRequest, 'sellerId'>>({
+  const [formData, setFormData] = useState<
+    Omit<AdminCreateCarRequest, "sellerId">
+  >({
     brandName: "",
     modelName: "",
     submodelName: "",
@@ -315,24 +318,27 @@ function AddCarModal({
       setFoundUserName("");
 
       try {
-        const response = await fetch(`/api/admin/users/${debouncedSellerId}`);
-
-        if (!response.ok) {
-          if (response.status === 404) {
-            throw new Error("User ID not found");
-          }
-          const errData = await response.json();
-          throw new Error(errData.error || "Failed to check ID");
+        const userId = parseInt(debouncedSellerId, 10);
+        if (isNaN(userId) || userId <= 0) {
+          throw new Error("Invalid user ID");
         }
 
-        const user = await response.json();
+        const user = await adminAPI.getUser(userId);
         setValidSellerId(user.id);
-        setFoundUserName(user.name); 
+        setFoundUserName(user.name);
         setSellerIdError(null);
-
       } catch (err) {
         setValidSellerId(null);
-        setSellerIdError(err instanceof Error ? err.message : "Invalid ID");
+        const errorMessage = err instanceof Error ? err.message : "Invalid ID";
+        // Check for specific error cases
+        if (
+          errorMessage.toLowerCase().includes("not found") ||
+          errorMessage.toLowerCase().includes("404")
+        ) {
+          setSellerIdError("User ID not found");
+        } else {
+          setSellerIdError(errorMessage);
+        }
       } finally {
         setIsValidating(false);
       }
@@ -341,8 +347,7 @@ function AddCarModal({
     if (isOpen) {
       checkSellerId();
     }
-  }, [debouncedSellerId, isOpen]); 
-
+  }, [debouncedSellerId, isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -370,7 +375,7 @@ function AddCarModal({
     e.preventDefault();
     if (!validSellerId) {
       setSellerIdError("A valid Seller ID is required.");
-      setError(null); 
+      setError(null);
       return;
     }
     setIsSaving(true);
@@ -432,9 +437,7 @@ function AddCarModal({
                 type="number"
                 placeholder="Enter the User ID of the seller"
                 value={sellerIdInput}
-                onChange={(e) =>
-                  setSellerIdInput(e.target.value)
-                }
+                onChange={(e) => setSellerIdInput(e.target.value)}
                 className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent ${
                   sellerIdError
                     ? "border-red-500 focus:ring-red-500"
@@ -445,16 +448,16 @@ function AddCarModal({
 
               {/* --- Inline Error / Loading / Success --- */}
               <div className="mt-1 text-sm h-5">
-                {isValidating && (
-                  <p className="text-gray-500">Checking...</p>
-                )}
+                {isValidating && <p className="text-gray-500">Checking...</p>}
                 {sellerIdError && (
                   <p className="text-red-600">{sellerIdError}</p>
                 )}
                 {!isValidating && validSellerId && foundUserName && (
-                  <p className="text-green-600">✓ User found: {foundUserName}</p>
+                  <p className="text-green-600">
+                    ✓ User found: {foundUserName}
+                  </p>
                 )}
-               </div>
+              </div>
             </div>
 
             {/* Brand */}
@@ -571,8 +574,12 @@ function AddCarModal({
                 type="submit"
                 disabled={isSaving || isValidating}
                 className="flex-1 px-4 py-2 bg-maroon text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-               >
-                {isSaving ? "Creating..." : (isValidating ? "Validating..." : "Create Car")}
+              >
+                {isSaving
+                  ? "Creating..."
+                  : isValidating
+                  ? "Validating..."
+                  : "Create Car"}
               </button>
             </div>
           </form>
@@ -715,40 +722,9 @@ export default function AdminCarsPage() {
         setIsLoading(true);
         setError(null);
 
-        // API Call
-        const response = await fetch("/api/admin/cars");
-        if (!response.ok) {
-          const errData = await response.json();
-          throw new Error(errData.message || "Failed to fetch cars");
-        }
-
-        const result = await response.json();
-
-        if (result.success) {
-          // Extract cars and total from result.data (wrapped response)
-          const responseData = result.data as
-            | { cars?: AdminManagedCar[]; total?: number }
-            | AdminManagedCar[]
-            | undefined;
-
-          if (Array.isArray(responseData)) {
-            // If result.data is directly an array (legacy format)
-            setCars(responseData);
-            setTotal(responseData.length);
-          } else if (responseData && "cars" in responseData) {
-            // If result.data is an object with cars and total
-            const carsData = Array.isArray(responseData.cars)
-              ? responseData.cars
-              : [];
-            setCars(carsData);
-            setTotal(responseData.total ?? carsData.length);
-          } else {
-            setCars([]);
-            setTotal(0);
-          }
-        } else {
-          throw new Error(result.message || "Failed to load cars");
-        }
+        const result = await adminAPI.getCars();
+        setCars(result.cars);
+        setTotal(result.total);
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "An unexpected error occurred"
@@ -817,37 +793,9 @@ export default function AdminCarsPage() {
 
   const handleSaveCar = async (carId: number, data: AdminUpdateCarRequest) => {
     try {
-      const response = await fetch(`/api/admin/cars/${carId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(
-          errData.error || `Failed to update car: ${response.statusText}`
-        );
-      }
-
-      const updatedCarPublic = await response.json();
-
+      const updatedCar = await adminAPI.updateCar(carId, data);
       setCars((prevCars) =>
-        prevCars.map((car) => {
-          if (car.id !== carId) return car;
-          return {
-            ...car,
-            brandName: updatedCarPublic.brandName,
-            modelName: updatedCarPublic.modelName,
-            submodelName: updatedCarPublic.submodelName,
-            year: updatedCarPublic.year,
-            price: updatedCarPublic.price,
-            mileage: updatedCarPublic.mileage,
-            status: updatedCarPublic.status,
-          };
-        })
+        prevCars.map((car) => (car.id === carId ? updatedCar : car))
       );
     } catch (err) {
       console.error("Failed to update car:", err);
@@ -857,33 +805,8 @@ export default function AdminCarsPage() {
 
   const handleCreateCar = async (data: AdminCreateCarRequest) => {
     try {
-      const response = await fetch("/api/admin/cars", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.error || "Failed to create car");
-      }
-
-      const newCar = await response.json();
-
-      const newManagedCar: AdminManagedCar = {
-        id: newCar.id,
-        brandName: newCar.brandName,
-        modelName: newCar.modelName,
-        submodelName: newCar.submodelName,
-        year: newCar.year,
-        price: newCar.price,
-        mileage: newCar.mileage,
-        status: newCar.status,
-        listedDate: newCar.createdAt,
-        soldBy: `User ID: ${newCar.sellerId}`,
-      };
-
-      setCars((prevCars) => [newManagedCar, ...prevCars]);
+      const newCar = await adminAPI.createCar(data);
+      setCars((prevCars) => [newCar, ...prevCars]);
     } catch (err) {
       console.error("Failed to create car:", err);
       throw err;
@@ -897,15 +820,7 @@ export default function AdminCarsPage() {
 
   const handleDeleteCar = async (carId: number) => {
     try {
-      const response = await fetch(`/api/admin/cars/${carId}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.error || `Failed to delete car`);
-      }
-
+      await adminAPI.deleteCar(carId);
       setCars((prevCars) => prevCars.filter((car) => car.id !== carId));
     } catch (err) {
       console.error("Failed to delete car:", err);
