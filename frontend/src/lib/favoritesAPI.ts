@@ -1,17 +1,7 @@
 // Favorites API utilities
 import { apiCall } from "@/lib/apiCall";
 import type { CarListing } from "@/types/car";
-
-// Response types matching backend
-interface FavoriteResponse {
-  success: boolean;
-  message: string;
-}
-
-interface FavoritesListResponse {
-  success: boolean;
-  data: CarListing[];
-}
+import type { FavoriteResponse, FavoritesListResponse } from "@/types/favorite";
 
 // Favorites API functions
 export const favoritesAPI = {
@@ -36,7 +26,10 @@ export const favoritesAPI = {
   },
 
   // Toggle favorite status (convenience method)
-  async toggleFavorite(carId: number, isFavorited: boolean): Promise<FavoriteResponse> {
+  async toggleFavorite(
+    carId: number,
+    isFavorited: boolean
+  ): Promise<FavoriteResponse> {
     if (isFavorited) {
       return this.removeFavorite(carId);
     } else {

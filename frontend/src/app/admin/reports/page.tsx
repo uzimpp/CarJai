@@ -2,12 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
-import { reportsAPI, type AdminReport } from "@/lib/reportsAPI";
-import { adminAuthAPI } from "@/lib/adminAuth";
+import { adminAPI } from "@/lib/adminAPI";
 import { useToast } from "@/components/ui/Toast";
-
-type ReportType = "user" | "car";
-type ReportStatus = "pending" | "resolved" | "dismissed" | "reviewed";
+import type { AdminReport, ReportType, ReportStatus } from "@/types/report";
 
 export default function AdminReportsPage() {
   const { loading: authLoading, isAuthenticated } = useAdminAuth();
@@ -29,7 +26,7 @@ export default function AdminReportsPage() {
         setIsLoading(true);
         setError(null);
 
-        const result = await reportsAPI.listReports({
+        const result = await adminAPI.listReports({
           type: filterType !== "all" ? filterType : undefined,
           status: filterStatus !== "all" ? filterStatus : undefined,
         });
@@ -65,7 +62,7 @@ export default function AdminReportsPage() {
   }, [filterType, filterStatus, authLoading, isAuthenticated]);
 
   const refreshReports = async () => {
-    const result = await reportsAPI.listReports({
+    const result = await adminAPI.listReports({
       type: filterType !== "all" ? filterType : undefined,
       status: filterStatus !== "all" ? filterStatus : undefined,
     });
@@ -78,7 +75,7 @@ export default function AdminReportsPage() {
   const handleResolve = async (reportId: number) => {
     setActionLoading(reportId);
     try {
-      const res = await reportsAPI.resolveReport(reportId);
+      const res = await adminAPI.resolveReport(reportId);
       if (!res.success) {
         throw new Error(res.message || "Failed to resolve report");
       }
@@ -98,7 +95,7 @@ export default function AdminReportsPage() {
 
     setActionLoading(reportId);
     try {
-      const res = await reportsAPI.dismissReport(reportId);
+      const res = await adminAPI.dismissReport(reportId);
       if (!res.success) {
         throw new Error(res.message || "Failed to dismiss report");
       }
@@ -118,7 +115,7 @@ export default function AdminReportsPage() {
 
     setActionLoading(reportId);
     try {
-      const res = await adminAuthAPI.banUser(userId);
+      const res = await adminAPI.banUser(userId);
       if (!res.success) {
         throw new Error(res.message || "Failed to ban user");
       }
@@ -138,7 +135,7 @@ export default function AdminReportsPage() {
 
     setActionLoading(reportId);
     try {
-      const res = await adminAuthAPI.removeCar(carId);
+      const res = await adminAPI.removeCar(carId);
       if (!res.success) {
         throw new Error(res.message || "Failed to remove car");
       }

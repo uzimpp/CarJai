@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useState } from "react";
-import { adminAuthAPI } from "@/lib/adminAuth";
+import { adminAPI } from "@/lib/adminAPI";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 
@@ -29,7 +29,7 @@ export default function IPWhitelistPage() {
     e.preventDefault();
     setIpLoading(true);
     try {
-      const res = await adminAuthAPI.addIP(
+      const res = await adminAPI.addIP(
         ipForm.ip.trim(),
         ipForm.description.trim()
       );
@@ -53,7 +53,7 @@ export default function IPWhitelistPage() {
 
     try {
       // Check with backend if deletion would affect current session
-      const checkRes = await adminAuthAPI.checkIPDeletionImpact(ip);
+      const checkRes = await adminAPI.checkIPDeletionImpact(ip);
       // Extract wouldBlockSession from the data object
       const impactData = checkRes.data as
         | { wouldBlockSession?: boolean }
@@ -83,7 +83,7 @@ export default function IPWhitelistPage() {
     setIpLoading(true);
     setShowDeleteModal(false);
     try {
-      const res = await adminAuthAPI.removeIP(ipToDelete);
+      const res = await adminAPI.removeIP(ipToDelete);
       if (!res.success) throw new Error(res.message || "Failed to remove IP");
       await validateSession();
       showToast(`IP address ${ipToDelete} removed successfully`, "success");

@@ -3,6 +3,7 @@ package routes
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/uzimpp/CarJai/backend/handlers"
@@ -65,6 +66,49 @@ func AdminRoutes(
 		)
 	}
 
+	requireSuperAdmin := func(handler http.HandlerFunc) http.HandlerFunc {
+        return func(w http.ResponseWriter, r *http.Request) {
+            adminIDStr := r.Header.Get("X-Admin-ID")
+            if adminIDStr == "" {
+                utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
+                return
+            }
+
+            adminID, _ := strconv.Atoi(adminIDStr) 
+            
+            admin, err := adminService.GetAdminByID(adminID)
+            if err != nil {
+                utils.WriteError(w, http.StatusUnauthorized, "User not found")
+                return
+            }
+
+            if admin.Role != "super_admin" {
+                utils.WriteError(w, http.StatusForbidden, "Access denied: Super Admin only")
+                return
+            }
+
+            handler(w, r)
+        }
+    }
+
+	applySuperAdminAuthMiddleware := func(handler http.HandlerFunc) http.HandlerFunc {
+        return middleware.CORSMiddleware(allowedOrigins)(
+            middleware.SecurityHeadersMiddleware(
+                authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
+                    middleware.GeneralRateLimit()(
+                        middleware.AdminLoggingMiddleware(
+                            authMiddleware.RequireAuth(
+                                authMiddleware.RequireIPWhitelist(		
+                                    requireSuperAdmin(handler),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+    }
+
 	// --- Admin Authentication Routes ---
 	// Signin needs special handling (LoginRateLimit, no auth required yet)
 	router.HandleFunc(basePath+"/auth/signin",
@@ -84,6 +128,36 @@ func AdminRoutes(
 	router.HandleFunc(basePath+"/auth/signout", applyAdminAuthMiddleware(adminAuthHandler.Signout))
 	router.HandleFunc(basePath+"/auth/me", applyAdminAuthMiddleware(adminAuthHandler.Me))
 	router.HandleFunc(basePath+"/auth/refresh", applyAdminAuthMiddleware(adminAuthHandler.RefreshToken))
+
+	router.HandleFunc(basePath+"/admins",
+		applySuperAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path != basePath+"/admins" {
+                 return 
+			}
+			switch r.Method {
+			case http.MethodGet:
+				adminAuthHandler.HandleGetAdmins(w, r)
+			case http.MethodPost:
+				adminAuthHandler.HandleCreateAdmin(w, r)
+			default:
+				utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+			}
+		}),
+	)
+
+	router.HandleFunc(basePath+"/admins/",
+        applySuperAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+            // Check method
+            switch r.Method {
+            case http.MethodPatch:
+                adminAuthHandler.HandleUpdateAdmin(w, r)
+            case http.MethodDelete:
+                adminAuthHandler.HandleDeleteAdmin(w, r)
+            default:
+                utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+            }
+        }),
+    )
 
 	// --- Admin IP Whitelist Management Routes ---
 	router.HandleFunc(basePath+"/ip-whitelist", applyAdminAuthMiddleware(adminIPHandler.GetWhitelistedIPs))
