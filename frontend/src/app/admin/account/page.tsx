@@ -1,9 +1,12 @@
 "use client";
+import { useState } from "react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { getTimeRemaining, isSessionExpiringSoon } from "@/utils/timeUtils";
 
 export default function AdminAccountPage() {
-  const { adminUser, adminSession, validateSession, signout } = useAdminAuth();
+  const { adminUser, adminSession, validateSession, signout, loading } =
+    useAdminAuth();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   return (
     <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full flex flex-col gap-(--space-s-m)">
@@ -33,10 +36,18 @@ export default function AdminAccountPage() {
             )}
 
             <button
-              onClick={() => validateSession()}
-              className="px-(--space-s) py-(--space-3xs) bg-white/15 hover:bg-white/25 rounded-full text-white transition-colors"
+              onClick={async () => {
+                setIsRefreshing(true);
+                try {
+                  await validateSession();
+                } finally {
+                  setIsRefreshing(false);
+                }
+              }}
+              disabled={isRefreshing || loading}
+              className="px-(--space-s) py-(--space-3xs) bg-white/15 hover:bg-white/25 disabled:opacity-50 disabled:cursor-not-allowed rounded-full text-white transition-colors"
             >
-              Refresh
+              {isRefreshing ? "Refreshing..." : "Refresh"}
             </button>
             <button
               onClick={signout}
@@ -56,44 +67,64 @@ export default function AdminAccountPage() {
             <h2 className="text-1 bold text-grey mb-(--space-xs)">
               Current Session Information
             </h2>
-            {adminSession && (
+            {loading ? (
+              <p className="text--1 text-gray-500">
+                Loading session information...
+              </p>
+            ) : adminSession ? (
               <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
                 <div>
                   <dt className="text--1 text-gray-500">IP Address</dt>
                   <dd className="mt-1 text-0 text-gray-900 font-mono">
-                    {adminSession.ip_address}
+                    {adminSession.ip_address || "N/A"}
                   </dd>
                 </div>
                 <div>
                   <dt className="text--1 text-gray-500">Session Created</dt>
                   <dd className="mt-1 text-0 text-gray-900">
-                    {new Date(adminSession.created_at).toLocaleString()}
+                    {adminSession.created_at
+                      ? new Date(adminSession.created_at).toLocaleString()
+                      : "N/A"}
                   </dd>
                 </div>
                 <div>
                   <dt className="text--1 text-gray-500">Expires At</dt>
                   <dd className="mt-1 text-0 text-gray-900">
-                    {new Date(adminSession.expires_at).toLocaleString()}
+                    {adminSession.expires_at
+                      ? new Date(adminSession.expires_at).toLocaleString()
+                      : "N/A"}
                   </dd>
                 </div>
                 <div>
                   <dt className="text--1 text-gray-500">Time Remaining</dt>
                   <dd
                     className={`mt-1 text-0 font-medium ${
+                      adminSession.expires_at &&
                       isSessionExpiringSoon(adminSession.expires_at)
                         ? "text-red-600"
                         : "text-gray-900"
                     }`}
                   >
-                    {getTimeRemaining(adminSession.expires_at)}
-                    {isSessionExpiringSoon(adminSession.expires_at) && (
-                      <span className="ml-2 text--2 bg-red/10 text-red px-(--space-3xs) py-(--space-3xs) rounded-full">
-                        Expiring Soon
-                      </span>
+                    {adminSession.expires_at ? (
+                      <>
+                        {getTimeRemaining(adminSession.expires_at)}
+                        {isSessionExpiringSoon(adminSession.expires_at) && (
+                          <span className="ml-2 text--2 bg-red/10 text-red px-(--space-3xs) py-(--space-3xs) rounded-full">
+                            Expiring Soon
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      "N/A"
                     )}
                   </dd>
                 </div>
               </dl>
+            ) : (
+              <p className="text--1 text-gray-500">
+                No session information available. Click Refresh to load session
+                data.
+              </p>
             )}
           </div>
         </div>
@@ -104,34 +135,53 @@ export default function AdminAccountPage() {
             <h2 className="text-1 bold text-grey mb-(--space-xs)">
               Administrator Information
             </h2>
-            <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
-              <div>
-                <dt className="text--1 text-gray-500">Username</dt>
-                <dd className="mt-1 text-0 text-gray-900">
-                  {adminUser?.username}
-                </dd>
-              </div>
-              <div>
-                <dt className="text--1 text-gray-500">Display Name</dt>
-                <dd className="mt-1 text-0 text-gray-900">{adminUser?.name}</dd>
-              </div>
-              <div>
-                <dt className="text--1 text-gray-500">Last Signin</dt>
-                <dd className="mt-1 text-0 text-gray-900">
-                  {adminUser?.last_login_at
-                    ? new Date(adminUser.last_login_at).toLocaleString()
-                    : "No data"}
-                </dd>
-              </div>
-              <div>
-                <dt className="text--1 text-gray-500">Account Created</dt>
-                <dd className="mt-1 text-0 text-gray-900">
-                  {adminUser?.created_at
-                    ? new Date(adminUser.created_at).toLocaleString()
-                    : "No data"}
-                </dd>
-              </div>
-            </dl>
+            {loading ? (
+              <p className="text--1 text-gray-500">
+                Loading account information...
+              </p>
+            ) : adminUser ? (
+              <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+                <div>
+                  <dt className="text--1 text-gray-500">Admin ID</dt>
+                  <dd className="mt-1 text-0 text-gray-900 font-mono">
+                    {adminUser.id}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text--1 text-gray-500">Username</dt>
+                  <dd className="mt-1 text-0 text-gray-900">
+                    {adminUser.username || "N/A"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text--1 text-gray-500">Display Name</dt>
+                  <dd className="mt-1 text-0 text-gray-900">
+                    {adminUser.name || "N/A"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text--1 text-gray-500">Last Signin</dt>
+                  <dd className="mt-1 text-0 text-gray-900">
+                    {adminUser.last_login_at
+                      ? new Date(adminUser.last_login_at).toLocaleString()
+                      : "Never"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text--1 text-gray-500">Account Created</dt>
+                  <dd className="mt-1 text-0 text-gray-900">
+                    {adminUser.created_at
+                      ? new Date(adminUser.created_at).toLocaleString()
+                      : "N/A"}
+                  </dd>
+                </div>
+              </dl>
+            ) : (
+              <p className="text--1 text-gray-500">
+                No account information available. Click Refresh to load account
+                data.
+              </p>
+            )}
           </div>
         </div>
       </div>

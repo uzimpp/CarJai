@@ -32,9 +32,9 @@ interface AdminMeResponse {
 
 interface AdminIPWhitelistResponse {
   success: boolean;
-  data?: AdminIPWhitelist[];
+  data?: AdminIPWhitelist[] | { wouldBlockSession: boolean };
   message?: string;
-  would_block_session?: boolean; // Warning: deletion would affect current session
+  would_block_session?: boolean; // Warning: deletion would affect current session (deprecated, use data.wouldBlockSession)
 }
 
 interface AdminAuthResponse {
@@ -115,9 +115,9 @@ interface AdminManagedCar {
   submodelName: string | null;
   year: number | null;
   status: string;
-  listedDate: string; 
-  soldBy: string | null; 
-  price: number | null; 
+  listedDate: string;
+  soldBy: string | null;
+  price: number | null;
   mileage: number | null;
 }
 
@@ -167,9 +167,13 @@ interface MarketPriceResponse {
 
 // Import (PDF) response from backend
 interface ImportMarketPriceResponse {
-  message: string;
-  inserted_count: number;
-  updated_count: number;
+  success: boolean;
+  code: number;
+  data: {
+    inserted_count: number;
+    updated_count: number;
+  };
+  message?: string;
 }
 
 interface DashboardStats {

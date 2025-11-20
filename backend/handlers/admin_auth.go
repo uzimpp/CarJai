@@ -3,9 +3,9 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"time"
-	"strings"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/uzimpp/CarJai/backend/middleware"
 	"github.com/uzimpp/CarJai/backend/models"
@@ -89,18 +89,12 @@ func (h *AdminAuthHandler) Signin(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   int(time.Until(expiresAt).Seconds()),
 	})
 
-	// Create response
 	response := models.AdminSigninResponse{
-		Success: true,
-		Data: models.AdminAuthData{
-			Admin:     signinResponse.Admin,
-			Token:     token,
-			ExpiresAt: expiresAt,
-		},
-		Message: "Sign in successful",
+		Admin:     signinResponse.Admin,
+		Token:     token,
+		ExpiresAt: expiresAt,
 	}
-
-	utils.WriteJSON(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, response, "Sign in successful")
 }
 
 // Signout handles admin sign out
@@ -137,12 +131,7 @@ func (h *AdminAuthHandler) Signout(w http.ResponseWriter, r *http.Request) {
 	})
 
 	// Create response
-	response := models.AdminSignoutResponse{
-		Success: true,
-		Message: "Sign out successful",
-	}
-
-	utils.WriteJSON(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, nil, "Sign out successful")
 }
 
 // Me handles getting current admin information
@@ -167,13 +156,8 @@ func (h *AdminAuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create response
-	response := models.AdminMeResponse{
-		Success: true,
-		Data:    *adminData,
-	}
-
-	utils.WriteJSON(w, http.StatusOK, response)
+	// Return AdminMeData which includes both admin and session information
+	utils.WriteJSON(w, http.StatusOK, adminData, "Admin information retrieved successfully")
 }
 
 // RefreshToken handles token refresh
@@ -198,15 +182,11 @@ func (h *AdminAuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Create response
-	response := map[string]interface{}{
-		"success":    true,
-		"token":      newToken,
-		"expires_at": expiresAt,
-		"message":    "Token refreshed successfully",
+	response := models.AdminRefreshResponse{
+		Token:     newToken,
+		ExpiresAt: expiresAt,
 	}
-
-	utils.WriteJSON(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, response, "Token refreshed successfully")
 }
 
 // HandleGetAdmins handles GET /admin/admins
@@ -218,12 +198,11 @@ func (h *AdminAuthHandler) HandleGetAdmins(w http.ResponseWriter, r *http.Reques
 	}
 
 	response := models.AdminAdminsListResponse{
-		Success: true,
-		Data:    admins,
-		Total:   len(admins),
+		Admins: admins,
+		Total:  len(admins),
 	}
 
-	utils.WriteJSON(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, response, "Admins retrieved successfully")
 }
 
 // HandleCreateAdmin handles POST /admin/admins
@@ -259,7 +238,7 @@ func (h *AdminAuthHandler) HandleCreateAdmin(w http.ResponseWriter, r *http.Requ
 	}
 
 	newAdmin, err := h.adminService.CreateAdmin(serviceReq, clientIP)
-	
+
 	if err != nil {
 		if err.Error() == "username already exists" {
 			utils.WriteError(w, http.StatusConflict, err.Error())
@@ -269,13 +248,15 @@ func (h *AdminAuthHandler) HandleCreateAdmin(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	response := map[string]interface{}{
-		"success": true,
-		"data":    newAdmin,
-		"message": "Admin created successfully",
+	response := models.AdminPublic{
+		ID:        newAdmin.ID,
+		Username:  newAdmin.Username,
+		Name:      newAdmin.Name,
+		Role:      newAdmin.Role,
+		CreatedAt: newAdmin.CreatedAt,
 	}
 
-	utils.WriteJSON(w, http.StatusCreated, response)
+	utils.WriteJSON(w, http.StatusCreated, response, "Admin created successfully")
 }
 
 // HandleUpdateAdmin handles PATCH /admin/admins/{id}
@@ -305,7 +286,7 @@ func (h *AdminAuthHandler) HandleUpdateAdmin(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "Admin updated successfully"})
+	utils.WriteJSON(w, http.StatusOK, nil, "Admin updated successfully")
 }
 
 // HandleDeleteAdmin handles DELETE /admin/admins/{id}
@@ -331,5 +312,5 @@ func (h *AdminAuthHandler) HandleDeleteAdmin(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "Admin deleted successfully"})
+	utils.WriteJSON(w, http.StatusOK, nil, "Admin deleted successfully")
 }

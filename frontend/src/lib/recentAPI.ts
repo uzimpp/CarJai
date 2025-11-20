@@ -50,26 +50,42 @@ function saveLocal(items: RecentItem[]) {
 
 async function tryFetchRemote(limit = MAX_ITEMS): Promise<RecentItem[]> {
   try {
+    // Backend returns CarListItem[] directly in data field
     const res = await apiCall<{
       success: boolean;
       data: Array<{
-        car_id: number;
-        viewed_at: string;
-        brand_name?: string | null;
-        model_name?: string | null;
-        price: number;
-        image_id?: number | null;
+        id: number;
+        sellerId: number;
+        status: string;
+        brandName?: string | null;
+        modelName?: string | null;
+        submodelName?: string | null;
+        year?: number | null;
+        price?: number | null;
+        mileage?: number | null;
+        bodyType?: string | null;
+        transmission?: string | null;
+        drivetrain?: string | null;
+        fuelTypes?: string[];
+        colors?: string[];
+        conditionRating?: number | null;
+        thumbnailUrl?: string | null;
       }>;
+      message?: string;
     }>(`/api/recent-views?limit=${limit}`, { method: "GET" });
     if (!res.success || !res.data) return [];
-    return res.data.map((rv) => ({
-      carId: rv.car_id,
-      viewedAt: rv.viewed_at,
+    // Convert CarListItem to RecentItem format for local storage compatibility
+    // Note: We use current timestamp since backend doesn't return viewed_at in list
+    return res.data.map((car) => ({
+      carId: car.id,
+      viewedAt: new Date().toISOString(), // Use current time as fallback
       snapshot: {
-        title: [rv.brand_name || "", rv.model_name || ""].filter(Boolean).join(" ") || undefined,
-        price: rv.price,
-        thumbnailId: rv.image_id ?? undefined,
-        thumbnailUrl: rv.image_id ? `/api/cars/images/${rv.image_id}` : undefined,
+        title:
+          [car.brandName || "", car.modelName || "", car.submodelName || ""]
+            .filter(Boolean)
+            .join(" ") || undefined,
+        price: car.price ?? undefined,
+        thumbnailUrl: car.thumbnailUrl ?? undefined,
       },
     }));
   } catch {
@@ -80,13 +96,10 @@ async function tryFetchRemote(limit = MAX_ITEMS): Promise<RecentItem[]> {
 
 async function tryRecordRemote(carId: number): Promise<void> {
   try {
-    await apiCall<{ success: boolean; message?: string }>(
-      "/api/recent-views/record",
-      {
-        method: "POST",
-        body: JSON.stringify({ car_id: carId }),
-      }
-    );
+    await apiCall<{ success: boolean; message?: string }>("/api/recent-views", {
+      method: "POST",
+      body: JSON.stringify({ car_id: carId }),
+    });
   } catch {
     // Ignore failures (e.g., unauthenticated)
   }
@@ -106,19 +119,27 @@ export const recentAPI = {
           return;
         }
         // Choose newer viewedAt
-        const newer = new Date(item.viewedAt) > new Date(existing.viewedAt) ? item : existing;
+        const newer =
+          new Date(item.viewedAt) > new Date(existing.viewedAt)
+            ? item
+            : existing;
         // Merge snapshot, prefer one with thumbnailUrl/Id
         const snap: RecentSnapshot = {
           title: newer.snapshot?.title || existing.snapshot?.title,
           price: newer.snapshot?.price ?? existing.snapshot?.price,
-          thumbnailId: newer.snapshot?.thumbnailId ?? existing.snapshot?.thumbnailId,
-          thumbnailUrl: newer.snapshot?.thumbnailUrl ?? existing.snapshot?.thumbnailUrl,
+          thumbnailId:
+            newer.snapshot?.thumbnailId ?? existing.snapshot?.thumbnailId,
+          thumbnailUrl:
+            newer.snapshot?.thumbnailUrl ?? existing.snapshot?.thumbnailUrl,
         };
         map.set(item.carId, { ...newer, snapshot: snap });
       };
       [...local, ...remote].forEach(put);
       const merged = Array.from(map.values())
-        .sort((a, b) => new Date(b.viewedAt).getTime() - new Date(a.viewedAt).getTime())
+        .sort(
+          (a, b) =>
+            new Date(b.viewedAt).getTime() - new Date(a.viewedAt).getTime()
+        )
         .slice(0, MAX_ITEMS);
       // Save merged to local for faster subsequent reads
       saveLocal(merged);

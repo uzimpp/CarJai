@@ -300,6 +300,7 @@ func AdminRoutes(
 			),
 		),
 	)
+
 	router.HandleFunc(basePath+"/",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(

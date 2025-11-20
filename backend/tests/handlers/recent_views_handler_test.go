@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/uzimpp/CarJai/backend/middleware"
 	"github.com/uzimpp/CarJai/backend/models"
 	"github.com/uzimpp/CarJai/backend/utils"
 )
@@ -17,14 +18,14 @@ import (
 
 func TestRecentViewsHandler_RecordView(t *testing.T) {
 	tests := []struct {
-		name              string
-		method            string
-		userID            int
-		requestBody       interface{}
-		isBuyer           bool
-		getRolesFunc      func(userID int) (models.UserRoles, error)
-		recordViewFunc    func(userID, carID int) error
-		expectedStatus    int
+		name           string
+		method         string
+		userID         int
+		requestBody    interface{}
+		isBuyer        bool
+		getRolesFunc   func(userID int) (models.UserRoles, error)
+		recordViewFunc func(userID, carID int) error
+		expectedStatus int
 	}{
 		{
 			name:   "Successful record",
@@ -104,7 +105,7 @@ func TestRecentViewsHandler_RecordView(t *testing.T) {
 			}
 			req := httptest.NewRequest(tt.method, "/api/recent-views", bytes.NewBuffer(reqBody))
 			req.Header.Set("Content-Type", "application/json")
-			ctx := context.WithValue(req.Context(), "userID", tt.userID)
+			ctx := context.WithValue(req.Context(), middleware.UserIDKey, tt.userID)
 			req = req.WithContext(ctx)
 			w := httptest.NewRecorder()
 
@@ -128,7 +129,7 @@ func (h *testRecentViewsHandler) RecordView(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := r.Context().Value(middleware.UserIDKey).(int)
 	if !ok || userID == 0 {
 		utils.WriteError(w, http.StatusUnauthorized, "User not authenticated")
 		return
@@ -147,13 +148,7 @@ func (h *testRecentViewsHandler) RecordView(w http.ResponseWriter, r *http.Reque
 	}
 
 	if req.CarID <= 0 {
-		response := models.RecordViewResponse{
-			Success: false,
-			Message: "Invalid car ID",
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response)
+		utils.WriteError(w, http.StatusBadRequest, "Invalid car ID")
 		return
 	}
 
@@ -163,45 +158,38 @@ func (h *testRecentViewsHandler) RecordView(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	response := models.RecordViewResponse{
-		Success: true,
-		Message: "View recorded successfully",
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	utils.WriteJSON(w, http.StatusOK, nil, "View recorded successfully")
 }
 
 func TestRecentViewsHandler_GetRecentViews(t *testing.T) {
 	tests := []struct {
-		name                  string
-		method                string
-		userID                int
-		limit                 string
-		isBuyer               bool
-		getRolesFunc          func(userID int) (models.UserRoles, error)
-		getUserRecentViewsFunc func(userID, limit int) ([]models.RecentViewWithCarDetails, error)
-		expectedStatus        int
+		name                   string
+		method                 string
+		userID                 int
+		limit                  string
+		isBuyer                bool
+		getRolesFunc           func(userID int) (models.UserRoles, error)
+		getUserRecentViewsFunc func(userID, limit int, lang string) ([]models.CarListItem, error)
+		expectedStatus         int
 	}{
 		{
-			name:   "Successful get",
-			method: "GET",
-			userID: 1,
-			limit:  "20",
+			name:    "Successful get",
+			method:  "GET",
+			userID:  1,
+			limit:   "20",
 			isBuyer: true,
 			getRolesFunc: func(userID int) (models.UserRoles, error) {
 				return models.UserRoles{Buyer: true}, nil
 			},
-			getUserRecentViewsFunc: func(userID, limit int) ([]models.RecentViewWithCarDetails, error) {
-				return []models.RecentViewWithCarDetails{}, nil
+			getUserRecentViewsFunc: func(userID, limit int, lang string) ([]models.CarListItem, error) {
+				return []models.CarListItem{}, nil
 			},
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:   "Not a buyer",
-			method: "GET",
-			userID: 1,
+			name:    "Not a buyer",
+			method:  "GET",
+			userID:  1,
 			isBuyer: false,
 			getRolesFunc: func(userID int) (models.UserRoles, error) {
 				return models.UserRoles{Buyer: false}, nil
@@ -231,7 +219,7 @@ func TestRecentViewsHandler_GetRecentViews(t *testing.T) {
 			}
 
 			req := httptest.NewRequest(tt.method, "/api/recent-views?limit="+tt.limit, nil)
-			ctx := context.WithValue(req.Context(), "userID", tt.userID)
+			ctx := context.WithValue(req.Context(), middleware.UserIDKey, tt.userID)
 			req = req.WithContext(ctx)
 			w := httptest.NewRecorder()
 
@@ -250,7 +238,7 @@ func (h *testRecentViewsHandler) GetRecentViews(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := r.Context().Value(middleware.UserIDKey).(int)
 	if !ok {
 		utils.WriteError(w, http.StatusUnauthorized, "User not authenticated")
 		return
@@ -269,21 +257,18 @@ func (h *testRecentViewsHandler) GetRecentViews(w http.ResponseWriter, r *http.R
 		}
 	}
 
-	recentViews, err := h.recentViewsService.GetUserRecentViews(userID, limit)
+	lang := r.URL.Query().Get("lang")
+	if lang == "" {
+		lang = "en"
+	}
+
+	recentViews, err := h.recentViewsService.GetUserRecentViews(userID, limit, lang)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, "Failed to get recent views: "+err.Error())
 		return
 	}
 
-	response := models.RecentViewsResponse{
-		Success: true,
-		Data:    recentViews,
-		Message: "Recent views retrieved successfully",
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	utils.WriteJSON(w, http.StatusOK, recentViews, "Recent views retrieved successfully")
 }
 
 // Helper function for parsing int (simplified for test)
@@ -292,4 +277,3 @@ func parseInt(s string) (int, error) {
 	_, err := fmt.Sscanf(s, "%d", &result)
 	return result, err
 }
-

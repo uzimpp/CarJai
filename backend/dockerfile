@@ -18,9 +18,8 @@ COPY . .
 # Build the main application
 RUN CGO_ENABLED=0 GOOS=linux go build -mod=mod -a -installsuffix cgo -o main .
 
-# Build the seed script binary
-RUN CGO_ENABLED=0 GOOS=linux go build -mod=mod -a -installsuffix cgo -o seed_demo_cars ./scripts/seed_demo_cars.go
-RUN CGO_ENABLED=0 GOOS=linux go build -mod=mod -a -installsuffix cgo -o seed_demo_users ./scripts/seed_demo_users.go
+# Build the unified seed binary (builds the scripts package, seed.go is the main entry point)
+RUN CGO_ENABLED=0 GOOS=linux go build -mod=mod -a -installsuffix cgo -o seed ./scripts/
 
 # Final stage
 FROM alpine:latest
@@ -29,11 +28,13 @@ FROM alpine:latest
 # - ca-certificates: HTTPS
 # - poppler-utils: pdftotext for PDF extraction
 # - chromium + fonts + nss: headless browser for scraping
+# - wget: for health checks
 RUN apk update && \
     apk add --no-cache \
     ca-certificates \
     poppler-utils \
-    chromium nss freetype harfbuzz ttf-freefont && \
+    chromium nss freetype harfbuzz ttf-freefont \
+    wget && \
     rm -rf /var/cache/apk/*
 
 # Tell chromedp where Chromium is
@@ -44,11 +45,13 @@ WORKDIR /app/
 # Copy the main binary from builder stage
 COPY --from=builder /app/main .
 
-# Copy the seed script binary
-COPY --from=builder /app/seed_demo_cars ./scripts/
-COPY --from=builder /app/seed_demo_users ./scripts/
-# Copy scripts directory (for reference and helpers)
-COPY scripts/seed_demo_cars_docker.sh ./scripts/
+# Copy the unified seed binary
+COPY --from=builder /app/seed ./scripts/
+
+# Copy helper script
+COPY scripts/seed.sh ./scripts/
+
+# Note: price2568.pdf is mounted as a volume in docker-compose.yml, not copied here
 
 # Expose port (adjust as needed)
 EXPOSE 8080

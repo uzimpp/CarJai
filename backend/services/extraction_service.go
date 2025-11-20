@@ -110,7 +110,7 @@ var (
 	cleanRegex            = regexp.MustCompile(`[,\$]`)
 	skipLineRegex         = regexp.MustCompile(`^(\d{1,3}|\d{4})$`)
 	headerRegex           = regexp.MustCompile(`(?i)(แบบ\s*/\s*รุ่น|ปีผลิต|ราคาประเมิน|สารบัญ|แบบ/รุ่น\s*อื่นๆ)`)
-	motorcycleHeaderRegex = regexp.MustCompile(`(?i)รถจักรยานยนต์`)
+	// motorcycleHeaderRegex = regexp.MustCompile(`(?i)รถจักรยานยนต์`)
 	pageSeparatorRegex    = regexp.MustCompile(`\f`)
 )
 

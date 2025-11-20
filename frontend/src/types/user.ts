@@ -1,3 +1,5 @@
+import type { CarListing } from "./car";
+
 interface User {
   id: number;
   email: string;
@@ -109,6 +111,7 @@ interface SellerResponse {
   data: {
     seller: Seller;
     contacts: SellerContact[];
+    cars?: CarListing[];
   };
   message?: string;
 }

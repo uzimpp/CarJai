@@ -1,10 +1,14 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
-	"encoding/json"
+	"errors"
 	"net/http"
+	"strings"
 	"time"
+
+	"github.com/uzimpp/CarJai/backend/utils"
 )
 
 // HealthHandler handles health check endpoints
@@ -38,8 +42,20 @@ var startTime = time.Now()
 
 // Health handles basic health check
 func (h *HealthHandler) Health(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		h.writeErrorResponse(w, http.StatusMethodNotAllowed, "Method not allowed")
+	// Allow both GET and HEAD for health checks (HEAD is used by wget --spider)
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	// For HEAD requests, perform full health check but return status only (no body)
+	if r.Method == http.MethodHead {
+		dbStatus := h.checkDatabase()
+		if dbStatus.Status == "healthy" {
+			w.WriteHeader(http.StatusOK)
+		} else {
+			w.WriteHeader(http.StatusServiceUnavailable)
+		}
 		return
 	}
 
@@ -67,10 +83,11 @@ func (h *HealthHandler) Health(w http.ResponseWriter, r *http.Request) {
 		statusCode = http.StatusServiceUnavailable
 	}
 
-	h.writeJSONResponse(w, statusCode, response)
+	utils.WriteJSON(w, statusCode, response, "")
 }
 
-// checkDatabase checks database connectivity
+// checkDatabase checks database connectivity and validates migrations succeeded
+// If migrations failed (tables don't exist), database is unhealthy even if connectable
 func (h *HealthHandler) checkDatabase() ServiceStatus {
 	start := time.Now()
 
@@ -82,14 +99,32 @@ func (h *HealthHandler) checkDatabase() ServiceStatus {
 		}
 	}
 
-	err := h.db.Ping()
-	responseTime := time.Since(start)
+	// Create context with timeout for health check (max 2 seconds for faster response)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
 
+	// Step 1: Check database connectivity
+	err := h.db.PingContext(ctx)
 	if err != nil {
+		responseTime := time.Since(start)
 		return ServiceStatus{
 			Status:       "unhealthy",
 			ResponseTime: responseTime.String(),
-			Error:        err.Error(),
+			Error:        "database connection failed: " + err.Error(),
+		}
+	}
+
+	// Step 2: Validate migrations by checking if critical table exists
+	// If migrations failed (syntax errors, etc.), tables won't exist
+	// This catches cases where DB is connectable but migrations failed
+	migrationErr := h.validateMigrations(ctx)
+	responseTime := time.Since(start)
+
+	if migrationErr != nil {
+		return ServiceStatus{
+			Status:       "unhealthy",
+			ResponseTime: responseTime.String(),
+			Error:        migrationErr.Error(),
 		}
 	}
 
@@ -99,23 +134,23 @@ func (h *HealthHandler) checkDatabase() ServiceStatus {
 	}
 }
 
-// writeJSONResponse writes a JSON response
-func (h *HealthHandler) writeJSONResponse(w http.ResponseWriter, statusCode int, data interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(data)
-}
-
-// writeErrorResponse writes a JSON error response
-func (h *HealthHandler) writeErrorResponse(w http.ResponseWriter, statusCode int, message string) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-
-	response := map[string]interface{}{
-		"success": false,
-		"error":   message,
-		"code":    statusCode,
+// validateMigrations checks if migrations succeeded by querying a critical table
+// Uses minimal query - just checks if the first table from first migration exists
+func (h *HealthHandler) validateMigrations(ctx context.Context) error {
+	// Check the first table from the first migration (001_admin_auth.sql)
+	// If this table doesn't exist, migrations definitely failed
+	var count int
+	query := `SELECT COUNT(*) FROM reports`
+	err := h.db.QueryRowContext(ctx, query).Scan(&count)
+	if err != nil {
+		// Check if error is "relation does not exist" (migration failure)
+		errStr := strings.ToLower(err.Error())
+		if strings.Contains(errStr, "does not exist") || strings.Contains(errStr, "relation") {
+			return errors.New("migration validation failed: critical table 'admins' does not exist - database migrations may have failed (check migration logs for syntax errors)")
+		}
+		// Other errors (permissions, etc.) are also concerning
+		return errors.New("migration validation failed: cannot query table 'admins': " + err.Error())
 	}
 
-	json.NewEncoder(w).Encode(response)
+	return nil
 }

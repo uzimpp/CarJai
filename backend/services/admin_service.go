@@ -199,14 +199,18 @@ func (s *AdminService) ValidateSession(token string) (*models.AdminSession, erro
 	// Get session by token
 	session, err := s.sessionRepo.GetSessionByToken(token)
 	if err != nil {
-		return nil, fmt.Errorf("invalid session")
+		// Preserve the original error message for better debugging
+		if err.Error() == "session not found" {
+			return nil, fmt.Errorf("session not found in database")
+		}
+		return nil, fmt.Errorf("failed to retrieve session: %w", err)
 	}
 
 	// Check if session is expired
 	if session.IsExpired() {
 		// Clean up expired session
 		s.sessionRepo.DeleteSession(token)
-		return nil, fmt.Errorf("session expired")
+		return nil, fmt.Errorf("session expired at %s", session.ExpiresAt.Format("2006-01-02 15:04:05"))
 	}
 
 	return session, nil

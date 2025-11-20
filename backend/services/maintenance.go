@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"strconv"
 	"strings"
 	"time"
 
@@ -247,7 +248,7 @@ func (s *MaintenanceService) runEphemeralDraftCleanup(ctx context.Context, inter
 			if err != nil {
 				s.logger.Error("Failed to cleanup ephemeral drafts: " + err.Error())
 			} else if count > 0 {
-				s.logger.Info("Cleaned up " + string(rune(count)) + " ephemeral drafts")
+				s.logger.Info("Cleaned up " + strconv.FormatInt(count, 10) + " ephemeral drafts")
 			}
 		}
 	}
