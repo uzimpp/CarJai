@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	MIN_VIEWS_PER_USER = 5
-	MAX_VIEWS_PER_USER = 20
+	MIN_VIEWS_PER_USER = 2
+	MAX_VIEWS_PER_USER = 10
 )
 
 // seedRecentViewsData seeds recent views (buyers viewing cars)

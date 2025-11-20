@@ -42,9 +42,16 @@ func (h *CarHandler) GetPriceEstimate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get user from context (ensure user is logged in)
-	_, ok := middleware.GetUserIDFromContext(r)
+	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
 		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	// Check if user is a seller
+	isSeller, err := h.userService.IsSeller(userID)
+	if err != nil || !isSeller {
+		utils.WriteError(w, http.StatusForbidden, "Only sellers can view price estimates")
 		return
 	}
 
@@ -196,6 +203,13 @@ func (h *CarHandler) GetMyCars(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if user is a seller
+	isSeller, err := h.userService.IsSeller(userID)
+	if err != nil || !isSeller {
+		utils.WriteError(w, http.StatusForbidden, "Only sellers can view their car listings")
+		return
+	}
+
 	// Get language preference (default to English)
 	lang := r.URL.Query().Get("lang")
 	if lang == "" {
@@ -332,6 +346,13 @@ func (h *CarHandler) UpdateCar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if user is a seller
+	isSeller, err := h.userService.IsSeller(userID)
+	if err != nil || !isSeller {
+		utils.WriteError(w, http.StatusForbidden, "Only sellers can update car listings")
+		return
+	}
+
 	// Extract car ID
 	carID, err := utils.ExtractIDFromPath(r.URL.Path, "/api/cars/")
 	if err != nil {
@@ -375,6 +396,13 @@ func (h *CarHandler) AutoSaveDraft(w http.ResponseWriter, r *http.Request) {
 	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
 		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	// Check if user is a seller
+	isSeller, err := h.userService.IsSeller(userID)
+	if err != nil || !isSeller {
+		utils.WriteError(w, http.StatusForbidden, "Only sellers can save drafts")
 		return
 	}
 
@@ -439,6 +467,13 @@ func (h *CarHandler) DeleteCar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if user is a seller
+	isSeller, err := h.userService.IsSeller(userID)
+	if err != nil || !isSeller {
+		utils.WriteError(w, http.StatusForbidden, "Only sellers can delete car listings")
+		return
+	}
+
 	// Extract car ID
 	carID, err := utils.ExtractIDFromPath(r.URL.Path, "/api/cars/")
 	if err != nil {
@@ -484,6 +519,13 @@ func (h *CarHandler) DiscardCar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if user is a seller
+	isSeller, err := h.userService.IsSeller(userID)
+	if err != nil || !isSeller {
+		utils.WriteError(w, http.StatusForbidden, "Only sellers can discard drafts")
+		return
+	}
+
 	// Extract car ID
 	carID, err := utils.ExtractIDFromPath(r.URL.Path, "/api/cars/")
 	if err != nil {
@@ -526,6 +568,13 @@ func (h *CarHandler) UploadCarImages(w http.ResponseWriter, r *http.Request) {
 	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
 		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	// Check if user is a seller
+	isSeller, err := h.userService.IsSeller(userID)
+	if err != nil || !isSeller {
+		utils.WriteError(w, http.StatusForbidden, "Only sellers can upload car images")
 		return
 	}
 
@@ -632,6 +681,13 @@ func (h *CarHandler) DeleteCarImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if user is a seller
+	isSeller, err := h.userService.IsSeller(userID)
+	if err != nil || !isSeller {
+		utils.WriteError(w, http.StatusForbidden, "Only sellers can delete car images")
+		return
+	}
+
 	// Extract image ID
 	imageID, err := utils.ExtractIDFromPath(r.URL.Path, "/api/cars/images/")
 	if err != nil {
@@ -674,6 +730,13 @@ func (h *CarHandler) ReorderImages(w http.ResponseWriter, r *http.Request) {
 	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
 		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	// Check if user is a seller
+	isSeller, err := h.userService.IsSeller(userID)
+	if err != nil || !isSeller {
+		utils.WriteError(w, http.StatusForbidden, "Only sellers can reorder car images")
 		return
 	}
 
@@ -725,6 +788,13 @@ func (h *CarHandler) Review(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if user is a seller
+	isSeller, err := h.userService.IsSeller(userID)
+	if err != nil || !isSeller {
+		utils.WriteError(w, http.StatusForbidden, "Only sellers can review car listings")
+		return
+	}
+
 	// Extract car ID
 	carID, err := utils.ExtractIDFromPath(r.URL.Path, "/api/cars/")
 	if err != nil {
@@ -772,6 +842,13 @@ func (h *CarHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
 		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	// Check if user is a seller
+	isSeller, err := h.userService.IsSeller(userID)
+	if err != nil || !isSeller {
+		utils.WriteError(w, http.StatusForbidden, "Only sellers can update car status")
 		return
 	}
 
@@ -1017,6 +1094,13 @@ func (h *CarHandler) RestoreProgress(w http.ResponseWriter, r *http.Request) {
 	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
 		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	// Check if user is a seller
+	isSeller, err := h.userService.IsSeller(userID)
+	if err != nil || !isSeller {
+		utils.WriteError(w, http.StatusForbidden, "Only sellers can restore progress")
 		return
 	}
 
