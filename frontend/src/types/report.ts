@@ -8,7 +8,7 @@ type ReportFormData = {
   description: string;
 };
 
-const DEFAULT_CAR_SUBTOPICS: string[] = [
+export const DEFAULT_CAR_SUBTOPICS: string[] = [
   "Price",
   "Mileage",
   "Year",
@@ -19,7 +19,7 @@ const DEFAULT_CAR_SUBTOPICS: string[] = [
   "Photos",
 ];
 
-const DEFAULT_SELLER_SUBTOPICS: string[] = [
+export const DEFAULT_SELLER_SUBTOPICS: string[] = [
   "Scam behavior",
   "Harassment",
   "Fake identity",
@@ -64,8 +64,6 @@ export type {
   ReportTopic,
   ReportTarget,
   ReportFormData,
-  DEFAULT_CAR_SUBTOPICS,
-  DEFAULT_SELLER_SUBTOPICS,
   ReportType,
   ReportStatus,
   AdminReport,

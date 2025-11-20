@@ -35,11 +35,18 @@ export default function AccountMenuContent({
   lineColor = "bg-grey/10",
 }: AccountMenuContentProps) {
   const pathname = usePathname();
+
+  // Filter admin menu items based on role (same logic as SideBar)
+  const filteredAdminMenuItems = adminMenuItems.filter((item) => {
+    if (!item.requiredRole) return true;
+    return adminUser?.role === item.requiredRole;
+  });
+
   return (
     <div className="flex flex-col gap-y-(--space-2xs)">
       {isAuthedAdmin && adminUser && (
         <>
-          {adminMenuItems.map((item) => {
+          {filteredAdminMenuItems.map((item) => {
             const isActive = pathname === item.href;
             const activeCls = activeColor ?? "bg-maroon text-white";
             const idleCls = `${baseColor ?? ""} ${

@@ -5,13 +5,7 @@ import { useRouter } from "next/navigation";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import CarCard from "@/components/car/CarCard";
 import type { CarListing } from "@/types/car";
-import { apiCall } from "@/lib/apiCall";
-
-interface CarListItemListResponse {
-  success: boolean;
-  data: CarListing[];
-  message?: string;
-}
+import { recentAPI } from "@/lib/recentAPI";
 
 export default function HistoryPage() {
   const [recentViews, setRecentViews] = useState<CarListing[]>([]);
@@ -40,19 +34,16 @@ export default function HistoryPage() {
   const fetchRecentViews = async () => {
     try {
       setLoading(true);
-      const response = await apiCall<CarListItemListResponse>(
-        "/api/recent-views",
-        {
-          method: "GET",
-        }
-      );
+      setError(null);
 
-      if (response.success) {
-        // Backend now returns complete CarListItem objects with all data including thumbnailUrl
-        // No need for additional API calls or data enrichment
-        setRecentViews(response.data);
+      const carListings = await recentAPI.getRecentCarListings(20);
+
+      if (carListings.length > 0) {
+        setRecentViews(carListings);
       } else {
-        setError(response.message || "Failed to fetch viewing history");
+        // Empty array means either no views or an error occurred
+        // Check if we got an empty response (which is valid) vs an error
+        setRecentViews([]);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message.toLowerCase() : "";

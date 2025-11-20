@@ -4,6 +4,7 @@
 // - Keeps interface similar to other API modules
 
 import { apiCall } from "@/lib/apiCall";
+import type { CarListing } from "@/types/car";
 
 // Local storage key
 const LS_KEY = "carjai_recent_views";
@@ -171,6 +172,26 @@ export const recentAPI = {
     saveLocal([]);
     // Optional: could call backend to clear if endpoint exists; not required now
   },
-};
 
-export default recentAPI;
+  // Get recent views as full CarListing objects (for history page)
+  getRecentCarListings: async (limit = 20): Promise<CarListing[]> => {
+    try {
+      const response = await apiCall<{
+        success: boolean;
+        data: CarListing[];
+        message?: string;
+      }>(`/api/recent-views?limit=${limit}`, {
+        method: "GET",
+      });
+
+      if (response.success && Array.isArray(response.data)) {
+        return response.data;
+      }
+      return [];
+    } catch (err) {
+      // Return empty array on error (will be handled by UI)
+      console.warn("Error fetching recent car listings:", err);
+      return [];
+    }
+  },
+};

@@ -318,23 +318,27 @@ function AddCarModal({
       setFoundUserName("");
 
       try {
-        const response = await fetch(`/admin/users/${debouncedSellerId}`);
-
-        if (!response.ok) {
-          if (response.status === 404) {
-            throw new Error("User ID not found");
-          }
-          const errData = await response.json();
-          throw new Error(errData.error || "Failed to check ID");
+        const userId = parseInt(debouncedSellerId, 10);
+        if (isNaN(userId) || userId <= 0) {
+          throw new Error("Invalid user ID");
         }
 
-        const user = await response.json();
+        const user = await adminAPI.getUser(userId);
         setValidSellerId(user.id);
         setFoundUserName(user.name);
         setSellerIdError(null);
       } catch (err) {
         setValidSellerId(null);
-        setSellerIdError(err instanceof Error ? err.message : "Invalid ID");
+        const errorMessage = err instanceof Error ? err.message : "Invalid ID";
+        // Check for specific error cases
+        if (
+          errorMessage.toLowerCase().includes("not found") ||
+          errorMessage.toLowerCase().includes("404")
+        ) {
+          setSellerIdError("User ID not found");
+        } else {
+          setSellerIdError(errorMessage);
+        }
       } finally {
         setIsValidating(false);
       }

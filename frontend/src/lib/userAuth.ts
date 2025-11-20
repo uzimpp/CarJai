@@ -33,6 +33,13 @@ export const authAPI = {
     });
   },
 
+  async clearUserSession(): Promise<void> {
+    return apiCall("/api/auth/signout", {
+      method: "POST",
+      credentials: "include",
+    });
+  },
+
   // Get current user with roles and profiles
   async getCurrentUser(): Promise<MeResponse> {
     return apiCall("/api/auth/me", {

@@ -24,7 +24,6 @@ import {
 } from "@/types/admin";
 import { apiCall } from "@/lib/apiCall";
 import {
-AdminReport,
   AdminReportsListResponse,
   ReportType,
   ReportStatus,
@@ -47,6 +46,13 @@ export const adminAPI = {
   async signout(): Promise<{ success: boolean; message: string }> {
     return apiCall(`${adminPrefix}/auth/signout`, {
       method: "POST",
+    });
+  },
+
+  async clearAdminSession(): Promise<void> {
+    return apiCall(`${adminPrefix}/auth/signout`, {
+      method: "POST",
+      credentials: "include",
     });
   },
 
@@ -312,6 +318,26 @@ export const adminAPI = {
     });
   },
 
+  async getUser(userId: number): Promise<{
+    id: number;
+    name: string;
+    username: string;
+    email: string | null;
+    created_at: string;
+    updated_at?: string;
+  }> {
+    return apiCall<{
+      id: number;
+      name: string;
+      username: string;
+      email: string | null;
+      created_at: string;
+      updated_at?: string;
+    }>(`${adminPrefix}/users/${userId}`, {
+      method: "GET",
+    });
+  },
+
   // --- Car Management API ---
   async getCars(): Promise<{ cars: AdminManagedCar[]; total: number }> {
     const response = await apiCall<{
@@ -418,7 +444,7 @@ export const adminAPI = {
 
     const queryString = searchParams.toString();
     return apiCall<AdminReportsListResponse>(
-      `/admin/reports${queryString ? `?${queryString}` : ""}`,
+      `${adminPrefix}/reports${queryString ? `?${queryString}` : ""}`,
       {
         method: "GET",
       }
@@ -426,14 +452,20 @@ export const adminAPI = {
   },
 
   async resolveReport(reportId: number): Promise<AdminActionResponse> {
-    return apiCall<AdminActionResponse>(`/admin/reports/${reportId}/resolve`, {
-      method: "POST",
-    });
+    return apiCall<AdminActionResponse>(
+      `${adminPrefix}/reports/${reportId}/resolve`,
+      {
+        method: "POST",
+      }
+    );
   },
 
   async dismissReport(reportId: number): Promise<AdminActionResponse> {
-    return apiCall<AdminActionResponse>(`/admin/reports/${reportId}/dismiss`, {
-      method: "POST",
-    });
+    return apiCall<AdminActionResponse>(
+      `${adminPrefix}/reports/${reportId}/dismiss`,
+      {
+        method: "POST",
+      }
+    );
   },
 };
