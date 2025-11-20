@@ -313,7 +313,7 @@ export default function BuyerForm({
           name="budgetMin"
           type="number"
           min="0"
-          step="10000"
+          step="1000"
           value={formData.budgetMin === null ? "" : formData.budgetMin}
           onChange={handleInputChange}
           placeholder="e.g., 500000"
@@ -342,7 +342,7 @@ export default function BuyerForm({
           name="budgetMax"
           type="number"
           min="0"
-          step="10000"
+          step="1000"
           value={formData.budgetMax === null ? "" : formData.budgetMax}
           onChange={handleInputChange}
           placeholder="e.g., 1000000"
