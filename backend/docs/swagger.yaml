@@ -1820,7 +1820,7 @@ paths:
   # ============================================
 
   # Admin Authentication
-  /admin/auth/signin:
+  /api/admin/auth/signin:
     post:
       tags:
         - Admin
@@ -1848,7 +1848,7 @@ paths:
         '401':
           description: Invalid credentials
 
-  /admin/auth/me:
+  /api/admin/auth/me:
     get:
       tags:
         - Admin
@@ -1859,7 +1859,7 @@ paths:
         '401':
           description: Unauthorized
 
-  /admin/auth/signout:
+  /api/admin/auth/signout:
     post:
       tags:
         - Admin
@@ -1868,7 +1868,7 @@ paths:
         '200':
           description: Admin sign out successful
 
-  /admin/auth/refresh:
+  /api/admin/auth/refresh:
     post:
       tags:
         - Admin
@@ -1880,7 +1880,7 @@ paths:
           description: Unauthorized
 
   # Admin IP Whitelist Management
-  /admin/ip-whitelist:
+  /api/admin/ip-whitelist:
     get:
       tags:
         - Admin
@@ -1905,7 +1905,7 @@ paths:
                       type: string
                       format: date-time
 
-  /admin/ip-whitelist/add:
+  /api/admin/ip-whitelist/add:
     post:
       tags:
         - Admin
@@ -1931,7 +1931,7 @@ paths:
         '400':
           description: Bad request
 
-  /admin/ip-whitelist/check:
+  /api/admin/ip-whitelist/check:
     post:
       tags:
         - Admin
@@ -1977,7 +1977,7 @@ paths:
         '404':
           description: IP address not found
 
-  /admin/ip-whitelist/remove:
+  /api/admin/ip-whitelist/remove:
     delete:
       tags:
         - Admin
@@ -1996,7 +1996,7 @@ paths:
           description: IP address not found
 
   # Admin Market Price Management
-  /admin/market-price/data:
+  /api/admin/market-price/data:
     get:
       tags:
         - Admin
@@ -2018,7 +2018,7 @@ paths:
         '500':
           description: Server error
 
-  /admin/market-price/upload:
+  /api/admin/market-price/upload:
     post:
       tags:
         - Admin
@@ -2052,7 +2052,7 @@ paths:
           description: Extraction or import failed on the server
 
   # Admin Dashboard
-  /admin/dashboard/stats:
+  /api/admin/dashboard/stats:
     get:
       tags:
         - Admin
@@ -2087,7 +2087,7 @@ paths:
           description: Database commit failed
 
   # --- Admin Account Management ---
-  /admin/admins:
+  /api/admin/admins:
     get:
       tags:
         - Admin Management
@@ -2143,7 +2143,7 @@ paths:
         '409':
           description: Username already exists
 
-  /admin/admins/{id}:
+  /api/admin/admins/{id}:
     parameters:
       - name: id
         in: path
@@ -2194,14 +2194,14 @@ paths:
           description: Admin not found
 
   # --- Admin User Management ---
-  /admin/users:
+  /api/admin/users:
           description: Server error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /admin/dashboard/chart:
+  /api/admin/dashboard/chart:
     get:
       tags:
         - Admin
@@ -2246,7 +2246,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /admin/dashboard/top-brands:
+  /api/admin/dashboard/top-brands:
     get:
       tags:
         - Admin
@@ -2284,7 +2284,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /admin/dashboard/recent-reports:
+  /api/admin/dashboard/recent-reports:
     get:
       tags:
         - Admin
@@ -2331,7 +2331,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
   # Admin Reports Management
-  /admin/reports:
+  /api/admin/reports:
     get:
       tags:
         - Admin
@@ -2366,7 +2366,7 @@ paths:
         '500':
           description: Server error
 
-  /admin/reports/{id}/resolve:
+  /api/admin/reports/{id}/resolve:
     post:
       tags:
         - Admin
@@ -2395,7 +2395,7 @@ paths:
         '500':
           description: Server error
 
-  /admin/reports/{id}/dismiss:
+  /api/admin/reports/{id}/dismiss:
     post:
       tags:
         - Admin
@@ -2425,7 +2425,7 @@ paths:
           description: Server error
 
   # Admin User Management
-  /admin/users:
+  /api/admin/users:
     get:
       tags:
         - Admin
@@ -2489,7 +2489,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /admin/users/{id}:
+  /api/admin/users/{id}:
     parameters:
       - name: id
         in: path
@@ -2593,7 +2593,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /admin/users/{id}/ban:
+  /api/admin/users/{id}/ban:
     post:
       tags:
         - Admin
@@ -2623,7 +2623,7 @@ paths:
           description: Server error
 
   # Admin Car Management
-  /admin/cars:
+  /api/admin/cars:
     get:
       tags:
         - Admin
@@ -2688,7 +2688,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /admin/cars/{id}:
+  /api/admin/cars/{id}:
     parameters:
       - name: id
         in: path
@@ -2787,7 +2787,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /admin/cars/{id}/remove:
+  /api/admin/cars/{id}/remove:
     post:
       tags:
         - Admin
