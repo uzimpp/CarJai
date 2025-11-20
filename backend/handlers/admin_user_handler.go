@@ -34,12 +34,10 @@ func (h *AdminUserHandler) HandleGetUsers(w http.ResponseWriter, r *http.Request
 	}
 
 	response := models.AdminUsersListResponse{
-		Success: true,
-		Data:    *users,
-		Total:   len(*users),
+		Users: *users,
+		Total: len(*users),
 	}
-
-	utils.WriteJSON(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, response, "")
 }
 
 // HandleCreateUser handles POST /admin/users
@@ -63,7 +61,7 @@ func (h *AdminUserHandler) HandleCreateUser(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Return the newly created user's public data
-	utils.WriteJSON(w, http.StatusCreated, createdUser.ToPublic())
+	utils.WriteJSON(w, http.StatusCreated, createdUser.ToPublic(), "")
 }
 
 // HandleUpdateUser handles PATCH /admin/users/:id
@@ -93,7 +91,7 @@ func (h *AdminUserHandler) HandleUpdateUser(w http.ResponseWriter, r *http.Reque
 
 	// Return the updated user (or just success)
 	// Returning the public user data is good practice
-	utils.WriteJSON(w, http.StatusOK, updatedUser.ToPublic())
+	utils.WriteJSON(w, http.StatusOK, updatedUser.ToPublic(), "")
 }
 
 // HandleDeleteUser handles DELETE /admin/users/:id
@@ -121,12 +119,7 @@ func (h *AdminUserHandler) HandleDeleteUser(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Return success
-	response := map[string]interface{}{
-		"success": true,
-		"message": "User deleted successfully",
-	}
-	utils.WriteJSON(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, nil, "User deleted successfully")
 }
 
 // HandleGetUser handles GET /admin/users/:id
@@ -152,5 +145,5 @@ func (h *AdminUserHandler) HandleGetUser(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Return the user's public data
-	utils.WriteJSON(w, http.StatusOK, user.ToPublic())
+	utils.WriteJSON(w, http.StatusOK, user.ToPublic(), "")
 }

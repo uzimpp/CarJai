@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/uzimpp/CarJai/backend/models"
 	"github.com/uzimpp/CarJai/backend/services"
 	"github.com/uzimpp/CarJai/backend/utils"
 )
@@ -18,11 +19,11 @@ import (
 
 func TestAdminExtractionHandler_HandleImportMarketPrices(t *testing.T) {
 	tests := []struct {
-		name                  string
-		method                string
-		hasFile               bool
+		name                    string
+		method                  string
+		hasFile                 bool
 		extractMarketPricesFunc func(ctx context.Context, filePath string) ([]services.MarketPrice, error)
-		expectedStatus        int
+		expectedStatus          int
 	}{
 		{
 			name:    "Successful import",
@@ -113,16 +114,16 @@ func (h *testAdminExtractionHandler) HandleImportMarketPrices(w http.ResponseWri
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, extractedData)
+	utils.WriteJSON(w, http.StatusOK, extractedData, "")
 }
 
 func TestAdminExtractionHandler_HandleCommitMarketPrices(t *testing.T) {
 	tests := []struct {
-		name                 string
-		method               string
-		requestBody          interface{}
+		name                   string
+		method                 string
+		requestBody            interface{}
 		commitMarketPricesFunc func(ctx context.Context, prices []services.MarketPrice) (int, int, error)
-		expectedStatus       int
+		expectedStatus         int
 	}{
 		{
 			name:   "Successful commit",
@@ -206,11 +207,10 @@ func (h *testAdminExtractionHandler) HandleCommitMarketPrices(w http.ResponseWri
 		return
 	}
 
-	response := map[string]interface{}{
-		"message":        "Market prices committed successfully.",
-		"inserted_count": inserted,
-		"updated_count":  updated,
+	response := models.MarketPriceImportResponse{
+		Message:       "Market prices committed successfully.",
+		InsertedCount: inserted,
+		UpdatedCount:  updated,
 	}
-	utils.WriteJSON(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, response, "")
 }
-

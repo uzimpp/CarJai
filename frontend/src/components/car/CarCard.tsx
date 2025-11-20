@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { CarListing } from "@/types/car";
-import { useCallback } from "react";
+import { useCallback, memo } from "react";
 import FavoriteButton from "./FavoriteButton";
 
 export interface CarCardProps {
@@ -18,7 +18,7 @@ export interface CarCardProps {
   onFavoriteToggle?: (carId: number, isFavorited: boolean) => void; // callback when favorite is toggled
 }
 
-export default function CarCard({
+function CarCard({
   car,
   variant = "browse",
   onDelete,
@@ -40,9 +40,9 @@ export default function CarCard({
     <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
       <Link href={`/car/${car.id}`}>
         <div className="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200">
-          {car.images && car.images.length > 0 ? (
+          {car.thumbnailUrl ? (
             <Image
-              src={`/api/cars/images/${car.images[0].id}`}
+              src={car.thumbnailUrl}
               alt={`${car.brandName || "Unknown"} ${car.modelName || "Model"}`}
               fill
               className="object-cover"
@@ -85,7 +85,9 @@ export default function CarCard({
             <button
               aria-label="Delete"
               onClick={handleDelete}
-              className={`absolute ${showFavorite ? 'top-16' : 'top-(--space-s)'} right-(--space-s) w-9 h-9 rounded-full bg-red-600/90 hover:bg-red-700 text-white flex items-center justify-center shadow-md`}
+              className={`absolute ${
+                showFavorite ? "top-16" : "top-(--space-s)"
+              } right-(--space-s) w-9 h-9 rounded-full bg-red-600/90 hover:bg-red-700 text-white flex items-center justify-center shadow-md`}
             >
               {/* trash icon */}
               <svg
@@ -130,7 +132,6 @@ export default function CarCard({
               {car.mileage != null && car.mileage > 0 && (
                 <span>🛣️ {car.mileage.toLocaleString()} km</span>
               )}
-              {car.provinceId && <span>📍 Province #{car.provinceId}</span>}
             </div>
           )}
         </div>
@@ -166,3 +167,5 @@ export default function CarCard({
     </div>
   );
 }
+
+export default memo(CarCard);

@@ -302,21 +302,5 @@ export const carsAPI = {
       method: "GET",
     });
   },
-
-  async recordView(carId: number): Promise<{
-    success: boolean;
-    message: string;
-  }> {
-    return apiCall<{
-      success: boolean;
-      message: string;
-    }>('/api/recent-views/record', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ car_id: carId }),
-    });
-  },
   
 };

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Seller, SellerContact } from "@/types/user";
 import type { CarListing } from "@/types/car";
-import { sellerAPI } from "@/lib/sellerAPI";
+import { profileAPI } from "@/lib/profileAPI";
 import CarCard from "@/components/car/CarCard";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import ReportModal from "@/components/reports/ReportModal";
@@ -34,30 +34,17 @@ export default function SellerPage() {
       setIsLoading(true);
       setNotFoundState(false);
       try {
-        const sellerRes = await sellerAPI.getSeller(String(id));
+        const sellerRes = await profileAPI.getSellerProfile(String(id));
         if (!mounted) return;
         setSeller(sellerRes.data.seller);
-        try {
-          const [contactsRes, carsRes] = await Promise.all([
-            sellerAPI.getSellerContacts(String(id)),
-            sellerAPI.getSellerCars(String(id)),
-          ]);
-          if (!mounted) return;
-          setContacts(contactsRes.contacts || []);
-          const activeCars = ((carsRes.cars || []) as CarListing[]).filter(
-            (c) => c.status === "active"
-          );
-          setCars(activeCars);
-        } catch {
-          if (!mounted) return;
-          setContacts([]);
-          setCars([]);
-        }
-      } catch {
+        setContacts(sellerRes.data.contacts || []);
+        setCars(sellerRes.data.cars || []);
+        setIsLoading(false);
+      } catch (error) {
         if (!mounted) return;
+        console.error("Failed to load seller profile:", error);
         setNotFoundState(true);
-      } finally {
-        if (mounted) setIsLoading(false);
+        setIsLoading(false);
       }
     };
     run();

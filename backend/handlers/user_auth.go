@@ -42,50 +42,22 @@ func (h *UserAuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 
 	// Basic validation
 	if req.Email == "" || req.Password == "" || req.Username == "" || req.Name == "" {
-		response := models.UserErrorResponse{
-			Success: false,
-			Error:   "Email, password, username, and name are required",
-			Code:    http.StatusBadRequest,
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response)
+		utils.WriteError(w, http.StatusBadRequest, "Email, password, username, and name are required")
 		return
 	}
 
 	if len(req.Password) < 6 {
-		response := models.UserErrorResponse{
-			Success: false,
-			Error:   "Password must be at least 6 characters long",
-			Code:    http.StatusBadRequest,
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response)
+		utils.WriteError(w, http.StatusBadRequest, "Password must be at least 6 characters long")
 		return
 	}
 
 	if len(req.Username) < 3 || len(req.Username) > 20 {
-		response := models.UserErrorResponse{
-			Success: false,
-			Error:   "Username must be between 3 and 20 characters",
-			Code:    http.StatusBadRequest,
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response)
+		utils.WriteError(w, http.StatusBadRequest, "Username must be between 3 and 20 characters")
 		return
 	}
 
 	if len(req.Name) < 2 || len(req.Name) > 100 {
-		response := models.UserErrorResponse{
-			Success: false,
-			Error:   "Name must be between 2 and 100 characters",
-			Code:    http.StatusBadRequest,
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response)
+		utils.WriteError(w, http.StatusBadRequest, "Name must be between 2 and 100 characters")
 		return
 	}
 
@@ -100,29 +72,22 @@ func (h *UserAuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 	// Create user
 	response, err := h.userService.Signup(req.Email, req.Password, req.Username, req.Name, clientIP, userAgent)
 	if err != nil {
-		errorResponse := models.UserErrorResponse{
-			Success: false,
-			Error:   err.Error(),
-			Code:    http.StatusBadRequest,
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(errorResponse)
+		utils.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	// Set jwt cookie
 	http.SetCookie(w, &http.Cookie{
 		Name:     "jwt",
-		Value:    response.Data.Token,
+		Value:    response.Token,
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   false, // Set to true in production with HTTPS
 		SameSite: http.SameSiteLaxMode,
-		MaxAge:   int(time.Until(response.Data.ExpiresAt).Seconds()),
+		MaxAge:   int(time.Until(response.ExpiresAt).Seconds()),
 	})
 
-	utils.WriteJSON(w, http.StatusCreated, response)
+	utils.WriteJSON(w, http.StatusCreated, response, "")
 }
 
 // Signin handles user sign in requests
@@ -134,27 +99,13 @@ func (h *UserAuthHandler) Signin(w http.ResponseWriter, r *http.Request) {
 
 	var req models.UserSigninRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response := models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid request body",
-			Code:    http.StatusBadRequest,
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response)
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	// Basic validation
 	if req.EmailOrUsername == "" || req.Password == "" {
-		response := models.UserErrorResponse{
-			Success: false,
-			Error:   "Email/username and password are required",
-			Code:    http.StatusBadRequest,
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response)
+		utils.WriteError(w, http.StatusBadRequest, "Email/username and password are required")
 		return
 	}
 
@@ -169,29 +120,22 @@ func (h *UserAuthHandler) Signin(w http.ResponseWriter, r *http.Request) {
 	// Sign in user
 	response, err := h.userService.Signin(req.EmailOrUsername, req.Password, clientIP, userAgent)
 	if err != nil {
-		errorResponse := models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid credentials",
-			Code:    http.StatusUnauthorized,
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(errorResponse)
+		utils.WriteError(w, http.StatusUnauthorized, "Invalid credentials")
 		return
 	}
 
 	// Set jwt cookie
 	http.SetCookie(w, &http.Cookie{
 		Name:     "jwt",
-		Value:    response.Data.Token,
+		Value:    response.Token,
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   false, // Set to true in production with HTTPS
 		SameSite: http.SameSiteLaxMode,
-		MaxAge:   int(time.Until(response.Data.ExpiresAt).Seconds()),
+		MaxAge:   int(time.Until(response.ExpiresAt).Seconds()),
 	})
 
-	utils.WriteJSON(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, response, "")
 }
 
 // GoogleSignin handles user sign in using Google ID token (One Tap / GIS)
@@ -203,22 +147,12 @@ func (h *UserAuthHandler) GoogleSignin(w http.ResponseWriter, r *http.Request) {
 
 	var req models.UserGoogleSigninRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response := models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid request body",
-			Code:    http.StatusBadRequest,
-		}
-		utils.WriteJSON(w, http.StatusBadRequest, response)
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	if req.IDToken == "" {
-		response := models.UserErrorResponse{
-			Success: false,
-			Error:   "id_token is required",
-			Code:    http.StatusBadRequest,
-		}
-		utils.WriteJSON(w, http.StatusBadRequest, response)
+		utils.WriteError(w, http.StatusBadRequest, "id_token is required")
 		return
 	}
 
@@ -231,23 +165,18 @@ func (h *UserAuthHandler) GoogleSignin(w http.ResponseWriter, r *http.Request) {
 
 	response, err := h.userService.SigninWithGoogleIDToken(req.IDToken, clientIP, userAgent)
 	if err != nil {
-		errorResponse := models.UserErrorResponse{
-			Success: false,
-			Error:   err.Error(),
-			Code:    http.StatusUnauthorized,
-		}
-		utils.WriteJSON(w, http.StatusUnauthorized, errorResponse)
+		utils.WriteError(w, http.StatusUnauthorized, err.Error())
 		return
 	}
 
 	http.SetCookie(w, &http.Cookie{
 		Name:     "jwt",
-		Value:    response.Data.Token,
+		Value:    response.Token,
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   false,
 		SameSite: http.SameSiteLaxMode,
-		MaxAge:   int(time.Until(response.Data.ExpiresAt).Seconds()),
+		MaxAge:   int(time.Until(response.ExpiresAt).Seconds()),
 	})
 
 	// Redirect to frontend after setting cookie for a smoother UX
@@ -378,12 +307,7 @@ func (h *UserAuthHandler) GoogleCallback(w http.ResponseWriter, r *http.Request)
 
 	response, err := h.userService.SigninWithGoogleIDToken(tokenRes.IDToken, clientIP, userAgent)
 	if err != nil {
-		errorResponse := models.UserErrorResponse{
-			Success: false,
-			Error:   err.Error(),
-			Code:    http.StatusUnauthorized,
-		}
-		utils.WriteJSON(w, http.StatusUnauthorized, errorResponse)
+		utils.WriteError(w, http.StatusUnauthorized, err.Error())
 		return
 	}
 
@@ -401,12 +325,12 @@ func (h *UserAuthHandler) GoogleCallback(w http.ResponseWriter, r *http.Request)
 	// Set jwt cookie
 	http.SetCookie(w, &http.Cookie{
 		Name:     "jwt",
-		Value:    response.Data.Token,
+		Value:    response.Token,
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   false,
 		SameSite: http.SameSiteLaxMode,
-		MaxAge:   int(time.Until(response.Data.ExpiresAt).Seconds()),
+		MaxAge:   int(time.Until(response.ExpiresAt).Seconds()),
 	})
 
 	// Determine redirect target based on existing roles
@@ -421,8 +345,8 @@ func (h *UserAuthHandler) GoogleCallback(w http.ResponseWriter, r *http.Request)
 
 	// Default to homepage for returning users; role onboarding for new users
 	redirectPath := "/"
-	if me, err := h.userService.GetCurrentUser(response.Data.Token); err == nil {
-		roles := me.Data.Roles
+	if me, err := h.userService.GetCurrentUser(response.Token); err == nil {
+		roles := me.Roles
 		if !roles.Buyer && !roles.Seller {
 			redirectPath = "/signup/role?from=signup"
 		} else {
@@ -454,12 +378,7 @@ func (h *UserAuthHandler) Signout(w http.ResponseWriter, r *http.Request) {
 	// Sign out user
 	response, err := h.userService.Signout(token)
 	if err != nil {
-		errorResponse := models.UserErrorResponse{
-			Success: false,
-			Error:   err.Error(),
-			Code:    http.StatusBadRequest,
-		}
-		utils.WriteJSON(w, http.StatusBadRequest, errorResponse)
+		utils.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -474,7 +393,7 @@ func (h *UserAuthHandler) Signout(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   -1, // Expire immediately
 	})
 
-	utils.WriteJSON(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, nil, response)
 }
 
 // Me handles getting current user information
@@ -495,16 +414,11 @@ func (h *UserAuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 	// Get current user
 	response, err := h.userService.GetCurrentUser(token)
 	if err != nil {
-		errorResponse := models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid token",
-			Code:    http.StatusUnauthorized,
-		}
-		utils.WriteJSON(w, http.StatusUnauthorized, errorResponse)
+		utils.WriteError(w, http.StatusUnauthorized, "Invalid token")
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, response, "")
 }
 
 // RefreshToken handles token refresh requests
@@ -533,16 +447,11 @@ func (h *UserAuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	// Refresh token
 	response, err := h.userService.RefreshToken(token, clientIP, userAgent)
 	if err != nil {
-		errorResponse := models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid token",
-			Code:    http.StatusUnauthorized,
-		}
-		utils.WriteJSON(w, http.StatusUnauthorized, errorResponse)
+		utils.WriteError(w, http.StatusUnauthorized, "Invalid token")
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, response, "")
 }
 
 // ChangePassword handles password change requests
@@ -590,12 +499,7 @@ func (h *UserAuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	response := models.ChangePasswordResponse{
-		Success: true,
-		Message: "Password changed successfully",
-	}
-
-	utils.WriteJSON(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, nil, "Password changed successfully")
 }
 
 // getClientIP extracts the client IP address from the request

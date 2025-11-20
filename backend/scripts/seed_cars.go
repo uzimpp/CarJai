@@ -7,47 +7,38 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
-	"time"
 
-	"github.com/joho/godotenv"
-	_ "github.com/lib/pq"
+	"github.com/uzimpp/CarJai/backend/utils"
 )
-
-// === CONFIGURATION SECTION ===
-// Easy to modify settings for mock data generation
 
 const (
 	NUM_CARS_TO_CREATE = 30
-	DEMO_EMAIL         = "demo-seller@carjai.com"
-	DEMO_PASSWORD      = "Demo123456" // Will be hashed as bcrypt
 )
 
 // Car generation ranges and options
 var (
-	PRICE_RANGE         = [2]int{300000, 1500000}      // ฿300k - ฿1.5M
-	YEAR_RANGE          = [2]int{2015, 2024}           // 2015-2024
-	MILEAGE_RANGE       = [2]int{10000, 200000}        // 10k-200k km
-	CONDITION_RANGE     = [2]int{3, 5}                 // Rating 3-5
-	ENGINE_CC_RANGE     = [2]int{1000, 3500}           // 1000-3500cc
-	SEATS_RANGE         = [2]int{2, 8}                 // 2-8 seats
-	
+	PRICE_RANGE     = [2]int{300000, 1500000} // ฿300k - ฿1.5M
+	YEAR_RANGE      = [2]int{2015, 2024}      // 2015-2024
+	MILEAGE_RANGE   = [2]int{10000, 200000}   // 10k-200k km
+	CONDITION_RANGE = [2]int{3, 5}            // Rating 3-5
+	ENGINE_CC_RANGE = [2]int{1000, 3500}      // 1000-3500cc
+	SEATS_RANGE     = [2]int{2, 8}            // 2-8 seats
+
 	// Body type codes
 	BODY_TYPES = []string{"PICKUP", "SUV", "CITYCAR", "DAILY", "VAN", "SPORTLUX"}
-	
-	// Transmission codes  
+
+	// Transmission codes
 	TRANSMISSIONS = []string{"MANUAL", "AT"}
-	
+
 	// Drivetrain codes
 	DRIVETRAINS = []string{"FWD", "RWD", "AWD", "4WD"}
-	
+
 	// Fuel type codes (cars can have multiple)
 	FUEL_TYPES = []string{"GASOLINE", "DIESEL", "HYBRID", "ELECTRIC", "LPG", "CNG"}
-	
+
 	// Color codes (cars can have multiple)
 	COLORS = []string{"WHITE", "BLACK", "GRAY", "RED", "BLUE", "BROWN", "YELLOW"}
 )
-
-// === END CONFIGURATION ===
 
 // Car brands and their models
 var brandModels = map[string][]string{
@@ -90,64 +81,26 @@ var imageFiles = []string{
 	"White Audi Car PNG.png",
 }
 
-func main() {
-	// Load environment variables
-	// In Docker, env vars are already set, so .env file is optional
-	if err := godotenv.Load("../.env"); err != nil {
-		log.Println("No .env file found, using environment variables from Docker")
-	}
-
-	// Connect to database
-	dbHost := getEnv("DB_HOST", "localhost")
-	dbPort := getEnv("DB_PORT", "5432")
-	dbUser := getEnv("DB_USER", "postgres")
-	dbPassword := getEnv("DB_PASSWORD", "postgres")
-	dbName := getEnv("DB_NAME", "carjai")
-
-	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		dbHost, dbPort, dbUser, dbPassword, dbName)
-
-	db, err := sql.Open("postgres", connStr)
+// seedCarsData seeds cars with images and inspections
+func seedCarsData(db *sql.DB) error {
+	// Step 1: Create or get demo seller account
+	sellerID, err := createOrGetDemoSeller(db)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		return fmt.Errorf("failed to create/get demo seller: %w", err)
 	}
-	defer db.Close()
-
-	// Test connection
-	if err := db.Ping(); err != nil {
-		log.Fatalf("Failed to ping database: %v", err)
-	}
-
-	log.Println("Connected to database successfully")
-
-	// Seed random
-	rand.Seed(time.Now().UnixNano())
-
-	// Step 1: Create demo seller account
-	sellerID, err := createDemoSeller(db)
-	if err != nil {
-		log.Fatalf("Failed to create demo seller: %v", err)
-	}
-	log.Printf("✓ Created demo seller (ID: %d)", sellerID)
+	log.Printf("✓ Using demo seller (ID: %d)", sellerID)
 
 	// Step 2: Get reference data
 	provinces, err := getProvinces(db)
 	if err != nil {
-		log.Fatalf("Failed to get provinces: %v", err)
+		return fmt.Errorf("failed to get provinces: %w", err)
 	}
 	log.Printf("✓ Loaded %d provinces", len(provinces))
 
-	// Use configuration values for consistent data generation
-	bodyTypes := BODY_TYPES
-	transmissions := TRANSMISSIONS
-	drivetrains := DRIVETRAINS
-	fuelTypes := FUEL_TYPES
-	colors := COLORS
-
 	// Step 3: Create demo cars
-	log.Printf("\nCreating %d demo cars with sellerID=%d...", NUM_CARS_TO_CREATE, sellerID)
+	log.Printf("Creating %d demo cars with sellerID=%d...", NUM_CARS_TO_CREATE, sellerID)
 	for i := 1; i <= NUM_CARS_TO_CREATE; i++ {
-		carID, err := createCar(db, sellerID, i, provinces, bodyTypes, transmissions, drivetrains, fuelTypes, colors)
+		carID, err := createCar(db, sellerID, i, provinces)
 		if err != nil {
 			log.Printf("✗ Failed to create car %d: %v", i, err)
 			continue
@@ -155,13 +108,14 @@ func main() {
 		log.Printf("  ✓ Car %d created (ID: %d)", i, carID)
 	}
 
-	log.Println("\n✅ Demo data seeding completed!")
+	return nil
 }
 
-func createDemoSeller(db *sql.DB) (int, error) {
+// createOrGetDemoSeller creates or gets the demo seller account
+func createOrGetDemoSeller(db *sql.DB) (int, error) {
 	// Check if demo seller already exists
 	var existingUserID int
-	err := db.QueryRow(`SELECT id FROM users WHERE email = $1`, DEMO_EMAIL).Scan(&existingUserID)
+	err := db.QueryRow(`SELECT id FROM users WHERE email = $1`, DEMO_SELLER_EMAIL).Scan(&existingUserID)
 	if err == nil {
 		// User exists, check if seller profile exists
 		var sellerExists bool
@@ -178,14 +132,19 @@ func createDemoSeller(db *sql.DB) (int, error) {
 		}
 	}
 
+	// Hash password using actual hashing function
+	hashedPassword, err := utils.HashPassword(DEMO_PASSWORD)
+	if err != nil {
+		return 0, fmt.Errorf("failed to hash password: %w", err)
+	}
+
 	// Create user account
 	var userID int
-	hashedPassword := "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi" // bcrypt hash of "Demo123456"
 	err = db.QueryRow(`
 		INSERT INTO users (email, password_hash, username, name)
 		VALUES ($1, $2, $3, $4)
 		RETURNING id
-	`, DEMO_EMAIL, hashedPassword, "demoseller", "Demo Seller").Scan(&userID)
+	`, DEMO_SELLER_EMAIL, hashedPassword, DEMO_SELLER_USERNAME, DEMO_SELLER_NAME).Scan(&userID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create user: %w", err)
 	}
@@ -194,7 +153,7 @@ func createDemoSeller(db *sql.DB) (int, error) {
 	_, err = db.Exec(`
 		INSERT INTO sellers (id, display_name, about, map_link)
 		VALUES ($1, $2, $3, $4)
-	`, userID, "Demo Car Sales", "Demo seller for testing", "https://maps.google.com")
+	`, userID, DEMO_SELLER_NAME, DEMO_SELLER_ABOUT, DEMO_SELLER_MAP_LINK)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create seller: %w", err)
 	}
@@ -203,7 +162,8 @@ func createDemoSeller(db *sql.DB) (int, error) {
 	_, err = db.Exec(`
 		INSERT INTO seller_contacts (seller_id, contact_type, value, label)
 		VALUES ($1, $2, $3, $4), ($1, $5, $6, $7)
-	`, userID, "phone", "0812345678", "Call", "line", "@democar", "LINE")
+	`, userID, DEMO_SELLER_CONTACT_TYPE, DEMO_SELLER_CONTACT_VALUE, DEMO_SELLER_CONTACT_LABEL,
+		DEMO_SELLER_CONTACT_TYPE_2, DEMO_SELLER_CONTACT_VALUE_2, DEMO_SELLER_CONTACT_LABEL_2)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create seller contacts: %w", err)
 	}
@@ -211,6 +171,7 @@ func createDemoSeller(db *sql.DB) (int, error) {
 	return userID, nil
 }
 
+// getProvinces gets province IDs from database
 func getProvinces(db *sql.DB) ([]int, error) {
 	rows, err := db.Query(`SELECT id FROM provinces ORDER BY id`)
 	if err != nil {
@@ -229,7 +190,8 @@ func getProvinces(db *sql.DB) ([]int, error) {
 	return provinces, nil
 }
 
-func createCar(db *sql.DB, sellerID, index int, provinces []int, bodyTypes, transmissions, drivetrains, fuelTypes, colors []string) (int, error) {
+// createCar creates a car with all related data
+func createCar(db *sql.DB, sellerID, index int, provinces []int) (int, error) {
 	// Random data using configuration
 	brand := randomKey(brandModels)
 	model := randomItem(brandModels[brand])
@@ -237,9 +199,9 @@ func createCar(db *sql.DB, sellerID, index int, provinces []int, bodyTypes, tran
 	mileage := randomInt(MILEAGE_RANGE[0], MILEAGE_RANGE[1])
 	price := randomInt(PRICE_RANGE[0], PRICE_RANGE[1])
 	provinceID := randomItem(provinces)
-	bodyType := randomItem(bodyTypes)
-	transmission := randomItem(transmissions)
-	drivetrain := randomItem(drivetrains)
+	bodyType := randomItem(BODY_TYPES)
+	transmission := randomItem(TRANSMISSIONS)
+	drivetrain := randomItem(DRIVETRAINS)
 	conditionRating := randomInt(CONDITION_RANGE[0], CONDITION_RANGE[1])
 	engineCC := randomInt(1200, 3500)
 	seats := randomSeats(bodyType)
@@ -270,7 +232,7 @@ func createCar(db *sql.DB, sellerID, index int, provinces []int, bodyTypes, tran
 
 	// Add fuel types (1-2 random fuels)
 	numFuels := randomInt(1, 2)
-	selectedFuels := randomItems(fuelTypes, numFuels)
+	selectedFuels := randomItems(FUEL_TYPES, numFuels)
 	for _, fuel := range selectedFuels {
 		_, err = db.Exec(`INSERT INTO car_fuel (car_id, fuel_type_code) VALUES ($1, $2)`, carID, fuel)
 		if err != nil {
@@ -280,7 +242,7 @@ func createCar(db *sql.DB, sellerID, index int, provinces []int, bodyTypes, tran
 
 	// Add colors (1-2 colors)
 	numColors := randomInt(1, 2)
-	selectedColors := randomItems(colors, numColors)
+	selectedColors := randomItems(COLORS, numColors)
 	for i, color := range selectedColors {
 		_, err = db.Exec(`INSERT INTO car_colors (car_id, color_code, position) VALUES ($1, $2, $3)`, carID, color, i)
 		if err != nil {
@@ -303,10 +265,11 @@ func createCar(db *sql.DB, sellerID, index int, provinces []int, bodyTypes, tran
 	return carID, nil
 }
 
+// addCarImages adds images to a car
 func addCarImages(db *sql.DB, carID int, imageFiles []string) error {
 	// Path to images - supports both local and Docker environments
 	imagesPath := "../../frontend/public/assets/cars/"
-	
+
 	// Check if running in Docker (alternative path)
 	if _, err := os.Stat("/app/frontend/public/assets/cars"); err == nil {
 		imagesPath = "/app/frontend/public/assets/cars/"
@@ -341,6 +304,7 @@ func addCarImages(db *sql.DB, carID int, imageFiles []string) error {
 	return nil
 }
 
+// addInspectionResult adds an inspection result to a car
 func addInspectionResult(db *sql.DB, carID int) error {
 	// 80% chance of passing inspection
 	overallPass := rand.Float32() < 0.8
@@ -367,65 +331,7 @@ func addInspectionResult(db *sql.DB, carID int) error {
 	return err
 }
 
-// Helper functions
-func getEnv(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
-}
-
-func randomKey(m map[string][]string) string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	return keys[rand.Intn(len(keys))]
-}
-
-func randomItem[T any](items []T) T {
-	return items[rand.Intn(len(items))]
-}
-
-func randomItems[T any](items []T, count int) []T {
-	if count >= len(items) {
-		return items
-	}
-	
-	// Shuffle and take first N
-	shuffled := make([]T, len(items))
-	copy(shuffled, items)
-	rand.Shuffle(len(shuffled), func(i, j int) {
-		shuffled[i], shuffled[j] = shuffled[j], shuffled[i]
-	})
-	
-	return shuffled[:count]
-}
-
-func randomInt(min, max int) int {
-	return min + rand.Intn(max-min+1)
-}
-
-func calculatePrice(year int, brand string) int {
-	// Base price by year
-	basePrice := 200000 + (year-2010)*50000
-
-	// Luxury brand multiplier
-	luxuryBrands := map[string]float64{
-		"MERCEDES BENZ": 3.0,
-		"BMW":           3.0,
-		"PORSCHE":       5.0,
-		"TESLA":         2.5,
-	}
-
-	if multiplier, ok := luxuryBrands[brand]; ok {
-		basePrice = int(float64(basePrice) * multiplier)
-	}
-
-	// Add some randomness (-10% to +20%)
-	variance := float64(basePrice) * (rand.Float64()*0.3 - 0.1)
-	return basePrice + int(variance)
-}
+// Helper functions for car generation
 
 func randomSeats(bodyType string) int {
 	switch bodyType {
@@ -461,4 +367,3 @@ func randomPrefix() string {
 	prefixes := []string{"กข", "กง", "กค", "กท", "ขย", "ขบ", "ทร", "นค", "บก", "ปล"}
 	return prefixes[rand.Intn(len(prefixes))]
 }
-

@@ -2,11 +2,11 @@ package middleware
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 
 	"github.com/uzimpp/CarJai/backend/models"
 	"github.com/uzimpp/CarJai/backend/services"
+	"github.com/uzimpp/CarJai/backend/utils"
 )
 
 // UserAuthMiddleware provides authentication middleware for user routes
@@ -27,14 +27,7 @@ func (m *UserAuthMiddleware) RequireAuth(next http.HandlerFunc) http.HandlerFunc
 		// Get token from jwt cookie
 		cookie, err := r.Cookie("jwt")
 		if err != nil {
-			response := models.UserErrorResponse{
-				Success: false,
-				Error:   "Authentication required",
-				Code:    http.StatusUnauthorized,
-			}
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(response)
+			utils.WriteError(w, http.StatusUnauthorized, "Authentication required")
 			return
 		}
 		token := cookie.Value
@@ -42,22 +35,15 @@ func (m *UserAuthMiddleware) RequireAuth(next http.HandlerFunc) http.HandlerFunc
 		// Validate user session
 		user, err := m.userService.ValidateUserSession(token)
 		if err != nil {
-			response := models.UserErrorResponse{
-				Success: false,
-				Error:   "Invalid or expired token",
-				Code:    http.StatusUnauthorized,
-			}
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(response)
+			utils.WriteError(w, http.StatusUnauthorized, "Invalid or expired token")
 			return
 		}
 
 		// Add user to request context
-		ctx := context.WithValue(r.Context(), "user", user)
-		ctx = context.WithValue(ctx, "userID", user.ID)
-		ctx = context.WithValue(ctx, "userEmail", user.Email)
-		ctx = context.WithValue(ctx, "token", token)
+		ctx := context.WithValue(r.Context(), UserKey, user)
+		ctx = context.WithValue(ctx, UserIDKey, user.ID)
+		ctx = context.WithValue(ctx, UserEmailKey, user.Email)
+		ctx = context.WithValue(ctx, TokenKey, token)
 
 		// Call next handler with updated context
 		next.ServeHTTP(w, r.WithContext(ctx))
@@ -70,14 +56,7 @@ func (m *UserAuthMiddleware) RequireAuthHandler(next http.Handler) http.Handler 
 		// Get token from jwt cookie
 		cookie, err := r.Cookie("jwt")
 		if err != nil {
-			response := models.UserErrorResponse{
-				Success: false,
-				Error:   "Authentication required",
-				Code:    http.StatusUnauthorized,
-			}
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(response)
+			utils.WriteError(w, http.StatusUnauthorized, "Authentication required")
 			return
 		}
 		token := cookie.Value
@@ -85,22 +64,15 @@ func (m *UserAuthMiddleware) RequireAuthHandler(next http.Handler) http.Handler 
 		// Validate user session
 		user, err := m.userService.ValidateUserSession(token)
 		if err != nil {
-			response := models.UserErrorResponse{
-				Success: false,
-				Error:   "Invalid or expired token",
-				Code:    http.StatusUnauthorized,
-			}
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(response)
+			utils.WriteError(w, http.StatusUnauthorized, "Invalid or expired token")
 			return
 		}
 
 		// Add user to request context
-		ctx := context.WithValue(r.Context(), "user", user)
-		ctx = context.WithValue(ctx, "userID", user.ID)
-		ctx = context.WithValue(ctx, "userEmail", user.Email)
-		ctx = context.WithValue(ctx, "token", token)
+		ctx := context.WithValue(r.Context(), UserKey, user)
+		ctx = context.WithValue(ctx, UserIDKey, user.ID)
+		ctx = context.WithValue(ctx, UserEmailKey, user.Email)
+		ctx = context.WithValue(ctx, TokenKey, token)
 
 		// Call next handler with updated context
 		next.ServeHTTP(w, r.WithContext(ctx))
@@ -109,25 +81,25 @@ func (m *UserAuthMiddleware) RequireAuthHandler(next http.Handler) http.Handler 
 
 // GetUserFromContext extracts user from request context
 func GetUserFromContext(r *http.Request) (*models.User, bool) {
-	user, ok := r.Context().Value("user").(*models.User)
+	user, ok := r.Context().Value(UserKey).(*models.User)
 	return user, ok
 }
 
 // GetUserIDFromContext extracts user ID from request context
 func GetUserIDFromContext(r *http.Request) (int, bool) {
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := r.Context().Value(UserIDKey).(int)
 	return userID, ok
 }
 
 // GetUserEmailFromContext extracts user email from request context
 func GetUserEmailFromContext(r *http.Request) (string, bool) {
-	email, ok := r.Context().Value("userEmail").(string)
+	email, ok := r.Context().Value(UserEmailKey).(string)
 	return email, ok
 }
 
 // GetTokenFromContext extracts token from request context
 func GetTokenFromContext(r *http.Request) (string, bool) {
-	token, ok := r.Context().Value("token").(string)
+	token, ok := r.Context().Value(TokenKey).(string)
 	return token, ok
 }
 
@@ -143,10 +115,10 @@ func (m *UserAuthMiddleware) OptionalAuth(next http.HandlerFunc) http.HandlerFun
 				user, err := m.userService.ValidateUserSession(token)
 				if err == nil {
 					// Add user to request context if valid
-					ctx := context.WithValue(r.Context(), "user", user)
-					ctx = context.WithValue(ctx, "userID", user.ID)
-					ctx = context.WithValue(ctx, "userEmail", user.Email)
-					ctx = context.WithValue(ctx, "token", token)
+					ctx := context.WithValue(r.Context(), UserKey, user)
+					ctx = context.WithValue(ctx, UserIDKey, user.ID)
+					ctx = context.WithValue(ctx, UserEmailKey, user.Email)
+					ctx = context.WithValue(ctx, TokenKey, token)
 					r = r.WithContext(ctx)
 				}
 			}
@@ -156,4 +128,3 @@ func (m *UserAuthMiddleware) OptionalAuth(next http.HandlerFunc) http.HandlerFun
 		next.ServeHTTP(w, r)
 	}
 }
-

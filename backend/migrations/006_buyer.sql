@@ -14,7 +14,13 @@ CREATE TABLE buyers (
         OR budget_max IS NULL
         OR budget_min <= budget_max
     ),
-    CONSTRAINT buyers_status_check CHECK (status IN ('active', 'banned', 'suspended'))
+    CONSTRAINT buyers_status_check CHECK (
+        status IN (
+            'active',
+            'banned',
+            'suspended'
+        )
+    )
 );
 
 -- Indexes

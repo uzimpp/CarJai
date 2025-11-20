@@ -11,7 +11,9 @@ export default function SellerWelcomePage() {
   // If authenticated but roles are missing, try refreshing the session
   useEffect(() => {
     if (isAuthenticated && !isLoading && !roles?.seller) {
-      validateSession();
+      validateSession().catch((error) => {
+        console.debug("Session validation error (handled):", error);
+      });
     }
   }, [isAuthenticated, isLoading, roles, validateSession]);
 

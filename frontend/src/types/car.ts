@@ -1,29 +1,25 @@
 import type { SellerContact } from "./user";
 
-// Car interface for car card
+// CarListItem - Lightweight car data for cards and listings
+// Matches backend CarListItem exactly - only essential fields with translated labels
+// Used in: browse/search results, seller dashboard, public seller pages, favorites, recent views
 export interface CarListing {
   id: number;
   sellerId: number;
-  brandName?: string;
-  submodelName?: string;
-  modelName?: string;
-  year?: number;
-  price: number;
-  mileage?: number;
-  provinceId?: number;
-  conditionRating?: number;
-  bodyType?: string; // Display label from backend (e.g., "Pickup")
-  transmission?: string; // Display label from backend (e.g., "Manual")
-  fuelTypes?: string[]; // Display labels from backend (e.g., ["Gasoline", "LPG"])
-  drivetrain?: string; // Display label from backend (e.g., "FWD")
-  seats?: number;
-  doors?: number;
-  colors?: string[]; // Display labels from backend (e.g., ["White", "Gray"])
   status: string;
-  images?: Array<{ id: number }>;
-  contacts?: SellerContact[];
-  createdAt?: string;
-  updatedAt?: string;
+  brandName?: string;
+  modelName?: string;
+  submodelName?: string;
+  year?: number;
+  price?: number; // Nullable for drafts
+  mileage?: number;
+  bodyType?: string; // Display label (e.g., "Pickup")
+  transmission?: string; // Display label (e.g., "Manual")
+  drivetrain?: string; // Display label (e.g., "FWD")
+  fuelTypes?: string[]; // Display labels (e.g., ["Gasoline", "LPG"])
+  colors?: string[]; // Display labels (e.g., ["White", "Gray"])
+  conditionRating?: number;
+  thumbnailUrl?: string; // Image URL for thumbnail (e.g., "/api/cars/images/123")
 }
 
 export interface Car {

@@ -15,10 +15,11 @@ services:
       - carjai-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U carjai_user -d carjai"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 3
+      start_period: 10s
 
   # Backend Go API service
   backend:
@@ -57,6 +58,7 @@ services:
       GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
     volumes:
       - ./frontend/public/assets:/app/frontend/public/assets:ro
+      - ./backend/tests/price2568.pdf:/app/tests/price2568.pdf:ro
     networks:
       - carjai-network
     depends_on:
@@ -64,7 +66,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      test: ["CMD-SHELL", "wget --tries=1 --spider http://localhost:8080/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -90,7 +92,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      test: ["CMD-SHELL", "wget --tries=1 --spider http://localhost:3000 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3

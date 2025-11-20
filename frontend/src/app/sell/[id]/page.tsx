@@ -59,7 +59,7 @@ export default function SellWithIdPage() {
   const [brandOptions, setBrandOptions] = useState<string[]>([]);
   const [modelOptions, setModelOptions] = useState<string[]>([]);
   const [subModelOptions, setSubModelOptions] = useState<string[]>([]);
-  
+
   const [isBrandLoading, setIsBrandLoading] = useState(false);
   const [isModelLoading, setIsModelLoading] = useState(false);
   const [isSubModelLoading, setIsSubModelLoading] = useState(false);
@@ -102,7 +102,9 @@ export default function SellWithIdPage() {
   // If authenticated but roles are missing, try refreshing the session
   useEffect(() => {
     if (isAuthenticated && !isLoading && !roles?.seller) {
-      validateSession();
+      validateSession().catch((error) => {
+        console.debug("Session validation error (handled):", error);
+      });
     }
   }, [isAuthenticated, isLoading, roles, validateSession]);
 
@@ -335,7 +337,7 @@ export default function SellWithIdPage() {
   // --- End New useEffects ---
 
   // Auto-discard when navigating away from this draft page (client-side routing only)
-useEffect(() => {
+  useEffect(() => {
     const fetchEstimate = async () => {
       // Reset state on each attempt
       setEstimatedPrice(null);
@@ -362,7 +364,7 @@ useEffect(() => {
     };
 
     fetchEstimate();
-  }, [currentStep, carId]); 
+  }, [currentStep, carId]);
 
   // Handle book upload (Step 1)
   const handleBookUpload = async (file: File) => {
@@ -516,15 +518,15 @@ useEffect(() => {
         } catch {
           // Silent fail for autosave
         }
-      }, 1500), 
+      }, 1500),
     [carId, sanitizeForSave]
   );
 
   // Trigger autosave when form data changes (but not during initial hydration)
   useEffect(() => {
     if (
-      hasHydratedRef.current && 
-      !isHydratingRef.current && 
+      hasHydratedRef.current &&
+      !isHydratingRef.current &&
       (currentStep === "documents" ||
         currentStep === "specs" ||
         currentStep === "pricing" ||
@@ -538,7 +540,6 @@ useEffect(() => {
 
   // Handle form field changes
   const handleFormChange = useCallback((updates: Partial<CarFormData>) => {
-    
     // --- New Logic for Cascading Dropdowns ---
     if (updates.brandName !== undefined) {
       // If brand changes, reset model and submodel
@@ -856,7 +857,6 @@ useEffect(() => {
                   setCurrentStep("specs");
                 }}
                 isSubmitting={isSubmitting}
-                
                 // --- Pass new props to Step1 form ---
                 brandOptions={brandOptions}
                 modelOptions={modelOptions}
@@ -906,7 +906,6 @@ useEffect(() => {
                   setCurrentStep("documents");
                 }}
                 isSubmitting={isSubmitting}
-                
               />
             </div>
           )}

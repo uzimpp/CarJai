@@ -41,6 +41,9 @@ erDiagram
         varchar password_hash "Nullable"
         varchar username UK "UNIQUE NOT NULL"
         varchar name "NOT NULL"
+        varchar google_id UK "UNIQUE Nullable"
+        varchar auth_provider "Nullable (e.g., 'google')"
+        timestamp provider_linked_at "Nullable"
         timestamp created_at "NOT NULL DEFAULT NOW()"
         timestamp updated_at "NOT NULL DEFAULT NOW()"
     }
@@ -60,6 +63,7 @@ erDiagram
         varchar display_name "NOT NULL"
         varchar about "Nullable"
         text map_link "Nullable"
+        varchar status "NOT NULL DEFAULT 'active' CHECK IN ('active','banned','suspended')"
     }
 
     seller_contacts {
@@ -75,13 +79,8 @@ erDiagram
         varchar province "Nullable"
         int budget_min "Nullable"
         int budget_max "Nullable"
+        varchar status "NOT NULL DEFAULT 'active' CHECK IN ('active','banned','suspended')"
     }
-
-    %% --- Google OAuth (010) ---
-    %% Additional columns (added via migration 010)
-    %% users.google_id UK "UNIQUE Nullable"
-    %% users.auth_provider "Nullable (e.g., 'google')"
-    %% users.provider_linked_at "Nullable (timestamp when provider was linked)"
 
     %% --- Car Tables (005) ---
     cars {
@@ -244,7 +243,8 @@ erDiagram
     market_price {
         int id PK "SERIAL"
         varchar brand "NOT NULL"
-        varchar model_trim "NOT NULL"
+        varchar model "NOT NULL"
+        varchar sub_model "NOT NULL"
         smallint year_start "NOT NULL"
         smallint year_end "NOT NULL"
         bigint price_min_thb "NOT NULL"

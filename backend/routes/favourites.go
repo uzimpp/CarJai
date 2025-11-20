@@ -11,8 +11,8 @@ import (
 
 // FavouritesRoutes sets up routes for user favourites
 func FavouritesRoutes(favService *services.FavouriteService, userService *services.UserService, corsOrigins []string) http.Handler {
-    mux := http.NewServeMux()
-    handler := handlers.NewFavouriteHandler(favService, userService)
+	mux := http.NewServeMux()
+	handler := handlers.NewFavouriteHandler(favService, userService)
 
 	// Apply CORS middleware
 	corsMiddleware := middleware.CORSMiddleware(corsOrigins)

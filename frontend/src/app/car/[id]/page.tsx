@@ -119,7 +119,7 @@ export default function CarListingPage() {
     if (isBuyer && carId) {
       const recordView = async () => {
         try {
-          await carsAPI.recordView(carId);
+          await recentAPI.addRecent(carId);
         } catch (err) {
           console.error("Failed to record viewing history:", err);
         }

@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"encoding/json" 
+	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
@@ -32,13 +32,10 @@ func (h *AdminCarHandler) HandleGetCars(w http.ResponseWriter, r *http.Request) 
 	}
 
 	response := models.AdminCarsListResponse{
-		Success: true,
-		Data:    *cars,
-		Total:   len(*cars),
+		Cars:  *cars,
+		Total: len(*cars),
 	}
-
-	utils.WriteJSON(w, http.StatusOK, response)
-	return
+	utils.WriteJSON(w, http.StatusOK, response, "")
 }
 
 // HandleUpdateCar handles PATCH /admin/cars/:id
@@ -69,9 +66,8 @@ func (h *AdminCarHandler) HandleUpdateCar(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// Return the updated car's public data 
-	utils.WriteJSON(w, http.StatusOK, updatedCar)
-	return
+	// Return the updated car's public data
+	utils.WriteJSON(w, http.StatusOK, updatedCar, "")
 }
 
 // HandleCreateCar handles POST /admin/cars
@@ -89,12 +85,12 @@ func (h *AdminCarHandler) HandleCreateCar(w http.ResponseWriter, r *http.Request
 		} else {
 			utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		}
- 		return
- 	}
+		return
+	}
 
-	utils.WriteJSON(w, http.StatusCreated, newCar)
-	return
+	utils.WriteJSON(w, http.StatusCreated, newCar, "")
 }
+
 // HandleDeleteCar handles DELETE /admin/cars/:id
 func (h *AdminCarHandler) HandleDeleteCar(w http.ResponseWriter, r *http.Request) {
 	// Extract car ID from URL path
@@ -116,10 +112,6 @@ func (h *AdminCarHandler) HandleDeleteCar(w http.ResponseWriter, r *http.Request
 		}
 		return
 	}
-	response := map[string]interface{}{
-		"success": true,
-		"message": "Car deleted successfully",
-	}
-	utils.WriteJSON(w, http.StatusOK, response)
-	return
+
+	utils.WriteJSON(w, http.StatusOK, nil, "Car deleted successfully")
 }
