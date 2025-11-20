@@ -6,14 +6,6 @@ import (
 	"time"
 )
 
-// InspectionUploadResponse for POST /api/cars/{id}/inspection
-type InspectionUploadResponse struct {
-	Success bool              `json:"success"`
-	Data    *InspectionResult `json:"data,omitempty"`
-	Message string            `json:"message,omitempty"`
-	Code    string            `json:"code,omitempty"`
-}
-
 // InspectionResult represents an inspection result record
 type InspectionResult struct {
 	ID      int     `json:"id" db:"id"`

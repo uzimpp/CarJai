@@ -25,7 +25,7 @@ func TestHealthHandler_Health(t *testing.T) {
 		{
 			name:           "GET request (will fail DB ping but test handler logic)",
 			method:         "GET",
-			db:             nil, // nil DB will cause ping to fail, but handler should still respond
+			db:             nil,                           // nil DB will cause ping to fail, but handler should still respond
 			expectedStatus: http.StatusServiceUnavailable, // DB unhealthy = ServiceUnavailable
 		},
 	}
@@ -34,7 +34,7 @@ func TestHealthHandler_Health(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			handler := handlers.NewHealthHandler(tt.db)
 
-			req := httptest.NewRequest(tt.method, "/health/", nil)
+			req := httptest.NewRequest(tt.method, "/health", nil)
 			w := httptest.NewRecorder()
 
 			handler.Health(w, req)
@@ -45,4 +45,3 @@ func TestHealthHandler_Health(t *testing.T) {
 		})
 	}
 }
-

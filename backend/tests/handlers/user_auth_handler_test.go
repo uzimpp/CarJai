@@ -13,12 +13,13 @@ import (
 	"github.com/uzimpp/CarJai/backend/utils"
 )
 
+
 func TestUserAuthHandler_Signup(t *testing.T) {
 	tests := []struct {
 		name           string
 		method         string
 		requestBody    interface{}
-		signupFunc     func(email, password, username, name, ipAddress, userAgent string) (*models.UserAuthResponse, error)
+		signupFunc     func(email, password, username, name, ipAddress, userAgent string) (*models.UserAuthData, error)
 		expectedStatus int
 	}{
 		{
@@ -30,20 +31,16 @@ func TestUserAuthHandler_Signup(t *testing.T) {
 				Username: "testuser",
 				Name:     "Test User",
 			},
-			signupFunc: func(email, password, username, name, ipAddress, userAgent string) (*models.UserAuthResponse, error) {
-				return &models.UserAuthResponse{
-					Success: true,
-					Data: models.UserAuthData{
-						User: models.UserPublic{
-							ID:       1,
-							Email:    email,
-							Username: username,
-							Name:     name,
-						},
-						Token:     "test-token",
-						ExpiresAt: time.Now().Add(24 * time.Hour),
+			signupFunc: func(email, password, username, name, ipAddress, userAgent string) (*models.UserAuthData, error) {
+				return &models.UserAuthData{
+					User: models.UserPublic{
+						ID:       1,
+						Email:    email,
+						Username: username,
+						Name:     name,
 					},
-					Message: "Signup successful",
+					Token:     "test-token",
+					ExpiresAt: time.Now().Add(24 * time.Hour),
 				}, nil
 			},
 			expectedStatus: http.StatusCreated,
@@ -124,26 +121,12 @@ func (h *testUserAuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 
 	// Basic validation
 	if req.Email == "" || req.Password == "" || req.Username == "" || req.Name == "" {
-		response := models.UserErrorResponse{
-			Success: false,
-			Error:   "Email, password, username, and name are required",
-			Code:    http.StatusBadRequest,
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response)
+		utils.WriteError(w, http.StatusBadRequest, "Email, password, username, and name are required")
 		return
 	}
 
 	if len(req.Password) < 6 {
-		response := models.UserErrorResponse{
-			Success: false,
-			Error:   "Password must be at least 6 characters long",
-			Code:    http.StatusBadRequest,
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response)
+		utils.WriteError(w, http.StatusBadRequest, "Password must be at least 6 characters long")
 		return
 	}
 
@@ -152,28 +135,21 @@ func (h *testUserAuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 
 	response, err := h.userService.Signup(req.Email, req.Password, req.Username, req.Name, clientIP, userAgent)
 	if err != nil {
-		errorResponse := models.UserErrorResponse{
-			Success: false,
-			Error:   err.Error(),
-			Code:    http.StatusBadRequest,
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(errorResponse)
+		utils.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	http.SetCookie(w, &http.Cookie{
 		Name:     "jwt",
-		Value:    response.Data.Token,
+		Value:    response.Token,
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   false,
 		SameSite: http.SameSiteLaxMode,
-		MaxAge:   int(time.Until(response.Data.ExpiresAt).Seconds()),
+		MaxAge:   int(time.Until(response.ExpiresAt).Seconds()),
 	})
 
-	utils.WriteJSON(w, http.StatusCreated, response)
+	utils.WriteJSON(w, http.StatusCreated, response, "")
 }
 
 func TestUserAuthHandler_Signin(t *testing.T) {
@@ -181,7 +157,7 @@ func TestUserAuthHandler_Signin(t *testing.T) {
 		name           string
 		method         string
 		requestBody    interface{}
-		signinFunc     func(emailOrUsername, password, ipAddress, userAgent string) (*models.UserAuthResponse, error)
+		signinFunc     func(emailOrUsername, password, ipAddress, userAgent string) (*models.UserAuthData, error)
 		expectedStatus int
 	}{
 		{
@@ -191,20 +167,16 @@ func TestUserAuthHandler_Signin(t *testing.T) {
 				EmailOrUsername: "test@example.com",
 				Password:        "password123",
 			},
-			signinFunc: func(emailOrUsername, password, ipAddress, userAgent string) (*models.UserAuthResponse, error) {
-				return &models.UserAuthResponse{
-					Success: true,
-					Data: models.UserAuthData{
-						User: models.UserPublic{
-							ID:       1,
-							Email:    emailOrUsername,
-							Username: "testuser",
-							Name:     "Test User",
-						},
-						Token:     "test-token",
-						ExpiresAt: time.Now().Add(24 * time.Hour),
+			signinFunc: func(emailOrUsername, password, ipAddress, userAgent string) (*models.UserAuthData, error) {
+				return &models.UserAuthData{
+					User: models.UserPublic{
+						ID:       1,
+						Email:    emailOrUsername,
+						Username: "testuser",
+						Name:     "Test User",
 					},
-					Message: "Signin successful",
+					Token:     "test-token",
+					ExpiresAt: time.Now().Add(24 * time.Hour),
 				}, nil
 			},
 			expectedStatus: http.StatusOK,
@@ -261,26 +233,12 @@ func (h *testUserAuthHandler) Signin(w http.ResponseWriter, r *http.Request) {
 
 	var req models.UserSigninRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response := models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid request body",
-			Code:    http.StatusBadRequest,
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response)
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	if req.EmailOrUsername == "" || req.Password == "" {
-		response := models.UserErrorResponse{
-			Success: false,
-			Error:   "Email/username and password are required",
-			Code:    http.StatusBadRequest,
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response)
+		utils.WriteError(w, http.StatusBadRequest, "Email/username and password are required")
 		return
 	}
 
@@ -289,36 +247,29 @@ func (h *testUserAuthHandler) Signin(w http.ResponseWriter, r *http.Request) {
 
 	response, err := h.userService.Signin(req.EmailOrUsername, req.Password, clientIP, userAgent)
 	if err != nil {
-		errorResponse := models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid credentials",
-			Code:    http.StatusUnauthorized,
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(errorResponse)
+		utils.WriteError(w, http.StatusUnauthorized, "Invalid credentials")
 		return
 	}
 
 	http.SetCookie(w, &http.Cookie{
 		Name:     "jwt",
-		Value:    response.Data.Token,
+		Value:    response.Token,
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   false,
 		SameSite: http.SameSiteLaxMode,
-		MaxAge:   int(time.Until(response.Data.ExpiresAt).Seconds()),
+		MaxAge:   int(time.Until(response.ExpiresAt).Seconds()),
 	})
 
-	utils.WriteJSON(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, response, "")
 }
 
 func TestUserAuthHandler_Me_And_Refresh_Error(t *testing.T) {
 	mock := &mockUserService{
-		getCurrentUserFunc: func(token string) (*models.UserMeResponse, error) {
+		getCurrentUserFunc: func(token string) (*models.UserMeData, error) {
 			return nil, errors.New("invalid")
 		},
-		refreshTokenFunc: func(token, ipAddress, userAgent string) (*models.UserAuthResponse, error) {
+		refreshTokenFunc: func(token, ipAddress, userAgent string) (*models.UserAuthData, error) {
 			return nil, errors.New("invalid")
 		},
 	}
@@ -400,15 +351,10 @@ func handlerMe(w http.ResponseWriter, r *http.Request, h *testUserAuthHandler) {
 	}
 	resp, err := h.userService.GetCurrentUser(cookie.Value)
 	if err != nil {
-		errorResponse := models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid token",
-			Code:    http.StatusUnauthorized,
-		}
-		utils.WriteJSON(w, http.StatusUnauthorized, errorResponse)
+		utils.WriteError(w, http.StatusUnauthorized, "Invalid token")
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, resp)
+	utils.WriteJSON(w, http.StatusOK, resp, "")
 }
 
 func handlerRefresh(w http.ResponseWriter, r *http.Request, h *testUserAuthHandler) {
@@ -425,15 +371,10 @@ func handlerRefresh(w http.ResponseWriter, r *http.Request, h *testUserAuthHandl
 	userAgent := r.UserAgent()
 	resp, err := h.userService.RefreshToken(cookie.Value, clientIP, userAgent)
 	if err != nil {
-		errorResponse := models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid token",
-			Code:    http.StatusUnauthorized,
-		}
-		utils.WriteJSON(w, http.StatusUnauthorized, errorResponse)
+		utils.WriteError(w, http.StatusUnauthorized, "Invalid token")
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, resp)
+	utils.WriteJSON(w, http.StatusOK, resp, "")
 }
 
 func handlerChangePassword(w http.ResponseWriter, r *http.Request, h *testUserAuthHandler) {
@@ -468,6 +409,5 @@ func handlerChangePassword(w http.ResponseWriter, r *http.Request, h *testUserAu
 		utils.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, models.ChangePasswordResponse{Success: true, Message: "Password changed successfully"})
+	utils.WriteJSON(w, http.StatusOK, nil, "Password changed successfully")
 }
-

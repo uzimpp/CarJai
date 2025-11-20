@@ -117,7 +117,7 @@ func TestExtractionService_ImportMarketPricesFromPDF_POCFile(t *testing.T) {
 	if !ok {
 		t.Fatal("Could not get caller information")
 	}
-	currentDir := filepath.Dir(currentFile)                 // Should be /app/services
+	currentDir := filepath.Dir(currentFile)                              // Should be /app/services
 	pdfPath := filepath.Join(currentDir, "..", "tests", "price2568.pdf") // Path -> /app/tests/price2568.pdf
 	pdfPath = filepath.Clean(pdfPath)
 

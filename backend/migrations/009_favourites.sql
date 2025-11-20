@@ -9,6 +9,8 @@ CREATE TABLE favourites (
 );
 
 -- Indexes for efficient lookups
-CREATE INDEX IF NOT EXISTS idx_favourites_user_id ON favourites(user_id);
-CREATE INDEX IF NOT EXISTS idx_favourites_car_id ON favourites(car_id);
-CREATE INDEX IF NOT EXISTS idx_favourites_created_at ON favourites(created_at);
+CREATE INDEX IF NOT EXISTS idx_favourites_user_id ON favourites (user_id);
+
+CREATE INDEX IF NOT EXISTS idx_favourites_car_id ON favourites (car_id);
+
+CREATE INDEX IF NOT EXISTS idx_favourites_created_at ON favourites (created_at);

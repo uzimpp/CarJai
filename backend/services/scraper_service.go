@@ -16,35 +16,36 @@ import (
 )
 
 // InspectionFields represents structured data extracted from vehicle inspection
+// Colors are stored as codes (e.g., "RED", "WHITE") - translation to labels happens in handler
 type InspectionFields struct {
 	// Basic identification fields
-	ChassisNumber string                 // Required - for validation
-	Mileage       *int                   // Optional - most recent mileage
-	Colors        []string               // Optional - up to 3 colors
-	LicensePlate  *LicensePlateBreakdown // Optional - parsed license plate
-	Station       *string                // Optional - inspection station name
+	ChassisNumber string                 `json:"-"`                 // Internal use only, normalized in ToMap()
+	Mileage       *int                   `json:"mileage,omitempty"` // Most recent mileage
+	Colors        []string               `json:"colors,omitempty"`  // Color codes (e.g., ["RED", "WHITE"]) - max 3
+	LicensePlate  *LicensePlateBreakdown `json:"-"`                 // Parsed license plate - flattened in ToMap()
+	Station       *string                `json:"station,omitempty"` // Inspection station name
 
 	// Overall inspection result
-	OverallPass        *bool // Optional - overall inspection pass/fail
-	BrakeResult        *bool // Brake test result
-	HandbrakeResult    *bool // Handbrake test result
-	AlignmentResult    *bool // Wheel alignment result
-	NoiseResult        *bool // Noise level result
-	EmissionResult     *bool // Emissions test result
-	HornResult         *bool // Horn test result
-	SpeedometerResult  *bool // Speedometer result
-	HighLowBeamResult  *bool // High/low beams result
-	SignalLightsResult *bool // Turn/brake/plate lights result
-	OtherLightsResult  *bool // Other lights result
-	WindshieldResult   *bool // Windshield/windows result
-	SteeringResult     *bool // Steering system result
-	WheelsTiresResult  *bool // Wheels and tires result
-	FuelTankResult     *bool // Fuel tank and lines result
-	ChassisResult      *bool // Undercarriage/chassis result
-	BodyResult         *bool // Body and frame result
-	DoorsFloorResult   *bool // Doors and floor result
-	SeatbeltResult     *bool // Seatbelts result
-	WiperResult        *bool // Wipers result
+	OverallPass        *bool `json:"overallPass,omitempty"`
+	BrakeResult        *bool `json:"brakeResult,omitempty"`
+	HandbrakeResult    *bool `json:"handbrakeResult,omitempty"`
+	AlignmentResult    *bool `json:"alignmentResult,omitempty"`
+	NoiseResult        *bool `json:"noiseResult,omitempty"`
+	EmissionResult     *bool `json:"emissionResult,omitempty"`
+	HornResult         *bool `json:"hornResult,omitempty"`
+	SpeedometerResult  *bool `json:"speedometerResult,omitempty"`
+	HighLowBeamResult  *bool `json:"highLowBeamResult,omitempty"`
+	SignalLightsResult *bool `json:"signalLightsResult,omitempty"`
+	OtherLightsResult  *bool `json:"otherLightsResult,omitempty"`
+	WindshieldResult   *bool `json:"windshieldResult,omitempty"`
+	SteeringResult     *bool `json:"steeringResult,omitempty"`
+	WheelsTiresResult  *bool `json:"wheelsTiresResult,omitempty"`
+	FuelTankResult     *bool `json:"fuelTankResult,omitempty"`
+	ChassisResult      *bool `json:"chassisResult,omitempty"`
+	BodyResult         *bool `json:"bodyResult,omitempty"`
+	DoorsFloorResult   *bool `json:"doorsFloorResult,omitempty"`
+	SeatbeltResult     *bool `json:"seatbeltResult,omitempty"`
+	WiperResult        *bool `json:"wiperResult,omitempty"`
 }
 
 // LicensePlateBreakdown represents a parsed license plate
@@ -407,49 +408,112 @@ func (s *CarService) UploadInspectionToDraft(carID int, sellerID int, inspection
 	return currentCar, nil, "", nil
 }
 
-// ToMap converts InspectionFields to a display-ready map without any DB lookups
+// ToMap converts InspectionFields to a display-ready map with processing:
+// - Normalizes chassis number
+// - Limits colors to max 3
+// - Flattens license plate structure
+// - Constructs full license plate string
+// Note: Colors are returned as codes - translation to labels happens in handler
 func (inspFields *InspectionFields) ToMap() map[string]interface{} {
 	result := make(map[string]interface{})
 
+	// Normalize and include chassis number
 	if inspFields.ChassisNumber != "" {
 		result["chassisNumber"] = utils.NormalizeChassis(inspFields.ChassisNumber)
 	}
+
+	// Include mileage if present
 	if inspFields.Mileage != nil && *inspFields.Mileage >= 0 {
 		result["mileage"] = inspFields.Mileage
 	}
+
+	// Limit colors to max 3 (colors are codes, not labels)
 	if len(inspFields.Colors) > 0 {
 		colors := inspFields.Colors
 		if len(colors) > 3 {
 			colors = colors[:3]
 		}
-		result["colors"] = colors
+		result["colors"] = colors // Returns codes - handler will translate to labels
 	}
+
+	// Flatten license plate structure
 	if inspFields.LicensePlate != nil {
 		result["prefix"] = inspFields.LicensePlate.Prefix
 		result["number"] = inspFields.LicensePlate.Number
 		result["provinceTh"] = inspFields.LicensePlate.ProvinceTh
-		result["licensePlate"] = utils.ConstructLicensePlate(inspFields.LicensePlate.Prefix, inspFields.LicensePlate.Number, inspFields.LicensePlate.ProvinceTh)
+		result["licensePlate"] = utils.ConstructLicensePlate(
+			inspFields.LicensePlate.Prefix,
+			inspFields.LicensePlate.Number,
+			inspFields.LicensePlate.ProvinceTh,
+		)
 	}
-	result["station"] = inspFields.Station
-	result["overallPass"] = *inspFields.OverallPass
-	result["brakeResult"] = *inspFields.BrakeResult
-	result["handbrakeResult"] = *inspFields.HandbrakeResult
-	result["alignmentResult"] = *inspFields.AlignmentResult
-	result["noiseResult"] = *inspFields.NoiseResult
-	result["emissionResult"] = *inspFields.EmissionResult
-	result["hornResult"] = *inspFields.HornResult
-	result["speedometerResult"] = *inspFields.SpeedometerResult
-	result["highLowBeamResult"] = *inspFields.HighLowBeamResult
-	result["signalLightsResult"] = *inspFields.SignalLightsResult
-	result["otherLightsResult"] = *inspFields.OtherLightsResult
-	result["windshieldResult"] = *inspFields.WindshieldResult
-	result["steeringResult"] = *inspFields.SteeringResult
-	result["wheelsTiresResult"] = *inspFields.WheelsTiresResult
-	result["fuelTankResult"] = *inspFields.FuelTankResult
-	result["chassisResult"] = *inspFields.ChassisResult
-	result["bodyResult"] = *inspFields.BodyResult
-	result["doorsFloorResult"] = *inspFields.DoorsFloorResult
-	result["seatbeltResult"] = *inspFields.SeatbeltResult
-	result["wiperResult"] = *inspFields.WiperResult
+
+	// Include station if present
+	if inspFields.Station != nil {
+		result["station"] = *inspFields.Station
+	}
+
+	// Include all inspection results (only if not nil)
+	if inspFields.OverallPass != nil {
+		result["overallPass"] = *inspFields.OverallPass
+	}
+	if inspFields.BrakeResult != nil {
+		result["brakeResult"] = *inspFields.BrakeResult
+	}
+	if inspFields.HandbrakeResult != nil {
+		result["handbrakeResult"] = *inspFields.HandbrakeResult
+	}
+	if inspFields.AlignmentResult != nil {
+		result["alignmentResult"] = *inspFields.AlignmentResult
+	}
+	if inspFields.NoiseResult != nil {
+		result["noiseResult"] = *inspFields.NoiseResult
+	}
+	if inspFields.EmissionResult != nil {
+		result["emissionResult"] = *inspFields.EmissionResult
+	}
+	if inspFields.HornResult != nil {
+		result["hornResult"] = *inspFields.HornResult
+	}
+	if inspFields.SpeedometerResult != nil {
+		result["speedometerResult"] = *inspFields.SpeedometerResult
+	}
+	if inspFields.HighLowBeamResult != nil {
+		result["highLowBeamResult"] = *inspFields.HighLowBeamResult
+	}
+	if inspFields.SignalLightsResult != nil {
+		result["signalLightsResult"] = *inspFields.SignalLightsResult
+	}
+	if inspFields.OtherLightsResult != nil {
+		result["otherLightsResult"] = *inspFields.OtherLightsResult
+	}
+	if inspFields.WindshieldResult != nil {
+		result["windshieldResult"] = *inspFields.WindshieldResult
+	}
+	if inspFields.SteeringResult != nil {
+		result["steeringResult"] = *inspFields.SteeringResult
+	}
+	if inspFields.WheelsTiresResult != nil {
+		result["wheelsTiresResult"] = *inspFields.WheelsTiresResult
+	}
+	if inspFields.FuelTankResult != nil {
+		result["fuelTankResult"] = *inspFields.FuelTankResult
+	}
+	if inspFields.ChassisResult != nil {
+		result["chassisResult"] = *inspFields.ChassisResult
+	}
+	if inspFields.BodyResult != nil {
+		result["bodyResult"] = *inspFields.BodyResult
+	}
+	if inspFields.DoorsFloorResult != nil {
+		result["doorsFloorResult"] = *inspFields.DoorsFloorResult
+	}
+	if inspFields.SeatbeltResult != nil {
+		result["seatbeltResult"] = *inspFields.SeatbeltResult
+	}
+	if inspFields.WiperResult != nil {
+		result["wiperResult"] = *inspFields.WiperResult
+	}
+
 	return result
 }

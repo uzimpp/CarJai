@@ -1,17 +1,17 @@
-// Profile API functions and validation helpers
 import {
   ProfileResponse,
   BuyerRequest,
-  BuyerResponse,
   SellerRequest,
   SellerResponse,
 } from "@/types/user";
 import { apiCall } from "@/lib/apiCall";
 
-// Request type for updating user account fields
+// Request type for unified profile update (account, buyer, and/or seller)
 export interface UpdateSelfRequest {
   username?: string;
   name?: string;
+  buyer?: BuyerRequest;
+  seller?: SellerRequest;
 }
 
 // Request type for changing password
@@ -35,7 +35,7 @@ export const profileAPI = {
     });
   },
 
-  // Update account fields (username, name)
+  // Unified profile update (account fields, buyer, and/or seller profiles)
   async updateSelf(data: UpdateSelfRequest): Promise<ProfileResponse> {
     return apiCall("/api/profile/self", {
       method: "PATCH",
@@ -53,33 +53,10 @@ export const profileAPI = {
     });
   },
 
-  // Get buyer profile data
-  async getBuyerProfile(): Promise<BuyerResponse> {
-    return apiCall("/api/profile/buyer", {
+  // Get seller profile data (public endpoint for displaying seller profile)
+  async getSellerProfile(id: string | number): Promise<SellerResponse> {
+    return apiCall(`/api/profile/seller/${id}`, {
       method: "GET",
-    });
-  },
-
-  // Upsert buyer profile data
-  async upsertBuyerProfile(data: BuyerRequest): Promise<BuyerResponse> {
-    return apiCall("/api/profile/buyer", {
-      method: "PUT",
-      body: JSON.stringify(data),
-    });
-  },
-
-  // Get seller profile data
-  async getSellerProfile(): Promise<SellerResponse> {
-    return apiCall("/api/profile/seller", {
-      method: "GET",
-    });
-  },
-
-  // Upsert seller profile data
-  async upsertSellerProfile(data: SellerRequest): Promise<SellerResponse> {
-    return apiCall("/api/profile/seller", {
-      method: "PUT",
-      body: JSON.stringify(data),
     });
   },
 };

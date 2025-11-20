@@ -101,7 +101,12 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
   // Initial validation on mount (only on client)
   useEffect(() => {
     if (mounted) {
-      validateSession();
+      // Wrap async call to prevent unhandled promise rejections
+      validateSession().catch((error) => {
+        // Errors are already handled inside validateSession, but we catch here
+        // to prevent unhandled promise rejections that cause Next.js errors
+        console.debug("Session validation error (handled):", error);
+      });
     }
   }, [mounted, validateSession]);
 
@@ -127,7 +132,12 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
     // Only re-validate if transitioning between protected and public routes
     // This prevents revalidating on every route change within the same area
     if (wasProtectedRoute !== isProtectedRoute) {
-      validateSession();
+      // Wrap async call to prevent unhandled promise rejections
+      validateSession().catch((error) => {
+        // Errors are already handled inside validateSession, but we catch here
+        // to prevent unhandled promise rejections that cause Next.js errors
+        console.debug("Session validation error (handled):", error);
+      });
     }
   }, [pathname, mounted, validateSession]);
 

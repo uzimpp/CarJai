@@ -49,9 +49,12 @@ type UserGoogleSigninRequest struct {
 }
 
 // UserUpdateSelfRequest represents the request payload for PATCH /api/profile/self
+// Supports unified profile updates including account info, buyer, and seller profiles
 type UserUpdateSelfRequest struct {
-	Username *string `json:"username,omitempty" validate:"omitempty,min=3,max=20"`
-	Name     *string `json:"name,omitempty" validate:"omitempty,min=2,max=100"`
+	Username *string        `json:"username,omitempty" validate:"omitempty,min=3,max=20"`
+	Name     *string        `json:"name,omitempty" validate:"omitempty,min=2,max=100"`
+	Buyer    *BuyerRequest  `json:"buyer,omitempty"`
+	Seller   *SellerRequest `json:"seller,omitempty"`
 }
 
 // ChangePasswordRequest represents the request payload for POST /api/profile/change-password
@@ -60,20 +63,7 @@ type ChangePasswordRequest struct {
 	NewPassword     string `json:"new_password" validate:"required,min=6"`
 }
 
-// ChangePasswordResponse represents the response for password change
-type ChangePasswordResponse struct {
-	Success bool   `json:"success"`
-	Message string `json:"message"`
-}
-
-// UserAuthResponse represents the response payload for successful authentication
-type UserAuthResponse struct {
-	Success bool         `json:"success"`
-	Data    UserAuthData `json:"data"`
-	Message string       `json:"message,omitempty"`
-}
-
-// UserAuthData contains the authentication data returned after signin/signup
+// UserAuthData contains the authentication data returned after signin/signup (used in services)
 type UserAuthData struct {
 	User      UserPublic `json:"user"`
 	Token     string     `json:"token"`
@@ -88,12 +78,6 @@ type UserPublic struct {
 	Name      string    `json:"name"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
-}
-
-// UserMeResponse represents the response payload for GET /api/auth/me
-type UserMeResponse struct {
-	Success bool       `json:"success"`
-	Data    UserMeData `json:"data"`
 }
 
 // UserMeData contains the current user session information with roles and completeness
@@ -113,19 +97,6 @@ type UserRoles struct {
 type UserProfiles struct {
 	BuyerComplete  bool `json:"buyerComplete"`
 	SellerComplete bool `json:"sellerComplete"`
-}
-
-// UserSignoutResponse represents the response payload for user sign out
-type UserSignoutResponse struct {
-	Success bool   `json:"success"`
-	Message string `json:"message"`
-}
-
-// UserErrorResponse represents error response structure
-type UserErrorResponse struct {
-	Success bool   `json:"success"`
-	Error   string `json:"error"`
-	Code    int    `json:"code,omitempty"`
 }
 
 // ToPublic converts User to UserPublic (removes sensitive data)
@@ -157,16 +128,16 @@ type AdminManagedUser struct {
 	Email     *string   `json:"email" db:"email"` // ใช้ pointer เผื่อเป็น null
 	Role      string    `json:"role" db:"role"`
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
-	Type      string    `json:"type" db:"type"` 
+	Type      string    `json:"type" db:"type"`
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // AdminCreateUserRequest represents the request payload for POST /admin/users
 type AdminCreateUserRequest struct {
-    Name     string `json:"name" validate:"required,min=2,max=100"`
-    Username string `json:"username" validate:"required,min=3,max=20"`
-    Email    string `json:"email" validate:"required,email"`
-    Password string `json:"password" validate:"required,min=6"`
+	Name     string `json:"name" validate:"required,min=2,max=100"`
+	Username string `json:"username" validate:"required,min=3,max=20"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required,min=6"`
 }
 
 // AdminUpdateUserRequest matches the request from page.tsx EditUserModal
@@ -176,11 +147,10 @@ type AdminUpdateUserRequest struct {
 	Email    *string `json:"email,omitempty"`
 }
 
-// AdminUsersListResponse is the response for GET /admin/users
+// AdminUsersListResponse represents the response for admin users list (API response only)
 type AdminUsersListResponse struct {
-	Success bool               `json:"success"`
-	Data    []AdminManagedUser `json:"data"`
-	Total   int                `json:"total"`
+	Users []AdminManagedUser `json:"users"`
+	Total int                `json:"total"`
 }
 
 // Buyer represents a buyer profile
@@ -230,13 +200,7 @@ type SellerContactRequest struct {
 	Label       *string `json:"label" validate:"omitempty,max=80"`
 }
 
-// ProfileResponse represents the full profile aggregate response
-type ProfileResponse struct {
-	Success bool        `json:"success"`
-	Data    ProfileData `json:"data"`
-}
-
-// ProfileData contains all user profile information
+// ProfileData contains all user profile information (used in services)
 type ProfileData struct {
 	User     UserPublic      `json:"user"`
 	Roles    UserRoles       `json:"roles"`
@@ -246,24 +210,27 @@ type ProfileData struct {
 	Contacts []SellerContact `json:"contacts,omitempty"`
 }
 
-// BuyerResponse represents the buyer profile response
-type BuyerResponse struct {
-	Success bool   `json:"success"`
-	Data    Buyer  `json:"data"`
-	Message string `json:"message,omitempty"`
-}
-
-// SellerResponse represents the seller profile response
-type SellerResponse struct {
-	Success bool       `json:"success"`
-	Data    SellerData `json:"data"`
-	Message string     `json:"message,omitempty"`
-}
-
-// SellerData contains seller profile with contacts
+// SellerData contains seller profile with contacts and cars (used in services)
 type SellerData struct {
 	Seller   Seller          `json:"seller"`
 	Contacts []SellerContact `json:"contacts"`
+	Cars     []CarListItem   `json:"cars,omitempty"` // Lightweight car list items for efficient listing
+}
+
+// PublicSellerResponse represents the public seller profile response (API response only)
+type PublicSellerResponse struct {
+	Seller   Seller          `json:"seller"`
+	Contacts []SellerContact `json:"contacts"`
+}
+
+// SellerContactsResponse represents the seller contacts response (API response only)
+type SellerContactsResponse struct {
+	Contacts []SellerContact `json:"contacts"`
+}
+
+// SellerCarsResponse represents the seller cars response (API response only)
+type SellerCarsResponse struct {
+	Cars []CarListItem `json:"cars"`
 }
 
 // IsBuyerComplete checks if buyer profile is complete
@@ -315,17 +282,4 @@ type RecentViewWithCarDetails struct {
 // RecentViewRequest represents the request payload for recording a car view
 type RecentViewRequest struct {
 	CarID int `json:"car_id" validate:"required,min=1"`
-}
-
-// RecentViewsResponse represents the response for getting recent views
-type RecentViewsResponse struct {
-	Success bool                       `json:"success"`
-	Data    []RecentViewWithCarDetails `json:"data"`
-	Message string                     `json:"message,omitempty"`
-}
-
-// RecordViewResponse represents the response for recording a view
-type RecordViewResponse struct {
-	Success bool   `json:"success"`
-	Message string `json:"message"`
 }

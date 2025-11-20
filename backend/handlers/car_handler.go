@@ -37,30 +37,21 @@ func NewCarHandler(carService *services.CarService, userService *services.UserSe
 func (h *CarHandler) GetPriceEstimate(w http.ResponseWriter, r *http.Request) {
 	// Check method
 	if r.Method != http.MethodGet {
-		utils.RespondJSON(w, http.StatusMethodNotAllowed, models.UserErrorResponse{
-			Success: false,
-			Error:   "Method not allowed",
-		})
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
 	// Get user from context (ensure user is logged in)
-	_, ok := r.Context().Value("userID").(int)
+	_, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
-		utils.RespondJSON(w, http.StatusUnauthorized, models.UserErrorResponse{
-			Success: false,
-			Error:   "Unauthorized",
-		})
+		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	// Extract car ID from URL
-	carID, err := extractIDFromPath(r.URL.Path, "/api/cars/")
+	carID, err := utils.ExtractIDFromPath(r.URL.Path, "/api/cars/")
 	if err != nil {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid car ID",
-		})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid car ID")
 		return
 	}
 
@@ -68,92 +59,65 @@ func (h *CarHandler) GetPriceEstimate(w http.ResponseWriter, r *http.Request) {
 	price, err := h.carService.EstimateCarPrice(carID)
 	if err != nil {
 		// Don't return 500, just indicate estimation is unavailable
-		utils.RespondJSON(w, http.StatusOK, map[string]interface{}{
-			"success": false,
-			"message": err.Error(), // e.g., "estimation unavailable"
-			"data":    nil,
-		})
+		utils.WriteError(w, http.StatusOK, err.Error()) // e.g., "estimation unavailable"
 		return
 	}
 
 	// Return estimated price
-	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{
-		"success": true,
-		"data": map[string]interface{}{
-			"estimatedPrice": price,
-		},
-	})
+	response := models.EstimatedPriceResponse{
+		EstimatedPrice: price,
+	}
+	utils.WriteJSON(w, http.StatusOK, response, "")
 }
 
 // CreateCar handles POST /api/cars
 func (h *CarHandler) CreateCar(w http.ResponseWriter, r *http.Request) {
 	// Check method
 	if r.Method != http.MethodPost {
-		utils.RespondJSON(w, http.StatusMethodNotAllowed, models.UserErrorResponse{
-			Success: false,
-			Error:   "Method not allowed",
-		})
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
 	// Get user from context (set by auth middleware)
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
-		utils.RespondJSON(w, http.StatusUnauthorized, models.UserErrorResponse{
-			Success: false,
-			Error:   "Unauthorized",
-		})
+		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	// Check if user is a seller
 	isSeller, err := h.userService.IsSeller(userID)
 	if err != nil || !isSeller {
-		utils.RespondJSON(w, http.StatusForbidden, models.UserErrorResponse{
-			Success: false,
-			Error:   "Only sellers can create car listings",
-		})
+		utils.WriteError(w, http.StatusForbidden, "Only sellers can create car listings")
 		return
 	}
 
 	// Create empty draft car (no request body needed)
 	car, err := h.carService.CreateCar(userID)
 	if err != nil {
-		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
-			Success: false,
-			Error:   fmt.Sprintf("Failed to create car: %v", err),
-		})
+		utils.WriteError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to create car: %v", err))
 		return
 	}
 
 	// Return minimal response with just the car ID
-	utils.RespondJSON(w, http.StatusCreated, map[string]interface{}{
-		"success": true,
-		"message": "Draft created successfully",
-		"data": map[string]interface{}{
-			"id": car.ID,
-		},
-	})
+	response := models.CarIDResponse{
+		ID: car.ID,
+	}
+	utils.WriteJSON(w, http.StatusCreated, response, "")
 }
 
 // GetCar handles GET /api/cars/{id}
 func (h *CarHandler) GetCar(w http.ResponseWriter, r *http.Request) {
 	// Check method
 	if r.Method != http.MethodGet {
-		utils.RespondJSON(w, http.StatusMethodNotAllowed, models.UserErrorResponse{
-			Success: false,
-			Error:   "Method not allowed",
-		})
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
 	// Extract car ID from URL
-	carID, err := extractIDFromPath(r.URL.Path, "/api/cars/")
+	carID, err := utils.ExtractIDFromPath(r.URL.Path, "/api/cars/")
 	if err != nil {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid car ID",
-		})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid car ID")
 		return
 	}
 
@@ -161,16 +125,10 @@ func (h *CarHandler) GetCar(w http.ResponseWriter, r *http.Request) {
 	carWithImages, err := h.carService.GetCarWithImages(carID)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
-			utils.RespondJSON(w, http.StatusNotFound, models.UserErrorResponse{
-				Success: false,
-				Error:   "Car not found",
-			})
+			utils.WriteError(w, http.StatusNotFound, "Car not found")
 			return
 		}
-		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
-			Success: false,
-			Error:   fmt.Sprintf("Failed to get car: %v", err),
-		})
+		utils.WriteError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get car: %v", err))
 		return
 	}
 
@@ -183,10 +141,7 @@ func (h *CarHandler) GetCar(w http.ResponseWriter, r *http.Request) {
 	// Only allow access to active cars for public users
 	// Owners can access their cars regardless of status (draft, sold, deleted)
 	if carWithImages.Car.Status != "active" {
-		utils.RespondJSON(w, http.StatusNotFound, models.UserErrorResponse{
-			Success: false,
-			Error:   "Car not found",
-		})
+		utils.WriteError(w, http.StatusNotFound, "Car not found")
 		return
 	}
 
@@ -196,23 +151,18 @@ func (h *CarHandler) GetCar(w http.ResponseWriter, r *http.Request) {
 		lang = "en"
 	}
 
-	var display *services.TranslatedCarDisplay
-	if d, err := h.carService.TranslateCarForDisplay(&carWithImages.Car, lang); err == nil {
-		display = d
+	// Translate car to display-ready format (includes InspectionDisplay conversion)
+	display, err := h.carService.TranslateCarForDisplay(&carWithImages.Car, lang)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to translate car data: %v", err))
+		return
 	}
 
 	// Enrich images with URLs for display
-	enrichedImages := make([]map[string]interface{}, len(carWithImages.Images))
+	enrichedImages := make([]models.CarImageMetadata, len(carWithImages.Images))
 	for i, img := range carWithImages.Images {
-		enrichedImages[i] = map[string]interface{}{
-			"id":           img.ID,
-			"carId":        img.CarID,
-			"imageType":    img.ImageType,
-			"imageSize":    img.ImageSize,
-			"displayOrder": img.DisplayOrder,
-			"uploadedAt":   img.UploadedAt,
-			"url":          fmt.Sprintf("/api/cars/images/%d", img.ID), // Add URL for display
-		}
+		enrichedImages[i] = img
+		enrichedImages[i].URL = fmt.Sprintf("/api/cars/images/%d", img.ID)
 	}
 
 	// Get seller contacts
@@ -221,64 +171,52 @@ func (h *CarHandler) GetCar(w http.ResponseWriter, r *http.Request) {
 		sellerContacts = contacts
 	}
 
-	// Return flattened response with complete metadata + URLs + seller contacts
-	resp := map[string]interface{}{
-		"success": true,
-		"data": map[string]interface{}{
-			"car":            display.CarDisplay,
-			"images":         enrichedImages,           // Complete metadata + URL for <img src="">
-			"inspection":     carWithImages.Inspection, // Complete InspectionResult
-			"sellerContacts": sellerContacts,           // Seller contact information
-		},
+	// Return response with proper types
+	response := models.CarDetailResponse{
+		Car:            display.CarDisplay,
+		Images:         enrichedImages,
+		Inspection:     display.InspectionDisplay,
+		SellerContacts: sellerContacts,
 	}
-	utils.WriteJSON(w, http.StatusOK, resp)
+	utils.WriteJSON(w, http.StatusOK, response, "")
 }
 
 // GetMyCars handles GET /api/cars/my
 func (h *CarHandler) GetMyCars(w http.ResponseWriter, r *http.Request) {
 	// Check method
 	if r.Method != http.MethodGet {
-		utils.RespondJSON(w, http.StatusMethodNotAllowed, models.UserErrorResponse{
-			Success: false,
-			Error:   "Method not allowed",
-		})
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
 	// Get user from context
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
-		utils.RespondJSON(w, http.StatusUnauthorized, models.UserErrorResponse{
-			Success: false,
-			Error:   "Unauthorized",
-		})
+		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
-	// Get user's cars with images
-	listings, err := h.carService.GetCarsBySellerIDWithImages(userID)
+	// Get language preference (default to English)
+	lang := r.URL.Query().Get("lang")
+	if lang == "" {
+		lang = "en"
+	}
+
+	// Get user's cars as lightweight list items (always translated for display)
+	listItems, err := h.carService.GetCarListItemsBySellerID(userID, lang)
 	if err != nil {
-		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
-			Success: false,
-			Error:   fmt.Sprintf("Failed to get cars: %v", err),
-		})
+		utils.WriteError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get cars: %v", err))
 		return
 	}
 
-	utils.RespondJSON(w, http.StatusOK, models.CarListingWithImagesResponse{
-		Success: true,
-		Data:    listings,
-	})
+	utils.WriteJSON(w, http.StatusOK, listItems, "")
 }
 
 // SearchCars handles GET /api/cars/search (public)
 func (h *CarHandler) SearchCars(w http.ResponseWriter, r *http.Request) {
 	// Check method
 	if r.Method != http.MethodGet {
-		utils.RespondJSON(w, http.StatusMethodNotAllowed, models.UserErrorResponse{
-			Success: false,
-			Error:   "Method not allowed",
-		})
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
@@ -363,146 +301,108 @@ func (h *CarHandler) SearchCars(w http.ResponseWriter, r *http.Request) {
 	req.Limit = limit
 	req.Offset = (page - 1) * limit
 
-	// Search cars with images and details
-	listings, total, err := h.carService.SearchActiveCarsWithImages(req)
+	// Get language preference (default to English)
+	lang := r.URL.Query().Get("lang")
+	if lang == "" {
+		lang = "en"
+	}
+
+	// Search cars as lightweight list items (optimized for browse/search)
+	listItems, total, err := h.carService.SearchActiveCarsAsListItems(req, lang)
 	if err != nil {
-		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
-			Success: false,
-			Error:   fmt.Sprintf("Failed to search cars: %v", err),
-		})
+		utils.WriteError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to search cars: %v", err))
 		return
 	}
 
-	utils.RespondJSON(w, http.StatusOK, models.PaginatedCarListingResponse{
-		Success: true,
-		Data: models.PaginatedCarListingData{
-			Cars:  listings,
-			Total: total,
-			Page:  page,
-			Limit: limit,
-		},
-	})
+	response := models.PaginatedCarListingData{
+		Cars:  listItems,
+		Total: total,
+		Page:  page,
+		Limit: limit,
+	}
+	utils.WriteJSON(w, http.StatusOK, response, "")
 }
 
 // UpdateCar handles PUT /api/cars/{id}
 func (h *CarHandler) UpdateCar(w http.ResponseWriter, r *http.Request) {
 	// Get user from context
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
-		utils.RespondJSON(w, http.StatusUnauthorized, models.UserErrorResponse{
-			Success: false,
-			Error:   "Unauthorized",
-		})
+		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	// Extract car ID
-	carID, err := extractIDFromPath(r.URL.Path, "/api/cars/")
+	carID, err := utils.ExtractIDFromPath(r.URL.Path, "/api/cars/")
 	if err != nil {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid car ID",
-		})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid car ID")
 		return
 	}
 
 	// Check if user is admin
 	isAdmin := false
-	if adminID, ok := r.Context().Value("admin_id").(int); ok && adminID > 0 {
+	if adminID, ok := r.Context().Value(middleware.AdminIDKey).(int); ok && adminID > 0 {
 		isAdmin = true
 	}
 
 	// Parse request body
 	var req models.UpdateCarRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid request body",
-		})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	// Update car
 	if err := h.carService.UpdateCar(carID, userID, &req, isAdmin); err != nil {
 		if strings.Contains(err.Error(), "unauthorized") {
-			utils.RespondJSON(w, http.StatusForbidden, models.UserErrorResponse{
-				Success: false,
-				Error:   err.Error(),
-			})
+			utils.WriteError(w, http.StatusForbidden, err.Error())
 			return
 		}
 		if strings.Contains(err.Error(), "not found") {
-			utils.RespondJSON(w, http.StatusNotFound, models.UserErrorResponse{
-				Success: false,
-				Error:   "Car not found",
-			})
+			utils.WriteError(w, http.StatusNotFound, "Car not found")
 			return
 		}
-		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
-			Success: false,
-			Error:   fmt.Sprintf("Failed to update car: %v", err),
-		})
+		utils.WriteError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to update car: %v", err))
 		return
 	}
 
-	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{
-		"success": true,
-		"message": "Car updated successfully",
-	})
+	utils.WriteJSON(w, http.StatusOK, nil, "Car updated successfully")
 }
 
 // AutoSaveDraft handles PATCH /api/cars/{id}/draft - Auto-save without strict validation
 func (h *CarHandler) AutoSaveDraft(w http.ResponseWriter, r *http.Request) {
 	// Get user from context
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
-		utils.RespondJSON(w, http.StatusUnauthorized, models.UserErrorResponse{
-			Success: false,
-			Error:   "Unauthorized",
-		})
+		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	// Extract car ID
-	carID, err := extractIDFromPath(r.URL.Path, "/api/cars/")
+	carID, err := utils.ExtractIDFromPath(r.URL.Path, "/api/cars/")
 	if err != nil {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid car ID",
-		})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid car ID")
 		return
 	}
 
 	// Parse request body
 	var req models.UpdateCarRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid request body",
-		})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	// Auto-save draft (relaxed validation)
 	if err := h.carService.AutoSaveDraft(carID, userID, &req); err != nil {
 		if strings.Contains(err.Error(), "unauthorized") {
-			utils.RespondJSON(w, http.StatusForbidden, models.UserErrorResponse{
-				Success: false,
-				Error:   err.Error(),
-			})
+			utils.WriteError(w, http.StatusForbidden, err.Error())
 			return
 		}
 		if strings.Contains(err.Error(), "not found") {
-			utils.RespondJSON(w, http.StatusNotFound, models.UserErrorResponse{
-				Success: false,
-				Error:   "Car not found",
-			})
+			utils.WriteError(w, http.StatusNotFound, "Car not found")
 			return
 		}
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   err.Error(),
-		})
+		utils.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -510,14 +410,10 @@ func (h *CarHandler) AutoSaveDraft(w http.ResponseWriter, r *http.Request) {
 	step2Ready, step2Issues := h.carService.ComputeStep2Status(carID)
 	step3Ready, step3Issues := h.carService.ComputeStep3Status(carID)
 
-	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{
-		"success": true,
-		"message": "Draft saved successfully",
-		"stepStatus": models.StepStatus{
-			Step2: models.StepState{Ready: step2Ready, Issues: step2Issues},
-			Step3: models.StepState{Ready: step3Ready, Issues: step3Issues},
-		},
-	})
+	utils.WriteJSON(w, http.StatusOK, models.StepStatus{
+		Step2: models.StepState{Ready: step2Ready, Issues: step2Issues},
+		Step3: models.StepState{Ready: step3Ready, Issues: step3Issues},
+	}, "Draft saved successfully")
 }
 
 // HandleCarCRUD handles PUT/PATCH/DELETE /api/cars/{id} (authenticated)
@@ -530,190 +426,133 @@ func (h *CarHandler) HandleCarCRUD(w http.ResponseWriter, r *http.Request) {
 	case http.MethodDelete:
 		h.DeleteCar(w, r)
 	default:
-		utils.RespondJSON(w, http.StatusMethodNotAllowed, models.UserErrorResponse{
-			Success: false,
-			Error:   "Method not allowed",
-		})
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 	}
 }
 
 // DeleteCar handles DELETE /api/cars/{id}
 func (h *CarHandler) DeleteCar(w http.ResponseWriter, r *http.Request) {
 	// Get user from context
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
-		utils.RespondJSON(w, http.StatusUnauthorized, models.UserErrorResponse{
-			Success: false,
-			Error:   "Unauthorized",
-		})
+		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	// Extract car ID
-	carID, err := extractIDFromPath(r.URL.Path, "/api/cars/")
+	carID, err := utils.ExtractIDFromPath(r.URL.Path, "/api/cars/")
 	if err != nil {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid car ID",
-		})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid car ID")
 		return
 	}
 
 	// Check if user is admin
 	isAdmin := false
-	if adminID, ok := r.Context().Value("admin_id").(int); ok && adminID > 0 {
+	if adminID, ok := r.Context().Value(middleware.AdminIDKey).(int); ok && adminID > 0 {
 		isAdmin = true
 	}
 
 	// Delete car
 	if err := h.carService.DeleteCar(carID, userID, isAdmin); err != nil {
 		if strings.Contains(err.Error(), "unauthorized") {
-			utils.RespondJSON(w, http.StatusForbidden, models.UserErrorResponse{
-				Success: false,
-				Error:   err.Error(),
-			})
+			utils.WriteError(w, http.StatusForbidden, err.Error())
 			return
 		}
 		if strings.Contains(err.Error(), "not found") {
-			utils.RespondJSON(w, http.StatusNotFound, models.UserErrorResponse{
-				Success: false,
-				Error:   "Car not found",
-			})
+			utils.WriteError(w, http.StatusNotFound, "Car not found")
 			return
 		}
-		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
-			Success: false,
-			Error:   fmt.Sprintf("Failed to delete car: %v", err),
-		})
+		utils.WriteError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to delete car: %v", err))
 		return
 	}
 
-	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{
-		"success": true,
-		"message": "Car deleted successfully",
-	})
+	utils.WriteJSON(w, http.StatusOK, nil, "Car deleted successfully")
 }
 
 // DiscardCar handles POST /api/cars/{id}/discard (alias for deleting a draft; owner-only)
 func (h *CarHandler) DiscardCar(w http.ResponseWriter, r *http.Request) {
 	// Enforce POST
 	if r.Method != http.MethodPost {
-		utils.RespondJSON(w, http.StatusMethodNotAllowed, models.UserErrorResponse{
-			Success: false,
-			Error:   "Method not allowed",
-		})
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
 	// Get user from context
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
-		utils.RespondJSON(w, http.StatusUnauthorized, models.UserErrorResponse{
-			Success: false,
-			Error:   "Unauthorized",
-		})
+		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	// Extract car ID
-	carID, err := extractIDFromPath(r.URL.Path, "/api/cars/")
+	carID, err := utils.ExtractIDFromPath(r.URL.Path, "/api/cars/")
 	if err != nil {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid car ID",
-		})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid car ID")
 		return
 	}
 
 	// Check if user is admin
 	isAdmin := false
-	if adminID, ok := r.Context().Value("admin_id").(int); ok && adminID > 0 {
+	if adminID, ok := r.Context().Value(middleware.AdminIDKey).(int); ok && adminID > 0 {
 		isAdmin = true
 	}
 
 	// Delete via service (owner-only, drafts)
 	if err := h.carService.DeleteCar(carID, userID, isAdmin); err != nil {
 		if strings.Contains(err.Error(), "unauthorized") {
-			utils.RespondJSON(w, http.StatusForbidden, models.UserErrorResponse{
-				Success: false,
-				Error:   err.Error(),
-			})
+			utils.WriteError(w, http.StatusForbidden, err.Error())
 			return
 		}
 		if strings.Contains(err.Error(), "not found") {
-			utils.RespondJSON(w, http.StatusNotFound, models.UserErrorResponse{
-				Success: false,
-				Error:   "Car not found",
-			})
+			utils.WriteError(w, http.StatusNotFound, "Car not found")
 			return
 		}
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   err.Error(),
-		})
+		utils.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{
-		"success": true,
-		"message": "Draft discarded",
-	})
+	utils.WriteJSON(w, http.StatusOK, nil, "Draft discarded")
 }
 
 // UploadCarImages handles POST /api/cars/{id}/images
 func (h *CarHandler) UploadCarImages(w http.ResponseWriter, r *http.Request) {
 	// Check method
 	if r.Method != http.MethodPost {
-		utils.RespondJSON(w, http.StatusMethodNotAllowed, models.UserErrorResponse{
-			Success: false,
-			Error:   "Method not allowed",
-		})
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
 	// Get user from context
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
-		utils.RespondJSON(w, http.StatusUnauthorized, models.UserErrorResponse{
-			Success: false,
-			Error:   "Unauthorized",
-		})
+		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	// Extract car ID
-	carID, err := extractIDFromPath(r.URL.Path, "/api/cars/")
+	carID, err := utils.ExtractIDFromPath(r.URL.Path, "/api/cars/")
 	if err != nil {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid car ID",
-		})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid car ID")
 		return
 	}
 
 	// Parse multipart form (max 600MB total for 12 images * 50MB)
 	err = r.ParseMultipartForm(600 << 20)
 	if err != nil {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Failed to parse multipart form",
-		})
+		utils.WriteError(w, http.StatusBadRequest, "Failed to parse multipart form")
 		return
 	}
 
 	// Get files from form
 	files := r.MultipartForm.File["images"]
 	if len(files) == 0 {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "No images provided",
-		})
+		utils.WriteError(w, http.StatusBadRequest, "No images provided")
 		return
 	}
 
 	// Check if user is admin
 	isAdmin := false
-	if adminID, ok := r.Context().Value("admin_id").(int); ok && adminID > 0 {
+	if adminID, ok := r.Context().Value(middleware.AdminIDKey).(int); ok && adminID > 0 {
 		isAdmin = true
 	}
 
@@ -721,35 +560,23 @@ func (h *CarHandler) UploadCarImages(w http.ResponseWriter, r *http.Request) {
 	uploadedImages, err := h.carService.UploadCarImages(carID, userID, files, isAdmin)
 	if err != nil {
 		if strings.Contains(err.Error(), "unauthorized") {
-			utils.RespondJSON(w, http.StatusForbidden, models.UserErrorResponse{
-				Success: false,
-				Error:   err.Error(),
-			})
+			utils.WriteError(w, http.StatusForbidden, err.Error())
 			return
 		}
 		if strings.Contains(err.Error(), "not found") {
-			utils.RespondJSON(w, http.StatusNotFound, models.UserErrorResponse{
-				Success: false,
-				Error:   "Car not found",
-			})
+			utils.WriteError(w, http.StatusNotFound, "Car not found")
 			return
 		}
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   err.Error(),
-		})
+		utils.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	utils.RespondJSON(w, http.StatusCreated, models.ImageUploadResponse{
-		Success: true,
-		Data: models.ImageUploadData{
-			CarID:         carID,
-			UploadedCount: len(uploadedImages),
-			Images:        uploadedImages,
-		},
-		Message: fmt.Sprintf("Successfully uploaded %d image(s)", len(uploadedImages)),
-	})
+	response := models.ImageUploadData{
+		CarID:         carID,
+		UploadedCount: len(uploadedImages),
+		Images:        uploadedImages,
+	}
+	utils.WriteJSON(w, http.StatusCreated, response, "")
 }
 
 // HandleImageByID handles /api/cars/images/{id} - GET public, DELETE authenticated
@@ -762,22 +589,16 @@ func (h *CarHandler) HandleImageByID(w http.ResponseWriter, r *http.Request, aut
 		// Authenticated: Delete image
 		authMiddleware.RequireAuth(h.DeleteCarImage)(w, r)
 	default:
-		utils.RespondJSON(w, http.StatusMethodNotAllowed, models.UserErrorResponse{
-			Success: false,
-			Error:   "Method not allowed",
-		})
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 	}
 }
 
 // GetCarImage handles GET /api/cars/images/{id}
 func (h *CarHandler) GetCarImage(w http.ResponseWriter, r *http.Request) {
 	// Extract image ID
-	imageID, err := extractIDFromPath(r.URL.Path, "/api/cars/images/")
+	imageID, err := utils.ExtractIDFromPath(r.URL.Path, "/api/cars/images/")
 	if err != nil {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid image ID",
-		})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid image ID")
 		return
 	}
 
@@ -785,16 +606,12 @@ func (h *CarHandler) GetCarImage(w http.ResponseWriter, r *http.Request) {
 	image, err := h.carService.GetCarImage(imageID)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
-			utils.RespondJSON(w, http.StatusNotFound, models.UserErrorResponse{
-				Success: false,
-				Error:   "Image not found",
-			})
+			utils.WriteError(w, http.StatusNotFound, "Image not found")
 			return
 		}
-		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
-			Success: false,
-			Error:   fmt.Sprintf("Failed to get image: %v", err),
-		})
+		utils.WriteError(w, http.StatusInternalServerError,
+			fmt.Sprintf("Failed to get image: %v", err),
+		)
 		return
 	}
 
@@ -809,224 +626,159 @@ func (h *CarHandler) GetCarImage(w http.ResponseWriter, r *http.Request) {
 // DeleteCarImage handles DELETE /api/cars/images/{id}
 func (h *CarHandler) DeleteCarImage(w http.ResponseWriter, r *http.Request) {
 	// Get user from context
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
-		utils.RespondJSON(w, http.StatusUnauthorized, models.UserErrorResponse{
-			Success: false,
-			Error:   "Unauthorized",
-		})
+		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	// Extract image ID
-	imageID, err := extractIDFromPath(r.URL.Path, "/api/cars/images/")
+	imageID, err := utils.ExtractIDFromPath(r.URL.Path, "/api/cars/images/")
 	if err != nil {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid image ID",
-		})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid image ID")
 		return
 	}
 
 	// Check if user is admin
 	isAdmin := false
-	if adminID, ok := r.Context().Value("admin_id").(int); ok && adminID > 0 {
+	if adminID, ok := r.Context().Value(middleware.AdminIDKey).(int); ok && adminID > 0 {
 		isAdmin = true
 	}
 
 	// Delete image
 	if err := h.carService.DeleteCarImage(imageID, userID, isAdmin); err != nil {
 		if strings.Contains(err.Error(), "unauthorized") {
-			utils.RespondJSON(w, http.StatusForbidden, models.UserErrorResponse{
-				Success: false,
-				Error:   err.Error(),
-			})
+			utils.WriteError(w, http.StatusForbidden, err.Error())
 			return
 		}
 		if strings.Contains(err.Error(), "not found") {
-			utils.RespondJSON(w, http.StatusNotFound, models.UserErrorResponse{
-				Success: false,
-				Error:   "Image not found",
-			})
+			utils.WriteError(w, http.StatusNotFound, "Image not found")
 			return
 		}
-		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
-			Success: false,
-			Error:   fmt.Sprintf("Failed to delete image: %v", err),
-		})
+		utils.WriteError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to delete image: %v", err))
 		return
 	}
 
-	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{
-		"success": true,
-		"message": "Image deleted successfully",
-	})
+	utils.WriteJSON(w, http.StatusOK, nil, "Image deleted successfully")
 }
 
 // ReorderImages handles PUT /api/cars/{id}/images/order
 func (h *CarHandler) ReorderImages(w http.ResponseWriter, r *http.Request) {
 	// Check method
 	if r.Method != http.MethodPut {
-		utils.RespondJSON(w, http.StatusMethodNotAllowed, models.UserErrorResponse{
-			Success: false,
-			Error:   "Method not allowed",
-		})
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
 	// Get user from context
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
-		utils.RespondJSON(w, http.StatusUnauthorized, models.UserErrorResponse{
-			Success: false,
-			Error:   "Unauthorized",
-		})
+		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	// Extract car ID
-	carID, err := extractIDFromPath(r.URL.Path, "/api/cars/")
+	carID, err := utils.ExtractIDFromPath(r.URL.Path, "/api/cars/")
 	if err != nil {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid car ID",
-		})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid car ID")
 		return
 	}
 
 	// Parse request body
 	var req models.ReorderImagesRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid request body",
-		})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	// Check if user is admin
 	isAdmin := false
-	if adminID, ok := r.Context().Value("admin_id").(int); ok && adminID > 0 {
+	if adminID, ok := r.Context().Value(middleware.AdminIDKey).(int); ok && adminID > 0 {
 		isAdmin = true
 	}
 
 	// Reorder images
 	if err := h.carService.ReorderImagesBulk(carID, req.ImageIDs, userID, isAdmin); err != nil {
 		if strings.Contains(err.Error(), "unauthorized") {
-			utils.RespondJSON(w, http.StatusForbidden, models.UserErrorResponse{
-				Success: false,
-				Error:   err.Error(),
-			})
+			utils.WriteError(w, http.StatusForbidden, err.Error())
 			return
 		}
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   err.Error(),
-		})
+		utils.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{
-		"success": true,
-		"message": "Images reordered successfully",
-	})
+	utils.WriteJSON(w, http.StatusOK, nil, "Images reordered successfully")
 }
 
 // Review handles GET /api/cars/{id}/review
 func (h *CarHandler) Review(w http.ResponseWriter, r *http.Request) {
 	// Check method
 	if r.Method != http.MethodGet {
-		utils.RespondJSON(w, http.StatusMethodNotAllowed, models.UserErrorResponse{
-			Success: false,
-			Error:   "Method not allowed",
-		})
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
 	// Get user from context
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
-		utils.RespondJSON(w, http.StatusUnauthorized, models.UserErrorResponse{
-			Success: false,
-			Error:   "Unauthorized",
-		})
+		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	// Extract car ID
-	carID, err := extractIDFromPath(r.URL.Path, "/api/cars/")
+	carID, err := utils.ExtractIDFromPath(r.URL.Path, "/api/cars/")
 	if err != nil {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid car ID",
-		})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid car ID")
 		return
 	}
 
 	// Verify ownership
 	car, err := h.carService.GetCarByID(carID)
 	if err != nil {
-		utils.RespondJSON(w, http.StatusNotFound, models.UserErrorResponse{
-			Success: false,
-			Error:   "Car not found",
-		})
+		utils.WriteError(w, http.StatusNotFound, "Car not found")
 		return
 	}
 
 	// Check if user is admin
 	isAdmin := false
-	if adminID, ok := r.Context().Value("admin_id").(int); ok && adminID > 0 {
+	if adminID, ok := r.Context().Value(middleware.AdminIDKey).(int); ok && adminID > 0 {
 		isAdmin = true
 	}
 
 	if !isAdmin && car.SellerID != userID {
-		utils.RespondJSON(w, http.StatusForbidden, models.UserErrorResponse{
-			Success: false,
-			Error:   "You can only review your own cars",
-		})
+		utils.WriteError(w, http.StatusForbidden, "You can only review your own cars")
 		return
 	}
 
 	// Run publish validation
 	ready, issues := h.carService.ValidatePublish(carID)
 
-	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{
-		"success": true,
-		"data": models.ReviewResponse{
-			Ready:  ready,
-			Issues: issues,
-		},
-	})
+	response := models.ReviewResponse{
+		Ready:  ready,
+		Issues: issues,
+	}
+	utils.WriteJSON(w, http.StatusOK, response, "")
 }
 
 // UpdateStatus handles PUT /api/cars/{id}/status
 func (h *CarHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 	// Check method
 	if r.Method != http.MethodPut {
-		utils.RespondJSON(w, http.StatusMethodNotAllowed, models.UserErrorResponse{
-			Success: false,
-			Error:   "Method not allowed",
-		})
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
 	// Get user from context
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
-		utils.RespondJSON(w, http.StatusUnauthorized, models.UserErrorResponse{
-			Success: false,
-			Error:   "Unauthorized",
-		})
+		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	// Extract car ID
-	carID, err := extractIDFromPath(r.URL.Path, "/api/cars/")
+	carID, err := utils.ExtractIDFromPath(r.URL.Path, "/api/cars/")
 	if err != nil {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid car ID",
-		})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid car ID")
 		return
 	}
 
@@ -1035,16 +787,13 @@ func (h *CarHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 		Status string `json:"status"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid request body",
-		})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	// Check if user is admin
 	isAdmin := false
-	if adminID, ok := r.Context().Value("admin_id").(int); ok && adminID > 0 {
+	if adminID, ok := r.Context().Value(middleware.AdminIDKey).(int); ok && adminID > 0 {
 		isAdmin = true
 	}
 
@@ -1052,10 +801,7 @@ func (h *CarHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 	if req.Status == "active" {
 		ready, issues := h.carService.ValidatePublish(carID)
 		if !ready {
-			utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-				Success: false,
-				Error:   fmt.Sprintf("Cannot publish car: %v", issues),
-			})
+			utils.WriteError(w, http.StatusBadRequest, fmt.Sprintf("Cannot publish car: %v", issues))
 			return
 		}
 	}
@@ -1067,83 +813,56 @@ func (h *CarHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.carService.UpdateCar(carID, userID, &updateReq, isAdmin); err != nil {
 		if strings.Contains(err.Error(), "unauthorized") {
-			utils.RespondJSON(w, http.StatusForbidden, models.UserErrorResponse{
-				Success: false,
-				Error:   err.Error(),
-			})
+			utils.WriteError(w, http.StatusForbidden, err.Error())
 			return
 		}
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   err.Error(),
-		})
+		utils.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{
-		"success": true,
-		"message": "Status updated successfully",
-	})
+	utils.WriteJSON(w, http.StatusOK, nil, "Status updated successfully")
 }
 
-// UploadBook handles POST /api/cars/book - Upload vehicle registration book and create draft car
+// UploadBook handles POST /api/cars/{id}/book - Upload vehicle registration book to existing car
 func (h *CarHandler) UploadBook(w http.ResponseWriter, r *http.Request) {
 	// Check method
 	if r.Method != http.MethodPost {
-		utils.RespondJSON(w, http.StatusMethodNotAllowed, models.UserErrorResponse{
-			Success: false,
-			Error:   "Method not allowed",
-		})
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
 	// Get user from context (set by auth middleware)
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
-		utils.RespondJSON(w, http.StatusUnauthorized, models.UserErrorResponse{
-			Success: false,
-			Error:   "Unauthorized",
-		})
+		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	// Extract car ID from path: /api/cars/{id}/book
-	carID, err := extractIDFromPath(r.URL.Path, "/api/cars/")
+	carID, err := utils.ExtractIDFromPath(r.URL.Path, "/api/cars/")
 	if err != nil {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid car ID",
-		})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid car ID")
 		return
 	}
 
 	// Check if user is a seller
 	isSeller, err := h.userService.IsSeller(userID)
 	if err != nil || !isSeller {
-		utils.RespondJSON(w, http.StatusForbidden, models.UserErrorResponse{
-			Success: false,
-			Error:   "Only sellers can upload vehicle registration books",
-		})
+		utils.WriteError(w, http.StatusForbidden, "Only sellers can upload vehicle registration books")
 		return
 	}
 
 	// Parse multipart form (10 MB max)
 	const maxUploadSize = int64(10 * 1024 * 1024)
 	if err := r.ParseMultipartForm(maxUploadSize); err != nil {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "File is too large (max 10MB)",
-		})
+		utils.WriteError(w, http.StatusBadRequest, "File is too large (max 10MB)")
 		return
 	}
 
 	// Get file from form
 	file, handler, err := r.FormFile("file")
 	if err != nil {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid 'file' field in form",
-		})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid 'file' field in form")
 		return
 	}
 	defer file.Close()
@@ -1151,19 +870,13 @@ func (h *CarHandler) UploadBook(w http.ResponseWriter, r *http.Request) {
 	// Extract raw OCR fields once, then map to structured fields
 	rawFields, err := h.ocrService.OCRFromFile(file, handler)
 	if err != nil {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   fmt.Sprintf("Failed to extract data from document: %v", err),
-		})
+		utils.WriteError(w, http.StatusBadRequest, fmt.Sprintf("Failed to extract data from document: %v", err))
 		return
 	}
 
 	bookFields, err := h.ocrService.MapToBookFields(rawFields)
 	if err != nil {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   fmt.Sprintf("Failed to extract data from document: %v", err),
-		})
+		utils.WriteError(w, http.StatusBadRequest, fmt.Sprintf("Failed to extract data from document: %v", err))
 		return
 	}
 
@@ -1172,68 +885,49 @@ func (h *CarHandler) UploadBook(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errorCode != "" {
 			// Return error with code for client handling
-			utils.RespondJSON(w, http.StatusConflict, map[string]interface{}{
-				"success":         false,
-				"message":         err.Error(),
-				"code":            errorCode,
-				"action":          action,
-				"redirectToCarID": redirectToCarID,
-			})
+			response := models.BookUploadErrorResponse{
+				Message:         err.Error(),
+				Code:            errorCode,
+				Action:          action,
+				RedirectToCarID: redirectToCarID,
+			}
+			utils.WriteJSON(w, http.StatusConflict, response, "")
 			return
 		}
-		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
-			Success: false,
-			Error:   fmt.Sprintf("Failed to upload book: %v", err),
-		})
+		utils.WriteError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to upload book: %v", err))
 		return
 	}
 
-	// Return display-ready OCR fields without DB writes
-	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{
-		"success": true,
-		"message": "Vehicle registration book processed successfully",
-		"data":    bookFields.ToMap(),
-	})
+	// Return display-ready OCR fields without DB query
+	utils.WriteJSON(w, http.StatusOK, bookFields.ToMap(), "Vehicle registration book processed successfully")
 }
 
 // UploadInspection handles POST /api/cars/{id}/inspection - Upload vehicle inspection document
 func (h *CarHandler) UploadInspection(w http.ResponseWriter, r *http.Request) {
 	// Check method
 	if r.Method != http.MethodPost {
-		utils.RespondJSON(w, http.StatusMethodNotAllowed, models.UserErrorResponse{
-			Success: false,
-			Error:   "Method not allowed",
-		})
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
 	// Get user from context (set by auth middleware)
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
-		utils.RespondJSON(w, http.StatusUnauthorized, models.UserErrorResponse{
-			Success: false,
-			Error:   "Unauthorized",
-		})
+		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	// Extract car ID from path
-	carID, err := extractIDFromPath(r.URL.Path, "/api/cars/")
+	carID, err := utils.ExtractIDFromPath(r.URL.Path, "/api/cars/")
 	if err != nil {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid car ID",
-		})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid car ID")
 		return
 	}
 
 	// Check if user is a seller
 	isSeller, err := h.userService.IsSeller(userID)
 	if err != nil || !isSeller {
-		utils.RespondJSON(w, http.StatusForbidden, models.UserErrorResponse{
-			Success: false,
-			Error:   "Only sellers can upload vehicle inspections",
-		})
+		utils.WriteError(w, http.StatusForbidden, "Only sellers can upload vehicle inspections")
 		return
 	}
 
@@ -1243,10 +937,7 @@ func (h *CarHandler) UploadInspection(w http.ResponseWriter, r *http.Request) {
 
 	if strings.HasPrefix(contentType, "multipart/form-data") {
 		// File upload - not implemented yet, return error
-		utils.RespondJSON(w, http.StatusNotImplemented, models.UserErrorResponse{
-			Success: false,
-			Error:   "File upload for inspection not yet implemented. Please use URL scraping instead.",
-		})
+		utils.WriteError(w, http.StatusNotImplemented, "File upload for inspection not yet implemented. Please use URL scraping instead.")
 		return
 	} else if strings.HasPrefix(contentType, "application/json") {
 		// URL scraping
@@ -1254,45 +945,30 @@ func (h *CarHandler) UploadInspection(w http.ResponseWriter, r *http.Request) {
 			URL string `json:"url"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-				Success: false,
-				Error:   "Invalid request body",
-			})
+			utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
 			return
 		}
 
 		if req.URL == "" {
-			utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-				Success: false,
-				Error:   "URL is required",
-			})
+			utils.WriteError(w, http.StatusBadRequest, "URL is required")
 			return
 		}
 
 		// Scrape inspection data
 		inspectionData, err = h.scraperService.ScrapeInspectionData(req.URL)
 		if err != nil {
-			utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-				Success: false,
-				Error:   fmt.Sprintf("Failed to scrape inspection data: %v", err),
-			})
+			utils.WriteError(w, http.StatusBadRequest, fmt.Sprintf("Failed to scrape inspection data: %v", err))
 			return
 		}
 	} else {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid content type. Use multipart/form-data for file upload or application/json for URL",
-		})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid content type. Use multipart/form-data for file upload or application/json for URL")
 		return
 	}
 
 	// Map scraped fields to structured inspection fields (no DB writes)
 	inspectionFields, err := h.scraperService.MapToInspectionFields(inspectionData)
 	if err != nil {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   err.Error(),
-		})
+		utils.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -1301,22 +977,18 @@ func (h *CarHandler) UploadInspection(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errorCode != "" {
 			// Return error with code for client handling
-			resp := map[string]interface{}{
-				"success": false,
-				"message": err.Error(),
-				"code":    errorCode,
+			response := models.BookUploadErrorResponse{
+				Message: err.Error(),
+				Code:    errorCode,
 			}
 			// For duplicate-own-draft, include existingCarId only (no action/redirect in conflict flow)
 			if errorCode == services.ErrCodeCarDuplicateOwnDraft && redirectToCarID != nil {
-				resp["redirectToCarID"] = *redirectToCarID
+				response.RedirectToCarID = redirectToCarID
 			}
-			utils.RespondJSON(w, http.StatusConflict, resp)
+			utils.WriteJSON(w, http.StatusConflict, response, "")
 			return
 		}
-		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
-			Success: false,
-			Error:   fmt.Sprintf("Failed to upload inspection: %v", err),
-		})
+		utils.WriteError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to upload inspection: %v", err))
 		return
 	}
 
@@ -1330,60 +1002,41 @@ func (h *CarHandler) UploadInspection(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{
-		"success": true,
-		"message": "Vehicle inspection processed successfully",
-		"data":    payload,
-	})
+	utils.WriteJSON(w, http.StatusOK, payload, "Vehicle inspection processed successfully")
 }
 
 // RestoreProgress handles GET /api/cars/{id}/restore-progress
 func (h *CarHandler) RestoreProgress(w http.ResponseWriter, r *http.Request) {
 	// Check method
 	if r.Method != http.MethodGet {
-		utils.RespondJSON(w, http.StatusMethodNotAllowed, models.UserErrorResponse{
-			Success: false,
-			Error:   "Method not allowed",
-		})
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
 	// Get user from context (set by auth middleware)
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
-		utils.RespondJSON(w, http.StatusUnauthorized, models.UserErrorResponse{
-			Success: false,
-			Error:   "Unauthorized",
-		})
+		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	// Extract car ID from URL
-	carID, err := extractIDFromPath(r.URL.Path, "/api/cars/")
+	carID, err := utils.ExtractIDFromPath(r.URL.Path, "/api/cars/")
 	if err != nil {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid car ID",
-		})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid car ID")
 		return
 	}
 
 	// Get the car data with images and inspection
 	carWithImages, err := h.carService.GetCarWithImages(carID)
 	if err != nil {
-		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
-			Success: false,
-			Error:   fmt.Sprintf("Failed to get restored car data: %v", err),
-		})
+		utils.WriteError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get restored car data: %v", err))
 		return
 	}
 
 	// Check ownership - user can only restore progress from their own car
 	if carWithImages.Car.SellerID != userID {
-		utils.RespondJSON(w, http.StatusForbidden, models.UserErrorResponse{
-			Success: false,
-			Error:   "You can only restore progress from your own cars",
-		})
+		utils.WriteError(w, http.StatusForbidden, "You can only restore progress from your own cars")
 		return
 	}
 	// Enrich with labels and flatten into car payload
@@ -1392,172 +1045,25 @@ func (h *CarHandler) RestoreProgress(w http.ResponseWriter, r *http.Request) {
 		lang = "en"
 	}
 
-	var display *services.TranslatedCarDisplay
-	if d, err := h.carService.TranslateCarForDisplay(&carWithImages.Car, lang); err == nil {
-		display = d
+	// Translate car to display-ready format (includes InspectionDisplay conversion)
+	display, err := h.carService.TranslateCarForDisplay(&carWithImages.Car, lang)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to translate car data: %v", err))
+		return
 	}
 
 	// Enrich images with URLs for display
-	enrichedImages := make([]map[string]interface{}, len(carWithImages.Images))
+	enrichedImages := make([]models.CarImageMetadata, len(carWithImages.Images))
 	for i, img := range carWithImages.Images {
-		enrichedImages[i] = map[string]interface{}{
-			"id":           img.ID,
-			"carId":        img.CarID,
-			"imageType":    img.ImageType,
-			"imageSize":    img.ImageSize,
-			"displayOrder": img.DisplayOrder,
-			"uploadedAt":   img.UploadedAt,
-			"url":          fmt.Sprintf("/api/cars/images/%d", img.ID), // Add URL for display
-		}
+		enrichedImages[i] = img
+		enrichedImages[i].URL = fmt.Sprintf("/api/cars/images/%d", img.ID)
 	}
 
-	// Return flattened response with complete metadata + URLs + seller contacts
-	resp := map[string]interface{}{
-		"success": true,
-		"data": map[string]interface{}{
-			"car":        display.CarDisplay,
-			"images":     enrichedImages,           // Complete metadata + URL for <img src="">
-			"inspection": carWithImages.Inspection, // Complete InspectionResult
-		},
+	// Return response with proper types
+	response := models.CarDetailResponse{
+		Car:        display.CarDisplay,
+		Images:     enrichedImages,
+		Inspection: display.InspectionDisplay,
 	}
-	utils.WriteJSON(w, http.StatusOK, resp)
-}
-
-// RedirectToDraft handles POST /api/cars/{id}/redirect-to-draft
-func (h *CarHandler) RedirectToDraft(w http.ResponseWriter, r *http.Request) {
-	// Check method
-	if r.Method != http.MethodPost {
-		utils.RespondJSON(w, http.StatusMethodNotAllowed, models.UserErrorResponse{
-			Success: false,
-			Error:   "Method not allowed",
-		})
-		return
-	}
-
-	// Get user from context
-	userID, ok := r.Context().Value("userID").(int)
-	if !ok {
-		utils.RespondJSON(w, http.StatusUnauthorized, models.UserErrorResponse{
-			Success: false,
-			Error:   "Unauthorized",
-		})
-		return
-	}
-
-	// Parse request body
-	var req struct {
-		TargetCarID int `json:"targetCarId"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid request body",
-		})
-		return
-	}
-
-	// Extract car ID from URL
-	carID, err := extractIDFromPath(r.URL.Path, "/api/cars/")
-	if err != nil {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid car ID",
-		})
-		return
-	}
-
-	// Validate target car ID
-	if req.TargetCarID <= 0 {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Target car ID is required",
-		})
-		return
-	}
-
-	// Check ownership of both cars
-	currentCar, err := h.carService.GetCarByID(carID)
-	if err != nil {
-		utils.RespondJSON(w, http.StatusNotFound, models.UserErrorResponse{
-			Success: false,
-			Error:   "Current car not found",
-		})
-		return
-	}
-
-	if currentCar.SellerID != userID {
-		utils.RespondJSON(w, http.StatusForbidden, models.UserErrorResponse{
-			Success: false,
-			Error:   "You can only redirect your own cars",
-		})
-		return
-	}
-
-	targetCar, err := h.carService.GetCarByID(req.TargetCarID)
-	if err != nil {
-		utils.RespondJSON(w, http.StatusNotFound, models.UserErrorResponse{
-			Success: false,
-			Error:   "Target car not found",
-		})
-		return
-	}
-
-	if targetCar.SellerID != userID {
-		utils.RespondJSON(w, http.StatusForbidden, models.UserErrorResponse{
-			Success: false,
-			Error:   "You can only redirect to your own cars",
-		})
-		return
-	}
-
-	// Check that both cars are drafts
-	if currentCar.Status != "draft" {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Can only redirect from draft cars",
-		})
-		return
-	}
-
-	if targetCar.Status != "draft" {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Can only redirect to draft cars",
-		})
-		return
-	}
-
-	// Delete the current car (even if it has progress, user chose to redirect)
-	if err := h.carService.DeleteCar(carID, userID, false); err != nil {
-		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
-			Success: false,
-			Error:   fmt.Sprintf("Failed to delete current car: %v", err),
-		})
-		return
-	}
-
-	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{
-		"success":         true,
-		"message":         "Redirected to existing draft successfully",
-		"redirectToCarId": req.TargetCarID,
-	})
-}
-
-// Helper function to extract ID from URL path
-func extractIDFromPath(path, prefix string) (int, error) {
-	// Remove prefix
-	idStr := strings.TrimPrefix(path, prefix)
-
-	// Remove anything after the ID (like /images)
-	if idx := strings.Index(idStr, "/"); idx != -1 {
-		idStr = idStr[:idx]
-	}
-
-	// Parse ID
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		return 0, fmt.Errorf("invalid ID format")
-	}
-
-	return id, nil
+	utils.WriteJSON(w, http.StatusOK, response, "")
 }

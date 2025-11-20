@@ -33,9 +33,9 @@ func TestAdminAuthHandler_Signin(t *testing.T) {
 			signinFunc: func(req services.SigninRequest) (*services.SigninResponse, error) {
 				return &services.SigninResponse{
 					Admin: models.AdminPublic{
-						ID:       1,
-						Username: req.Username,
-						Name:     "Test Admin",
+						ID:        1,
+						Username:  req.Username,
+						Name:      "Test Admin",
 						CreatedAt: time.Now(),
 					},
 					Token:     "test-token",
@@ -158,16 +158,12 @@ func (h *testAdminAuthHandler) Signin(w http.ResponseWriter, r *http.Request) {
 	})
 
 	response := models.AdminSigninResponse{
-		Success: true,
-		Data: models.AdminAuthData{
-			Admin:     signinResponse.Admin,
-			Token:     token,
-			ExpiresAt: expiresAt,
-		},
-		Message: "Sign in successful",
+		Admin:     signinResponse.Admin,
+		Token:     token,
+		ExpiresAt: expiresAt,
 	}
 
-	utils.WriteJSON(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, response, "Sign in successful")
 }
 
 func TestAdminAuthHandler_Signout(t *testing.T) {
@@ -180,9 +176,9 @@ func TestAdminAuthHandler_Signout(t *testing.T) {
 		expectedStatus int
 	}{
 		{
-			name:   "Successful signout",
-			method: "POST",
-			hasCookie: true,
+			name:        "Successful signout",
+			method:      "POST",
+			hasCookie:   true,
 			cookieValue: "test-token",
 			signoutFunc: func(req services.SignoutRequest) error {
 				return nil
@@ -199,7 +195,7 @@ func TestAdminAuthHandler_Signout(t *testing.T) {
 			name:           "Method not allowed",
 			method:         "GET",
 			hasCookie:      true,
-			cookieValue:     "test-token",
+			cookieValue:    "test-token",
 			expectedStatus: http.StatusMethodNotAllowed,
 		},
 	}
@@ -263,34 +259,29 @@ func (h *testAdminAuthHandler) Signout(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   -1,
 	})
 
-	response := models.AdminSignoutResponse{
-		Success: true,
-		Message: "Sign out successful",
-	}
-
-	utils.WriteJSON(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, nil, "Sign out successful")
 }
 
 func TestAdminAuthHandler_Me(t *testing.T) {
 	tests := []struct {
-		name               string
-		method             string
-		hasCookie          bool
-		cookieValue        string
+		name                string
+		method              string
+		hasCookie           bool
+		cookieValue         string
 		getCurrentAdminFunc func(token string) (*models.AdminMeData, error)
-		expectedStatus     int
+		expectedStatus      int
 	}{
 		{
-			name:      "Successful get",
-			method:    "GET",
-			hasCookie: true,
+			name:        "Successful get",
+			method:      "GET",
+			hasCookie:   true,
 			cookieValue: "test-token",
 			getCurrentAdminFunc: func(token string) (*models.AdminMeData, error) {
 				return &models.AdminMeData{
 					Admin: models.AdminPublic{
-						ID:       1,
-						Username: "admin",
-						Name:     "Test Admin",
+						ID:        1,
+						Username:  "admin",
+						Name:      "Test Admin",
 						CreatedAt: time.Now(),
 					},
 				}, nil
@@ -307,7 +298,7 @@ func TestAdminAuthHandler_Me(t *testing.T) {
 			name:           "Method not allowed",
 			method:         "POST",
 			hasCookie:      true,
-			cookieValue:     "test-token",
+			cookieValue:    "test-token",
 			expectedStatus: http.StatusMethodNotAllowed,
 		},
 	}
@@ -361,12 +352,13 @@ func (h *testAdminAuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := models.AdminMeResponse{
-		Success: true,
-		Data:    *adminData,
+	response := models.AdminSigninResponse{
+		Admin:     adminData.Admin,
+		Token:     token,
+		ExpiresAt: adminData.Session.ExpiresAt,
 	}
 
-	utils.WriteJSON(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, response, "Admin information retrieved successfully")
 }
 
 func TestAdminAuthHandler_RefreshToken_Error(t *testing.T) {
@@ -440,12 +432,9 @@ func (h *testAdminAuthHandler) RefreshToken(w http.ResponseWriter, r *http.Reque
 		utils.WriteError(w, http.StatusUnauthorized, err.Error())
 		return
 	}
-	response := map[string]interface{}{
-		"success":    true,
-		"token":      newToken,
-		"expires_at": expiresAt,
-		"message":    "Token refreshed successfully",
+	response := models.AdminRefreshResponse{
+		Token:     newToken,
+		ExpiresAt: expiresAt,
 	}
-	utils.WriteJSON(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, response, "Token refreshed successfully")
 }
-

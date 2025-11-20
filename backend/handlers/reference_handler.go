@@ -2,10 +2,8 @@ package handlers
 
 import (
 	"database/sql"
-	// "fmt" // Removed unused import
 	"net/http"
 
-	"github.com/uzimpp/CarJai/backend/models"
 	"github.com/uzimpp/CarJai/backend/utils"
 )
 
@@ -17,13 +15,6 @@ type ReferenceHandler struct {
 // NewReferenceHandler creates a new reference handler
 func NewReferenceHandler(db *sql.DB) *ReferenceHandler {
 	return &ReferenceHandler{db: db}
-}
-
-// ReferenceDataResponse contains all reference data
-type ReferenceDataResponse struct {
-	Success bool          `json:"success"`
-	Data    ReferenceData `json:"data"`
-	Message string        `json:"message,omitempty"`
 }
 
 // ReferenceOption represents a simple code/label pair
@@ -48,7 +39,6 @@ type ReferenceData struct {
 	Provinces     []ProvinceOption  `json:"provinces"`
 }
 
-
 // GetAll handles GET /api/reference-data/all
 func (h *ReferenceHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	// Get language parameter (default to "en")
@@ -60,74 +50,53 @@ func (h *ReferenceHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	// Get body types
 	bodyTypes, err := h.getBodyTypes(lang)
 	if err != nil {
-		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
-			Success: false,
-			Error:   "Failed to fetch body types",
-		})
+		utils.WriteError(w, http.StatusInternalServerError, "Failed to fetch body types")
 		return
 	}
 
 	// Get transmissions
 	transmissions, err := h.getTransmissions(lang)
 	if err != nil {
-		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
-			Success: false,
-			Error:   "Failed to fetch transmissions",
-		})
+		utils.WriteError(w, http.StatusInternalServerError, "Failed to fetch transmissions")
 		return
 	}
 
 	// Get fuel types
 	fuelTypes, err := h.getFuelTypes(lang)
 	if err != nil {
-		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
-			Success: false,
-			Error:   "Failed to fetch fuel types",
-		})
+		utils.WriteError(w, http.StatusInternalServerError, "Failed to fetch fuel types")
 		return
 	}
 
 	// Get drivetrains
 	drivetrains, err := h.getDrivetrains(lang)
 	if err != nil {
-		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
-			Success: false,
-			Error:   "Failed to fetch drivetrains",
-		})
+		utils.WriteError(w, http.StatusInternalServerError, "Failed to fetch drivetrains")
 		return
 	}
 
 	// Get colors
 	colors, err := h.getColors(lang)
 	if err != nil {
-		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
-			Success: false,
-			Error:   "Failed to fetch colors",
-		})
+		utils.WriteError(w, http.StatusInternalServerError, "Failed to fetch colors")
 		return
 	}
 
 	// Get provinces
 	provinces, err := h.getProvinces(lang)
 	if err != nil {
-		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
-			Success: false,
-			Error:   "Failed to fetch provinces",
-		})
+		utils.WriteError(w, http.StatusInternalServerError, "Failed to fetch provinces")
 		return
 	}
 
-	utils.RespondJSON(w, http.StatusOK, ReferenceDataResponse{
-		Success: true,
-		Data: ReferenceData{
-			BodyTypes:     bodyTypes,
-			Transmissions: transmissions,
-			FuelTypes:     fuelTypes,
-			Drivetrains:   drivetrains,
-			Colors:        colors,
-			Provinces:     provinces,
-		},
-	})
+	utils.WriteJSON(w, http.StatusOK, ReferenceData{
+		BodyTypes:     bodyTypes,
+		Transmissions: transmissions,
+		FuelTypes:     fuelTypes,
+		Drivetrains:   drivetrains,
+		Colors:        colors,
+		Provinces:     provinces,
+	}, "")
 }
 
 func (h *ReferenceHandler) getBodyTypes(lang string) ([]ReferenceOption, error) {
@@ -228,7 +197,7 @@ func (h *ReferenceHandler) GetBrands(w http.ResponseWriter, r *http.Request) {
 
 	rows, err := h.db.Query(query)
 	if err != nil {
-		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{Success: false, Error: "Failed to query brands: " + err.Error()})
+		utils.WriteError(w, http.StatusInternalServerError, "Failed to query brands: "+err.Error())
 		return
 	}
 	defer rows.Close()
@@ -238,27 +207,27 @@ func (h *ReferenceHandler) GetBrands(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var brand string
 		if err := rows.Scan(&brand); err != nil {
-			utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{Success: false, Error: "Failed to scan brand: " + err.Error()})
+			utils.WriteError(w, http.StatusInternalServerError, "Failed to scan brand: "+err.Error())
 			return
 		}
 		brands = append(brands, brand)
 	}
 
-	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{"success": true, "data": brands})
+	utils.WriteJSON(w, http.StatusOK, brands, "")
 }
 
 // GetModels handles GET /api/reference-data/models
 func (h *ReferenceHandler) GetModels(w http.ResponseWriter, r *http.Request) {
 	brand := r.URL.Query().Get("brand")
 	if brand == "" {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{Success: false, Error: "Brand query parameter is required"})
+		utils.WriteError(w, http.StatusBadRequest, "Brand query parameter is required")
 		return
 	}
 
 	query := `SELECT DISTINCT model FROM market_price WHERE brand = $1 AND model IS NOT NULL AND model != '' ORDER BY model;`
 	rows, err := h.db.Query(query, brand)
 	if err != nil {
-		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{Success: false, Error: "Failed to query models: " + err.Error()})
+		utils.WriteError(w, http.StatusInternalServerError, "Failed to query models: "+err.Error())
 		return
 	}
 	defer rows.Close()
@@ -268,13 +237,13 @@ func (h *ReferenceHandler) GetModels(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var model string
 		if err := rows.Scan(&model); err != nil {
-			utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{Success: false, Error: "Failed to scan model: " + err.Error()})
+			utils.WriteError(w, http.StatusInternalServerError, "Failed to scan model: "+err.Error())
 			return
 		}
 		modelsList = append(modelsList, model)
 	}
 
-	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{"success": true, "data": modelsList})
+	utils.WriteJSON(w, http.StatusOK, modelsList, "")
 }
 
 // GetSubModels handles GET /api/reference-data/submodels
@@ -282,14 +251,14 @@ func (h *ReferenceHandler) GetSubModels(w http.ResponseWriter, r *http.Request) 
 	brand := r.URL.Query().Get("brand")
 	model := r.URL.Query().Get("model")
 	if brand == "" || model == "" {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{Success: false, Error: "Brand and Model query parameters are required"})
+		utils.WriteError(w, http.StatusBadRequest, "Brand and Model query parameters are required")
 		return
 	}
 
 	query := `SELECT DISTINCT sub_model FROM market_price WHERE brand = $1 AND model = $2 AND sub_model IS NOT NULL AND sub_model != '' ORDER BY sub_model;`
 	rows, err := h.db.Query(query, brand, model)
 	if err != nil {
-		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{Success: false, Error: "Failed to query submodels: " + err.Error()})
+		utils.WriteError(w, http.StatusInternalServerError, "Failed to query submodels: "+err.Error())
 		return
 	}
 	defer rows.Close()
@@ -299,13 +268,13 @@ func (h *ReferenceHandler) GetSubModels(w http.ResponseWriter, r *http.Request) 
 	for rows.Next() {
 		var subModel string
 		if err := rows.Scan(&subModel); err != nil {
-			utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{Success: false, Error: "Failed to scan submodel: " + err.Error()})
+			utils.WriteError(w, http.StatusInternalServerError, "Failed to scan submodel: "+err.Error())
 			return
 		}
 		subModels = append(subModels, subModel)
 	}
 
-	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{"success": true, "data": subModels})
+	utils.WriteJSON(w, http.StatusOK, subModels, "")
 }
 
 func (h *ReferenceHandler) getProvinces(lang string) ([]ProvinceOption, error) {

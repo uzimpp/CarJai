@@ -57,21 +57,6 @@ func CarRoutes(
 		),
 	)
 
-	// Upload vehicle registration book (POST) - authenticated
-	router.HandleFunc("/api/cars/book",
-		middleware.CORSMiddleware(corsOrigins)(
-			middleware.SecurityHeadersMiddleware(
-				middleware.GeneralRateLimit()(
-					middleware.LoggingMiddleware(
-						authMiddleware.RequireAuth(
-							carHandler.UploadBook,
-						),
-					),
-				),
-			),
-		),
-	)
-
 	// Image management by image ID (GET public, DELETE authenticated)
 	router.HandleFunc("/api/cars/images/",
 		middleware.CORSMiddleware(corsOrigins)(
@@ -186,12 +171,6 @@ func handleCarRoutes(
 	// /api/cars/{id}/restore-progress - Restore progress from another car (authenticated)
 	if strings.HasSuffix(path, "/restore-progress") {
 		authMiddleware.RequireAuth(handler.RestoreProgress)(w, r)
-		return
-	}
-
-	// /api/cars/{id}/redirect-to-draft - Redirect to existing draft and delete current car (authenticated)
-	if strings.HasSuffix(path, "/redirect-to-draft") {
-		authMiddleware.RequireAuth(handler.RedirectToDraft)(w, r)
 		return
 	}
 

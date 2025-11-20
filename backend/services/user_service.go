@@ -124,7 +124,7 @@ func (s *UserService) CreateUserByAdmin(req models.AdminCreateUserRequest) (*mod
 }
 
 // Signup creates a new user account
-func (s *UserService) Signup(email, password, username, name, ipAddress, userAgent string) (*models.UserAuthResponse, error) {
+func (s *UserService) Signup(email, password, username, name, ipAddress, userAgent string) (*models.UserAuthData, error) {
 	// Check if user already exists by email
 	existingUser, err := s.userRepo.GetUserByEmail(email)
 	if err == nil && existingUser != nil {
@@ -179,19 +179,15 @@ func (s *UserService) Signup(email, password, username, name, ipAddress, userAge
 		return nil, fmt.Errorf("failed to create session: %w", err)
 	}
 
-	return &models.UserAuthResponse{
-		Success: true,
-		Data: models.UserAuthData{
-			User:      user.ToPublic(),
-			Token:     token,
-			ExpiresAt: expiresAt,
-		},
-		Message: "User created successfully",
+	return &models.UserAuthData{
+		User:      user.ToPublic(),
+		Token:     token,
+		ExpiresAt: expiresAt,
 	}, nil
 }
 
 // Signin authenticates a user
-func (s *UserService) Signin(emailOrUsername, password, ipAddress, userAgent string) (*models.UserAuthResponse, error) {
+func (s *UserService) Signin(emailOrUsername, password, ipAddress, userAgent string) (*models.UserAuthData, error) {
 	// Try to get user by email first, then by username
 	var user *models.User
 	var err error
@@ -219,7 +215,7 @@ func (s *UserService) Signin(emailOrUsername, password, ipAddress, userAgent str
 		sellerStatus, _ = s.profileService.GetSellerStatus(user.ID)
 		buyerStatus, _ = s.profileService.GetBuyerStatus(user.ID)
 	}
-	
+
 	if sellerStatus == "banned" || buyerStatus == "banned" {
 		return nil, fmt.Errorf("your account has been banned")
 	}
@@ -250,19 +246,15 @@ func (s *UserService) Signin(emailOrUsername, password, ipAddress, userAgent str
 		return nil, fmt.Errorf("failed to create session: %w", err)
 	}
 
-	return &models.UserAuthResponse{
-		Success: true,
-		Data: models.UserAuthData{
-			User:      user.ToPublic(),
-			Token:     token,
-			ExpiresAt: expiresAt,
-		},
-		Message: "Sign in successful",
+	return &models.UserAuthData{
+		User:      user.ToPublic(),
+		Token:     token,
+		ExpiresAt: expiresAt,
 	}, nil
 }
 
 // SigninWithGoogleIDToken validates a Google ID token and signs in (or creates) the user
-func (s *UserService) SigninWithGoogleIDToken(idToken, ipAddress, userAgent string) (*models.UserAuthResponse, error) {
+func (s *UserService) SigninWithGoogleIDToken(idToken, ipAddress, userAgent string) (*models.UserAuthData, error) {
 	// Validate Google ID token using tokeninfo endpoint (simple server-side validation)
 	clientID := utils.GetEnv("GOOGLE_CLIENT_ID")
 	if clientID == "" {
@@ -371,7 +363,7 @@ func (s *UserService) SigninWithGoogleIDToken(idToken, ipAddress, userAgent stri
 		sellerStatus, _ = s.profileService.GetSellerStatus(user.ID)
 		buyerStatus, _ = s.profileService.GetBuyerStatus(user.ID)
 	}
-	
+
 	if sellerStatus == "banned" || buyerStatus == "banned" {
 		return nil, fmt.Errorf("your account has been banned")
 	}
@@ -401,14 +393,10 @@ func (s *UserService) SigninWithGoogleIDToken(idToken, ipAddress, userAgent stri
 		return nil, fmt.Errorf("failed to create session: %w", err)
 	}
 
-	return &models.UserAuthResponse{
-		Success: true,
-		Data: models.UserAuthData{
-			User:      user.ToPublic(),
-			Token:     token,
-			ExpiresAt: expiresAt,
-		},
-		Message: "Sign in with Google successful",
+	return &models.UserAuthData{
+		User:      user.ToPublic(),
+		Token:     token,
+		ExpiresAt: expiresAt,
 	}, nil
 }
 
@@ -440,21 +428,18 @@ func generateUsernameFromEmail(email string) string {
 }
 
 // Signout invalidates a user session
-func (s *UserService) Signout(token string) (*models.UserSignoutResponse, error) {
+func (s *UserService) Signout(token string) (string, error) {
 	// Delete session from database
 	err := s.userSessionRepo.DeleteUserSession(token)
 	if err != nil {
-		return nil, fmt.Errorf("failed to sign out: %w", err)
+		return "", fmt.Errorf("failed to sign out: %w", err)
 	}
 
-	return &models.UserSignoutResponse{
-		Success: true,
-		Message: "Sign out successful",
-	}, nil
+	return "Sign out successful", nil
 }
 
 // GetCurrentUser returns the current user from JWT token with roles and completeness
-func (s *UserService) GetCurrentUser(token string) (*models.UserMeResponse, error) {
+func (s *UserService) GetCurrentUser(token string) (*models.UserMeData, error) {
 	// Validate token
 	claims, err := s.jwtManager.ValidateToken(token)
 	if err != nil {
@@ -476,13 +461,10 @@ func (s *UserService) GetCurrentUser(token string) (*models.UserMeResponse, erro
 		profiles, _ = s.profileService.GetProfilesCompletenessForUser(user.ID)
 	}
 
-	return &models.UserMeResponse{
-		Success: true,
-		Data: models.UserMeData{
-			User:     user.ToPublic(),
-			Roles:    roles,
-			Profiles: profiles,
-		},
+	return &models.UserMeData{
+		User:     user.ToPublic(),
+		Roles:    roles,
+		Profiles: profiles,
 	}, nil
 }
 
@@ -517,7 +499,7 @@ func (s *UserService) ValidateUserSession(token string) (*models.User, error) {
 }
 
 // RefreshToken generates a new token for the user
-func (s *UserService) RefreshToken(token, ipAddress, userAgent string) (*models.UserAuthResponse, error) {
+func (s *UserService) RefreshToken(token, ipAddress, userAgent string) (*models.UserAuthData, error) {
 	// Validate current token
 	claims, err := s.jwtManager.ValidateToken(token)
 	if err != nil {
@@ -559,14 +541,10 @@ func (s *UserService) RefreshToken(token, ipAddress, userAgent string) (*models.
 		return nil, fmt.Errorf("failed to create new session: %w", err)
 	}
 
-	return &models.UserAuthResponse{
-		Success: true,
-		Data: models.UserAuthData{
-			User:      user.ToPublic(),
-			Token:     newToken,
-			ExpiresAt: expiresAt,
-		},
-		Message: "Token refreshed successfully",
+	return &models.UserAuthData{
+		User:      user.ToPublic(),
+		Token:     newToken,
+		ExpiresAt: expiresAt,
 	}, nil
 }
 
