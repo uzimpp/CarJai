@@ -100,6 +100,16 @@ export default function SellerForm({
     }));
   };
 
+  // Helper to check if a string is a URL with a specific host
+  const isHostInSet = (input: string, allowedHosts: string[]): boolean => {
+    try {
+      const url = new URL(input);
+      return allowedHosts.includes(url.host.toLowerCase());
+    } catch {
+      return false;
+    }
+  };
+
   const validateContactValue = (type: string, value: string): string | null => {
     const trimmedValue = value.trim();
     
@@ -118,9 +128,8 @@ export default function SellerForm({
         }
         break;
       case "line":
-        // Check for other platform URLs
-        if (trimmedValue.includes("facebook.com") || trimmedValue.includes("fb.com") ||
-            trimmedValue.includes("instagram.com")) {
+        // Check for other platform URLs using proper URL parsing
+        if (isHostInSet(trimmedValue, ["facebook.com", "www.facebook.com", "fb.com", "www.fb.com", "instagram.com", "www.instagram.com"])) {
           return "Please use the correct contact type for this platform";
         }
         
@@ -131,13 +140,13 @@ export default function SellerForm({
         }
         break;
       case "facebook":
-        // Check for other platform URLs
-        if (trimmedValue.includes("instagram.com") || trimmedValue.includes("line.me")) {
+        // Check for other platform URLs using proper URL parsing
+        if (isHostInSet(trimmedValue, ["instagram.com", "www.instagram.com", "line.me", "www.line.me"])) {
           return "Please use the correct contact type for this platform";
         }
         
         // Facebook: URL or username (alphanumeric and dots only, 5-50 chars)
-        if (trimmedValue.includes("facebook.com") || trimmedValue.includes("fb.com")) {
+        if (isHostInSet(trimmedValue, ["facebook.com", "www.facebook.com", "fb.com", "www.fb.com"])) {
           const urlRegex = /^https?:\/\/(www\.)?(facebook|fb)\.com\/.+$/;
           if (!urlRegex.test(trimmedValue)) {
             return "Invalid Facebook URL";
@@ -151,14 +160,13 @@ export default function SellerForm({
         }
         break;
       case "instagram":
-        // Check for other platform URLs
-        if (trimmedValue.includes("facebook.com") || trimmedValue.includes("fb.com") ||
-            trimmedValue.includes("line.me")) {
+        // Check for other platform URLs using proper URL parsing
+        if (isHostInSet(trimmedValue, ["facebook.com", "www.facebook.com", "fb.com", "www.fb.com", "line.me", "www.line.me"])) {
           return "Please use the correct contact type for this platform";
         }
         
         // Instagram: URL or username (must contain underscore or dot, no hyphens)
-        if (trimmedValue.includes("instagram.com")) {
+        if (isHostInSet(trimmedValue, ["instagram.com", "www.instagram.com"])) {
           const urlRegex = /^https?:\/\/(www\.)?instagram\.com\/.+$/;
           if (!urlRegex.test(trimmedValue)) {
             return "Invalid Instagram URL";

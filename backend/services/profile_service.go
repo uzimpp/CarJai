@@ -3,6 +3,7 @@ package services
 import (
 	"database/sql"
 	"fmt"
+	"net/url"
 	"regexp"
 	"strings"
 
@@ -209,6 +210,21 @@ func (s *ProfileService) UpsertBuyer(userID int, req models.BuyerRequest) (*mode
 	return buyer, nil
 }
 
+// isHostInSet checks if a string is a URL with a specific host
+func isHostInSet(input string, allowedHosts []string) bool {
+	parsedURL, err := url.Parse(input)
+	if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
+		return false
+	}
+	host := strings.ToLower(parsedURL.Host)
+	for _, allowedHost := range allowedHosts {
+		if host == strings.ToLower(allowedHost) {
+			return true
+		}
+	}
+	return false
+}
+
 // validateContactValue validates contact value based on its type
 func validateContactValue(contactType, value string) error {
 	trimmedValue := strings.TrimSpace(value)
@@ -227,9 +243,8 @@ func validateContactValue(contactType, value string) error {
 			return fmt.Errorf("invalid email format")
 		}
 	case "line":
-		// Check for other platform URLs
-		if strings.Contains(trimmedValue, "facebook.com") || strings.Contains(trimmedValue, "fb.com") ||
-			strings.Contains(trimmedValue, "instagram.com") {
+		// Check for other platform URLs using proper URL parsing
+		if isHostInSet(trimmedValue, []string{"facebook.com", "www.facebook.com", "fb.com", "www.fb.com", "instagram.com", "www.instagram.com"}) {
 			return fmt.Errorf("please use the correct contact type for this platform")
 		}
 		
@@ -239,13 +254,13 @@ func validateContactValue(contactType, value string) error {
 			return fmt.Errorf("invalid LINE ID format (4-20 characters, alphanumeric)")
 		}
 	case "facebook":
-		// Check for other platform URLs
-		if strings.Contains(trimmedValue, "instagram.com") || strings.Contains(trimmedValue, "line.me") {
+		// Check for other platform URLs using proper URL parsing
+		if isHostInSet(trimmedValue, []string{"instagram.com", "www.instagram.com", "line.me", "www.line.me"}) {
 			return fmt.Errorf("please use the correct contact type for this platform")
 		}
 		
 		// Facebook: URL or username (alphanumeric and dots only, 5-50 chars)
-		if strings.Contains(trimmedValue, "facebook.com") || strings.Contains(trimmedValue, "fb.com") {
+		if isHostInSet(trimmedValue, []string{"facebook.com", "www.facebook.com", "fb.com", "www.fb.com"}) {
 			urlRegex := regexp.MustCompile(`^https?://(www\.)?(facebook|fb)\.com/.+$`)
 			if !urlRegex.MatchString(trimmedValue) {
 				return fmt.Errorf("invalid Facebook URL")
@@ -258,14 +273,13 @@ func validateContactValue(contactType, value string) error {
 			}
 		}
 	case "instagram":
-		// Check for other platform URLs
-		if strings.Contains(trimmedValue, "facebook.com") || strings.Contains(trimmedValue, "fb.com") ||
-			strings.Contains(trimmedValue, "line.me") {
+		// Check for other platform URLs using proper URL parsing
+		if isHostInSet(trimmedValue, []string{"facebook.com", "www.facebook.com", "fb.com", "www.fb.com", "line.me", "www.line.me"}) {
 			return fmt.Errorf("please use the correct contact type for this platform")
 		}
 		
 		// Instagram: URL or username (must contain underscore or dot, no hyphens)
-		if strings.Contains(trimmedValue, "instagram.com") {
+		if isHostInSet(trimmedValue, []string{"instagram.com", "www.instagram.com"}) {
 			urlRegex := regexp.MustCompile(`^https?://(www\.)?instagram\.com/.+$`)
 			if !urlRegex.MatchString(trimmedValue) {
 				return fmt.Errorf("invalid Instagram URL")
