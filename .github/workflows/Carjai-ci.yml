@@ -138,6 +138,25 @@ jobs:
           name: test-coverage
           path: backend/coverage.out
           retention-days: 7
+
+      - name: Calculate Maintainability Index
+        working-directory: ./backend
+        run: |
+          echo "📐 Calculating maintainability index with Lizard..."
+          python3 -m pip install --upgrade pip >/dev/null
+          python3 -m pip install lizard >/dev/null
+          echo ""
+          lizard -l go -m . | tee ../maintainability-report.txt
+          echo ""
+          echo "✅ Maintainability analysis completed!"
+
+      - name: Upload maintainability report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: maintainability-report
+          path: maintainability-report.txt
+          retention-days: 7
         
       - name: Build Go binary
         working-directory: ./backend
