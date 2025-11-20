@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useRouter, useParams, usePathname } from "next/navigation";
+import Link from "next/link";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import { carsAPI } from "@/lib/carsAPI";
 import { referenceAPI } from "@/lib/referenceAPI"; // Import referenceAPI
@@ -927,14 +928,21 @@ export default function SellWithIdPage() {
               )}
               {estimatedPrice && !isEstimating && (
                 <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-md">
-                  <h4 className="text-lg font-semibold text-green-800">
-                    Estimated Price: ฿{estimatedPrice.toLocaleString()}
-                  </h4>
-                  <p className="text-sm text-green-700 mt-1">
-                    This is an estimate based on our formula and market data. It
-                    is intended to help you set a price, but you are free to set
-                    any price you wish.
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-lg font-semibold text-green-800">
+                        Estimated Price: ฿{estimatedPrice.toLocaleString()}
+                      </h4>
+                    </div>
+                    <Link
+                      href="/pricing"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-green-700 hover:text-green-900 underline font-medium ml-4 whitespace-nowrap"
+                    >
+                      See how we calculate
+                    </Link>
+                  </div>
                 </div>
               )}
 
