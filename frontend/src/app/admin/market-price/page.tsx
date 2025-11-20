@@ -83,10 +83,14 @@ function UploadModal({
 
     try {
       const result = await adminAuthAPI.importMarketPrices(selectedFile);
-      setUploadStatus({
-        message: `${result.message} Inserted: ${result.inserted_count}, Updated: ${result.updated_count}`,
-        error: undefined,
-      });
+      if (result.success && result.data) {
+        setUploadStatus({
+          message: `${result.message} Inserted: ${result.data.inserted_count}, Updated: ${result.data.updated_count}`,
+          error: undefined,
+        });
+      } else {
+        throw new Error(result.message || "Import failed");
+      }
       // Clear file after successful import
       setSelectedFile(null);
       const fileInput = document.getElementById(
@@ -221,8 +225,10 @@ export default function MarketPricePage() {
       setError(null);
 
       const data = await adminAuthAPI.getMarketPrices();
-      setPrices(data || []);
-      setFilteredPrices(data || []);
+      // Ensure data is an array before setting it
+      const pricesData = Array.isArray(data) ? data : [];
+      setPrices(pricesData);
+      setFilteredPrices(pricesData);
     } catch (err) {
       console.error("Error fetching market prices:", err);
       // Set empty arrays instead of error for initial load
@@ -243,6 +249,12 @@ export default function MarketPricePage() {
 
   // Search filtering
   useEffect(() => {
+    // Ensure prices is always an array
+    if (!Array.isArray(prices)) {
+      setFilteredPrices([]);
+      return;
+    }
+
     if (!searchQuery) {
       setFilteredPrices(prices);
       setPage(1);
@@ -263,10 +275,14 @@ export default function MarketPricePage() {
   }, [searchQuery, prices]);
 
   // Pagination
-  const totalPages = Math.ceil(filteredPrices.length / rowsPerPage);
+  // Ensure filteredPrices is always an array to prevent "slice is not a function" errors
+  const safeFilteredPrices = Array.isArray(filteredPrices)
+    ? filteredPrices
+    : [];
+  const totalPages = Math.ceil(safeFilteredPrices.length / rowsPerPage);
   const startIndex = (page - 1) * rowsPerPage;
   const endIndex = startIndex + rowsPerPage;
-  const paginatedPrices = filteredPrices.slice(startIndex, endIndex);
+  const paginatedPrices = safeFilteredPrices.slice(startIndex, endIndex);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("th-TH").format(price);

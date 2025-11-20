@@ -32,14 +32,13 @@ type AigenSuccessResponse struct {
 }
 
 // BookFields represents structured data extracted from vehicle registration book
+// This is display-ready data (no translation needed) - brand name is stored as-is
 type BookFields struct {
-	ChassisNumber string  `json:"chassisNumber"` // Required
-	BrandName     *string `json:"brandName"`     // Optional
-	Year          *int    `json:"year"`          // Optional
-	EngineCC      *int    `json:"engineCc"`      // Optional (rounded to int)
-	Seats         *int    `json:"seats"`         // Optional
-	// RegistrationNumber string  `json:"registrationNumber"` // Required - License plate
-	// Province           *string `json:"province"`           // Optional
+	ChassisNumber string  `json:"-"`         // Internal use only, not returned to frontend
+	BrandName     *string `json:"brandName"` // Display-ready brand name from OCR
+	Year          *int    `json:"year"`      // Year from OCR
+	EngineCC      *int    `json:"engineCc"`  // Engine CC (rounded to int)
+	Seats         *int    `json:"seats"`     // Number of seats
 }
 
 type OCRService struct {
@@ -220,11 +219,10 @@ func (s *CarService) UploadBookToDraft(carID int, sellerID int, bookFields *Book
 	return currentCar, "stay", nil, "", nil
 }
 
-// ToMap converts BookFields to a map for API responses
+// ToMap is deprecated - BookFields now has JSON tags and can be marshaled directly
+// Kept for backward compatibility, but handlers should use the struct directly
 func (bookFields *BookFields) ToMap() map[string]interface{} {
 	result := make(map[string]interface{})
-
-	// result["chassisNumber"] = bookFields.ChassisNumber
 	if bookFields.BrandName != nil {
 		result["brandName"] = *bookFields.BrandName
 	}
@@ -237,11 +235,5 @@ func (bookFields *BookFields) ToMap() map[string]interface{} {
 	if bookFields.Seats != nil {
 		result["seats"] = *bookFields.Seats
 	}
-	// result["registrationNumber"] = bookFields.RegistrationNumber
-	// if bookFields.Province != nil {
-	// 	result["province"] = *bookFields.Province
-	// }
-	// result["province"] = utils.DisplayProvince(*bookFields.Province)
-
 	return result
 }

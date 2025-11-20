@@ -22,7 +22,8 @@ export default function SellerProfilePage() {
   const handleSubmit = async (data: SellerRequest) => {
     try {
       setError(null);
-      await profileAPI.upsertSellerProfile(data);
+      // Use unified endpoint
+      await profileAPI.updateSelf({ seller: data });
       // Refresh auth context to get updated roles
       await validateSession();
       // Redirect to welcome page after successful profile creation

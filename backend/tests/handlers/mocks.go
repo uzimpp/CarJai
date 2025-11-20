@@ -11,11 +11,12 @@ import (
 
 // mockUserService is a mock implementation of UserService for testing
 type mockUserService struct {
-	signupFunc              func(email, password, username, name, ipAddress, userAgent string) (*models.UserAuthResponse, error)
-	signinFunc              func(emailOrUsername, password, ipAddress, userAgent string) (*models.UserAuthResponse, error)
-	signoutFunc             func(token string) (*models.UserSignoutResponse, error)
-	getCurrentUserFunc      func(token string) (*models.UserMeResponse, error)
-	refreshTokenFunc        func(token, ipAddress, userAgent string) (*models.UserAuthResponse, error)
+	signupFunc              func(email, password, username, name, ipAddress, userAgent string) (*models.UserAuthData, error)
+	signinFunc              func(emailOrUsername, password, ipAddress, userAgent string) (*models.UserAuthData, error)
+	signoutFunc             func(token string) (string, error)
+	getCurrentUserFunc      func(token string) (*models.UserMeData, error)
+	getUserByIDFunc         func(userID int) (*models.User, error)
+	refreshTokenFunc        func(token, ipAddress, userAgent string) (*models.UserAuthData, error)
 	changePasswordFunc      func(userID int, currentPassword, newPassword string) error
 	validateUserSessionFunc func(token string) (*models.User, error)
 	isSellerFunc            func(userID int) (bool, error)
@@ -23,35 +24,42 @@ type mockUserService struct {
 	updateUserFunc          func(userID int, username *string, name *string) (*models.User, error)
 }
 
-func (m *mockUserService) Signup(email, password, username, name, ipAddress, userAgent string) (*models.UserAuthResponse, error) {
+func (m *mockUserService) Signup(email, password, username, name, ipAddress, userAgent string) (*models.UserAuthData, error) {
 	if m.signupFunc != nil {
 		return m.signupFunc(email, password, username, name, ipAddress, userAgent)
 	}
 	return nil, nil
 }
 
-func (m *mockUserService) Signin(emailOrUsername, password, ipAddress, userAgent string) (*models.UserAuthResponse, error) {
+func (m *mockUserService) Signin(emailOrUsername, password, ipAddress, userAgent string) (*models.UserAuthData, error) {
 	if m.signinFunc != nil {
 		return m.signinFunc(emailOrUsername, password, ipAddress, userAgent)
 	}
 	return nil, nil
 }
 
-func (m *mockUserService) Signout(token string) (*models.UserSignoutResponse, error) {
+func (m *mockUserService) Signout(token string) (string, error) {
 	if m.signoutFunc != nil {
 		return m.signoutFunc(token)
 	}
-	return nil, nil
+	return "", nil
 }
 
-func (m *mockUserService) GetCurrentUser(token string) (*models.UserMeResponse, error) {
+func (m *mockUserService) GetCurrentUser(token string) (*models.UserMeData, error) {
 	if m.getCurrentUserFunc != nil {
 		return m.getCurrentUserFunc(token)
 	}
 	return nil, nil
 }
 
-func (m *mockUserService) RefreshToken(token, ipAddress, userAgent string) (*models.UserAuthResponse, error) {
+func (m *mockUserService) GetUserByID(userID int) (*models.User, error) {
+	if m.getUserByIDFunc != nil {
+		return m.getUserByIDFunc(userID)
+	}
+	return nil, nil
+}
+
+func (m *mockUserService) RefreshToken(token, ipAddress, userAgent string) (*models.UserAuthData, error) {
 	if m.refreshTokenFunc != nil {
 		return m.refreshTokenFunc(token, ipAddress, userAgent)
 	}
@@ -95,13 +103,13 @@ func (m *mockUserService) UpdateUser(userID int, username *string, name *string)
 
 // mockProfileService is a mock implementation of ProfileService for testing
 type mockProfileService struct {
-	getFullProfileFunc    func(userID int, user *models.User) (*models.ProfileData, error)
-	getBuyerByUserIDFunc  func(userID int) (*models.Buyer, error)
-	upsertBuyerFunc       func(userID int, req models.BuyerRequest) (*models.Buyer, error)
-	getSellerByUserIDFunc func(userID int) (*models.Seller, error)
-	upsertSellerFunc      func(userID int, req models.SellerRequest) (*models.Seller, *[]models.SellerContact, error)
-	getSellerContactsFunc func(sellerID int) ([]models.SellerContact, error)
-	getRolesForUserFunc   func(userID int) (models.UserRoles, error)
+	getFullProfileFunc      func(userID int, user *models.User) (*models.ProfileData, error)
+	getBuyerByUserIDFunc    func(userID int) (*models.Buyer, error)
+	upsertBuyerFunc         func(userID int, req models.BuyerRequest) (*models.Buyer, error)
+	getSellerByUserIDFunc   func(userID int) (*models.Seller, error)
+	upsertSellerFunc        func(userID int, req models.SellerRequest) (*models.Seller, *[]models.SellerContact, error)
+	getSellerContactsFunc   func(sellerID int) ([]models.SellerContact, error)
+	getRolesForUserFunc     func(userID int) (models.UserRoles, error)
 	getPublicSellerByIDFunc func(sellerID string) (*models.Seller, error)
 }
 
@@ -163,9 +171,16 @@ func (m *mockProfileService) GetPublicSellerByID(sellerID string) (*models.Selle
 
 // mockFavouriteService is a mock implementation of FavouriteService for testing
 type mockFavouriteService struct {
-	addFavouriteFunc      func(userID, carID int) error
-	removeFavouriteFunc   func(userID, carID int) error
-	getFavouriteListingsFunc func(userID int) ([]models.CarListingWithImages, error)
+	addFavouriteFunc          func(userID, carID int) error
+	removeFavouriteFunc       func(userID, carID int) error
+	getFavouriteListItemsFunc func(userID int, lang string) ([]models.CarListItem, error)
+}
+
+func (m *mockFavouriteService) GetFavouriteListItems(userID int, lang string) ([]models.CarListItem, error) {
+	if m.getFavouriteListItemsFunc != nil {
+		return m.getFavouriteListItemsFunc(userID, lang)
+	}
+	return nil, nil
 }
 
 func (m *mockFavouriteService) AddFavourite(userID, carID int) error {
@@ -182,17 +197,10 @@ func (m *mockFavouriteService) RemoveFavourite(userID, carID int) error {
 	return nil
 }
 
-func (m *mockFavouriteService) GetFavouriteListings(userID int) ([]models.CarListingWithImages, error) {
-	if m.getFavouriteListingsFunc != nil {
-		return m.getFavouriteListingsFunc(userID)
-	}
-	return nil, nil
-}
-
 // mockRecentViewsService is a mock implementation of RecentViewsService for testing
 type mockRecentViewsService struct {
-	recordViewFunc      func(userID, carID int) error
-	getUserRecentViewsFunc func(userID, limit int) ([]models.RecentViewWithCarDetails, error)
+	recordViewFunc         func(userID, carID int) error
+	getUserRecentViewsFunc func(userID, limit int, lang string) ([]models.CarListItem, error)
 }
 
 func (m *mockRecentViewsService) RecordView(userID, carID int) error {
@@ -202,34 +210,33 @@ func (m *mockRecentViewsService) RecordView(userID, carID int) error {
 	return nil
 }
 
-func (m *mockRecentViewsService) GetUserRecentViews(userID, limit int) ([]models.RecentViewWithCarDetails, error) {
+func (m *mockRecentViewsService) GetUserRecentViews(userID, limit int, lang string) ([]models.CarListItem, error) {
 	if m.getUserRecentViewsFunc != nil {
-		return m.getUserRecentViewsFunc(userID, limit)
+		return m.getUserRecentViewsFunc(userID, limit, lang)
 	}
 	return nil, nil
 }
 
 // mockCarService is a mock implementation of CarService for testing
 type mockCarService struct {
-	createCarFunc              func(userID int) (*models.Car, error)
-	getCarWithImagesFunc       func(carID int) (*models.CarWithImages, error)
-	getCarsBySellerIDFunc      func(sellerID int) ([]models.CarListingWithImages, error)
-	searchActiveCarsFunc        func(req *models.SearchCarsRequest) ([]models.CarListingWithImages, int, error)
-	updateCarFunc              func(carID, userID int, req *models.UpdateCarRequest, isAdmin bool) error
-	autoSaveDraftFunc          func(carID, userID int, req *models.UpdateCarRequest) error
-	deleteCarFunc              func(carID, userID int, isAdmin bool) error
-	uploadCarImagesFunc        func(carID, userID int, files []*http.Request, isAdmin bool) ([]models.CarImageMetadata, error)
-	getCarImageFunc            func(imageID int) (*models.CarImage, error)
-	deleteCarImageFunc         func(imageID, userID int, isAdmin bool) error
-	reorderImagesBulkFunc      func(carID int, imageIDs []int, userID int, isAdmin bool) error
-	validatePublishFunc        func(carID int) (bool, []string)
-	getCarByIDFunc             func(carID int) (*models.Car, error)
-	translateCarForDisplayFunc func(car *models.Car, lang string) (*services.TranslatedCarDisplay, error)
-	getColorLabelsByCodesFunc  func(codes []string, lang string) ([]map[string]interface{}, error)
-	computeStep2StatusFunc     func(carID int) (bool, []string)
-	computeStep3StatusFunc     func(carID int) (bool, []string)
-	uploadBookToDraftFunc      func(carID, userID int, bookFields *services.BookFields) (*models.Car, string, *int, string, error)
-	uploadInspectionToDraftFunc func(carID, userID int, inspectionFields *services.InspectionFields, scraper *services.ScraperService) (*models.Car, *int, string, error)
+	createCarFunc                   func(userID int) (*models.Car, error)
+	getCarWithImagesFunc            func(carID int) (*models.CarWithImages, error)
+	searchActiveCarsAsListItemsFunc func(req *models.SearchCarsRequest, lang string) ([]models.CarListItem, int, error)
+	updateCarFunc                   func(carID, userID int, req *models.UpdateCarRequest, isAdmin bool) error
+	autoSaveDraftFunc               func(carID, userID int, req *models.UpdateCarRequest) error
+	deleteCarFunc                   func(carID, userID int, isAdmin bool) error
+	uploadCarImagesFunc             func(carID, userID int, files []*http.Request, isAdmin bool) ([]models.CarImageMetadata, error)
+	getCarImageFunc                 func(imageID int) (*models.CarImage, error)
+	deleteCarImageFunc              func(imageID, userID int, isAdmin bool) error
+	reorderImagesBulkFunc           func(carID int, imageIDs []int, userID int, isAdmin bool) error
+	validatePublishFunc             func(carID int) (bool, []string)
+	getCarByIDFunc                  func(carID int) (*models.Car, error)
+	translateCarForDisplayFunc      func(car *models.Car, lang string) (*services.TranslatedCarDisplay, error)
+	getColorLabelsByCodesFunc       func(codes []string, lang string) ([]map[string]interface{}, error)
+	computeStep2StatusFunc          func(carID int) (bool, []string)
+	computeStep3StatusFunc          func(carID int) (bool, []string)
+	uploadBookToDraftFunc           func(carID, userID int, bookFields *services.BookFields) (*models.Car, string, *int, string, error)
+	uploadInspectionToDraftFunc     func(carID, userID int, inspectionFields *services.InspectionFields, scraper *services.ScraperService) (*models.Car, *int, string, error)
 }
 
 func (m *mockCarService) CreateCar(userID int) (*models.Car, error) {
@@ -246,16 +253,9 @@ func (m *mockCarService) GetCarWithImages(carID int) (*models.CarWithImages, err
 	return nil, nil
 }
 
-func (m *mockCarService) GetCarsBySellerIDWithImages(sellerID int) ([]models.CarListingWithImages, error) {
-	if m.getCarsBySellerIDFunc != nil {
-		return m.getCarsBySellerIDFunc(sellerID)
-	}
-	return nil, nil
-}
-
-func (m *mockCarService) SearchActiveCarsWithImages(req *models.SearchCarsRequest) ([]models.CarListingWithImages, int, error) {
-	if m.searchActiveCarsFunc != nil {
-		return m.searchActiveCarsFunc(req)
+func (m *mockCarService) SearchActiveCarsAsListItems(req *models.SearchCarsRequest, lang string) ([]models.CarListItem, int, error) {
+	if m.searchActiveCarsAsListItemsFunc != nil {
+		return m.searchActiveCarsAsListItemsFunc(req, lang)
 	}
 	return nil, 0, nil
 }
@@ -367,12 +367,13 @@ func (m *mockCarService) UploadInspectionToDraft(carID, userID int, inspectionFi
 
 // mockAdminService is a mock implementation of AdminService for testing
 type mockAdminService struct {
-	signinFunc        func(req services.SigninRequest) (*services.SigninResponse, error)
-	signoutFunc       func(req services.SignoutRequest) error
-	getCurrentAdminFunc func(token string) (*models.AdminMeData, error)
-	addIPToWhitelistFunc func(adminID int, ipAddress, description string) error
+	signinFunc                func(req services.SigninRequest) (*services.SigninResponse, error)
+	signoutFunc               func(req services.SignoutRequest) error
+	getCurrentAdminFunc       func(token string) (*models.AdminMeData, error)
+	getAdminByIDFunc          func(adminID int) (*models.Admin, error)
+	addIPToWhitelistFunc      func(adminID int, ipAddress, description string) error
 	removeIPFromWhitelistFunc func(adminID int, ipAddress string) error
-	getWhitelistedIPsFunc func(adminID int) ([]models.AdminIPWhitelist, error)
+	getWhitelistedIPsFunc     func(adminID int) ([]models.AdminIPWhitelist, error)
 }
 
 func (m *mockAdminService) Signin(req services.SigninRequest) (*services.SigninResponse, error) {
@@ -396,6 +397,13 @@ func (m *mockAdminService) GetCurrentAdmin(token string) (*models.AdminMeData, e
 	return nil, nil
 }
 
+func (m *mockAdminService) GetAdminByID(adminID int) (*models.Admin, error) {
+	if m.getAdminByIDFunc != nil {
+		return m.getAdminByIDFunc(adminID)
+	}
+	return nil, nil
+}
+
 func (m *mockAdminService) AddIPToWhitelist(adminID int, ipAddress, description string) error {
 	if m.addIPToWhitelistFunc != nil {
 		return m.addIPToWhitelistFunc(adminID, ipAddress, description)
@@ -415,6 +423,33 @@ func (m *mockAdminService) GetWhitelistedIPs(adminID int) ([]models.AdminIPWhite
 		return m.getWhitelistedIPsFunc(adminID)
 	}
 	return nil, nil
+}
+
+type mockReportService struct {
+	listReportsFunc        func(filters models.ReportFilters) ([]models.Report, int, error)
+	updateReportStatusFunc func(id int, status string, adminNotes *string, adminID int) error
+	banSellerFunc          func(sellerID, adminID int, notes *string) (int, error)
+}
+
+func (m *mockReportService) ListReports(filters models.ReportFilters) ([]models.Report, int, error) {
+	if m.listReportsFunc != nil {
+		return m.listReportsFunc(filters)
+	}
+	return nil, 0, nil
+}
+
+func (m *mockReportService) UpdateReportStatus(id int, status string, adminNotes *string, adminID int) error {
+	if m.updateReportStatusFunc != nil {
+		return m.updateReportStatusFunc(id, status, adminNotes, adminID)
+	}
+	return nil
+}
+
+func (m *mockReportService) BanSeller(sellerID, adminID int, notes *string) (int, error) {
+	if m.banSellerFunc != nil {
+		return m.banSellerFunc(sellerID, adminID, notes)
+	}
+	return 0, nil
 }
 
 // mockJWTManager is a mock implementation of JWTManager for testing
@@ -448,4 +483,3 @@ func (m *mockExtractionService) CommitMarketPrices(ctx context.Context, prices [
 	}
 	return 0, 0, nil
 }
-

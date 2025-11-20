@@ -11,15 +11,15 @@ import (
 
 // RecentViewsRoutes sets up recent views routes
 func RecentViewsRoutes(
-    recentViewsService *services.RecentViewsService,
-    profileService *services.ProfileService,
-    userService *services.UserService,
-    userJWTManager *utils.JWTManager,
-    allowedOrigins []string,
+	recentViewsService *services.RecentViewsService,
+	profileService *services.ProfileService,
+	userService *services.UserService,
+	userJWTManager *utils.JWTManager,
+	allowedOrigins []string,
 ) *http.ServeMux {
 
-    // Create handler instance
-    recentViewsHandler := handlers.NewRecentViewsHandler(recentViewsService, profileService)
+	// Create handler instance
+	recentViewsHandler := handlers.NewRecentViewsHandler(recentViewsService, profileService)
 
 	// Create router
 	router := http.NewServeMux()
@@ -28,29 +28,23 @@ func RecentViewsRoutes(
 	corsMiddleware := middleware.CORSMiddleware(allowedOrigins)
 	authMiddleware := middleware.NewUserAuthMiddleware(userService)
 
-	// Record a car view (POST)
-	router.HandleFunc("/api/recent-views/record",
-		corsMiddleware(
-			middleware.SecurityHeadersMiddleware(
-				middleware.GeneralRateLimit()(
-					middleware.LoggingMiddleware(
-						authMiddleware.RequireAuth(
-							recentViewsHandler.RecordView,
-						),
-					),
-				),
-			),
-		),
-	)
-
-	// Get user's recent views (GET)
+	// Handles both POST (record view) and GET (get recent views)
 	router.HandleFunc("/api/recent-views",
 		corsMiddleware(
 			middleware.SecurityHeadersMiddleware(
 				middleware.GeneralRateLimit()(
 					middleware.LoggingMiddleware(
 						authMiddleware.RequireAuth(
-							recentViewsHandler.GetRecentViews,
+							func(w http.ResponseWriter, r *http.Request) {
+								switch r.Method {
+								case http.MethodPost:
+									recentViewsHandler.RecordView(w, r)
+								case http.MethodGet:
+									recentViewsHandler.GetRecentViews(w, r)
+								default:
+									http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+								}
+							},
 						),
 					),
 				),

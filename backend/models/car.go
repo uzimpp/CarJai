@@ -48,6 +48,7 @@ type CarImage struct {
 }
 
 // CarImageMetadata represents image metadata without the actual image data
+// URL field is populated in handlers for API responses (not stored in database)
 type CarImageMetadata struct {
 	ID           int       `json:"id" db:"id"`
 	CarID        int       `json:"carId" db:"car_id"`
@@ -55,6 +56,7 @@ type CarImageMetadata struct {
 	ImageSize    int       `json:"imageSize" db:"image_size"`
 	DisplayOrder int       `json:"displayOrder" db:"display_order"`
 	UploadedAt   time.Time `json:"uploadedAt" db:"uploaded_at"`
+	URL          string    `json:"url,omitempty" db:"-"` // Populated in handlers for API responses
 }
 
 // Reference tables models
@@ -130,7 +132,7 @@ type AdminManagedCar struct {
 	BrandName    *string   `json:"brandName" db:"brand_name"`
 	ModelName    *string   `json:"modelName" db:"model_name"`
 	SubmodelName *string   `json:"submodelName" db:"submodel_name"`
-	Year         *int      `json:"year" db:"year"` 
+	Year         *int      `json:"year" db:"year"`
 	Status       string    `json:"status" db:"status"`
 	CreatedAt    time.Time `json:"listedDate" db:"created_at"`
 	SellerName   *string   `json:"soldBy" db:"seller_name"`
@@ -160,13 +162,6 @@ type AdminCreateCarRequest struct {
 	Mileage      *int    `json:"mileage,omitempty"`
 }
 
-// AdminCarsListResponse is the response for GET /admin/cars
-type AdminCarsListResponse struct {
-	Success bool              `json:"success"`
-	Data    []AdminManagedCar `json:"data"`
-	Total   int               `json:"total"`
-}
-
 // StepState models readiness of a step with issues
 type StepState struct {
 	Ready  bool     `json:"ready"`
@@ -177,6 +172,37 @@ type StepState struct {
 type StepStatus struct {
 	Step2 StepState `json:"step2"`
 	Step3 StepState `json:"step3"`
+}
+
+// EstimatedPriceResponse represents the estimated price response (API response only)
+type EstimatedPriceResponse struct {
+	EstimatedPrice int64 `json:"estimatedPrice"`
+}
+
+// CarIDResponse represents a simple car ID response (API response only)
+type CarIDResponse struct {
+	ID int `json:"id"`
+}
+
+// BookUploadErrorResponse represents an error response for book upload conflicts (API response only)
+type BookUploadErrorResponse struct {
+	Message         string `json:"message"`
+	Code            string `json:"code"`
+	Action          string `json:"action"`
+	RedirectToCarID *int   `json:"redirectToCarID,omitempty"`
+}
+
+// MarketPriceImportResponse represents the response for market price import (API response only)
+type MarketPriceImportResponse struct {
+	Message       string `json:"message"`
+	InsertedCount int    `json:"inserted_count"`
+	UpdatedCount  int    `json:"updated_count"`
+}
+
+// AdminCarsListResponse represents the response for admin cars list (API response only)
+type AdminCarsListResponse struct {
+	Cars  []AdminManagedCar `json:"cars"`
+	Total int               `json:"total"`
 }
 
 // ReorderImagesRequest for PUT /api/cars/{id}/images/order
@@ -195,79 +221,54 @@ type ReviewResponse struct {
 	Issues []string `json:"issues"`
 }
 
-type CarResponse struct {
-	Success bool   `json:"success"`
-	Data    Car    `json:"data"`
-	Message string `json:"message,omitempty"`
-}
-
-// (Removed unused CarListResponse and PaginatedCarListResponse)
-
-type PaginatedCarListingResponse struct {
-	Success bool                    `json:"success"`
-	Data    PaginatedCarListingData `json:"data"`
-	Message string                  `json:"message,omitempty"`
-}
-
+// PaginatedCarListingData is used for search/browse endpoints (returns CarListItem) (API response only)
 type PaginatedCarListingData struct {
-	Cars  []CarListingWithImages `json:"cars"`
-	Total int                    `json:"total"`
-	Page  int                    `json:"page"`
-	Limit int                    `json:"limit"`
+	Cars  []CarListItem `json:"cars"`
+	Total int           `json:"total"`
+	Page  int           `json:"page"`
+	Limit int           `json:"limit"`
 }
 
-type CarWithImagesResponse struct {
-	Success bool          `json:"success"`
-	Data    CarWithImages `json:"data"`
-	Message string        `json:"message,omitempty"`
-}
-
+// CarWithImages represents a car with its images and inspection (used in services)
 type CarWithImages struct {
 	Car        Car                `json:"car"`
 	Images     []CarImageMetadata `json:"images"`
 	Inspection *InspectionResult  `json:"inspection"` // Always include, even if null
 }
 
-type CarListingWithImages struct {
-	ID               int                `json:"id"`
-	SellerID         int                `json:"sellerId"`
-	Year             *int               `json:"year"`
-	Mileage          *int               `json:"mileage"`
-	Price            *int               `json:"price"`      // Nullable for drafts
-	ProvinceID       *int               `json:"provinceId"` // Nullable for drafts
-	ConditionRating  *int               `json:"conditionRating"`
-	BodyTypeCode     *string            `json:"bodyTypeCode"`     // Changed from BodyTypeID
-	TransmissionCode *string            `json:"transmissionCode"` // Changed from TransmissionID
-	DrivetrainCode   *string            `json:"drivetrainCode"`   // Changed from DrivetrainID
-	Seats            *int               `json:"seats"`
-	Doors            *int               `json:"doors"`
-	Status           string             `json:"status"`
-	CreatedAt        time.Time          `json:"createdAt"`
-	UpdatedAt        time.Time          `json:"updatedAt"`
-	BrandName        *string            `json:"brandName"`
-	ModelName        *string            `json:"modelName"`
-	SubmodelName     *string            `json:"submodelName"`
-	Images           []CarImageMetadata `json:"images"`
+// CarDetailResponse represents the full car detail response (API response only)
+// Used for GET /api/cars/{id} with translated display data
+// Note: Car and Inspection are interface{} because they come from services as CarDisplay/InspectionDisplay
+type CarDetailResponse struct {
+	Car            interface{}        `json:"car"`                      // CarDisplay from services (from services.CarDisplay)
+	Images         []CarImageMetadata `json:"images"`                   // Images with URLs (URL populated in handler)
+	Inspection     interface{}        `json:"inspection"`               // InspectionDisplay from services (from services.InspectionDisplay)
+	SellerContacts []SellerContact    `json:"sellerContacts,omitempty"` // Optional seller contacts
 }
 
-type CarWithImagesListResponse struct {
-	Success bool            `json:"success"`
-	Data    []CarWithImages `json:"data"`
-	Message string          `json:"message,omitempty"`
+// CarListItem is a lightweight representation for car cards and lists
+// Used in: browse/search results, seller dashboard, public seller pages
+// Contains only essential fields with translated labels for optimal performance
+type CarListItem struct {
+	ID              int      `json:"id"`
+	SellerID        int      `json:"sellerId"`
+	Status          string   `json:"status"`
+	BrandName       *string  `json:"brandName"`
+	ModelName       *string  `json:"modelName"`
+	SubmodelName    *string  `json:"submodelName"`
+	Year            *int     `json:"year"`
+	Price           *int     `json:"price"` // Nullable for drafts
+	Mileage         *int     `json:"mileage"`
+	BodyType        *string  `json:"bodyType"`        // Display label (e.g., "Pickup")
+	Transmission    *string  `json:"transmission"`    // Display label (e.g., "Manual")
+	Drivetrain      *string  `json:"drivetrain"`      // Display label (e.g., "FWD")
+	FuelTypes       []string `json:"fuelTypes"`       // Display labels (e.g., ["Gasoline", "LPG"])
+	Colors          []string `json:"colors"`          // Display labels (e.g., ["White", "Gray"])
+	ConditionRating *int     `json:"conditionRating"` // Condition score (1-5)
+	ThumbnailURL    *string  `json:"thumbnailUrl"`    // Image URL for thumbnail (display order = 0)
 }
 
-type CarListingWithImagesResponse struct {
-	Success bool                   `json:"success"`
-	Data    []CarListingWithImages `json:"data"`
-	Message string                 `json:"message,omitempty"`
-}
-
-type ImageUploadResponse struct {
-	Success bool            `json:"success"`
-	Data    ImageUploadData `json:"data"`
-	Message string          `json:"message,omitempty"`
-}
-
+// ImageUploadData represents the data returned after image upload (API response only)
 type ImageUploadData struct {
 	CarID         int                `json:"carId"`
 	UploadedCount int                `json:"uploadedCount"`
@@ -351,6 +352,60 @@ func (r *CarRepository) GetCarByID(carID int) (*Car, error) {
 	return car, nil
 }
 
+// GetCarsByIDs retrieves multiple cars by their IDs in a single query
+func (r *CarRepository) GetCarsByIDs(carIDs []int) ([]Car, error) {
+	if len(carIDs) == 0 {
+		return []Car{}, nil
+	}
+
+	// Build placeholders for IN clause
+	placeholders := make([]string, len(carIDs))
+	args := make([]interface{}, len(carIDs))
+	for i, carID := range carIDs {
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+		args[i] = carID
+	}
+
+	query := fmt.Sprintf(`
+		SELECT id, seller_id, body_type_code, transmission_code, drivetrain_code,
+			brand_name, model_name, submodel_name, chassis_number,
+			year, mileage, engine_cc, seats, doors,
+			prefix, number, province_id, description, price,
+			is_flooded, is_heavily_damaged,
+			status, condition_rating, created_at, updated_at
+		FROM cars
+		WHERE id IN (%s)`, strings.Join(placeholders, ","))
+
+	rows, err := r.db.DB.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get cars by IDs: %w", err)
+	}
+	defer rows.Close()
+
+	var cars []Car
+	for rows.Next() {
+		var car Car
+		err := rows.Scan(
+			&car.ID, &car.SellerID, &car.BodyTypeCode, &car.TransmissionCode, &car.DrivetrainCode,
+			&car.BrandName, &car.ModelName, &car.SubmodelName, &car.ChassisNumber,
+			&car.Year, &car.Mileage, &car.EngineCC, &car.Seats, &car.Doors,
+			&car.Prefix, &car.Number, &car.ProvinceID, &car.Description, &car.Price,
+			&car.IsFlooded, &car.IsHeavilyDamaged, &car.Status,
+			&car.ConditionRating, &car.CreatedAt, &car.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan car: %w", err)
+		}
+		cars = append(cars, car)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating cars: %w", err)
+	}
+
+	return cars, nil
+}
+
 // GetManagedCars retrieves all cars with seller names for the admin panel
 func (r *CarRepository) GetManagedCars() (*[]AdminManagedCar, error) {
 	var cars []AdminManagedCar
@@ -387,14 +442,14 @@ func (r *CarRepository) GetManagedCars() (*[]AdminManagedCar, error) {
 			&car.BrandName,
 			&car.ModelName,
 			&car.SubmodelName,
-			&car.Year,         
+			&car.Year,
 			&car.Status,
 			&car.CreatedAt,
 			&car.SellerName,
 			&car.Price,
 			&car.Mileage,
 		)
-		
+
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan managed car: %w", err)
 		}
@@ -526,14 +581,14 @@ func (r *CarRepository) CreateCarByAdmin(req AdminCreateCarRequest) (*Car, error
 	status := "draft"
 
 	car := &Car{
-		SellerID:     req.SellerID,
-		BrandName:    req.BrandName,
-		ModelName:    req.ModelName,
-		SubmodelName: req.SubmodelName,
-		Year:         req.Year,
-		Price:        req.Price,
-		Mileage:      req.Mileage,
-		Status:       status,
+		SellerID:         req.SellerID,
+		BrandName:        req.BrandName,
+		ModelName:        req.ModelName,
+		SubmodelName:     req.SubmodelName,
+		Year:             req.Year,
+		Price:            req.Price,
+		Mileage:          req.Mileage,
+		Status:           status,
 		IsFlooded:        false,
 		IsHeavilyDamaged: false,
 	}
@@ -853,6 +908,48 @@ func (r *CarRepository) DeleteCar(carID int) error {
 	return nil
 }
 
+// GetOldDraftCars retrieves draft cars older than the specified age
+func (r *CarRepository) GetOldDraftCars(maxAge time.Duration) ([]Car, error) {
+	cutoffTime := time.Now().Add(-maxAge)
+	query := `
+		SELECT id, seller_id, body_type_code, transmission_code, drivetrain_code,
+			brand_name, model_name, submodel_name, chassis_number,
+			year, mileage, engine_cc, seats, doors,
+			prefix, number, province_id, description, price,
+			is_flooded, is_heavily_damaged, status, condition_rating, created_at, updated_at
+		FROM cars
+		WHERE status = 'draft' AND created_at < $1
+		ORDER BY created_at ASC`
+
+	rows, err := r.db.DB.Query(query, cutoffTime)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get old draft cars: %w", err)
+	}
+	defer rows.Close()
+
+	var cars []Car
+	for rows.Next() {
+		var car Car
+		err := rows.Scan(
+			&car.ID, &car.SellerID, &car.BodyTypeCode, &car.TransmissionCode, &car.DrivetrainCode,
+			&car.BrandName, &car.ModelName, &car.SubmodelName, &car.ChassisNumber,
+			&car.Year, &car.Mileage, &car.EngineCC, &car.Seats, &car.Doors,
+			&car.Prefix, &car.Number, &car.ProvinceID, &car.Description, &car.Price,
+			&car.IsFlooded, &car.IsHeavilyDamaged, &car.Status, &car.ConditionRating, &car.CreatedAt, &car.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan car: %w", err)
+		}
+		cars = append(cars, car)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating old draft cars: %w", err)
+	}
+
+	return cars, nil
+}
+
 // FindCarsByChassisNumber finds cars by chassis number (exact match) excluding deleted
 func (r *CarRepository) FindCarsByChassisNumber(chassisNumber string) ([]Car, error) {
 	query := `
@@ -936,6 +1033,132 @@ func (r *CarRepository) GetDrivetrainLabelByCode(code string, lang string) (stri
 	return label, err
 }
 
+// GetBodyTypeLabelsByCodes returns display labels for body type codes in a map
+func (r *CarRepository) GetBodyTypeLabelsByCodes(codes []string, lang string) (map[string]string, error) {
+	if len(codes) == 0 {
+		return make(map[string]string), nil
+	}
+
+	nameCol := "name_en"
+	if lang == "th" {
+		nameCol = "name_th"
+	}
+
+	// Build placeholders for IN clause
+	placeholders := make([]string, len(codes))
+	args := make([]interface{}, len(codes))
+	for i, code := range codes {
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+		args[i] = code
+	}
+
+	query := fmt.Sprintf("SELECT code, %s FROM body_types WHERE code IN (%s)", nameCol, strings.Join(placeholders, ","))
+	rows, err := r.db.DB.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query body type labels: %w", err)
+	}
+	defer rows.Close()
+
+	result := make(map[string]string)
+	for rows.Next() {
+		var code, label string
+		if err := rows.Scan(&code, &label); err != nil {
+			return nil, fmt.Errorf("failed to scan body type label: %w", err)
+		}
+		result[code] = label
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating body type labels: %w", err)
+	}
+
+	return result, nil
+}
+
+// GetTransmissionLabelsByCodes returns display labels for transmission codes in a map
+func (r *CarRepository) GetTransmissionLabelsByCodes(codes []string, lang string) (map[string]string, error) {
+	if len(codes) == 0 {
+		return make(map[string]string), nil
+	}
+
+	nameCol := "name_en"
+	if lang == "th" {
+		nameCol = "name_th"
+	}
+
+	// Build placeholders for IN clause
+	placeholders := make([]string, len(codes))
+	args := make([]interface{}, len(codes))
+	for i, code := range codes {
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+		args[i] = code
+	}
+
+	query := fmt.Sprintf("SELECT code, %s FROM transmissions WHERE code IN (%s)", nameCol, strings.Join(placeholders, ","))
+	rows, err := r.db.DB.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query transmission labels: %w", err)
+	}
+	defer rows.Close()
+
+	result := make(map[string]string)
+	for rows.Next() {
+		var code, label string
+		if err := rows.Scan(&code, &label); err != nil {
+			return nil, fmt.Errorf("failed to scan transmission label: %w", err)
+		}
+		result[code] = label
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating transmission labels: %w", err)
+	}
+
+	return result, nil
+}
+
+// GetDrivetrainLabelsByCodes returns display labels for drivetrain codes in a map
+func (r *CarRepository) GetDrivetrainLabelsByCodes(codes []string, lang string) (map[string]string, error) {
+	if len(codes) == 0 {
+		return make(map[string]string), nil
+	}
+
+	nameCol := "name_en"
+	if lang == "th" {
+		nameCol = "name_th"
+	}
+
+	// Build placeholders for IN clause
+	placeholders := make([]string, len(codes))
+	args := make([]interface{}, len(codes))
+	for i, code := range codes {
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+		args[i] = code
+	}
+
+	query := fmt.Sprintf("SELECT code, %s FROM drivetrains WHERE code IN (%s)", nameCol, strings.Join(placeholders, ","))
+	rows, err := r.db.DB.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query drivetrain labels: %w", err)
+	}
+	defer rows.Close()
+
+	result := make(map[string]string)
+	for rows.Next() {
+		var code, label string
+		if err := rows.Scan(&code, &label); err != nil {
+			return nil, fmt.Errorf("failed to scan drivetrain label: %w", err)
+		}
+		result[code] = label
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating drivetrain labels: %w", err)
+	}
+
+	return result, nil
+}
+
 // GetProvinceLabelByID returns the display label for a province ID
 func (r *CarRepository) GetProvinceLabelByID(id int, lang string) (string, error) {
 	nameCol := "name_en"
@@ -991,6 +1214,49 @@ func (r *CarRepository) GetFuelLabelsByCodes(codes []string, lang string) ([]str
 	return labels, nil
 }
 
+// GetFuelLabelsByCodesMap returns display labels for fuel type codes as a map
+func (r *CarRepository) GetFuelLabelsByCodesMap(codes []string, lang string) (map[string]string, error) {
+	if len(codes) == 0 {
+		return make(map[string]string), nil
+	}
+
+	labelCol := "label_en"
+	if lang == "th" {
+		labelCol = "label_th"
+	}
+
+	// Build placeholders for IN clause
+	placeholders := make([]string, len(codes))
+	args := make([]interface{}, len(codes))
+	for i, code := range codes {
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+		args[i] = code
+	}
+
+	query := fmt.Sprintf("SELECT code, %s FROM fuel_types WHERE code IN (%s)", labelCol, strings.Join(placeholders, ","))
+
+	rows, err := r.db.DB.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query fuel labels: %w", err)
+	}
+	defer rows.Close()
+
+	result := make(map[string]string)
+	for rows.Next() {
+		var code, label string
+		if err := rows.Scan(&code, &label); err != nil {
+			return nil, fmt.Errorf("failed to scan fuel label: %w", err)
+		}
+		result[code] = label
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating fuel labels: %w", err)
+	}
+
+	return result, nil
+}
+
 // GetColorLabelsByCodes returns display labels for color codes
 func (r *CarRepository) GetColorLabelsByCodes(codes []string, lang string) ([]string, error) {
 	if len(codes) == 0 {
@@ -1042,6 +1308,49 @@ func (r *CarRepository) GetColorLabelsByCodes(codes []string, lang string) ([]st
 	}
 
 	return labels, nil
+}
+
+// GetColorLabelsByCodesMap returns display labels for color codes as a map
+func (r *CarRepository) GetColorLabelsByCodesMap(codes []string, lang string) (map[string]string, error) {
+	if len(codes) == 0 {
+		return make(map[string]string), nil
+	}
+
+	labelCol := "label_en"
+	if lang == "th" {
+		labelCol = "label_th"
+	}
+
+	// Build placeholders for IN clause
+	placeholders := make([]string, len(codes))
+	args := make([]interface{}, len(codes))
+	for i, code := range codes {
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+		args[i] = code
+	}
+
+	query := fmt.Sprintf("SELECT code, %s FROM colors WHERE code IN (%s)", labelCol, strings.Join(placeholders, ","))
+
+	rows, err := r.db.DB.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query color labels: %w", err)
+	}
+	defer rows.Close()
+
+	result := make(map[string]string)
+	for rows.Next() {
+		var code, label string
+		if err := rows.Scan(&code, &label); err != nil {
+			return nil, fmt.Errorf("failed to scan color label: %w", err)
+		}
+		result[code] = label
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating color labels: %w", err)
+	}
+
+	return result, nil
 }
 
 // CarImageRepository handles car image-related database operations
@@ -1120,6 +1429,49 @@ func (r *CarImageRepository) GetCarImagesMetadata(carID int) ([]CarImageMetadata
 	}
 
 	return images, nil
+}
+
+// GetCarImagesMetadataBatch retrieves image metadata for multiple cars in a single query
+func (r *CarImageRepository) GetCarImagesMetadataBatch(carIDs []int) (map[int][]CarImageMetadata, error) {
+	if len(carIDs) == 0 {
+		return make(map[int][]CarImageMetadata), nil
+	}
+
+	// Build placeholders for IN clause
+	placeholders := make([]string, len(carIDs))
+	args := make([]interface{}, len(carIDs))
+	for i, carID := range carIDs {
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+		args[i] = carID
+	}
+
+	query := fmt.Sprintf(`
+		SELECT id, car_id, image_type, image_size, display_order, uploaded_at
+		FROM car_images
+		WHERE car_id IN (%s)
+		ORDER BY car_id, display_order, uploaded_at`, strings.Join(placeholders, ","))
+
+	rows, err := r.db.DB.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get car images metadata batch: %w", err)
+	}
+	defer rows.Close()
+
+	result := make(map[int][]CarImageMetadata)
+	for rows.Next() {
+		var img CarImageMetadata
+		err := rows.Scan(&img.ID, &img.CarID, &img.ImageType, &img.ImageSize, &img.DisplayOrder, &img.UploadedAt)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan image metadata: %w", err)
+		}
+		result[img.CarID] = append(result[img.CarID], img)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating image metadata: %w", err)
+	}
+
+	return result, nil
 }
 
 // CountCarImages counts the number of images for a car
@@ -1266,6 +1618,49 @@ func (r *CarFuelRepository) GetCarFuels(carID int) ([]string, error) {
 	return fuelCodes, nil
 }
 
+// GetCarFuelsBatch retrieves fuel codes for multiple cars in a single query
+func (r *CarFuelRepository) GetCarFuelsBatch(carIDs []int) (map[int][]string, error) {
+	if len(carIDs) == 0 {
+		return make(map[int][]string), nil
+	}
+
+	// Build placeholders for IN clause
+	placeholders := make([]string, len(carIDs))
+	args := make([]interface{}, len(carIDs))
+	for i, carID := range carIDs {
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+		args[i] = carID
+	}
+
+	query := fmt.Sprintf(`
+		SELECT car_id, fuel_type_code 
+		FROM car_fuel 
+		WHERE car_id IN (%s)
+		ORDER BY car_id, fuel_type_code`, strings.Join(placeholders, ","))
+
+	rows, err := r.db.DB.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get car fuels batch: %w", err)
+	}
+	defer rows.Close()
+
+	result := make(map[int][]string)
+	for rows.Next() {
+		var carID int
+		var fuelCode string
+		if err := rows.Scan(&carID, &fuelCode); err != nil {
+			return nil, fmt.Errorf("failed to scan fuel: %w", err)
+		}
+		result[carID] = append(result[carID], fuelCode)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating car fuels: %w", err)
+	}
+
+	return result, nil
+}
+
 // CarColor represents a car-color mapping with position
 type CarColor struct {
 	CarID     int    `json:"carId" db:"car_id"`
@@ -1335,6 +1730,49 @@ func (r *CarColorRepository) GetCarColors(carID int) ([]string, error) {
 		codes = append(codes, code)
 	}
 	return codes, nil
+}
+
+// GetCarColorsBatch retrieves color codes for multiple cars in a single query
+func (r *CarColorRepository) GetCarColorsBatch(carIDs []int) (map[int][]string, error) {
+	if len(carIDs) == 0 {
+		return make(map[int][]string), nil
+	}
+
+	// Build placeholders for IN clause
+	placeholders := make([]string, len(carIDs))
+	args := make([]interface{}, len(carIDs))
+	for i, carID := range carIDs {
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+		args[i] = carID
+	}
+
+	query := fmt.Sprintf(`
+		SELECT car_id, color_code
+		FROM car_colors 
+		WHERE car_id IN (%s)
+		ORDER BY car_id, position`, strings.Join(placeholders, ","))
+
+	rows, err := r.db.DB.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get car colors batch: %w", err)
+	}
+	defer rows.Close()
+
+	result := make(map[int][]string)
+	for rows.Next() {
+		var carID int
+		var colorCode string
+		if err := rows.Scan(&carID, &colorCode); err != nil {
+			return nil, fmt.Errorf("failed to scan color code: %w", err)
+		}
+		result[carID] = append(result[carID], colorCode)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating car colors: %w", err)
+	}
+
+	return result, nil
 }
 
 // LookupColorLabelsByCodes looks up color labels by exact color codes (e.g., "RED", "WHITE", "GRAY")

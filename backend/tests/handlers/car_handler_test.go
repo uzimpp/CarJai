@@ -2,20 +2,20 @@ package handlers
 
 import (
 	"bytes"
-	"encoding/json"
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
 
+	"github.com/uzimpp/CarJai/backend/middleware"
 	"github.com/uzimpp/CarJai/backend/models"
 	"github.com/uzimpp/CarJai/backend/services"
 	"github.com/uzimpp/CarJai/backend/utils"
 )
 
-// mockCarService is defined in mocks.go
-
+// Package handlers contains test handlers and mocks for handler testing.
 func TestCarHandler_CreateCar(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -75,7 +75,7 @@ func TestCarHandler_CreateCar(t *testing.T) {
 			}
 
 			req := httptest.NewRequest(tt.method, "/api/cars", nil)
-			ctx := context.WithValue(req.Context(), "userID", tt.userID)
+			ctx := context.WithValue(req.Context(), middleware.UserIDKey, tt.userID)
 			req = req.WithContext(ctx)
 			w := httptest.NewRecorder()
 
@@ -95,56 +95,41 @@ type testCarHandler struct {
 
 func (h *testCarHandler) CreateCar(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		utils.RespondJSON(w, http.StatusMethodNotAllowed, models.UserErrorResponse{
-			Success: false,
-			Error:   "Method not allowed",
-		})
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := r.Context().Value(middleware.UserIDKey).(int)
 	if !ok || userID == 0 {
-		utils.RespondJSON(w, http.StatusUnauthorized, models.UserErrorResponse{
-			Success: false,
-			Error:   "Unauthorized",
-		})
+		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	isSeller, err := h.userService.IsSeller(userID)
 	if err != nil || !isSeller {
-		utils.RespondJSON(w, http.StatusForbidden, models.UserErrorResponse{
-			Success: false,
-			Error:   "Only sellers can create car listings",
-		})
+		utils.WriteError(w, http.StatusForbidden, "Only sellers can create car listings")
 		return
 	}
 
 	car, err := h.carService.CreateCar(userID)
 	if err != nil {
-		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
-			Success: false,
-			Error:   "Failed to create car",
-		})
+		utils.WriteError(w, http.StatusInternalServerError, "Failed to create car")
 		return
 	}
 
-	utils.RespondJSON(w, http.StatusCreated, map[string]interface{}{
-		"success": true,
-		"message": "Draft created successfully",
-		"data": map[string]interface{}{
-			"id": car.ID,
-		},
-	})
+	response := models.CarIDResponse{
+		ID: car.ID,
+	}
+	utils.WriteJSON(w, http.StatusCreated, response, "")
 }
 
 func TestCarHandler_GetCar(t *testing.T) {
 	tests := []struct {
-		name                string
-		method              string
-		carID               int
+		name                 string
+		method               string
+		carID                int
 		getCarWithImagesFunc func(carID int) (*models.CarWithImages, error)
-		expectedStatus      int
+		expectedStatus       int
 	}{
 		{
 			name:   "Successful get",
@@ -152,7 +137,7 @@ func TestCarHandler_GetCar(t *testing.T) {
 			carID:  1,
 			getCarWithImagesFunc: func(carID int) (*models.CarWithImages, error) {
 				return &models.CarWithImages{
-					Car: models.Car{ID: carID, Status: "active"},
+					Car:    models.Car{ID: carID, Status: "active"},
 					Images: []models.CarImageMetadata{},
 				}, nil
 			},
@@ -173,7 +158,7 @@ func TestCarHandler_GetCar(t *testing.T) {
 			carID:  1,
 			getCarWithImagesFunc: func(carID int) (*models.CarWithImages, error) {
 				return &models.CarWithImages{
-					Car: models.Car{ID: carID, Status: "draft"},
+					Car:    models.Car{ID: carID, Status: "draft"},
 					Images: []models.CarImageMetadata{},
 				}, nil
 			},
@@ -199,7 +184,7 @@ func TestCarHandler_GetCar(t *testing.T) {
 
 			url := "/api/cars/" + strconv.Itoa(tt.carID)
 			req := httptest.NewRequest(tt.method, url, nil)
-			ctx := context.WithValue(req.Context(), "carID", tt.carID)
+			ctx := context.WithValue(req.Context(), middleware.CarIDKey, tt.carID)
 			req = req.WithContext(ctx)
 			w := httptest.NewRecorder()
 
@@ -214,72 +199,56 @@ func TestCarHandler_GetCar(t *testing.T) {
 
 func (h *testCarHandler) GetCar(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		utils.RespondJSON(w, http.StatusMethodNotAllowed, models.UserErrorResponse{
-			Success: false,
-			Error:   "Method not allowed",
-		})
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
-	carID, ok := r.Context().Value("carID").(int)
+	carID, ok := r.Context().Value(middleware.CarIDKey).(int)
 	if !ok {
 		carID = 0
 	}
 	if carID <= 0 {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{
-			Success: false,
-			Error:   "Invalid car ID",
-		})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid car ID")
 		return
 	}
 
 	carWithImages, err := h.carService.GetCarWithImages(carID)
 	if err != nil {
 		if err.Error() == "not found" {
-			utils.RespondJSON(w, http.StatusNotFound, models.UserErrorResponse{
-				Success: false,
-				Error:   "Car not found",
-			})
+			utils.WriteError(w, http.StatusNotFound, "Car not found")
 			return
 		}
-		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
-			Success: false,
-			Error:   "Failed to get car",
-		})
+		utils.WriteError(w, http.StatusInternalServerError, "Failed to get car")
 		return
 	}
 
 	if carWithImages == nil || carWithImages.Car.Status != "active" {
-		utils.RespondJSON(w, http.StatusNotFound, models.UserErrorResponse{
-			Success: false,
-			Error:   "Car not found",
-		})
+		utils.WriteError(w, http.StatusNotFound, "Car not found")
 		return
 	}
 
-	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{
-		"success": true,
-		"data": map[string]interface{}{
-			"car":    carWithImages.Car,
-			"images": carWithImages.Images,
-		},
-	})
+	// Simplified response for test
+	response := models.CarDetailResponse{
+		Car:    carWithImages.Car,
+		Images: carWithImages.Images,
+	}
+	utils.WriteJSON(w, http.StatusOK, response, "")
 }
 
 func TestCarHandler_SearchCars(t *testing.T) {
 	tests := []struct {
-		name                string
-		method              string
-		queryParams         string
-		searchActiveCarsFunc func(req *models.SearchCarsRequest) ([]models.CarListingWithImages, int, error)
-		expectedStatus      int
+		name                            string
+		method                          string
+		queryParams                     string
+		searchActiveCarsAsListItemsFunc func(req *models.SearchCarsRequest, lang string) ([]models.CarListItem, int, error)
+		expectedStatus                  int
 	}{
 		{
 			name:        "Successful search",
 			method:      "GET",
 			queryParams: "?q=toyota&page=1&limit=20",
-			searchActiveCarsFunc: func(req *models.SearchCarsRequest) ([]models.CarListingWithImages, int, error) {
-				return []models.CarListingWithImages{}, 0, nil
+			searchActiveCarsAsListItemsFunc: func(req *models.SearchCarsRequest, lang string) ([]models.CarListItem, int, error) {
+				return []models.CarListItem{}, 0, nil
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -287,8 +256,8 @@ func TestCarHandler_SearchCars(t *testing.T) {
 			name:        "Search with filters",
 			method:      "GET",
 			queryParams: "?minPrice=100000&maxPrice=500000&minYear=2020",
-			searchActiveCarsFunc: func(req *models.SearchCarsRequest) ([]models.CarListingWithImages, int, error) {
-				return []models.CarListingWithImages{}, 0, nil
+			searchActiveCarsAsListItemsFunc: func(req *models.SearchCarsRequest, lang string) ([]models.CarListItem, int, error) {
+				return []models.CarListItem{}, 0, nil
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -303,7 +272,7 @@ func TestCarHandler_SearchCars(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockCarService := &mockCarService{
-				searchActiveCarsFunc: tt.searchActiveCarsFunc,
+				searchActiveCarsAsListItemsFunc: tt.searchActiveCarsAsListItemsFunc,
 			}
 
 			handler := &testCarHandler{
@@ -324,10 +293,7 @@ func TestCarHandler_SearchCars(t *testing.T) {
 
 func (h *testCarHandler) SearchCars(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		utils.RespondJSON(w, http.StatusMethodNotAllowed, models.UserErrorResponse{
-			Success: false,
-			Error:   "Method not allowed",
-		})
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
@@ -339,121 +305,121 @@ func (h *testCarHandler) SearchCars(w http.ResponseWriter, r *http.Request) {
 		Offset: 0,
 	}
 
-	listings, total, err := h.carService.SearchActiveCarsWithImages(req)
+	lang := r.URL.Query().Get("lang")
+	if lang == "" {
+		lang = "en"
+	}
+
+	listItems, total, err := h.carService.SearchActiveCarsAsListItems(req, lang)
 	if err != nil {
-		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{
-			Success: false,
-			Error:   "Failed to search cars",
-		})
+		utils.WriteError(w, http.StatusInternalServerError, "Failed to search cars")
 		return
 	}
 
-	utils.RespondJSON(w, http.StatusOK, models.PaginatedCarListingResponse{
-		Success: true,
-		Data: models.PaginatedCarListingData{
-			Cars:  listings,
-			Total: total,
-			Page:  1,
-			Limit: 20,
-		},
-	})
+	response := models.PaginatedCarListingData{
+		Cars:  listItems,
+		Total: total,
+		Page:  1,
+		Limit: 20,
+	}
+	utils.WriteJSON(w, http.StatusOK, response, "")
 }
 
 // Add wrappers mirroring production logic for error-path testing
 func (h *testCarHandler) UpdateCar(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := r.Context().Value(middleware.UserIDKey).(int)
 	if !ok || userID == 0 {
-		utils.RespondJSON(w, http.StatusUnauthorized, models.UserErrorResponse{Success: false, Error: "Unauthorized"})
+		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
-	carID, ok := r.Context().Value("carID").(int)
+	carID, ok := r.Context().Value(middleware.CarIDKey).(int)
 	if !ok || carID <= 0 {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{Success: false, Error: "Invalid car ID"})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid car ID")
 		return
 	}
 	var req models.UpdateCarRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{Success: false, Error: "Invalid request body"})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 	isAdmin := false
-	if adminID, ok := r.Context().Value("admin_id").(int); ok && adminID > 0 {
+	if adminID, ok := r.Context().Value(middleware.AdminIDKey).(int); ok && adminID > 0 {
 		isAdmin = true
 	}
 	if err := h.carService.UpdateCar(carID, userID, &req, isAdmin); err != nil {
 		if err.Error() == "unauthorized" {
-			utils.RespondJSON(w, http.StatusForbidden, models.UserErrorResponse{Success: false, Error: err.Error()})
+			utils.WriteError(w, http.StatusForbidden, err.Error())
 			return
 		}
 		if err.Error() == "not found" {
-			utils.RespondJSON(w, http.StatusNotFound, models.UserErrorResponse{Success: false, Error: "Car not found"})
+			utils.WriteError(w, http.StatusNotFound, "Car not found")
 			return
 		}
-		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{Success: false, Error: "Failed to update car"})
+		utils.WriteError(w, http.StatusInternalServerError, "Failed to update car")
 		return
 	}
-	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{"success": true})
+	utils.WriteJSON(w, http.StatusOK, nil, "Car updated successfully")
 }
 
 func (h *testCarHandler) AutoSaveDraft(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := r.Context().Value(middleware.UserIDKey).(int)
 	if !ok || userID == 0 {
-		utils.RespondJSON(w, http.StatusUnauthorized, models.UserErrorResponse{Success: false, Error: "Unauthorized"})
+		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
-	carID, ok := r.Context().Value("carID").(int)
+	carID, ok := r.Context().Value(middleware.CarIDKey).(int)
 	if !ok || carID <= 0 {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{Success: false, Error: "Invalid car ID"})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid car ID")
 		return
 	}
 	var req models.UpdateCarRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{Success: false, Error: "Invalid request body"})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 	if err := h.carService.AutoSaveDraft(carID, userID, &req); err != nil {
 		if err.Error() == "unauthorized" {
-			utils.RespondJSON(w, http.StatusForbidden, models.UserErrorResponse{Success: false, Error: err.Error()})
+			utils.WriteError(w, http.StatusForbidden, err.Error())
 			return
 		}
 		if err.Error() == "not found" {
-			utils.RespondJSON(w, http.StatusNotFound, models.UserErrorResponse{Success: false, Error: "Car not found"})
+			utils.WriteError(w, http.StatusNotFound, "Car not found")
 			return
 		}
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{Success: false, Error: err.Error()})
+		utils.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{"success": true})
+	utils.WriteJSON(w, http.StatusOK, nil, "Draft saved successfully")
 }
 
 func (h *testCarHandler) DeleteCar(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := r.Context().Value(middleware.UserIDKey).(int)
 	if !ok || userID == 0 {
-		utils.RespondJSON(w, http.StatusUnauthorized, models.UserErrorResponse{Success: false, Error: "Unauthorized"})
+		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
-	carID, ok := r.Context().Value("carID").(int)
+	carID, ok := r.Context().Value(middleware.CarIDKey).(int)
 	if !ok || carID <= 0 {
-		utils.RespondJSON(w, http.StatusBadRequest, models.UserErrorResponse{Success: false, Error: "Invalid car ID"})
+		utils.WriteError(w, http.StatusBadRequest, "Invalid car ID")
 		return
 	}
 	isAdmin := false
-	if adminID, ok := r.Context().Value("admin_id").(int); ok && adminID > 0 {
+	if adminID, ok := r.Context().Value(middleware.AdminIDKey).(int); ok && adminID > 0 {
 		isAdmin = true
 	}
 	if err := h.carService.DeleteCar(carID, userID, isAdmin); err != nil {
 		if err.Error() == "unauthorized" {
-			utils.RespondJSON(w, http.StatusForbidden, models.UserErrorResponse{Success: false, Error: err.Error()})
+			utils.WriteError(w, http.StatusForbidden, err.Error())
 			return
 		}
 		if err.Error() == "not found" {
-			utils.RespondJSON(w, http.StatusNotFound, models.UserErrorResponse{Success: false, Error: "Car not found"})
+			utils.WriteError(w, http.StatusNotFound, "Car not found")
 			return
 		}
-		utils.RespondJSON(w, http.StatusInternalServerError, models.UserErrorResponse{Success: false, Error: "Failed to delete car"})
+		utils.WriteError(w, http.StatusInternalServerError, "Failed to delete car")
 		return
 	}
-	utils.RespondJSON(w, http.StatusOK, map[string]interface{}{"success": true})
+	utils.WriteJSON(w, http.StatusOK, nil, "Car deleted successfully")
 }
 
 func TestCarHandler_UpdateCar_Errors(t *testing.T) {
@@ -472,8 +438,8 @@ func TestCarHandler_UpdateCar_Errors(t *testing.T) {
 	}
 	// Invalid car ID
 	req2 := httptest.NewRequest(http.MethodPut, "/api/cars/0", bytes.NewBufferString(`{}`))
-	ctx2 := context.WithValue(req2.Context(), "userID", 1)
-	ctx2 = context.WithValue(ctx2, "carID", 0)
+	ctx2 := context.WithValue(req2.Context(), middleware.UserIDKey, 1)
+	ctx2 = context.WithValue(ctx2, middleware.CarIDKey, 0)
 	req2 = req2.WithContext(ctx2)
 	w2 := httptest.NewRecorder()
 	test.UpdateCar(w2, req2)
@@ -482,8 +448,8 @@ func TestCarHandler_UpdateCar_Errors(t *testing.T) {
 	}
 	// Invalid body
 	req3 := httptest.NewRequest(http.MethodPut, "/api/cars/1", bytes.NewBufferString(`invalid`))
-	ctx3 := context.WithValue(req3.Context(), "userID", 1)
-	ctx3 = context.WithValue(ctx3, "carID", 1)
+	ctx3 := context.WithValue(req3.Context(), middleware.UserIDKey, 1)
+	ctx3 = context.WithValue(ctx3, middleware.CarIDKey, 1)
 	req3 = req3.WithContext(ctx3)
 	w3 := httptest.NewRecorder()
 	test.UpdateCar(w3, req3)
@@ -508,8 +474,8 @@ func TestCarHandler_AutoSaveDraft_Errors(t *testing.T) {
 	}
 	// Invalid car ID
 	req2 := httptest.NewRequest(http.MethodPatch, "/api/cars/0", bytes.NewBufferString(`{}`))
-	ctx2 := context.WithValue(req2.Context(), "userID", 1)
-	ctx2 = context.WithValue(ctx2, "carID", 0)
+	ctx2 := context.WithValue(req2.Context(), middleware.UserIDKey, 1)
+	ctx2 = context.WithValue(ctx2, middleware.CarIDKey, 0)
 	req2 = req2.WithContext(ctx2)
 	w2 := httptest.NewRecorder()
 	test.AutoSaveDraft(w2, req2)
@@ -518,8 +484,8 @@ func TestCarHandler_AutoSaveDraft_Errors(t *testing.T) {
 	}
 	// Invalid body
 	req3 := httptest.NewRequest(http.MethodPatch, "/api/cars/1", bytes.NewBufferString(`invalid`))
-	ctx3 := context.WithValue(req3.Context(), "userID", 1)
-	ctx3 = context.WithValue(ctx3, "carID", 1)
+	ctx3 := context.WithValue(req3.Context(), middleware.UserIDKey, 1)
+	ctx3 = context.WithValue(ctx3, middleware.CarIDKey, 1)
 	req3 = req3.WithContext(ctx3)
 	w3 := httptest.NewRecorder()
 	test.AutoSaveDraft(w3, req3)
@@ -544,8 +510,8 @@ func TestCarHandler_DeleteCar_Errors(t *testing.T) {
 	}
 	// Invalid car ID
 	req2 := httptest.NewRequest(http.MethodDelete, "/api/cars/0", nil)
-	ctx2 := context.WithValue(req2.Context(), "userID", 1)
-	ctx2 = context.WithValue(ctx2, "carID", 0)
+	ctx2 := context.WithValue(req2.Context(), middleware.UserIDKey, 1)
+	ctx2 = context.WithValue(ctx2, middleware.CarIDKey, 0)
 	req2 = req2.WithContext(ctx2)
 	w2 := httptest.NewRecorder()
 	test.DeleteCar(w2, req2)
@@ -553,4 +519,3 @@ func TestCarHandler_DeleteCar_Errors(t *testing.T) {
 		t.Errorf("expected 400 for invalid id, got %d", w2.Code)
 	}
 }
-

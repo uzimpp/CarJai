@@ -4,8 +4,8 @@
 -- Create recent_views table
 CREATE TABLE recent_views (
     rvid SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    car_id INTEGER NOT NULL REFERENCES cars(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    car_id INTEGER NOT NULL REFERENCES cars (id) ON DELETE CASCADE,
     viewed_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
@@ -18,7 +18,9 @@ CREATE TABLE recent_views (
 
 -- Create indexes for performance optimization
 CREATE INDEX idx_recent_views_user_id ON recent_views (user_id);
+
 CREATE INDEX idx_recent_views_car_id ON recent_views (car_id);
+
 CREATE INDEX idx_recent_views_viewed_at ON recent_views (viewed_at DESC);
 
 -- Create composite index for efficient queries
@@ -26,7 +28,11 @@ CREATE INDEX idx_recent_views_user_viewed ON recent_views (user_id, viewed_at DE
 
 -- Create unique constraint to prevent duplicate views within the same minute
 -- This helps prevent spam while allowing legitimate re-views
-CREATE UNIQUE INDEX idx_recent_views_unique ON recent_views (user_id, car_id, DATE_TRUNC('minute', viewed_at));
+CREATE UNIQUE INDEX idx_recent_views_unique ON recent_views (
+    user_id,
+    car_id,
+    DATE_TRUNC ('minute', viewed_at)
+);
 
 -- Function to clean up old viewing history (older than 90 days)
 CREATE OR REPLACE FUNCTION cleanup_old_recent_views()
@@ -43,8 +49,13 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Add comment to the table
-COMMENT ON TABLE recent_views IS 'Tracks user viewing history for cars';
+COMMENT ON
+TABLE recent_views IS 'Tracks user viewing history for cars';
+
 COMMENT ON COLUMN recent_views.rvid IS 'Primary key for recent views';
+
 COMMENT ON COLUMN recent_views.user_id IS 'Foreign key to users table';
+
 COMMENT ON COLUMN recent_views.car_id IS 'Foreign key to cars table';
+
 COMMENT ON COLUMN recent_views.viewed_at IS 'Timestamp when the car was viewed';

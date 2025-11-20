@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
-import type { AdminManagedCar, AdminUpdateCarRequest, AdminCreateCarRequest} from "@/types/admin";
+import type {
+  AdminManagedCar,
+  AdminUpdateCarRequest,
+  AdminCreateCarRequest,
+} from "@/types/admin";
 import PaginateControl from "@/components/ui/PaginateControl";
 
 function useDebounce(value: string, delay: number) {
@@ -452,7 +456,7 @@ function AddCarModal({
                 )}
                </div>
             </div>
-            
+
             {/* Brand */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -698,9 +702,9 @@ export default function AdminCarsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [editingCar, setEditingCar] = useState<AdminManagedCar | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false); 
-  const [deletingCar, setDeletingCar] = useState<AdminManagedCar | null>(null); 
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false); 
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [deletingCar, setDeletingCar] = useState<AdminManagedCar | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   // Load cars from API
   useEffect(() => {
@@ -715,18 +719,36 @@ export default function AdminCarsPage() {
         const response = await fetch("/api/admin/cars");
         if (!response.ok) {
           const errData = await response.json();
-          throw new Error(errData.error || "Failed to fetch cars");
+          throw new Error(errData.message || "Failed to fetch cars");
         }
-        
+
         const result = await response.json();
-        
+
         if (result.success) {
-          setCars(result.data);
-          setTotal(result.total); // Backend เราส่ง total มาให้
+          // Extract cars and total from result.data (wrapped response)
+          const responseData = result.data as
+            | { cars?: AdminManagedCar[]; total?: number }
+            | AdminManagedCar[]
+            | undefined;
+
+          if (Array.isArray(responseData)) {
+            // If result.data is directly an array (legacy format)
+            setCars(responseData);
+            setTotal(responseData.length);
+          } else if (responseData && "cars" in responseData) {
+            // If result.data is an object with cars and total
+            const carsData = Array.isArray(responseData.cars)
+              ? responseData.cars
+              : [];
+            setCars(carsData);
+            setTotal(responseData.total ?? carsData.length);
+          } else {
+            setCars([]);
+            setTotal(0);
+          }
         } else {
           throw new Error(result.message || "Failed to load cars");
         }
-        
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "An unexpected error occurred"
@@ -741,6 +763,12 @@ export default function AdminCarsPage() {
 
   // Filter cars based on search and status
   useEffect(() => {
+    // Ensure cars is always an array to prevent "not iterable" errors
+    if (!Array.isArray(cars)) {
+      setFilteredCars([]);
+      return;
+    }
+
     let filtered = [...cars];
 
     // Search filter
@@ -787,22 +815,21 @@ export default function AdminCarsPage() {
     setIsEditModalOpen(true);
   };
 
-  const handleSaveCar = async (
-    carId: number,
-    data: AdminUpdateCarRequest
-  ) => {
+  const handleSaveCar = async (carId: number, data: AdminUpdateCarRequest) => {
     try {
       const response = await fetch(`/api/admin/cars/${carId}`, {
-        method: 'PATCH',
+        method: "PATCH",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(data),
       });
 
       if (!response.ok) {
         const errData = await response.json();
-        throw new Error(errData.error || `Failed to update car: ${response.statusText}`);
+        throw new Error(
+          errData.error || `Failed to update car: ${response.statusText}`
+        );
       }
 
       const updatedCarPublic = await response.json();
@@ -824,7 +851,7 @@ export default function AdminCarsPage() {
       );
     } catch (err) {
       console.error("Failed to update car:", err);
-      throw err; 
+      throw err;
     }
   };
 
@@ -844,16 +871,16 @@ export default function AdminCarsPage() {
       const newCar = await response.json();
 
       const newManagedCar: AdminManagedCar = {
-          id: newCar.id,
-          brandName: newCar.brandName,
-          modelName: newCar.modelName,
-          submodelName: newCar.submodelName,
-          year: newCar.year,
-          price: newCar.price,
-          mileage: newCar.mileage,
-          status: newCar.status,
-          listedDate: newCar.createdAt,
-          soldBy: `User ID: ${newCar.sellerId}`,
+        id: newCar.id,
+        brandName: newCar.brandName,
+        modelName: newCar.modelName,
+        submodelName: newCar.submodelName,
+        year: newCar.year,
+        price: newCar.price,
+        mileage: newCar.mileage,
+        status: newCar.status,
+        listedDate: newCar.createdAt,
+        soldBy: `User ID: ${newCar.sellerId}`,
       };
 
       setCars((prevCars) => [newManagedCar, ...prevCars]);
@@ -871,7 +898,7 @@ export default function AdminCarsPage() {
   const handleDeleteCar = async (carId: number) => {
     try {
       const response = await fetch(`/api/admin/cars/${carId}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
       if (!response.ok) {
@@ -882,7 +909,7 @@ export default function AdminCarsPage() {
       setCars((prevCars) => prevCars.filter((car) => car.id !== carId));
     } catch (err) {
       console.error("Failed to delete car:", err);
-      throw err; 
+      throw err;
     }
   };
 
@@ -928,7 +955,10 @@ export default function AdminCarsPage() {
           <h1 className="text-3 bold">Car Management</h1>
         </div>
         <div className="flex flex-row justify-end items-center gap-2">
-          <button onClick={() => setIsAddModalOpen(true)} className="flex-1 px-4 py-2 bg-maroon text-white rounded-full hover:bg-red-700 transition-colors flex items-center justify-center gap-2 text-sm">
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="flex-1 px-4 py-2 bg-maroon text-white rounded-full hover:bg-red-700 transition-colors flex items-center justify-center gap-2 text-sm"
+          >
             <svg
               className="w-4 h-4"
               fill="none"
@@ -1058,11 +1088,6 @@ export default function AdminCarsPage() {
                 </svg>
                 <p className="text-gray-600 text-lg font-medium">
                   No cars found
-                </p>
-                <p className="text-gray-500 text-sm mt-2">
-                  {searchQuery || statusFilter !== "all"
-                    ? "Try adjusting your search or filter criteria"
-                    : "API integration pending. Connect to /admin/cars endpoint to display car data."}
                 </p>
               </div>
             ) : paginatedCars.length === 0 ? (
@@ -1218,7 +1243,7 @@ export default function AdminCarsPage() {
         onClose={() => setIsAddModalOpen(false)}
         onSave={handleCreateCar}
       />
-      
+
       <DeleteCarModal
         car={deletingCar}
         isOpen={isDeleteModalOpen}

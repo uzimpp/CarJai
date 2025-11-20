@@ -72,9 +72,16 @@ export const adminAuthAPI = {
   },
 
   async getMarketPrices(): Promise<MarketPrice[]> {
-    return apiCall<MarketPrice[]>("/admin/market-price/data", {
-      method: "GET",
-    });
+    const response = await apiCall<MarketPriceResponse>(
+      "/admin/market-price/data",
+      {
+        method: "GET",
+      }
+    );
+    // Extract the data array from the wrapped response
+    return response.success && Array.isArray(response.data)
+      ? response.data
+      : [];
   },
 
   async importMarketPrices(file: File): Promise<ImportMarketPriceResponse> {
@@ -83,6 +90,20 @@ export const adminAuthAPI = {
     return apiCall<ImportMarketPriceResponse>("/admin/market-price/upload", {
       method: "POST",
       body: form,
+    });
+  },
+
+  // Ban a user
+  async banUser(userId: number): Promise<AdminActionResponse> {
+    return apiCall<AdminActionResponse>(`/admin/users/${userId}/ban`, {
+      method: "POST",
+    });
+  },
+
+  // Remove a car listing
+  async removeCar(carId: number): Promise<AdminActionResponse> {
+    return apiCall<AdminActionResponse>(`/admin/cars/${carId}/remove`, {
+      method: "POST",
     });
   },
 };

@@ -1,4 +1,3 @@
-//
 import { apiCall } from "@/lib/apiCall";
 
 export type ReferenceOption = { code: string; label: string };

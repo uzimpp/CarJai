@@ -40,15 +40,15 @@ type AdminSigninRequest struct {
 	Password string `json:"password" validate:"required,min=6"`
 }
 
-// AdminSigninResponse represents the response payload for successful admin sign in
-type AdminSigninResponse struct {
-	Success bool          `json:"success"`
-	Data    AdminAuthData `json:"data"`
-	Message string        `json:"message,omitempty"`
+// AdminAuthData contains the authentication data returned after sign in (used in services)
+type AdminAuthData struct {
+	Admin     AdminPublic `json:"admin"`
+	Token     string      `json:"token"`
+	ExpiresAt time.Time   `json:"expires_at"`
 }
 
-// AdminAuthData contains the authentication data returned after sign in
-type AdminAuthData struct {
+// AdminSigninResponse represents the data returned after admin sign in (API response only)
+type AdminSigninResponse struct {
 	Admin     AdminPublic `json:"admin"`
 	Token     string      `json:"token"`
 	ExpiresAt time.Time   `json:"expires_at"`
@@ -66,18 +66,6 @@ type AdminPublic struct {
 // AdminSignoutRequest represents the request payload for admin sign out
 type AdminSignoutRequest struct {
 	Token string `json:"token" validate:"required"`
-}
-
-// AdminSignoutResponse represents the response payload for admin sign out
-type AdminSignoutResponse struct {
-	Success bool   `json:"success"`
-	Message string `json:"message"`
-}
-
-// AdminMeResponse represents the response payload for GET /admin/auth/me
-type AdminMeResponse struct {
-	Success bool        `json:"success"`
-	Data    AdminMeData `json:"data"`
 }
 
 // AdminMeData contains the current admin session information
@@ -100,19 +88,15 @@ type AdminIPWhitelistRequest struct {
 	Description string `json:"description" validate:"max=255"`
 }
 
-// AdminIPWhitelistResponse represents the response payload for IP whitelist operations
-type AdminIPWhitelistResponse struct {
-	Success           bool               `json:"success"`
-	Data              []AdminIPWhitelist `json:"data,omitempty"`
-	Message           string             `json:"message,omitempty"`
-	WouldBlockSession bool               `json:"would_block_session,omitempty"` // Warning: deletion would affect current session
+// AdminRefreshResponse represents the data returned after token refresh (API response only)
+type AdminRefreshResponse struct {
+	Token     string    `json:"token"`
+	ExpiresAt time.Time `json:"expires_at"`
 }
 
-// AdminErrorResponse represents error response structure
-type AdminErrorResponse struct {
-	Success bool   `json:"success"`
-	Error   string `json:"error"`
-	Code    int    `json:"code,omitempty"`
+// IPDeletionImpactResponse represents the impact of deleting an IP from whitelist (API response only)
+type IPDeletionImpactResponse struct {
+	WouldBlockSession bool `json:"wouldBlockSession"`
 }
 
 // ToPublic converts Admin to AdminPublic (removes sensitive data)

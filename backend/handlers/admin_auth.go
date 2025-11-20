@@ -87,18 +87,12 @@ func (h *AdminAuthHandler) Signin(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   int(time.Until(expiresAt).Seconds()),
 	})
 
-	// Create response
 	response := models.AdminSigninResponse{
-		Success: true,
-		Data: models.AdminAuthData{
-			Admin:     signinResponse.Admin,
-			Token:     token,
-			ExpiresAt: expiresAt,
-		},
-		Message: "Sign in successful",
+		Admin:     signinResponse.Admin,
+		Token:     token,
+		ExpiresAt: expiresAt,
 	}
-
-	utils.WriteJSON(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, response, "Sign in successful")
 }
 
 // Signout handles admin sign out
@@ -135,12 +129,7 @@ func (h *AdminAuthHandler) Signout(w http.ResponseWriter, r *http.Request) {
 	})
 
 	// Create response
-	response := models.AdminSignoutResponse{
-		Success: true,
-		Message: "Sign out successful",
-	}
-
-	utils.WriteJSON(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, nil, "Sign out successful")
 }
 
 // Me handles getting current admin information
@@ -165,13 +154,8 @@ func (h *AdminAuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create response
-	response := models.AdminMeResponse{
-		Success: true,
-		Data:    *adminData,
-	}
-
-	utils.WriteJSON(w, http.StatusOK, response)
+	// Return AdminMeData which includes both admin and session information
+	utils.WriteJSON(w, http.StatusOK, adminData, "Admin information retrieved successfully")
 }
 
 // RefreshToken handles token refresh
@@ -196,13 +180,9 @@ func (h *AdminAuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Create response
-	response := map[string]interface{}{
-		"success":    true,
-		"token":      newToken,
-		"expires_at": expiresAt,
-		"message":    "Token refreshed successfully",
+	response := models.AdminRefreshResponse{
+		Token:     newToken,
+		ExpiresAt: expiresAt,
 	}
-
-	utils.WriteJSON(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, response, "Token refreshed successfully")
 }

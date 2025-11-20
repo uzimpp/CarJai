@@ -9,6 +9,26 @@ import (
 	"github.com/uzimpp/CarJai/backend/utils"
 )
 
+// ReferenceOption and ReferenceData types for test handler
+type ReferenceOption struct {
+	Code  string `json:"code"`
+	Label string `json:"label"`
+}
+
+type ProvinceOption struct {
+	ID    int    `json:"id"`
+	Label string `json:"label"`
+}
+
+type ReferenceData struct {
+	BodyTypes     []ReferenceOption `json:"bodyTypes"`
+	Transmissions []ReferenceOption `json:"transmissions"`
+	FuelTypes     []ReferenceOption `json:"fuelTypes"`
+	Drivetrains   []ReferenceOption `json:"drivetrains"`
+	Colors        []ReferenceOption `json:"colors"`
+	Provinces     []ProvinceOption  `json:"provinces"`
+}
+
 func TestReferenceHandler_GetReferenceData(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -77,18 +97,14 @@ func (h *testReferenceHandler) GetReferenceData(w http.ResponseWriter, r *http.R
 	}
 
 	// Mock implementation - in real test, we'd query the database
-	response := map[string]interface{}{
-		"success": true,
-		"data": map[string]interface{}{
-			"bodyTypes":     []interface{}{},
-			"transmissions": []interface{}{},
-			"fuelTypes":     []interface{}{},
-			"drivetrains":   []interface{}{},
-			"colors":        []interface{}{},
-			"provinces":     []interface{}{},
-		},
+	response := ReferenceData{
+		BodyTypes:     []ReferenceOption{},
+		Transmissions: []ReferenceOption{},
+		FuelTypes:     []ReferenceOption{},
+		Drivetrains:   []ReferenceOption{},
+		Colors:        []ReferenceOption{},
+		Provinces:     []ProvinceOption{},
 	}
 
-	utils.RespondJSON(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, response, "")
 }
-

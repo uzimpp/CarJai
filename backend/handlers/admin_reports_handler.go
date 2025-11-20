@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -9,6 +8,7 @@ import (
 
 	"github.com/uzimpp/CarJai/backend/models"
 	"github.com/uzimpp/CarJai/backend/services"
+	"github.com/uzimpp/CarJai/backend/utils"
 )
 
 // AdminReportsHandler handles admin report operations
@@ -34,29 +34,10 @@ func NewAdminReportsHandler(
 	}
 }
 
-// AdminReportResponse represents the response format for admin reports
-type AdminReportResponse struct {
-	ID              int     `json:"id"`
-	Type            string  `json:"type"` // "user" or "car" (mapped from "seller" or "car")
-	ReportedById    int     `json:"reportedById"`
-	ReportedByName  string  `json:"reportedByName"`
-	ReportedByEmail string  `json:"reportedByEmail"`
-	TargetUserId    *int    `json:"targetUserId,omitempty"` // For user reports (seller)
-	TargetUserName  *string `json:"targetUserName,omitempty"`
-	TargetCarId     *int    `json:"targetCarId,omitempty"` // For car reports
-	TargetCarTitle  *string `json:"targetCarTitle,omitempty"`
-	Reason          string  `json:"reason"` // topic
-	Description     *string `json:"description,omitempty"`
-	Status          string  `json:"status"`
-	CreatedAt       string  `json:"createdAt"`
-	ResolvedAt      *string `json:"resolvedAt,omitempty"`
-	ResolvedBy      *string `json:"resolvedBy,omitempty"` // Admin name
-}
-
 // ListReports handles GET /admin/reports
 func (h *AdminReportsHandler) ListReports(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		h.writeErrorResponse(w, http.StatusMethodNotAllowed, "Method not allowed")
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
@@ -66,10 +47,13 @@ func (h *AdminReportsHandler) ListReports(w http.ResponseWriter, r *http.Request
 
 	// Map frontend types to backend types
 	var backendType string
-	if reportType == "user" {
-		backendType = "seller" // Backend uses "seller" but frontend expects "user"
-	} else if reportType == "car" {
+	switch reportType {
+	case "user":
+		backendType = "seller"
+	case "car":
 		backendType = "car"
+	default:
+		backendType = ""
 	}
 
 	// Build filters
@@ -83,31 +67,28 @@ func (h *AdminReportsHandler) ListReports(w http.ResponseWriter, r *http.Request
 	// Get reports from service
 	reports, total, err := h.reportService.ListReports(filters)
 	if err != nil {
-		h.writeErrorResponse(w, http.StatusInternalServerError, err.Error())
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	// Convert to admin response format
-	adminReports := make([]AdminReportResponse, 0, len(reports))
+	adminReports := make([]models.AdminReportResponse, 0, len(reports))
 	for _, report := range reports {
 		adminReport := h.convertToAdminReport(report)
 		adminReports = append(adminReports, adminReport)
 	}
 
-	// Create response
-	response := map[string]interface{}{
-		"success": true,
-		"data":    adminReports,
-		"total":   total,
+	response := models.AdminReportsListResponse{
+		Reports: adminReports,
+		Total:   total,
 	}
-
-	h.writeJSONResponse(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, response, "")
 }
 
 // ResolveReport handles POST /admin/reports/{id}/resolve
 func (h *AdminReportsHandler) ResolveReport(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		h.writeErrorResponse(w, http.StatusMethodNotAllowed, "Method not allowed")
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
@@ -115,14 +96,14 @@ func (h *AdminReportsHandler) ResolveReport(w http.ResponseWriter, r *http.Reque
 	adminIDStr := r.Header.Get("X-Admin-ID")
 	adminID, err := strconv.Atoi(adminIDStr)
 	if err != nil {
-		h.writeErrorResponse(w, http.StatusBadRequest, "Invalid admin ID")
+		utils.WriteError(w, http.StatusBadRequest, "Invalid admin ID")
 		return
 	}
 
 	// Extract report ID from path
 	reportID, err := h.extractReportID(r.URL.Path, "/admin/reports/", "/resolve")
 	if err != nil {
-		h.writeErrorResponse(w, http.StatusBadRequest, "Invalid report ID")
+		utils.WriteError(w, http.StatusBadRequest, "Invalid report ID")
 		return
 	}
 
@@ -130,23 +111,17 @@ func (h *AdminReportsHandler) ResolveReport(w http.ResponseWriter, r *http.Reque
 	notes := "Report resolved by admin"
 	err = h.reportService.UpdateReportStatus(reportID, "resolved", &notes, adminID)
 	if err != nil {
-		h.writeErrorResponse(w, http.StatusInternalServerError, err.Error())
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	// Create response
-	response := map[string]interface{}{
-		"success": true,
-		"message": "Report resolved successfully",
-	}
-
-	h.writeJSONResponse(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, nil, "Report resolved successfully")
 }
 
 // DismissReport handles POST /admin/reports/{id}/dismiss
 func (h *AdminReportsHandler) DismissReport(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		h.writeErrorResponse(w, http.StatusMethodNotAllowed, "Method not allowed")
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
@@ -154,14 +129,14 @@ func (h *AdminReportsHandler) DismissReport(w http.ResponseWriter, r *http.Reque
 	adminIDStr := r.Header.Get("X-Admin-ID")
 	adminID, err := strconv.Atoi(adminIDStr)
 	if err != nil {
-		h.writeErrorResponse(w, http.StatusBadRequest, "Invalid admin ID")
+		utils.WriteError(w, http.StatusBadRequest, "Invalid admin ID")
 		return
 	}
 
 	// Extract report ID from path
 	reportID, err := h.extractReportID(r.URL.Path, "/admin/reports/", "/dismiss")
 	if err != nil {
-		h.writeErrorResponse(w, http.StatusBadRequest, "Invalid report ID")
+		utils.WriteError(w, http.StatusBadRequest, "Invalid report ID")
 		return
 	}
 
@@ -169,23 +144,17 @@ func (h *AdminReportsHandler) DismissReport(w http.ResponseWriter, r *http.Reque
 	notes := "Report dismissed by admin"
 	err = h.reportService.UpdateReportStatus(reportID, "dismissed", &notes, adminID)
 	if err != nil {
-		h.writeErrorResponse(w, http.StatusInternalServerError, err.Error())
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	// Create response
-	response := map[string]interface{}{
-		"success": true,
-		"message": "Report dismissed successfully",
-	}
-
-	h.writeJSONResponse(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, nil, "Report dismissed successfully")
 }
 
 // BanUser handles POST /admin/users/{id}/ban
 func (h *AdminReportsHandler) BanUser(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		h.writeErrorResponse(w, http.StatusMethodNotAllowed, "Method not allowed")
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
@@ -193,14 +162,14 @@ func (h *AdminReportsHandler) BanUser(w http.ResponseWriter, r *http.Request) {
 	adminIDStr := r.Header.Get("X-Admin-ID")
 	adminID, err := strconv.Atoi(adminIDStr)
 	if err != nil {
-		h.writeErrorResponse(w, http.StatusBadRequest, "Invalid admin ID")
+		utils.WriteError(w, http.StatusBadRequest, "Invalid admin ID")
 		return
 	}
 
 	// Extract user ID from path
 	userID, err := h.extractUserID(r.URL.Path, "/admin/users/", "/ban")
 	if err != nil {
-		h.writeErrorResponse(w, http.StatusBadRequest, "Invalid user ID")
+		utils.WriteError(w, http.StatusBadRequest, "Invalid user ID")
 		return
 	}
 
@@ -208,53 +177,41 @@ func (h *AdminReportsHandler) BanUser(w http.ResponseWriter, r *http.Request) {
 	notes := "User banned by admin"
 	_, err = h.reportService.BanSeller(userID, adminID, &notes)
 	if err != nil {
-		h.writeErrorResponse(w, http.StatusInternalServerError, err.Error())
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	// Create response
-	response := map[string]interface{}{
-		"success": true,
-		"message": "User banned successfully",
-	}
-
-	h.writeJSONResponse(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, nil, "User banned successfully")
 }
 
 // RemoveCar handles POST /admin/cars/{id}/remove
 func (h *AdminReportsHandler) RemoveCar(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		h.writeErrorResponse(w, http.StatusMethodNotAllowed, "Method not allowed")
+		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
 	// Extract car ID from path
 	carID, err := h.extractCarID(r.URL.Path, "/admin/cars/", "/remove")
 	if err != nil {
-		h.writeErrorResponse(w, http.StatusBadRequest, "Invalid car ID")
+		utils.WriteError(w, http.StatusBadRequest, "Invalid car ID")
 		return
 	}
 
 	// Delete car as admin (isAdmin = true, userID = 0 since admin doesn't own the car)
 	err = h.carService.DeleteCar(carID, 0, true)
 	if err != nil {
-		h.writeErrorResponse(w, http.StatusInternalServerError, err.Error())
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	// Create response
-	response := map[string]interface{}{
-		"success": true,
-		"message": "Car listing removed successfully",
-	}
-
-	h.writeJSONResponse(w, http.StatusOK, response)
+	utils.WriteJSON(w, http.StatusOK, nil, "Car listing removed successfully")
 }
 
 // convertToAdminReport converts a backend Report to AdminReportResponse
 // This function handles missing data gracefully by using placeholder values
-func (h *AdminReportsHandler) convertToAdminReport(report models.Report) AdminReportResponse {
-	adminReport := AdminReportResponse{
+func (h *AdminReportsHandler) convertToAdminReport(report models.Report) models.AdminReportResponse {
+	adminReport := models.AdminReportResponse{
 		ID:          report.ID,
 		Reason:      report.Topic,
 		Status:      report.Status,
@@ -263,12 +220,13 @@ func (h *AdminReportsHandler) convertToAdminReport(report models.Report) AdminRe
 	}
 
 	// Map report type: backend uses "seller" but frontend expects "user"
-	if report.ReportType == "seller" {
+	switch report.ReportType {
+	case "seller":
 		adminReport.Type = "user"
 		if report.SellerID != nil {
 			adminReport.TargetUserId = report.SellerID
 		}
-	} else if report.ReportType == "car" {
+	case "car":
 		adminReport.Type = "car"
 		if report.CarID != nil {
 			adminReport.TargetCarId = report.CarID
@@ -397,25 +355,4 @@ func (h *AdminReportsHandler) extractCarID(path, prefix, suffix string) (int, er
 		return 0, fmt.Errorf("invalid car ID: %w", err)
 	}
 	return id, nil
-}
-
-// writeJSONResponse writes a JSON response
-func (h *AdminReportsHandler) writeJSONResponse(w http.ResponseWriter, statusCode int, data interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(data)
-}
-
-// writeErrorResponse writes a JSON error response
-func (h *AdminReportsHandler) writeErrorResponse(w http.ResponseWriter, statusCode int, message string) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-
-	response := models.AdminErrorResponse{
-		Success: false,
-		Error:   message,
-		Code:    statusCode,
-	}
-
-	json.NewEncoder(w).Encode(response)
 }

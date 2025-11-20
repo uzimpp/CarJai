@@ -46,17 +46,17 @@ func main() {
 
 // ServiceContainer holds all initialized services
 type ServiceContainer struct {
-    Admin       *services.AdminService
-    User        *services.UserService
-    Profile     *services.ProfileService
-    Car         *services.CarService
-    Favourite   *services.FavouriteService
-    Report      *services.ReportService
-    Maintenance *services.MaintenanceService
-    OCR         *services.OCRService
-    Scraper     *services.ScraperService
-    RecentViews *services.RecentViewsService
-    Extraction  *services.ExtractionService
+	Admin       *services.AdminService
+	User        *services.UserService
+	Profile     *services.ProfileService
+	Car         *services.CarService
+	Favourite   *services.FavouriteService
+	Report      *services.ReportService
+	Maintenance *services.MaintenanceService
+	OCR         *services.OCRService
+	Scraper     *services.ScraperService
+	RecentViews *services.RecentViewsService
+	Extraction  *services.ExtractionService
 	UserJWT     *utils.JWTManager
 	AdminJWT    *utils.JWTManager
 }
@@ -128,16 +128,16 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 		carFuelRepo,
 		marketPriceRepo,
 	)
-    // Create favourites service
-    favouriteService := services.NewFavouriteService(favouriteRepo, carService)
-    // Create report service
-    reportService := services.NewReportService(reportRepo, carService, profileService, database)
+	// Create favourites service
+	favouriteService := services.NewFavouriteService(favouriteRepo, carService)
+	// Create report service
+	reportService := services.NewReportService(reportRepo, carService, profileService, database)
 
 	// Create scraper service
 	scraperService := services.NewScraperService()
 
 	// Create recent views service
-	recentViewsService := services.NewRecentViewsService(db)
+	recentViewsService := services.NewRecentViewsService(db, carService)
 
 	// Create extraction service
 	extractionService := services.NewExtractionService(db)
@@ -149,18 +149,18 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 			ipWhitelistRepo,
 			adminJWTManager,
 		),
-        User:      userService,
-        Profile:   profileService,
-        Car:       carService,
-        Favourite: favouriteService,
-        Report:    reportService,
-        Maintenance: services.NewMaintenanceService(
-            adminRepo,
-            sessionRepo,
-            ipWhitelistRepo,
-            carRepo,
-            utils.AppLogger,
-        ),
+		User:      userService,
+		Profile:   profileService,
+		Car:       carService,
+		Favourite: favouriteService,
+		Report:    reportService,
+		Maintenance: services.NewMaintenanceService(
+			adminRepo,
+			sessionRepo,
+			ipWhitelistRepo,
+			carRepo,
+			utils.AppLogger,
+		),
 		OCR:         services.NewOCRService(appConfig.AigenAPIKey),
 		Scraper:     scraperService,
 		RecentViews: recentViewsService,
@@ -183,24 +183,22 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 	mux.Handle("/api/auth/",
 		routes.UserAuthRoutes(services.User, services.UserJWT, appConfig.CORSAllowedOrigins, appConfig))
 	mux.Handle("/api/profile/",
-		routes.ProfileRoutes(services.Profile, services.User, appConfig.CORSAllowedOrigins))
-	mux.Handle("/api/sellers/",
-		routes.PublicSellerRoutes(services.Profile, services.Car, appConfig.CORSAllowedOrigins))
+		routes.ProfileRoutes(services.Profile, services.User, services.Car, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/cars",
 		routes.CarRoutes(services.Car, services.User, services.Profile, services.OCR, services.Scraper, services.UserJWT, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/cars/",
 		routes.CarRoutes(services.Car, services.User, services.Profile, services.OCR, services.Scraper, services.UserJWT, appConfig.CORSAllowedOrigins))
 
 	// Favourite routes
-    mux.Handle("/api/favorites",
-        routes.FavouritesRoutes(services.Favourite, services.User, appConfig.CORSAllowedOrigins))
-    mux.Handle("/api/favorites/",
-        routes.FavouritesRoutes(services.Favourite, services.User, appConfig.CORSAllowedOrigins))
-    // Report routes (user-authenticated)
-    mux.Handle("/api/reports",
-        routes.ReportRoutes(services.Report, services.User, appConfig.CORSAllowedOrigins))
-    mux.Handle("/api/reports/",
-        routes.ReportRoutes(services.Report, services.User, appConfig.CORSAllowedOrigins))
+	mux.Handle("/api/favorites",
+		routes.FavouritesRoutes(services.Favourite, services.User, appConfig.CORSAllowedOrigins))
+	mux.Handle("/api/favorites/",
+		routes.FavouritesRoutes(services.Favourite, services.User, appConfig.CORSAllowedOrigins))
+	// Report routes (user-authenticated)
+	mux.Handle("/api/reports",
+		routes.ReportRoutes(services.Report, services.User, appConfig.CORSAllowedOrigins))
+	mux.Handle("/api/reports/",
+		routes.ReportRoutes(services.Report, services.User, appConfig.CORSAllowedOrigins))
 	mux.Handle(adminPrefix+"/", // Handle all paths under /admin/
 		routes.AdminRoutes(
 			services.Admin,
@@ -214,11 +212,9 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 			appConfig.AdminIPWhitelist,
 		),
 	)
-	mux.Handle("/health/",
+	mux.Handle("/health",
 		routes.HealthRoutes(db, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/recent-views",
-		routes.RecentViewsRoutes(services.RecentViews, services.Profile, services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
-	mux.Handle("/api/recent-views/",
 		routes.RecentViewsRoutes(services.RecentViews, services.Profile, services.User, services.UserJWT, appConfig.CORSAllowedOrigins))
 	mux.Handle("/api/reference-data/",
 		routes.ReferenceRoutes(db, appConfig.CORSAllowedOrigins))
