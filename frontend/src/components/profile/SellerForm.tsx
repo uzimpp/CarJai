@@ -100,6 +100,92 @@ export default function SellerForm({
     }));
   };
 
+  const validateContactValue = (type: string, value: string): string | null => {
+    const trimmedValue = value.trim();
+    
+    switch (type) {
+      case "phone":
+        // Thai phone format: 0XX-XXX-XXXX or 10 digits
+        const phoneRegex = /^(\+66|0)[0-9]{8,9}$/;
+        if (!phoneRegex.test(trimmedValue.replace(/[-\s]/g, ""))) {
+          return "Invalid phone number format (e.g., 081-234-5678)";
+        }
+        break;
+      case "email":
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(trimmedValue)) {
+          return "Invalid email format";
+        }
+        break;
+      case "line":
+        // Check for other platform URLs
+        if (trimmedValue.includes("facebook.com") || trimmedValue.includes("fb.com") ||
+            trimmedValue.includes("instagram.com")) {
+          return "Please use the correct contact type for this platform";
+        }
+        
+        // LINE ID: alphanumeric, underscore, dot, hyphen (4-20 chars)
+        const lineRegex = /^[a-zA-Z0-9._-]{4,20}$/;
+        if (!lineRegex.test(trimmedValue)) {
+          return "Invalid LINE ID format (4-20 characters, alphanumeric)";
+        }
+        break;
+      case "facebook":
+        // Check for other platform URLs
+        if (trimmedValue.includes("instagram.com") || trimmedValue.includes("line.me")) {
+          return "Please use the correct contact type for this platform";
+        }
+        
+        // Facebook: URL or username (alphanumeric and dots only, 5-50 chars)
+        if (trimmedValue.includes("facebook.com") || trimmedValue.includes("fb.com")) {
+          const urlRegex = /^https?:\/\/(www\.)?(facebook|fb)\.com\/.+$/;
+          if (!urlRegex.test(trimmedValue)) {
+            return "Invalid Facebook URL";
+          }
+        } else {
+          // Facebook username: alphanumeric and dots only, 5-50 characters
+          const usernameRegex = /^[a-zA-Z0-9.]{5,50}$/;
+          if (!usernameRegex.test(trimmedValue)) {
+            return "Invalid Facebook username (5-50 characters, letters, numbers, and dots only)";
+          }
+        }
+        break;
+      case "instagram":
+        // Check for other platform URLs
+        if (trimmedValue.includes("facebook.com") || trimmedValue.includes("fb.com") ||
+            trimmedValue.includes("line.me")) {
+          return "Please use the correct contact type for this platform";
+        }
+        
+        // Instagram: URL or username (must contain underscore or dot, no hyphens)
+        if (trimmedValue.includes("instagram.com")) {
+          const urlRegex = /^https?:\/\/(www\.)?instagram\.com\/.+$/;
+          if (!urlRegex.test(trimmedValue)) {
+            return "Invalid Instagram URL";
+          }
+        } else {
+          // Instagram username: 1-30 chars, letters, numbers, underscores, dots (no hyphens)
+          // Must contain at least one underscore or dot to distinguish from Facebook
+          const usernameRegex = /^[a-zA-Z0-9._]{1,30}$/;
+          const hasUnderscoreOrDot = /[._]/.test(trimmedValue);
+          if (!usernameRegex.test(trimmedValue)) {
+            return "Invalid Instagram username (letters, numbers, underscores, and dots only)";
+          }
+          if (!hasUnderscoreOrDot) {
+            return "Instagram username must contain at least one underscore or dot";
+          }
+        }
+        break;
+      case "website":
+        const websiteRegex = /^https?:\/\/.+\..+$/;
+        if (!websiteRegex.test(trimmedValue)) {
+          return "Invalid website URL (must start with http:// or https://)";
+        }
+        break;
+    }
+    return null;
+  };
+
   const validateForm = () => {
     const errors: Record<string, string> = {};
 
@@ -113,10 +199,20 @@ export default function SellerForm({
       errors.about = "About must be 200 characters or less";
     }
 
+    // Require at least one contact
+    if (formData.contacts.length === 0) {
+      errors.contacts = "At least one contact is required";
+    }
+
     // Validate contacts
     formData.contacts.forEach((contact, index) => {
       if (!contact.value || contact.value.trim() === "") {
         errors[`contact_${index}_value`] = "Contact value is required";
+      } else {
+        const validationError = validateContactValue(contact.contactType, contact.value);
+        if (validationError) {
+          errors[`contact_${index}_value`] = validationError;
+        }
       }
     });
 
@@ -233,7 +329,7 @@ export default function SellerForm({
       <div className="border-y border-gray-200 py-(--space-m)">
         <div className="flex justify-between items-center mb-(--space-s)">
           <h3 className="text-0 font-medium text-gray-900">
-            Contact Information
+            Contact Information <span className="text-red-500">*</span>
           </h3>
           <button
             type="button"
@@ -244,6 +340,10 @@ export default function SellerForm({
             + Add Contact
           </button>
         </div>
+
+        {formErrors.contacts && (
+          <p className="mb-(--space-2xs) text--1 text-red-600">{formErrors.contacts}</p>
+        )}
 
         {formData.contacts.length === 0 && (
           <p className="text--1 text-gray-500 italic">
