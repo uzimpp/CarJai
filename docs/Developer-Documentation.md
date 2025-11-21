@@ -462,23 +462,43 @@ npm run lint
 
 **Run all tests**:
 ```bash
-cd backend
-go test ./...
+docker exec -it carjai-backend go test ./...
 ```
 
 **Run specific test**:
 ```bash
-go test ./tests/handlers/...
+docker exec -it carjai-backend go test ./tests/handlers/...
+```
+
+**Run with verbose output**:
+```bash
+docker exec -it carjai-backend go test -v ./...
 ```
 
 **Run with coverage**:
 ```bash
-go test -cover ./...
+docker exec -it carjai-backend go test -cover ./...
+```
+
+**Generate detailed coverage report**:
+```bash
+docker exec -it carjai-backend sh -c "cd /app && go test -coverprofile=coverage.out ./... && go tool cover -html=coverage.out -o coverage.html"
+docker cp carjai-backend:/app/coverage.html ./coverage.html
+```
+
+**Run specific test function**:
+```bash
+docker exec -it carjai-backend go test -v -run TestFunctionName ./...
 ```
 
 ### Frontend Tests
 
 (To be implemented)
+
+**Note**: When frontend tests are implemented, they should also be run in Docker:
+```bash
+docker exec -it carjai-frontend npm test
+```
 
 ---
 

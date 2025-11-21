@@ -118,68 +118,80 @@ backend/tests/
 
 **Run all tests**:
 ```bash
-cd backend
-go test ./...
+docker exec -it carjai-backend go test ./...
 ```
 
 **Run specific test file**:
 ```bash
-go test ./tests/jwt_test.go
+docker exec -it carjai-backend go test ./tests/jwt_test.go
 ```
 
 **Run tests in specific package**:
 ```bash
-go test ./tests/handlers/...
+docker exec -it carjai-backend go test ./tests/handlers/...
 ```
 
 **Run with verbose output**:
 ```bash
-go test -v ./...
+docker exec -it carjai-backend go test -v ./...
 ```
 
 **Run specific test function**:
 ```bash
-go test -v -run TestFunctionName ./...
+docker exec -it carjai-backend go test -v -run TestFunctionName ./...
 ```
 
 ### Test with Coverage
 
 **Generate coverage report**:
 ```bash
-go test -cover ./...
+docker exec -it carjai-backend go test -cover ./...
 ```
 
 **Detailed coverage report**:
 ```bash
-go test -coverprofile=coverage.out ./...
-go tool cover -html=coverage.out
+docker exec -it carjai-backend sh -c "cd /app && go test -coverprofile=coverage.out ./... && go tool cover -html=coverage.out -o coverage.html"
+```
+
+**View coverage report** (copy from container):
+```bash
+docker exec -it carjai-backend sh -c "cd /app && go test -coverprofile=coverage.out ./..."
+docker cp carjai-backend:/app/coverage.out ./coverage.out
+docker exec -it carjai-backend sh -c "cd /app && go tool cover -html=coverage.out -o coverage.html"
+docker cp carjai-backend:/app/coverage.html ./coverage.html
 ```
 
 **Coverage by package**:
 ```bash
-go test -cover ./tests/...
+docker exec -it carjai-backend go test -cover ./tests/...
 ```
 
 ### Test Script
 
-Use the provided test runner script:
+Use the provided test runner script in Docker:
 
 ```bash
-cd backend/tests
-./run_tests.sh
+docker exec -it carjai-backend sh /app/tests/run_tests.sh
 ```
 
 ### Docker Testing
 
-**Run tests in Docker container**:
+**Run tests in Docker container** (recommended):
 ```bash
-docker exec -it carjai-backend go test ./tests/...
+# Ensure all services are running
+docker compose up -d
+
+# Run all tests
+docker exec -it carjai-backend go test ./...
+
+# Run specific test package
+docker exec -it carjai-backend go test ./tests/handlers/...
 ```
 
 **Run tests with database**:
 ```bash
 # Ensure database container is running
-docker compose up -d database
+docker compose up -d database backend
 
 # Run tests
 docker exec -it carjai-backend go test ./tests/...
@@ -282,15 +294,18 @@ docker exec -it carjai-backend /app/scripts/seed --reports
 
 **Generate HTML coverage report**:
 ```bash
-cd backend
-go test -coverprofile=coverage.out ./...
-go tool cover -html=coverage.out -o coverage.html
+docker exec -it carjai-backend sh -c "cd /app && go test -coverprofile=coverage.out ./... && go tool cover -html=coverage.out -o coverage.html"
+```
+
+**Copy coverage report from container**:
+```bash
+docker cp carjai-backend:/app/coverage.html ./coverage.html
+docker cp carjai-backend:/app/coverage.out ./coverage.out
 ```
 
 **View coverage by function**:
 ```bash
-go test -coverprofile=coverage.out ./...
-go tool cover -func=coverage.out
+docker exec -it carjai-backend sh -c "cd /app && go test -coverprofile=coverage.out ./... && go tool cover -func=coverage.out"
 ```
 
 ---
