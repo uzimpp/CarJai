@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/uzimpp/CarJai/backend/config"
+	"github.com/uzimpp/CarJai/backend/middleware"
 	"github.com/uzimpp/CarJai/backend/models"
 	"github.com/uzimpp/CarJai/backend/routes"
 	"github.com/uzimpp/CarJai/backend/services"
@@ -33,8 +34,13 @@ func main() {
 	// Setup routers
 	routers := setupRoutes(services, appConfig, db)
 
-	// Start maintenance service
-	ctx := context.Background()
+	// Create cancellable context for maintenance service (allows graceful shutdown)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer func() {
+		// Graceful shutdown: cancel context and stop rate limiters
+		cancel()
+		middleware.StopAllRateLimiters()
+	}()
 	go services.Maintenance.StartMaintenance(ctx, nil)
 
 	// Start server

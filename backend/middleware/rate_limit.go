@@ -18,6 +18,13 @@ type RateLimiter struct {
 	stopCleanup   chan bool
 }
 
+var (
+	// Singleton rate limiters to prevent goroutine leaks
+	loginRateLimiter    *RateLimiter
+	generalRateLimiter  *RateLimiter
+	rateLimiterInitOnce sync.Once
+)
+
 // NewRateLimiter creates a new rate limiter
 func NewRateLimiter(limit int, window time.Duration) *RateLimiter {
 	rl := &RateLimiter{
@@ -202,14 +209,57 @@ func IPBasedRateLimit(limit int, window time.Duration) func(http.HandlerFunc) ht
 	})
 }
 
-// SigninRateLimit creates a rate limiter specifically for login attempts
+// initRateLimiters initializes singleton rate limiters (thread-safe)
+func initRateLimiters() {
+	rateLimiterInitOnce.Do(func() {
+		// Login rate limiter: 5 attempts per 15 minutes per IP
+		loginRateLimiter = NewRateLimiter(5, 15*time.Minute)
+		// General rate limiter: 100 requests per minute per IP
+		generalRateLimiter = NewRateLimiter(100, time.Minute)
+	})
+}
+
+// LoginRateLimit creates a rate limiter specifically for login attempts
+// Uses a singleton instance to prevent goroutine leaks
 func LoginRateLimit() func(http.HandlerFunc) http.HandlerFunc {
-	// 5 attempts per 15 minutes per IP
-	return IPBasedRateLimit(5, 15*time.Minute)
+	initRateLimiters()
+	return RateLimitMiddleware(loginRateLimiter, func(r *http.Request) string {
+		// Use IP address as the key
+		ip := r.RemoteAddr
+		if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
+			ip = forwarded
+		}
+		if realIP := r.Header.Get("X-Real-IP"); realIP != "" {
+			ip = realIP
+		}
+		return ip
+	})
 }
 
 // GeneralRateLimit creates a general rate limiter for API endpoints
+// Uses a singleton instance to prevent goroutine leaks
 func GeneralRateLimit() func(http.HandlerFunc) http.HandlerFunc {
-	// 100 requests per minute per IP
-	return IPBasedRateLimit(100, time.Minute)
+	initRateLimiters()
+	return RateLimitMiddleware(generalRateLimiter, func(r *http.Request) string {
+		// Use IP address as the key
+		ip := r.RemoteAddr
+		if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
+			ip = forwarded
+		}
+		if realIP := r.Header.Get("X-Real-IP"); realIP != "" {
+			ip = realIP
+		}
+		return ip
+	})
+}
+
+// StopAllRateLimiters stops all singleton rate limiters (for graceful shutdown)
+func StopAllRateLimiters() {
+	initRateLimiters() // Ensure they're initialized
+	if loginRateLimiter != nil {
+		loginRateLimiter.Stop()
+	}
+	if generalRateLimiter != nil {
+		generalRateLimiter.Stop()
+	}
 }
