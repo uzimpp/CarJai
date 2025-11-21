@@ -27,13 +27,13 @@ func GetEnvAsInt(key string) int {
 }
 
 // GetEnvAsBool gets an environment variable as boolean
-// Returns true for "true", "1", "yes", "on" (case-insensitive)
-// Returns false for "false", "0", "no", "off" or if not set
+// Returns true for "true" (case-insensitive)
+// Returns false for anything else or if not set
 func GetEnvAsBool(key string) bool {
 	value := os.Getenv(key)
 	if value == "" {
 		return false
 	}
 	value = strings.ToLower(strings.TrimSpace(value))
-	return value == "true" || value == "1" || value == "yes" || value == "on"
+	return value == "true"
 }
