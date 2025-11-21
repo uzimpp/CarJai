@@ -2,11 +2,11 @@ package routes
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/uzimpp/CarJai/backend/handlers"
 	"github.com/uzimpp/CarJai/backend/middleware"
 	"github.com/uzimpp/CarJai/backend/services"
+	"github.com/uzimpp/CarJai/backend/utils"
 )
 
 // ReportRoutes sets up routes for reporting cars and sellers
@@ -14,42 +14,49 @@ func ReportRoutes(reportService *services.ReportService, userService *services.U
 	router := http.NewServeMux()
 
 	handler := handlers.NewReportHandler(reportService, userService)
-	corsMiddleware := middleware.CORSMiddleware(allowedOrigins)
 	authMiddleware := middleware.NewUserAuthMiddleware(userService)
 
-	router.HandleFunc("/api/reports/", func(w http.ResponseWriter, r *http.Request) {
-		path := r.URL.Path
-
-		// POST /api/reports/cars/{id}
-		if strings.HasPrefix(path, "/api/reports/cars/") && r.Method == http.MethodPost {
-			corsMiddleware(
-				middleware.SecurityHeadersMiddleware(
-					middleware.GeneralRateLimit()(
-						middleware.LoggingMiddleware(
-							authMiddleware.RequireAuth(handler.SubmitCarReport),
+	// POST /api/reports/cars/{id} - Report a car
+	router.HandleFunc("/api/reports/cars/",
+		middleware.CORSMiddleware(allowedOrigins)(
+			middleware.SecurityHeadersMiddleware(
+				middleware.GeneralRateLimit()(
+					middleware.LoggingMiddleware(
+						authMiddleware.RequireAuth(
+							func(w http.ResponseWriter, r *http.Request) {
+								if r.Method != http.MethodPost {
+									utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+									return
+								}
+								handler.SubmitCarReport(w, r)
+							},
 						),
 					),
 				),
-			)(w, r)
-			return
-		}
+			),
+		),
+	)
 
-		// POST /api/reports/sellers/{id}
-		if strings.HasPrefix(path, "/api/reports/sellers/") && r.Method == http.MethodPost {
-			corsMiddleware(
-				middleware.SecurityHeadersMiddleware(
-					middleware.GeneralRateLimit()(
-						middleware.LoggingMiddleware(
-							authMiddleware.RequireAuth(handler.SubmitSellerReport),
+	// POST /api/reports/sellers/{id} - Report a seller
+	router.HandleFunc("/api/reports/sellers/",
+		middleware.CORSMiddleware(allowedOrigins)(
+			middleware.SecurityHeadersMiddleware(
+				middleware.GeneralRateLimit()(
+					middleware.LoggingMiddleware(
+						authMiddleware.RequireAuth(
+							func(w http.ResponseWriter, r *http.Request) {
+								if r.Method != http.MethodPost {
+									utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+									return
+								}
+								handler.SubmitSellerReport(w, r)
+							},
 						),
 					),
 				),
-			)(w, r)
-			return
-		}
-
-		http.Error(w, "Not found", http.StatusNotFound)
-	})
+			),
+		),
+	)
 
 	return router
 }

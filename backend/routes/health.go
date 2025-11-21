@@ -21,8 +21,10 @@ func HealthRoutes(db interface{}, allowedOrigins []string) *http.ServeMux {
 	router.HandleFunc("/health",
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
-				middleware.LoggingMiddleware(
-					healthHandler.Health,
+				middleware.GeneralRateLimit()(
+					middleware.LoggingMiddleware(
+						healthHandler.Health,
+					),
 				),
 			),
 		),

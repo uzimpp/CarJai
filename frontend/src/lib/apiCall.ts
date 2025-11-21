@@ -39,13 +39,14 @@ export async function apiCall<T>(
   }
 
   if (!response.ok) {
-    // Safely extract server-provided error/message if JSON object
+    // Backend uses consistent format: {success: false, code: number, message: string}
     let serverMessage: string | undefined;
     if (typeof data === "object" && data !== null) {
-      const d = data as { error?: unknown; message?: unknown };
+      const d = data as { message?: unknown; error?: unknown };
+      // Backend sends 'message' field, but check both for compatibility
       serverMessage =
-        (typeof d.error === "string" && d.error) ||
         (typeof d.message === "string" && d.message) ||
+        (typeof d.error === "string" && d.error) ||
         undefined;
     }
 

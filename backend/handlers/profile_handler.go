@@ -29,11 +29,6 @@ func NewProfileHandler(profileService *services.ProfileService, userService *ser
 
 // Profile returns the full profile aggregate for the authenticated user
 func (h *ProfileHandler) Profile(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	// Get authenticated user from context (set by auth middleware)
 	user, ok := middleware.GetUserFromContext(r)
 	if !ok {
@@ -53,11 +48,6 @@ func (h *ProfileHandler) Profile(w http.ResponseWriter, r *http.Request) {
 
 // UpdateSelf updates the authenticated user's profile (account fields, buyer, and/or seller profiles)
 func (h *ProfileHandler) UpdateSelf(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPatch {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	// Get authenticated user from context (set by auth middleware)
 	user, ok := middleware.GetUserFromContext(r)
 	if !ok {
@@ -139,11 +129,6 @@ func (h *ProfileHandler) UpdateSelf(w http.ResponseWriter, r *http.Request) {
 
 // GetSellerProfile returns the seller profile for displaying (public endpoint, takes seller ID from URL)
 func (h *ProfileHandler) GetSellerProfile(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	// Extract seller ID from URL path (seller ID is the same as user ID in sellers table)
 	sellerID, err := utils.ExtractIDFromPath(r.URL.Path, "/api/profile/seller/")
 	if err != nil {
