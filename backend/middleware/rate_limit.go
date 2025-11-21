@@ -1,11 +1,12 @@
 package middleware
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/uzimpp/CarJai/backend/utils"
 )
 
 // RateLimiter represents a rate limiter
@@ -17,6 +18,13 @@ type RateLimiter struct {
 	cleanupTicker *time.Ticker
 	stopCleanup   chan bool
 }
+
+var (
+	// Singleton rate limiters to prevent goroutine leaks
+	loginRateLimiter    *RateLimiter
+	generalRateLimiter  *RateLimiter
+	rateLimiterInitOnce sync.Once
+)
 
 // NewRateLimiter creates a new rate limiter
 func NewRateLimiter(limit int, window time.Duration) *RateLimiter {
@@ -158,19 +166,13 @@ func RateLimitMiddleware(limiter *RateLimiter, keyFunc func(*http.Request) strin
 			key := keyFunc(r)
 
 			if !limiter.IsAllowed(key) {
-				w.Header().Set("Content-Type", "application/json")
+				// Set rate limit headers
 				w.Header().Set("X-RateLimit-Limit", fmt.Sprintf("%d", limiter.limit))
 				w.Header().Set("X-RateLimit-Remaining", "0")
 				w.Header().Set("X-RateLimit-Reset", fmt.Sprintf("%d", time.Now().Add(limiter.window).Unix()))
-				w.WriteHeader(http.StatusTooManyRequests)
 
-				response := map[string]interface{}{
-					"success": false,
-					"error":   "Rate limit exceeded",
-					"code":    http.StatusTooManyRequests,
-				}
-
-				json.NewEncoder(w).Encode(response)
+				// Use utils.WriteError for consistent JSON error responses
+				utils.WriteError(w, http.StatusTooManyRequests, "Rate limit exceeded")
 				return
 			}
 
@@ -202,14 +204,57 @@ func IPBasedRateLimit(limit int, window time.Duration) func(http.HandlerFunc) ht
 	})
 }
 
-// SigninRateLimit creates a rate limiter specifically for login attempts
+// initRateLimiters initializes singleton rate limiters (thread-safe)
+func initRateLimiters() {
+	rateLimiterInitOnce.Do(func() {
+		// Login rate limiter: 5 attempts per 15 minutes per IP
+		loginRateLimiter = NewRateLimiter(5, 15*time.Minute)
+		// General rate limiter: 100 requests per minute per IP
+		generalRateLimiter = NewRateLimiter(100, time.Minute)
+	})
+}
+
+// LoginRateLimit creates a rate limiter specifically for login attempts
+// Uses a singleton instance to prevent goroutine leaks
 func LoginRateLimit() func(http.HandlerFunc) http.HandlerFunc {
-	// 5 attempts per 15 minutes per IP
-	return IPBasedRateLimit(5, 15*time.Minute)
+	initRateLimiters()
+	return RateLimitMiddleware(loginRateLimiter, func(r *http.Request) string {
+		// Use IP address as the key
+		ip := r.RemoteAddr
+		if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
+			ip = forwarded
+		}
+		if realIP := r.Header.Get("X-Real-IP"); realIP != "" {
+			ip = realIP
+		}
+		return ip
+	})
 }
 
 // GeneralRateLimit creates a general rate limiter for API endpoints
+// Uses a singleton instance to prevent goroutine leaks
 func GeneralRateLimit() func(http.HandlerFunc) http.HandlerFunc {
-	// 100 requests per minute per IP
-	return IPBasedRateLimit(100, time.Minute)
+	initRateLimiters()
+	return RateLimitMiddleware(generalRateLimiter, func(r *http.Request) string {
+		// Use IP address as the key
+		ip := r.RemoteAddr
+		if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
+			ip = forwarded
+		}
+		if realIP := r.Header.Get("X-Real-IP"); realIP != "" {
+			ip = realIP
+		}
+		return ip
+	})
+}
+
+// StopAllRateLimiters stops all singleton rate limiters (for graceful shutdown)
+func StopAllRateLimiters() {
+	initRateLimiters() // Ensure they're initialized
+	if loginRateLimiter != nil {
+		loginRateLimiter.Stop()
+	}
+	if generalRateLimiter != nil {
+		generalRateLimiter.Stop()
+	}
 }

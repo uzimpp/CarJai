@@ -30,7 +30,13 @@ func UserAuthRoutes(
 			middleware.SecurityHeadersMiddleware(
 				middleware.GeneralRateLimit()(
 					middleware.LoggingMiddleware(
-						userAuthHandler.Signup,
+						func(w http.ResponseWriter, r *http.Request) {
+							if r.Method != http.MethodPost {
+								utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+								return
+							}
+							userAuthHandler.Signup(w, r)
+						},
 					),
 				),
 			),
@@ -43,7 +49,13 @@ func UserAuthRoutes(
 			middleware.SecurityHeadersMiddleware(
 				middleware.LoginRateLimit()(
 					middleware.LoggingMiddleware(
-						userAuthHandler.Signin,
+						func(w http.ResponseWriter, r *http.Request) {
+							if r.Method != http.MethodPost {
+								utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+								return
+							}
+							userAuthHandler.Signin(w, r)
+						},
 					),
 				),
 			),
@@ -56,7 +68,13 @@ func UserAuthRoutes(
 			middleware.SecurityHeadersMiddleware(
 				middleware.LoginRateLimit()(
 					middleware.LoggingMiddleware(
-						userAuthHandler.GoogleSignin,
+						func(w http.ResponseWriter, r *http.Request) {
+							if r.Method != http.MethodPost {
+								utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+								return
+							}
+							userAuthHandler.GoogleSignin(w, r)
+						},
 					),
 				),
 			),
@@ -69,7 +87,13 @@ func UserAuthRoutes(
 			middleware.SecurityHeadersMiddleware(
 				middleware.GeneralRateLimit()(
 					middleware.LoggingMiddleware(
-						userAuthHandler.GoogleStart,
+						func(w http.ResponseWriter, r *http.Request) {
+							if r.Method != http.MethodGet {
+								utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+								return
+							}
+							userAuthHandler.GoogleStart(w, r)
+						},
 					),
 				),
 			),
@@ -82,7 +106,13 @@ func UserAuthRoutes(
 			middleware.SecurityHeadersMiddleware(
 				middleware.GeneralRateLimit()(
 					middleware.LoggingMiddleware(
-						userAuthHandler.GoogleCallback,
+						func(w http.ResponseWriter, r *http.Request) {
+							if r.Method != http.MethodGet {
+								utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+								return
+							}
+							userAuthHandler.GoogleCallback(w, r)
+						},
 					),
 				),
 			),
@@ -95,7 +125,13 @@ func UserAuthRoutes(
 			middleware.SecurityHeadersMiddleware(
 				middleware.GeneralRateLimit()(
 					middleware.LoggingMiddleware(
-						userAuthHandler.Signout,
+						func(w http.ResponseWriter, r *http.Request) {
+							if r.Method != http.MethodPost {
+								utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+								return
+							}
+							userAuthHandler.Signout(w, r)
+						},
 					),
 				),
 			),
@@ -108,7 +144,13 @@ func UserAuthRoutes(
 			middleware.SecurityHeadersMiddleware(
 				middleware.GeneralRateLimit()(
 					middleware.LoggingMiddleware(
-						userAuthHandler.Me,
+						func(w http.ResponseWriter, r *http.Request) {
+							if r.Method != http.MethodGet {
+								utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+								return
+							}
+							userAuthHandler.Me(w, r)
+						},
 					),
 				),
 			),
@@ -121,7 +163,13 @@ func UserAuthRoutes(
 			middleware.SecurityHeadersMiddleware(
 				middleware.GeneralRateLimit()(
 					middleware.LoggingMiddleware(
-						userAuthHandler.RefreshToken,
+						func(w http.ResponseWriter, r *http.Request) {
+							if r.Method != http.MethodPost {
+								utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+								return
+							}
+							userAuthHandler.RefreshToken(w, r)
+						},
 					),
 				),
 			),
@@ -134,7 +182,13 @@ func UserAuthRoutes(
 			middleware.SecurityHeadersMiddleware(
 				middleware.GeneralRateLimit()(
 					middleware.LoggingMiddleware(
-						userAuthHandler.ChangePassword,
+						func(w http.ResponseWriter, r *http.Request) {
+							if r.Method != http.MethodPost {
+								utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+								return
+							}
+							userAuthHandler.ChangePassword(w, r)
+						},
 					),
 				),
 			),

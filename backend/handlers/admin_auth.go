@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/uzimpp/CarJai/backend/config"
 	"github.com/uzimpp/CarJai/backend/middleware"
 	"github.com/uzimpp/CarJai/backend/models"
 	"github.com/uzimpp/CarJai/backend/services"
@@ -18,6 +19,7 @@ type AdminAuthHandler struct {
 	adminService   *services.AdminService
 	jwtManager     *utils.JWTManager
 	authMiddleware *middleware.AuthMiddleware
+	appConfig      *config.AppConfig
 }
 
 // NewAdminAuthHandler creates a new admin auth handler
@@ -25,21 +27,18 @@ func NewAdminAuthHandler(
 	adminService *services.AdminService,
 	jwtManager *utils.JWTManager,
 	authMiddleware *middleware.AuthMiddleware,
+	appConfig *config.AppConfig,
 ) *AdminAuthHandler {
 	return &AdminAuthHandler{
 		adminService:   adminService,
 		jwtManager:     jwtManager,
 		authMiddleware: authMiddleware,
+		appConfig:      appConfig,
 	}
 }
 
 // Signin handles admin sign in
 func (h *AdminAuthHandler) Signin(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
-		return
-	}
-
 	// Parse request body
 	var signinReq models.AdminSigninRequest
 	if err := json.NewDecoder(r.Body).Decode(&signinReq); err != nil {
@@ -84,7 +83,7 @@ func (h *AdminAuthHandler) Signin(w http.ResponseWriter, r *http.Request) {
 		Value:    token,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false, // Set to true in production with HTTPS
+		Secure:   h.appConfig.CookieSecure,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   int(time.Until(expiresAt).Seconds()),
 	})
@@ -99,11 +98,6 @@ func (h *AdminAuthHandler) Signin(w http.ResponseWriter, r *http.Request) {
 
 // Signout handles admin sign out
 func (h *AdminAuthHandler) Signout(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
-		return
-	}
-
 	// Read token from cookie
 	cookie, err := r.Cookie("admin_jwt")
 	if err != nil || cookie.Value == "" {
@@ -125,7 +119,7 @@ func (h *AdminAuthHandler) Signout(w http.ResponseWriter, r *http.Request) {
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false,
+		Secure:   h.appConfig.CookieSecure,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   -1, // Expire immediately
 	})
@@ -136,11 +130,6 @@ func (h *AdminAuthHandler) Signout(w http.ResponseWriter, r *http.Request) {
 
 // Me handles getting current admin information
 func (h *AdminAuthHandler) Me(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
-		return
-	}
-
 	// Get token from admin_jwt cookie
 	cookie, err := r.Cookie("admin_jwt")
 	if err != nil {
@@ -162,11 +151,6 @@ func (h *AdminAuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 
 // RefreshToken handles token refresh
 func (h *AdminAuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
-		return
-	}
-
 	// Get token from admin_jwt cookie
 	cookie, err := r.Cookie("admin_jwt")
 	if err != nil {
@@ -189,8 +173,8 @@ func (h *AdminAuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) 
 	utils.WriteJSON(w, http.StatusOK, response, "Token refreshed successfully")
 }
 
-// HandleGetAdmins handles GET /admin/admins
-func (h *AdminAuthHandler) HandleGetAdmins(w http.ResponseWriter, r *http.Request) {
+// GetAdmins handles GET /admin/admins
+func (h *AdminAuthHandler) GetAdmins(w http.ResponseWriter, r *http.Request) {
 	admins, err := h.adminService.GetManagedAdmins()
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, "Failed to retrieve admins")
@@ -205,13 +189,8 @@ func (h *AdminAuthHandler) HandleGetAdmins(w http.ResponseWriter, r *http.Reques
 	utils.WriteJSON(w, http.StatusOK, response, "Admins retrieved successfully")
 }
 
-// HandleCreateAdmin handles POST /admin/admins
-func (h *AdminAuthHandler) HandleCreateAdmin(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
-		return
-	}
-
+// CreateAdmin handles POST /admin/admins
+func (h *AdminAuthHandler) CreateAdmin(w http.ResponseWriter, r *http.Request) {
 	var req models.AdminCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
@@ -259,8 +238,8 @@ func (h *AdminAuthHandler) HandleCreateAdmin(w http.ResponseWriter, r *http.Requ
 	utils.WriteJSON(w, http.StatusCreated, response, "Admin created successfully")
 }
 
-// HandleUpdateAdmin handles PATCH /admin/admins/{id}
-func (h *AdminAuthHandler) HandleUpdateAdmin(w http.ResponseWriter, r *http.Request) {
+// UpdateAdmin handles PATCH /admin/admins/{id}
+func (h *AdminAuthHandler) UpdateAdmin(w http.ResponseWriter, r *http.Request) {
 	// Extract ID from URL (e.g., /admin/admins/1 -> 1)
 	parts := strings.Split(r.URL.Path, "/")
 	if len(parts) < 4 {
@@ -289,8 +268,8 @@ func (h *AdminAuthHandler) HandleUpdateAdmin(w http.ResponseWriter, r *http.Requ
 	utils.WriteJSON(w, http.StatusOK, nil, "Admin updated successfully")
 }
 
-// HandleDeleteAdmin handles DELETE /admin/admins/{id}
-func (h *AdminAuthHandler) HandleDeleteAdmin(w http.ResponseWriter, r *http.Request) {
+// DeleteAdmin handles DELETE /admin/admins/{id}
+func (h *AdminAuthHandler) DeleteAdmin(w http.ResponseWriter, r *http.Request) {
 	parts := strings.Split(r.URL.Path, "/")
 	if len(parts) < 4 {
 		utils.WriteError(w, http.StatusBadRequest, "Invalid admin ID")

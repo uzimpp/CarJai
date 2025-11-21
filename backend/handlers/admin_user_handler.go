@@ -25,8 +25,8 @@ func NewAdminUserHandler(adminService *services.AdminService, userService *servi
 	}
 }
 
-// HandleGetUsers handles GET /admin/users
-func (h *AdminUserHandler) HandleGetUsers(w http.ResponseWriter, r *http.Request) {
+// GetUsers handles GET /admin/users
+func (h *AdminUserHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	users, err := h.userService.GetManagedUsers()
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, "Failed to retrieve users")
@@ -40,8 +40,8 @@ func (h *AdminUserHandler) HandleGetUsers(w http.ResponseWriter, r *http.Request
 	utils.WriteJSON(w, http.StatusOK, response, "")
 }
 
-// HandleCreateUser handles POST /admin/users
-func (h *AdminUserHandler) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
+// CreateUser handles POST /admin/users
+func (h *AdminUserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var req models.AdminCreateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
@@ -64,8 +64,8 @@ func (h *AdminUserHandler) HandleCreateUser(w http.ResponseWriter, r *http.Reque
 	utils.WriteJSON(w, http.StatusCreated, createdUser.ToPublic(), "")
 }
 
-// HandleUpdateUser handles PATCH /admin/users/:id
-func (h *AdminUserHandler) HandleUpdateUser(w http.ResponseWriter, r *http.Request) {
+// UpdateUser handles PATCH /admin/users/:id
+func (h *AdminUserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	// Extract user ID from URL path
 	parts := strings.Split(r.URL.Path, "/")
 	idStr := parts[len(parts)-1]
@@ -94,8 +94,8 @@ func (h *AdminUserHandler) HandleUpdateUser(w http.ResponseWriter, r *http.Reque
 	utils.WriteJSON(w, http.StatusOK, updatedUser.ToPublic(), "")
 }
 
-// HandleDeleteUser handles DELETE /admin/users/:id
-func (h *AdminUserHandler) HandleDeleteUser(w http.ResponseWriter, r *http.Request) {
+// DeleteUser handles DELETE /admin/users/:id
+func (h *AdminUserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	// Extract user ID from URL path
 	parts := strings.Split(r.URL.Path, "/")
 	idStr := parts[len(parts)-1]
@@ -122,8 +122,8 @@ func (h *AdminUserHandler) HandleDeleteUser(w http.ResponseWriter, r *http.Reque
 	utils.WriteJSON(w, http.StatusOK, nil, "User deleted successfully")
 }
 
-// HandleGetUser handles GET /admin/users/:id
-func (h *AdminUserHandler) HandleGetUser(w http.ResponseWriter, r *http.Request) {
+// GetUser handles GET /admin/users/:id
+func (h *AdminUserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 	// Extract user ID from URL path
 	parts := strings.Split(r.URL.Path, "/")
 	idStr := parts[len(parts)-1]

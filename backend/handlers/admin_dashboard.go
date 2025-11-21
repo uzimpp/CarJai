@@ -36,13 +36,8 @@ type DashboardStatsResponse struct {
 	TotalSellers   int `json:"totalSellers"`
 }
 
-// HandleGetStats handles GET /admin/dashboard/stats
-func (h *AdminDashboardHandler) HandleGetStats(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
-		return
-	}
-
+// GetStats handles GET /admin/dashboard/stats
+func (h *AdminDashboardHandler) GetStats(w http.ResponseWriter, r *http.Request) {
 	var totalUsers, activeCars, soldCars, totalBuyers, totalSellers, pendingReports int
 	var errUsers, errActive, errSold, errBuyers, errSellers, errReports error
 	var wg sync.WaitGroup
@@ -123,13 +118,8 @@ func (h *AdminDashboardHandler) HandleGetStats(w http.ResponseWriter, r *http.Re
 	utils.WriteJSON(w, http.StatusOK, stats, "")
 }
 
-// HandleGetChartData handles GET /admin/dashboard/chart
-func (h *AdminDashboardHandler) HandleGetChartData(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
-		return
-	}
-
+// GetChartData handles GET /admin/dashboard/chart
+func (h *AdminDashboardHandler) GetChartData(w http.ResponseWriter, r *http.Request) {
 	days := 30
 
 	chartData, err := h.userService.GetUserActivityChartData(days)
@@ -141,13 +131,8 @@ func (h *AdminDashboardHandler) HandleGetChartData(w http.ResponseWriter, r *htt
 	utils.WriteJSON(w, http.StatusOK, chartData, "")
 }
 
-// HandleGetTopBrandsChart handles GET /admin/dashboard/top-brands
-func (h *AdminDashboardHandler) HandleGetTopBrandsChart(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
-		return
-	}
-
+// GetTopBrandsChart handles GET /admin/dashboard/top-brands
+func (h *AdminDashboardHandler) GetTopBrandsChart(w http.ResponseWriter, r *http.Request) {
 	data, err := h.carService.GetTopBrandsChartData()
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get top brands chart data: %v", err))
@@ -157,13 +142,8 @@ func (h *AdminDashboardHandler) HandleGetTopBrandsChart(w http.ResponseWriter, r
 	utils.WriteJSON(w, http.StatusOK, data, "")
 }
 
-// HandleGetRecentReports handles GET /admin/dashboard/recent-reports
-func (h *AdminDashboardHandler) HandleGetRecentReports(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
-		return
-	}
-
+// GetRecentReports handles GET /admin/dashboard/recent-reports
+func (h *AdminDashboardHandler) GetRecentReports(w http.ResponseWriter, r *http.Request) {
 	filters := models.ReportFilters{
 		Status: "pending",
 		Limit:  5,

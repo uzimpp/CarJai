@@ -6,6 +6,7 @@ import (
 	"github.com/uzimpp/CarJai/backend/handlers"
 	"github.com/uzimpp/CarJai/backend/middleware"
 	"github.com/uzimpp/CarJai/backend/services"
+	"github.com/uzimpp/CarJai/backend/utils"
 )
 
 // ProfileRoutes sets up profile-related routes (authenticated)
@@ -40,7 +41,7 @@ func ProfileRoutes(
 								case http.MethodPatch:
 									profileHandler.UpdateSelf(w, r)
 								default:
-									http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+									utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 								}
 							},
 						),
@@ -60,7 +61,7 @@ func ProfileRoutes(
 							if r.Method == http.MethodGet {
 								profileHandler.GetSellerProfile(w, r)
 							} else {
-								http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+								utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 							}
 						},
 					),

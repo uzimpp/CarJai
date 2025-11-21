@@ -29,11 +29,6 @@ func NewUserAuthHandler(userService *services.UserService, appConfig *config.App
 
 // Signup handles user signup requests
 func (h *UserAuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	var req models.UserSignupRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
@@ -82,7 +77,7 @@ func (h *UserAuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		Value:    response.Token,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false, // Set to true in production with HTTPS
+		Secure:   h.appConfig.CookieSecure,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   int(time.Until(response.ExpiresAt).Seconds()),
 	})
@@ -92,11 +87,6 @@ func (h *UserAuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 
 // Signin handles user sign in requests
 func (h *UserAuthHandler) Signin(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	var req models.UserSigninRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
@@ -130,7 +120,7 @@ func (h *UserAuthHandler) Signin(w http.ResponseWriter, r *http.Request) {
 		Value:    response.Token,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false, // Set to true in production with HTTPS
+		Secure:   h.appConfig.CookieSecure,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   int(time.Until(response.ExpiresAt).Seconds()),
 	})
@@ -140,11 +130,6 @@ func (h *UserAuthHandler) Signin(w http.ResponseWriter, r *http.Request) {
 
 // GoogleSignin handles user sign in using Google ID token (One Tap / GIS)
 func (h *UserAuthHandler) GoogleSignin(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	var req models.UserGoogleSigninRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
@@ -174,7 +159,7 @@ func (h *UserAuthHandler) GoogleSignin(w http.ResponseWriter, r *http.Request) {
 		Value:    response.Token,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false,
+		Secure:   h.appConfig.CookieSecure,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   int(time.Until(response.ExpiresAt).Seconds()),
 	})
@@ -194,11 +179,6 @@ func (h *UserAuthHandler) GoogleSignin(w http.ResponseWriter, r *http.Request) {
 
 // GoogleStart initiates the OAuth flow by redirecting to Google's authorization URL
 func (h *UserAuthHandler) GoogleStart(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	clientID := h.appConfig.GoogleClientID
 	redirectURI := h.appConfig.GoogleRedirectURI
 	// Support fallback construction from BackendURL when explicit redirect is not set
@@ -219,7 +199,7 @@ func (h *UserAuthHandler) GoogleStart(w http.ResponseWriter, r *http.Request) {
 		Value:    state,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false,
+		Secure:   h.appConfig.CookieSecure,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   300, // 5 minutes
 	})
@@ -239,11 +219,6 @@ func (h *UserAuthHandler) GoogleStart(w http.ResponseWriter, r *http.Request) {
 
 // GoogleCallback handles the OAuth callback, exchanges code for tokens, and signs in
 func (h *UserAuthHandler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	// Validate state
 	state := r.URL.Query().Get("state")
 	code := r.URL.Query().Get("code")
@@ -317,7 +292,7 @@ func (h *UserAuthHandler) GoogleCallback(w http.ResponseWriter, r *http.Request)
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false,
+		Secure:   h.appConfig.CookieSecure,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   -1,
 	})
@@ -328,7 +303,7 @@ func (h *UserAuthHandler) GoogleCallback(w http.ResponseWriter, r *http.Request)
 		Value:    response.Token,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false,
+		Secure:   h.appConfig.CookieSecure,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   int(time.Until(response.ExpiresAt).Seconds()),
 	})
@@ -362,11 +337,6 @@ func (h *UserAuthHandler) GoogleCallback(w http.ResponseWriter, r *http.Request)
 
 // Signout handles user sign out requests
 func (h *UserAuthHandler) Signout(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	// Get token from jwt cookie
 	cookie, err := r.Cookie("jwt")
 	if err != nil {
@@ -388,7 +358,7 @@ func (h *UserAuthHandler) Signout(w http.ResponseWriter, r *http.Request) {
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false,
+		Secure:   h.appConfig.CookieSecure,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   -1, // Expire immediately
 	})
@@ -398,11 +368,6 @@ func (h *UserAuthHandler) Signout(w http.ResponseWriter, r *http.Request) {
 
 // Me handles getting current user information
 func (h *UserAuthHandler) Me(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	// Get token from jwt cookie
 	cookie, err := r.Cookie("jwt")
 	if err != nil {
@@ -423,11 +388,6 @@ func (h *UserAuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 
 // RefreshToken handles token refresh requests
 func (h *UserAuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	// Get token from jwt cookie
 	cookie, err := r.Cookie("jwt")
 	if err != nil {
@@ -456,11 +416,6 @@ func (h *UserAuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 
 // ChangePassword handles password change requests
 func (h *UserAuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	// Get authenticated user from cookie
 	cookie, err := r.Cookie("jwt")
 	if err != nil {

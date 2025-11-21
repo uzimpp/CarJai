@@ -27,11 +27,6 @@ func NewRecentViewsHandler(recentViewsService *services.RecentViewsService, prof
 
 // RecordView handles recording a car view
 func (h *RecentViewsHandler) RecordView(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	// Get user ID from context (set by auth middleware)
 	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
@@ -70,11 +65,6 @@ func (h *RecentViewsHandler) RecordView(w http.ResponseWriter, r *http.Request) 
 
 // GetRecentViews handles getting user's recent views
 func (h *RecentViewsHandler) GetRecentViews(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	// Get user ID from context (set by auth middleware)
 	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {

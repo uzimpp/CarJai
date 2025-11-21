@@ -1482,8 +1482,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/BasicResponse'
               examples:
-                success:
-                  value:
+                  success:
+                        value:
                     success: true
                     message: "Car 101 added to favourites"
         '400':
@@ -1519,7 +1519,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/BasicResponse'
               examples:
-                success:
+                  success:
                   value:
                     success: true
                     message: "Car 101 removed from favourites"
@@ -1550,9 +1550,9 @@ paths:
           application/json:
             schema:
               type: object
-              required:
+                  required:
                 - car_id
-              properties:
+                properties:
                 car_id:
                   type: integer
                   minimum: 1
@@ -1618,8 +1618,8 @@ paths:
               examples:
                 sample:
                   value:
-                    success: true
-                    data:
+                success: true
+                data:
                       - id: 101
                         sellerId: 5
                         year: 2019
@@ -1627,14 +1627,14 @@ paths:
                         price: 420000
                         provinceId: 10
                         conditionRating: 4
-                        bodyType: "Sedan"
-                        transmission: "Automatic"
-                        drivetrain: "FWD"
+                      bodyType: "Sedan"
+                      transmission: "Automatic"
+                      drivetrain: "FWD"
                         status: "active"
                         brandName: "TOYOTA"
                         modelName: "COROLLA"
                         submodelName: "1.8E"
-                        thumbnailUrl: "/api/cars/images/123"
+                      thumbnailUrl: "/api/cars/images/123"
         '401':
           description: Unauthorized - Authentication required
         '403':
@@ -2313,9 +2313,9 @@ paths:
                     value: 12
         '401':
           description: Unauthorized
-          content:
-            application/json:
-              schema:
+        content:
+          application/json:
+            schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
           description: Server error
@@ -2656,7 +2656,7 @@ paths:
           description: User not found
           content:
             application/json:
-              schema:
+          schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
           description: Cannot delete user (e.g., has active listings)
@@ -2739,9 +2739,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Response'
               example:
-                success: true
+                    success: true
                 code: 201
-                data:
+                    data:
                   id: 1
                   seller_id: 1
                   brand_name: "TOYOTA"
@@ -2757,7 +2757,7 @@ paths:
           description: Unauthorized
           content:
             application/json:
-              schema:
+          schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Seller ID not found
@@ -2811,9 +2811,9 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: Unauthorized
-          content:
-            application/json:
-              schema:
+        content:
+          application/json:
+            schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Car not found
@@ -2850,7 +2850,7 @@ paths:
           description: Unauthorized
           content:
             application/json:
-              schema:
+          schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Car not found
@@ -3958,12 +3958,12 @@ components:
           description: Response data containing users list and total count
           properties:
             users:
-              type: array
-              items:
-                $ref: '#/components/schemas/AdminManagedUser'
-            total:
-              type: integer
-              example: 1
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminManagedUser'
+        total:
+          type: integer
+          example: 1
         message:
           type: string
           nullable: true
@@ -4066,12 +4066,12 @@ components:
           description: Response data containing cars list and total count
           properties:
             cars:
-              type: array
-              items:
-                $ref: '#/components/schemas/AdminManagedCar'
-            total:
-              type: integer
-              example: 10
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminManagedCar'
+        total:
+          type: integer
+          example: 10
         message:
           type: string
           nullable: true

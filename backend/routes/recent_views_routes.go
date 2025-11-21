@@ -24,13 +24,12 @@ func RecentViewsRoutes(
 	// Create router
 	router := http.NewServeMux()
 
-	// Create middleware instances
-	corsMiddleware := middleware.CORSMiddleware(allowedOrigins)
+	// Create auth middleware
 	authMiddleware := middleware.NewUserAuthMiddleware(userService)
 
 	// Handles both POST (record view) and GET (get recent views)
 	router.HandleFunc("/api/recent-views",
-		corsMiddleware(
+		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				middleware.GeneralRateLimit()(
 					middleware.LoggingMiddleware(
@@ -42,7 +41,7 @@ func RecentViewsRoutes(
 								case http.MethodGet:
 									recentViewsHandler.GetRecentViews(w, r)
 								default:
-									http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+									utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 								}
 							},
 						),

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 )
 
 // GetEnv gets an environment variable and fails if not found
@@ -23,4 +24,16 @@ func GetEnvAsInt(key string) int {
 		panic(fmt.Sprintf("Environment variable '%s' has invalid integer value: %s", key, value))
 	}
 	panic(fmt.Sprintf("Required integer environment variable '%s' is not set", key))
+}
+
+// GetEnvAsBool gets an environment variable as boolean
+// Returns true for "true" (case-insensitive)
+// Returns false for anything else or if not set
+func GetEnvAsBool(key string) bool {
+	value := os.Getenv(key)
+	if value == "" {
+		return false
+	}
+	value = strings.ToLower(strings.TrimSpace(value))
+	return value == "true"
 }

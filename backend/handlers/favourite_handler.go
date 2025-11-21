@@ -22,11 +22,6 @@ func NewFavouriteHandler(favService *services.FavouriteService, userService *ser
 
 // AddFavourite handles POST /api/favorites/{carId}
 func (h *FavouriteHandler) AddFavourite(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
 		utils.WriteError(w, http.StatusUnauthorized, "Authentication required")
@@ -62,11 +57,6 @@ func (h *FavouriteHandler) AddFavourite(w http.ResponseWriter, r *http.Request) 
 
 // RemoveFavourite handles DELETE /api/favorites/{carId}
 func (h *FavouriteHandler) RemoveFavourite(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodDelete {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
 		utils.WriteError(w, http.StatusUnauthorized, "Authentication required")
@@ -105,11 +95,6 @@ func (h *FavouriteHandler) RemoveFavourite(w http.ResponseWriter, r *http.Reques
 
 // GetMyFavourites handles GET /api/favorites/my
 func (h *FavouriteHandler) GetMyFavourites(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
 		utils.WriteError(w, http.StatusUnauthorized, "Authentication required")
