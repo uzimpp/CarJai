@@ -12,6 +12,8 @@ jobs:
   detect-environment:
     name: Detect Environment
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       branch: ${{ steps.branch.outputs.name }}
       environment: ${{ steps.env.outputs.name }}
@@ -44,7 +46,9 @@ jobs:
     name: Frontend CI
     runs-on: ubuntu-latest
     needs: detect-environment
-
+    permissions:
+      contents: read
+      actions: write
     strategy:
       matrix:
         node-version: [18.x, 20.x]
@@ -83,7 +87,9 @@ jobs:
     name: Backend CI
     runs-on: ubuntu-latest
     needs: detect-environment
-
+    permissions:
+      contents: read
+      actions: write
     steps:
       - uses: actions/checkout@v4
       
