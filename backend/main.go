@@ -105,6 +105,14 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 		appConfig.SMTPFrom,
 	)
 
+	// Validate SMTP configuration
+	if err := emailService.TestConnection(); err != nil {
+		log.Printf("⚠️  SMTP validation failed: %v", err)
+		log.Printf("⚠️  Password reset emails will not work")
+	} else {
+		log.Println("✅ SMTP connection validated")
+	}
+
 	// Create user service
 	userService := services.NewUserService(
 		userRepo,
