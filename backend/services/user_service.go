@@ -780,7 +780,11 @@ func (s *UserService) isRateLimited(email string) bool {
 		}
 	}
 
-	// Update tracker
+	// Update tracker - delete key if no valid timestamps to prevent memory leak
+	if len(validTimestamps) == 0 {
+		delete(s.resetRequestTracker, email)
+		return false
+	}
 	s.resetRequestTracker[email] = validTimestamps
 
 	// Check if limit exceeded
