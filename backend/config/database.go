@@ -39,10 +39,17 @@ func (c *DatabaseConfig) GetConnectionString() string {
 		c.Host, c.Port, c.User, c.Password, c.DBName, c.SSLMode)
 }
 
+// GetSafeConnectionString returns a database connection string with the password redacted
+func (c *DatabaseConfig) GetSafeConnectionString() string {
+	redacted := "REDACTED"
+	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		c.Host, c.Port, c.User, redacted, c.DBName, c.SSLMode)
+}
+
 // ConnectDatabase establishes a connection to the database and initializes it
 func ConnectDatabase(dbConfig *DatabaseConfig, appConfig *AppConfig) (*sql.DB, error) {
 	connectionString := dbConfig.GetConnectionString()
-	fmt.Printf("Connecting to database with: %s\n", connectionString)
+	fmt.Printf("Connecting to database with: %s\n", dbConfig.GetSafeConnectionString())
 
 	db, err := sql.Open("postgres", connectionString)
 	if err != nil {
