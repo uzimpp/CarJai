@@ -35,7 +35,13 @@ func CarRoutes(
 			middleware.SecurityHeadersMiddleware(
 				middleware.GeneralRateLimit()(
 					middleware.LoggingMiddleware(
-						carHandler.SearchCars,
+						func(w http.ResponseWriter, r *http.Request) {
+							if r.Method != http.MethodGet {
+								utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+								return
+							}
+							carHandler.SearchCars(w, r)
+						},
 					),
 				),
 			),
@@ -49,7 +55,13 @@ func CarRoutes(
 				middleware.GeneralRateLimit()(
 					middleware.LoggingMiddleware(
 						authMiddleware.RequireAuth(
-							carHandler.GetMyCars,
+							func(w http.ResponseWriter, r *http.Request) {
+								if r.Method != http.MethodGet {
+									utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+									return
+								}
+								carHandler.GetMyCars(w, r)
+							},
 						),
 					),
 				),
@@ -79,7 +91,13 @@ func CarRoutes(
 				middleware.GeneralRateLimit()(
 					middleware.LoggingMiddleware(
 						authMiddleware.RequireAuth(
-							carHandler.CreateCar,
+							func(w http.ResponseWriter, r *http.Request) {
+								if r.Method != http.MethodPost {
+									utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+									return
+								}
+								carHandler.CreateCar(w, r)
+							},
 						),
 					),
 				),
@@ -116,61 +134,121 @@ func handleCarRoutes(
 
 	// /api/cars/{id}/estimate - Get price estimate (authenticated)
 	if strings.HasSuffix(path, "/estimate") {
-		authMiddleware.RequireAuth(handler.GetPriceEstimate)(w, r)
+		authMiddleware.RequireAuth(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodGet {
+				utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+				return
+			}
+			handler.GetPriceEstimate(w, r)
+		})(w, r)
 		return
 	}
 
 	// /api/cars/{id}/book - Upload registration book to existing car (authenticated)
 	if strings.HasSuffix(path, "/book") {
-		authMiddleware.RequireAuth(handler.UploadBook)(w, r)
+		authMiddleware.RequireAuth(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodPost {
+				utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+				return
+			}
+			handler.UploadBook(w, r)
+		})(w, r)
 		return
 	}
 
 	// /api/cars/{id}/images - Upload images (authenticated)
 	if strings.Contains(path, "/images") && !strings.Contains(path, "/images/order") {
-		authMiddleware.RequireAuth(handler.UploadCarImages)(w, r)
+		authMiddleware.RequireAuth(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodPost {
+				utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+				return
+			}
+			handler.UploadCarImages(w, r)
+		})(w, r)
 		return
 	}
 
 	// /api/cars/{id}/images/order - Reorder images (authenticated)
 	if strings.HasSuffix(path, "/images/order") {
-		authMiddleware.RequireAuth(handler.ReorderImages)(w, r)
+		authMiddleware.RequireAuth(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodPut {
+				utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+				return
+			}
+			handler.ReorderImages(w, r)
+		})(w, r)
 		return
 	}
 
 	// /api/cars/{id}/status - Update status (authenticated)
 	if strings.HasSuffix(path, "/status") {
-		authMiddleware.RequireAuth(handler.UpdateStatus)(w, r)
+		authMiddleware.RequireAuth(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodPut {
+				utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+				return
+			}
+			handler.UpdateStatus(w, r)
+		})(w, r)
 		return
 	}
 
 	// /api/cars/{id}/inspection - Upload inspection (authenticated)
 	if strings.HasSuffix(path, "/inspection") {
-		authMiddleware.RequireAuth(handler.UploadInspection)(w, r)
+		authMiddleware.RequireAuth(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodPost {
+				utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+				return
+			}
+			handler.UploadInspection(w, r)
+		})(w, r)
 		return
 	}
 
 	// /api/cars/{id}/draft - Auto-save draft (authenticated)
 	if strings.HasSuffix(path, "/draft") {
-		authMiddleware.RequireAuth(handler.AutoSaveDraft)(w, r)
+		authMiddleware.RequireAuth(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodPatch {
+				utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+				return
+			}
+			handler.AutoSaveDraft(w, r)
+		})(w, r)
 		return
 	}
 
 	// /api/cars/{id}/review - Review publish readiness (authenticated)
 	if strings.HasSuffix(path, "/review") {
-		authMiddleware.RequireAuth(handler.Review)(w, r)
+		authMiddleware.RequireAuth(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodGet {
+				utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+				return
+			}
+			handler.Review(w, r)
+		})(w, r)
 		return
 	}
 
 	// /api/cars/{id}/discard - Discard draft (authenticated; alias for delete)
 	if strings.HasSuffix(path, "/discard") {
-		authMiddleware.RequireAuth(handler.DiscardCar)(w, r)
+		authMiddleware.RequireAuth(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodPost {
+				utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+				return
+			}
+			handler.DiscardCar(w, r)
+		})(w, r)
 		return
 	}
 
 	// /api/cars/{id}/restore-progress - Restore progress from another car (authenticated)
 	if strings.HasSuffix(path, "/restore-progress") {
-		authMiddleware.RequireAuth(handler.RestoreProgress)(w, r)
+		authMiddleware.RequireAuth(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodGet {
+				utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+				return
+			}
+			handler.RestoreProgress(w, r)
+		})(w, r)
 		return
 	}
 
@@ -186,10 +264,10 @@ func handleCarRoutes(
 			// Authenticated: Update/Delete car
 			authMiddleware.RequireAuth(handler.HandleCarCRUD)(w, r)
 		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		}
 		return
 	}
 
-	http.Error(w, "Not found", http.StatusNotFound)
+	utils.WriteError(w, http.StatusNotFound, "Not found")
 }

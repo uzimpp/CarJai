@@ -152,6 +152,7 @@ func initializeAdminUser(db *sql.DB, appConfig *AppConfig) error {
 		return fmt.Errorf("failed to hash password: %w", err)
 	}
 
+	// Any admins created from the environment variables will be super admins
 	const SuperAdminRole = "super_admin"
 
 	if adminExists {

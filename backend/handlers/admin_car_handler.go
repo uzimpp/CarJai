@@ -23,8 +23,8 @@ func NewAdminCarHandler(carService *services.CarService) *AdminCarHandler {
 	}
 }
 
-// HandleGetCars handles GET /admin/cars
-func (h *AdminCarHandler) HandleGetCars(w http.ResponseWriter, r *http.Request) {
+// GetCars handles GET /admin/cars
+func (h *AdminCarHandler) GetCars(w http.ResponseWriter, r *http.Request) {
 	cars, err := h.carService.GetManagedCars()
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, "Failed to retrieve cars")
@@ -38,8 +38,8 @@ func (h *AdminCarHandler) HandleGetCars(w http.ResponseWriter, r *http.Request) 
 	utils.WriteJSON(w, http.StatusOK, response, "")
 }
 
-// HandleUpdateCar handles PATCH /admin/cars/:id
-func (h *AdminCarHandler) HandleUpdateCar(w http.ResponseWriter, r *http.Request) {
+// UpdateCar handles PATCH /admin/cars/:id
+func (h *AdminCarHandler) UpdateCar(w http.ResponseWriter, r *http.Request) {
 	// Extract car ID from URL path
 	parts := strings.Split(r.URL.Path, "/")
 	idStr := parts[len(parts)-1]
@@ -70,8 +70,8 @@ func (h *AdminCarHandler) HandleUpdateCar(w http.ResponseWriter, r *http.Request
 	utils.WriteJSON(w, http.StatusOK, updatedCar, "")
 }
 
-// HandleCreateCar handles POST /admin/cars
-func (h *AdminCarHandler) HandleCreateCar(w http.ResponseWriter, r *http.Request) {
+// CreateCar handles POST /admin/cars
+func (h *AdminCarHandler) CreateCar(w http.ResponseWriter, r *http.Request) {
 	var req models.AdminCreateCarRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
@@ -91,8 +91,8 @@ func (h *AdminCarHandler) HandleCreateCar(w http.ResponseWriter, r *http.Request
 	utils.WriteJSON(w, http.StatusCreated, newCar, "")
 }
 
-// HandleDeleteCar handles DELETE /admin/cars/:id
-func (h *AdminCarHandler) HandleDeleteCar(w http.ResponseWriter, r *http.Request) {
+// DeleteCar handles DELETE /admin/cars/:id
+func (h *AdminCarHandler) DeleteCar(w http.ResponseWriter, r *http.Request) {
 	// Extract car ID from URL path
 	parts := strings.Split(r.URL.Path, "/")
 	idStr := parts[len(parts)-1]

@@ -7,50 +7,70 @@ import (
 	"github.com/uzimpp/CarJai/backend/handlers"
 	"github.com/uzimpp/CarJai/backend/middleware"
 	"github.com/uzimpp/CarJai/backend/services"
+	"github.com/uzimpp/CarJai/backend/utils"
 )
 
 // FavouritesRoutes sets up routes for user favourites
-func FavouritesRoutes(favService *services.FavouriteService, userService *services.UserService, corsOrigins []string) http.Handler {
-	mux := http.NewServeMux()
+func FavouritesRoutes(favService *services.FavouriteService, userService *services.UserService, corsOrigins []string) *http.ServeMux {
+	router := http.NewServeMux()
 	handler := handlers.NewFavouriteHandler(favService, userService)
 
-	// Apply CORS middleware
-	corsMiddleware := middleware.CORSMiddleware(corsOrigins)
-	// Apply user authentication middleware
+	// Create auth middleware
 	authMiddleware := middleware.NewUserAuthMiddleware(userService)
 
-	// POST /api/favorites/{carId} and DELETE /api/favorites/{carId}
-	mux.HandleFunc("/api/favorites/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodOptions {
-			corsMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.WriteHeader(http.StatusOK)
-			})).ServeHTTP(w, r)
-			return
-		}
+	// GET /api/favorites/my - Get user's favourites
+	router.HandleFunc("/api/favorites/my",
+		middleware.CORSMiddleware(corsOrigins)(
+			middleware.SecurityHeadersMiddleware(
+				middleware.GeneralRateLimit()(
+					middleware.LoggingMiddleware(
+						authMiddleware.RequireAuth(
+							func(w http.ResponseWriter, r *http.Request) {
+								if r.Method != http.MethodGet {
+									utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+									return
+								}
+								handler.GetMyFavourites(w, r)
+							},
+						),
+					),
+				),
+			),
+		),
+	)
 
-		path := r.URL.Path
-		// GET /api/favorites/my
-		if strings.HasPrefix(path, "/api/favorites/my") && r.Method == http.MethodGet {
-			corsMiddleware(authMiddleware.RequireAuth(handler.GetMyFavourites)).ServeHTTP(w, r)
-			return
-		}
+	// POST /api/favorites/{carId} - Add favourite
+	// DELETE /api/favorites/{carId} - Remove favourite
+	router.HandleFunc("/api/favorites/",
+		middleware.CORSMiddleware(corsOrigins)(
+			middleware.SecurityHeadersMiddleware(
+				middleware.GeneralRateLimit()(
+					middleware.LoggingMiddleware(
+						authMiddleware.RequireAuth(
+							func(w http.ResponseWriter, r *http.Request) {
+								path := r.URL.Path
+								idPart := strings.TrimPrefix(path, "/api/favorites/")
 
-		// For paths like /api/favorites/{carId}
-		idPart := strings.TrimPrefix(path, "/api/favorites/")
-		if !strings.Contains(idPart, "/") || idPart == "" {
-			switch r.Method {
-			case http.MethodPost:
-				corsMiddleware(authMiddleware.RequireAuth(handler.AddFavourite)).ServeHTTP(w, r)
-			case http.MethodDelete:
-				corsMiddleware(authMiddleware.RequireAuth(handler.RemoveFavourite)).ServeHTTP(w, r)
-			default:
-				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			}
-			return
-		}
+								// Check if it's a valid car ID path (no nested paths)
+								if strings.Contains(idPart, "/") || idPart == "" {
+									utils.WriteError(w, http.StatusNotFound, "Not found")
+									return
+								}
+								switch r.Method {
+								case http.MethodPost:
+									handler.AddFavourite(w, r)
+								case http.MethodDelete:
+									handler.RemoveFavourite(w, r)
+								default:
+									utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+								}
+							},
+						),
+					),
+				),
+			),
+		),
+	)
 
-		http.Error(w, "Not found", http.StatusNotFound)
-	})
-
-	return mux
+	return router
 }

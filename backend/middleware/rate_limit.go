@@ -1,11 +1,12 @@
 package middleware
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/uzimpp/CarJai/backend/utils"
 )
 
 // RateLimiter represents a rate limiter
@@ -158,19 +159,13 @@ func RateLimitMiddleware(limiter *RateLimiter, keyFunc func(*http.Request) strin
 			key := keyFunc(r)
 
 			if !limiter.IsAllowed(key) {
-				w.Header().Set("Content-Type", "application/json")
+				// Set rate limit headers
 				w.Header().Set("X-RateLimit-Limit", fmt.Sprintf("%d", limiter.limit))
 				w.Header().Set("X-RateLimit-Remaining", "0")
 				w.Header().Set("X-RateLimit-Reset", fmt.Sprintf("%d", time.Now().Add(limiter.window).Unix()))
-				w.WriteHeader(http.StatusTooManyRequests)
 
-				response := map[string]interface{}{
-					"success": false,
-					"error":   "Rate limit exceeded",
-					"code":    http.StatusTooManyRequests,
-				}
-
-				json.NewEncoder(w).Encode(response)
+				// Use utils.WriteError for consistent JSON error responses
+				utils.WriteError(w, http.StatusTooManyRequests, "Rate limit exceeded")
 				return
 			}
 

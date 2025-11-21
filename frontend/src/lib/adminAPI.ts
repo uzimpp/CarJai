@@ -52,7 +52,6 @@ export const adminAPI = {
   async clearAdminSession(): Promise<void> {
     return apiCall(`${adminPrefix}/auth/signout`, {
       method: "POST",
-      credentials: "include",
     });
   },
 
@@ -106,14 +105,16 @@ export const adminAPI = {
   },
 
   async getMarketPrices(): Promise<MarketPrice[]> {
-    const data = await apiCall<MarketPrice[]>(
-      `${adminPrefix}/market-price/data`,
-      {
-        method: "GET",
-      }
-    );
-    // Ensure we return an array
-    return Array.isArray(data) ? data : [];
+    const response = await apiCall<{
+      success: boolean;
+      code: number;
+      data: MarketPrice[];
+      message?: string;
+    }>(`${adminPrefix}/market-price/data`, {
+      method: "GET",
+    });
+    // Backend returns wrapped format, extract data array
+    return Array.isArray(response?.data) ? response.data : [];
   },
 
   async importMarketPrices(file: File): Promise<ImportMarketPriceResponse> {
@@ -205,10 +206,16 @@ export const adminAPI = {
     name: string;
     password: string;
   }): Promise<AdminUser> {
-    return apiCall<AdminUser>(`${adminPrefix}/admins`, {
+    const response = await apiCall<{
+      success: boolean;
+      code: number;
+      data: AdminUser;
+      message?: string;
+    }>(`${adminPrefix}/admins`, {
       method: "POST",
       body: JSON.stringify(data),
     });
+    return response.data;
   },
 
   async updateAdmin(
@@ -253,24 +260,31 @@ export const adminAPI = {
 
   async createUser(data: AdminCreateUserRequest): Promise<AdminManagedUser> {
     const response = await apiCall<{
-      id: number;
-      name: string;
-      username: string;
-      email: string;
-      created_at: string;
-      updated_at: string;
+      success: boolean;
+      code: number;
+      data: {
+        id: number;
+        name: string;
+        username: string;
+        email: string;
+        created_at: string;
+        updated_at: string;
+      };
+      message?: string;
     }>(`${adminPrefix}/users`, {
       method: "POST",
       body: JSON.stringify(data),
     });
 
+    // Backend returns user data in response.data
+    const userData = response.data;
     return {
-      id: response.id,
-      name: response.name,
-      username: response.username,
-      email: response.email,
-      created_at: response.created_at,
-      updated_at: response.updated_at,
+      id: userData.id,
+      name: userData.name,
+      username: userData.username,
+      email: userData.email,
+      created_at: userData.created_at,
+      updated_at: userData.updated_at,
       type: "user",
       role: "No role",
       roles: {
@@ -285,24 +299,31 @@ export const adminAPI = {
     data: AdminUpdateUserRequest
   ): Promise<AdminManagedUser> {
     const response = await apiCall<{
-      id: number;
-      name: string;
-      username: string;
-      email: string | null;
-      created_at: string;
-      updated_at?: string;
+      success: boolean;
+      code: number;
+      data: {
+        id: number;
+        name: string;
+        username: string;
+        email: string | null;
+        created_at: string;
+        updated_at?: string;
+      };
+      message?: string;
     }>(`${adminPrefix}/users/${userId}`, {
       method: "PATCH",
       body: JSON.stringify(data),
     });
 
+    // Backend returns user data in response.data
+    const userData = response.data;
     return {
-      id: response.id,
-      name: response.name,
-      username: response.username,
-      email: response.email,
-      created_at: response.created_at,
-      updated_at: response.updated_at,
+      id: userData.id,
+      name: userData.name,
+      username: userData.username,
+      email: userData.email,
+      created_at: userData.created_at,
+      updated_at: userData.updated_at,
       type: "user",
       role: "No role",
       roles: {
@@ -326,16 +347,22 @@ export const adminAPI = {
     created_at: string;
     updated_at?: string;
   }> {
-    return apiCall<{
-      id: number;
-      name: string;
-      username: string;
-      email: string | null;
-      created_at: string;
-      updated_at?: string;
+    const response = await apiCall<{
+      success: boolean;
+      code: number;
+      data: {
+        id: number;
+        name: string;
+        username: string;
+        email: string | null;
+        created_at: string;
+        updated_at?: string;
+      };
+      message?: string;
     }>(`${adminPrefix}/users/${userId}`, {
       method: "GET",
     });
+    return response.data;
   },
 
   // --- Car Management API ---
@@ -364,32 +391,39 @@ export const adminAPI = {
 
   async createCar(data: AdminCreateCarRequest): Promise<AdminManagedCar> {
     const response = await apiCall<{
-      id: number;
-      brandName: string | null;
-      modelName: string | null;
-      submodelName: string | null;
-      year: number | null;
-      price: number | null;
-      mileage: number | null;
-      status: string;
-      createdAt: string;
-      sellerId: number;
+      success: boolean;
+      code: number;
+      data: {
+        id: number;
+        brandName: string | null;
+        modelName: string | null;
+        submodelName: string | null;
+        year: number | null;
+        price: number | null;
+        mileage: number | null;
+        status: string;
+        createdAt: string;
+        sellerId: number;
+      };
+      message?: string;
     }>(`${adminPrefix}/cars`, {
       method: "POST",
       body: JSON.stringify(data),
     });
 
+    // Backend returns car data in response.data
+    const carData = response.data;
     return {
-      id: response.id,
-      brandName: response.brandName,
-      modelName: response.modelName,
-      submodelName: response.submodelName,
-      year: response.year,
-      price: response.price,
-      mileage: response.mileage,
-      status: response.status,
-      listedDate: response.createdAt,
-      soldBy: `User ID: ${response.sellerId}`,
+      id: carData.id,
+      brandName: carData.brandName,
+      modelName: carData.modelName,
+      submodelName: carData.submodelName,
+      year: carData.year,
+      price: carData.price,
+      mileage: carData.mileage,
+      status: carData.status,
+      listedDate: carData.createdAt,
+      soldBy: `User ID: ${carData.sellerId}`,
     };
   },
 
@@ -398,31 +432,38 @@ export const adminAPI = {
     data: AdminUpdateCarRequest
   ): Promise<AdminManagedCar> {
     const response = await apiCall<{
-      id: number;
-      brandName: string | null;
-      modelName: string | null;
-      submodelName: string | null;
-      year: number | null;
-      price: number | null;
-      mileage: number | null;
-      status: string;
-      createdAt: string;
+      success: boolean;
+      code: number;
+      data: {
+        id: number;
+        brandName: string | null;
+        modelName: string | null;
+        submodelName: string | null;
+        year: number | null;
+        price: number | null;
+        mileage: number | null;
+        status: string;
+        createdAt: string;
+      };
+      message?: string;
     }>(`${adminPrefix}/cars/${carId}`, {
       method: "PATCH",
       body: JSON.stringify(data),
     });
 
+    // Backend returns car data in response.data
+    const carData = response.data;
     // Note: We might not have all fields from update, so merge with existing
     return {
-      id: response.id,
-      brandName: response.brandName,
-      modelName: response.modelName,
-      submodelName: response.submodelName,
-      year: response.year,
-      price: response.price,
-      mileage: response.mileage,
-      status: response.status,
-      listedDate: response.createdAt,
+      id: carData.id,
+      brandName: carData.brandName,
+      modelName: carData.modelName,
+      submodelName: carData.submodelName,
+      year: carData.year,
+      price: carData.price,
+      mileage: carData.mileage,
+      status: carData.status,
+      listedDate: carData.createdAt,
       soldBy: null, // Update response doesn't include seller info
     };
   },
