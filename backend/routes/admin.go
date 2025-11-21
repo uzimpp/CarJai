@@ -67,47 +67,47 @@ func AdminRoutes(
 	}
 
 	requireSuperAdmin := func(handler http.HandlerFunc) http.HandlerFunc {
-        return func(w http.ResponseWriter, r *http.Request) {
-            adminIDStr := r.Header.Get("X-Admin-ID")
-            if adminIDStr == "" {
-                utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
-                return
-            }
+		return func(w http.ResponseWriter, r *http.Request) {
+			adminIDStr := r.Header.Get("X-Admin-ID")
+			if adminIDStr == "" {
+				utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
+				return
+			}
 
-            adminID, _ := strconv.Atoi(adminIDStr) 
-            
-            admin, err := adminService.GetAdminByID(adminID)
-            if err != nil {
-                utils.WriteError(w, http.StatusUnauthorized, "User not found")
-                return
-            }
+			adminID, _ := strconv.Atoi(adminIDStr)
 
-            if admin.Role != "super_admin" {
-                utils.WriteError(w, http.StatusForbidden, "Access denied: Super Admin only")
-                return
-            }
+			admin, err := adminService.GetAdminByID(adminID)
+			if err != nil {
+				utils.WriteError(w, http.StatusUnauthorized, "User not found")
+				return
+			}
 
-            handler(w, r)
-        }
-    }
+			if admin.Role != "super_admin" {
+				utils.WriteError(w, http.StatusForbidden, "Access denied: Super Admin only")
+				return
+			}
+
+			handler(w, r)
+		}
+	}
 
 	applySuperAdminAuthMiddleware := func(handler http.HandlerFunc) http.HandlerFunc {
-        return middleware.CORSMiddleware(allowedOrigins)(
-            middleware.SecurityHeadersMiddleware(
-                authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
-                    middleware.GeneralRateLimit()(
-                        middleware.AdminLoggingMiddleware(
-                            authMiddleware.RequireAuth(
-                                authMiddleware.RequireIPWhitelist(		
-                                    requireSuperAdmin(handler),
-                                ),
-                            ),
-                        ),
-                    ),
-                ),
-            ),
-        )
-    }
+		return middleware.CORSMiddleware(allowedOrigins)(
+			middleware.SecurityHeadersMiddleware(
+				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
+					middleware.GeneralRateLimit()(
+						middleware.AdminLoggingMiddleware(
+							authMiddleware.RequireAuth(
+								authMiddleware.RequireIPWhitelist(
+									requireSuperAdmin(handler),
+								),
+							),
+						),
+					),
+				),
+			),
+		)
+	}
 
 	// --- Admin Authentication Routes ---
 	// Signin needs special handling (LoginRateLimit, no auth required yet)
@@ -117,7 +117,13 @@ func AdminRoutes(
 				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
 					middleware.LoginRateLimit()( // Specific rate limit for login
 						middleware.LoggingMiddleware( // Use general logging for potentially unauthenticated requests
-							adminAuthHandler.Signin,
+							func(w http.ResponseWriter, r *http.Request) {
+								if r.Method != http.MethodPost {
+									utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+									return
+								}
+								adminAuthHandler.Signin(w, r)
+							},
 						),
 					),
 				),
@@ -125,14 +131,32 @@ func AdminRoutes(
 		),
 	)
 	// Other auth routes use the standard protected middleware chain
-	router.HandleFunc(basePath+"/auth/signout", applyAdminAuthMiddleware(adminAuthHandler.Signout))
-	router.HandleFunc(basePath+"/auth/me", applyAdminAuthMiddleware(adminAuthHandler.Me))
-	router.HandleFunc(basePath+"/auth/refresh", applyAdminAuthMiddleware(adminAuthHandler.RefreshToken))
+	router.HandleFunc(basePath+"/auth/signout", applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+			return
+		}
+		adminAuthHandler.Signout(w, r)
+	}))
+	router.HandleFunc(basePath+"/auth/me", applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+			return
+		}
+		adminAuthHandler.Me(w, r)
+	}))
+	router.HandleFunc(basePath+"/auth/refresh", applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+			return
+		}
+		adminAuthHandler.RefreshToken(w, r)
+	}))
 
 	router.HandleFunc(basePath+"/admins",
 		applySuperAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path != basePath+"/admins" {
-                 return 
+				return
 			}
 			switch r.Method {
 			case http.MethodGet:
@@ -146,24 +170,48 @@ func AdminRoutes(
 	)
 
 	router.HandleFunc(basePath+"/admins/",
-        applySuperAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
-            // Check method
-            switch r.Method {
-            case http.MethodPatch:
-                adminAuthHandler.HandleUpdateAdmin(w, r)
-            case http.MethodDelete:
-                adminAuthHandler.HandleDeleteAdmin(w, r)
-            default:
-                utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
-            }
-        }),
-    )
+		applySuperAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+			// Check method
+			switch r.Method {
+			case http.MethodPatch:
+				adminAuthHandler.HandleUpdateAdmin(w, r)
+			case http.MethodDelete:
+				adminAuthHandler.HandleDeleteAdmin(w, r)
+			default:
+				utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+			}
+		}),
+	)
 
 	// --- Admin IP Whitelist Management Routes ---
-	router.HandleFunc(basePath+"/ip-whitelist", applyAdminAuthMiddleware(adminIPHandler.GetWhitelistedIPs))
-	router.HandleFunc(basePath+"/ip-whitelist/add", applyAdminAuthMiddleware(adminIPHandler.AddIPToWhitelist))
-	router.HandleFunc(basePath+"/ip-whitelist/check", applyAdminAuthMiddleware(adminIPHandler.CheckIPDeletionImpact))
-	router.HandleFunc(basePath+"/ip-whitelist/remove", applyAdminAuthMiddleware(adminIPHandler.RemoveIPFromWhitelist))
+	router.HandleFunc(basePath+"/ip-whitelist", applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+			return
+		}
+		adminIPHandler.GetWhitelistedIPs(w, r)
+	}))
+	router.HandleFunc(basePath+"/ip-whitelist/add", applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+			return
+		}
+		adminIPHandler.AddIPToWhitelist(w, r)
+	}))
+	router.HandleFunc(basePath+"/ip-whitelist/check", applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+			return
+		}
+		adminIPHandler.CheckIPDeletionImpact(w, r)
+	}))
+	router.HandleFunc(basePath+"/ip-whitelist/remove", applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodDelete {
+			utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+			return
+		}
+		adminIPHandler.RemoveIPFromWhitelist(w, r)
+	}))
 
 	// --- Admin Dashboard Routes ---
 	router.HandleFunc(basePath+"/dashboard/stats",
@@ -186,10 +234,22 @@ func AdminRoutes(
 	// GET: Retrieve all market prices from the database
 	// POST: Upload PDF and directly import to database
 	router.HandleFunc(basePath+"/market-price/data",
-		applyAdminAuthMiddleware(adminExtractionHandler.HandleGetMarketPrices))
+		applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodGet {
+				utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+				return
+			}
+			adminExtractionHandler.HandleGetMarketPrices(w, r)
+		}))
 
 	router.HandleFunc(basePath+"/market-price/upload",
-		applyAdminAuthMiddleware(adminExtractionHandler.HandleImportMarketPrices))
+		applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodPost {
+				utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+				return
+			}
+			adminExtractionHandler.HandleImportMarketPrices(w, r)
+		}))
 
 	// --- Admin Reports Routes ---
 	// Handler for action routes with IDs: /admin/reports/{id}/resolve, /admin/reports/{id}/dismiss
@@ -201,21 +261,20 @@ func AdminRoutes(
 			} else if strings.HasSuffix(path, "/dismiss") && r.Method == http.MethodPost {
 				adminReportsHandler.DismissReport(w, r)
 			} else {
-				http.NotFound(w, r)
+				utils.WriteError(w, http.StatusNotFound, "Not found")
 			}
 		}))
-	
+
 	// Handler for list endpoint: GET /admin/reports
 	router.HandleFunc(basePath+"/reports",
 		applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
 			if r.Method == http.MethodGet {
 				adminReportsHandler.ListReports(w, r)
 			} else {
-				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+				utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 			}
 		}))
-	
-    
+
 	// GET /admin/users (List users)
 	// POST /admin/users (Create user)
 	router.HandleFunc(basePath+"/users",
@@ -226,30 +285,30 @@ func AdminRoutes(
 			case http.MethodPost:
 				adminUserHandler.HandleCreateUser(w, r)
 			default:
-				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+				utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 			}
 		}),
 	)
 
-    router.HandleFunc(basePath+"/users/",
-        applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
-            path := r.URL.Path
-            if strings.HasSuffix(path, "/ban") && r.Method == http.MethodPost {
-                adminReportsHandler.BanUser(w, r)
-                return
-            }
-            switch r.Method {
+	router.HandleFunc(basePath+"/users/",
+		applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+			path := r.URL.Path
+			if strings.HasSuffix(path, "/ban") && r.Method == http.MethodPost {
+				adminReportsHandler.BanUser(w, r)
+				return
+			}
+			switch r.Method {
 			case http.MethodGet:
-                adminUserHandler.HandleGetUser(w, r)
-            case http.MethodPatch:
-                adminUserHandler.HandleUpdateUser(w, r)
-            case http.MethodDelete:
-                adminUserHandler.HandleDeleteUser(w, r)
-            default:
-                http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-            }
-        }),
-    )
+				adminUserHandler.HandleGetUser(w, r)
+			case http.MethodPatch:
+				adminUserHandler.HandleUpdateUser(w, r)
+			case http.MethodDelete:
+				adminUserHandler.HandleDeleteUser(w, r)
+			default:
+				utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+			}
+		}),
+	)
 
 	// --- Admin Car Management Routes ---
 	// GET /admin/cars
@@ -261,28 +320,28 @@ func AdminRoutes(
 			case http.MethodPost:
 				adminCarHandler.HandleCreateCar(w, r)
 			default:
-				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+				utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 			}
 		}),
 	)
 
-    router.HandleFunc(basePath+"/cars/",
-        applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
-            path := r.URL.Path
-            if strings.HasSuffix(path, "/remove") && r.Method == http.MethodPost {
-                adminReportsHandler.RemoveCar(w, r)
-                return
-            }
-            switch r.Method {
-            case http.MethodPatch:
-                adminCarHandler.HandleUpdateCar(w, r)
-            case http.MethodDelete:
-                adminCarHandler.HandleDeleteCar(w, r)
-            default:
-                http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-            }
-        }),
-    )
+	router.HandleFunc(basePath+"/cars/",
+		applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+			path := r.URL.Path
+			if strings.HasSuffix(path, "/remove") && r.Method == http.MethodPost {
+				adminReportsHandler.RemoveCar(w, r)
+				return
+			}
+			switch r.Method {
+			case http.MethodPatch:
+				adminCarHandler.HandleUpdateCar(w, r)
+			case http.MethodDelete:
+				adminCarHandler.HandleDeleteCar(w, r)
+			default:
+				utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
+			}
+		}),
+	)
 
 	// --- Health Check & Root ---
 	// Health check and Root only need Global IP Whitelist and general logging
@@ -290,11 +349,13 @@ func AdminRoutes(
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
-					middleware.LoggingMiddleware( // Use general logging
-						func(w http.ResponseWriter, r *http.Request) {
-							w.WriteHeader(http.StatusOK)
-							fmt.Fprintln(w, "Admin OK")
-						},
+					middleware.GeneralRateLimit()(
+						middleware.LoggingMiddleware( // Use general logging
+							func(w http.ResponseWriter, r *http.Request) {
+								w.WriteHeader(http.StatusOK)
+								fmt.Fprintln(w, "Admin OK")
+							},
+						),
 					),
 				),
 			),
@@ -305,15 +366,17 @@ func AdminRoutes(
 		middleware.CORSMiddleware(allowedOrigins)(
 			middleware.SecurityHeadersMiddleware(
 				authMiddleware.RequireGlobalIPWhitelist(allowedIPs)(
-					middleware.LoggingMiddleware( // Use general logging
-						func(w http.ResponseWriter, r *http.Request) {
-							if r.URL.Path == basePath+"/" {
-								w.WriteHeader(http.StatusOK)
-								w.Write([]byte("Admin API Root"))
-							} else {
-								http.NotFound(w, r) // Return 404 for other unmatched paths under /admin/
-							}
-						},
+					middleware.GeneralRateLimit()(
+						middleware.LoggingMiddleware( // Use general logging
+							func(w http.ResponseWriter, r *http.Request) {
+								if r.URL.Path == basePath+"/" {
+									w.WriteHeader(http.StatusOK)
+									w.Write([]byte("Admin API Root"))
+								} else {
+									utils.WriteError(w, http.StatusNotFound, "Not found")
+								}
+							},
+						),
 					),
 				),
 			),

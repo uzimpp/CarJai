@@ -38,11 +38,6 @@ type DashboardStatsResponse struct {
 
 // HandleGetStats handles GET /admin/dashboard/stats
 func (h *AdminDashboardHandler) HandleGetStats(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
-		return
-	}
-
 	var totalUsers, activeCars, soldCars, totalBuyers, totalSellers, pendingReports int
 	var errUsers, errActive, errSold, errBuyers, errSellers, errReports error
 	var wg sync.WaitGroup
@@ -125,11 +120,6 @@ func (h *AdminDashboardHandler) HandleGetStats(w http.ResponseWriter, r *http.Re
 
 // HandleGetChartData handles GET /admin/dashboard/chart
 func (h *AdminDashboardHandler) HandleGetChartData(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
-		return
-	}
-
 	days := 30
 
 	chartData, err := h.userService.GetUserActivityChartData(days)
@@ -143,11 +133,6 @@ func (h *AdminDashboardHandler) HandleGetChartData(w http.ResponseWriter, r *htt
 
 // HandleGetTopBrandsChart handles GET /admin/dashboard/top-brands
 func (h *AdminDashboardHandler) HandleGetTopBrandsChart(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
-		return
-	}
-
 	data, err := h.carService.GetTopBrandsChartData()
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get top brands chart data: %v", err))
@@ -159,11 +144,6 @@ func (h *AdminDashboardHandler) HandleGetTopBrandsChart(w http.ResponseWriter, r
 
 // HandleGetRecentReports handles GET /admin/dashboard/recent-reports
 func (h *AdminDashboardHandler) HandleGetRecentReports(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
-		return
-	}
-
 	filters := models.ReportFilters{
 		Status: "pending",
 		Limit:  5,
