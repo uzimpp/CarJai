@@ -160,9 +160,9 @@ func AdminRoutes(
 			}
 			switch r.Method {
 			case http.MethodGet:
-				adminAuthHandler.HandleGetAdmins(w, r)
+				adminAuthHandler.GetAdmins(w, r)
 			case http.MethodPost:
-				adminAuthHandler.HandleCreateAdmin(w, r)
+				adminAuthHandler.CreateAdmin(w, r)
 			default:
 				utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 			}
@@ -174,9 +174,9 @@ func AdminRoutes(
 			// Check method
 			switch r.Method {
 			case http.MethodPatch:
-				adminAuthHandler.HandleUpdateAdmin(w, r)
+				adminAuthHandler.UpdateAdmin(w, r)
 			case http.MethodDelete:
-				adminAuthHandler.HandleDeleteAdmin(w, r)
+				adminAuthHandler.DeleteAdmin(w, r)
 			default:
 				utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 			}
@@ -215,19 +215,19 @@ func AdminRoutes(
 
 	// --- Admin Dashboard Routes ---
 	router.HandleFunc(basePath+"/dashboard/stats",
-		applyAdminAuthMiddleware(adminDashboardHandler.HandleGetStats),
+		applyAdminAuthMiddleware(adminDashboardHandler.GetStats),
 	)
 
 	router.HandleFunc(basePath+"/dashboard/chart",
-		applyAdminAuthMiddleware(adminDashboardHandler.HandleGetChartData),
+		applyAdminAuthMiddleware(adminDashboardHandler.GetChartData),
 	)
 
 	router.HandleFunc(basePath+"/dashboard/top-brands",
-		applyAdminAuthMiddleware(adminDashboardHandler.HandleGetTopBrandsChart),
+		applyAdminAuthMiddleware(adminDashboardHandler.GetTopBrandsChart),
 	)
 
 	router.HandleFunc(basePath+"/dashboard/recent-reports",
-		applyAdminAuthMiddleware(adminDashboardHandler.HandleGetRecentReports),
+		applyAdminAuthMiddleware(adminDashboardHandler.GetRecentReports),
 	)
 
 	// --- Market Price Routes ---
@@ -239,7 +239,7 @@ func AdminRoutes(
 				utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 				return
 			}
-			adminExtractionHandler.HandleGetMarketPrices(w, r)
+			adminExtractionHandler.GetMarketPrices(w, r)
 		}))
 
 	router.HandleFunc(basePath+"/market-price/upload",
@@ -248,7 +248,7 @@ func AdminRoutes(
 				utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 				return
 			}
-			adminExtractionHandler.HandleImportMarketPrices(w, r)
+			adminExtractionHandler.ImportMarketPrices(w, r)
 		}))
 
 	// --- Admin Reports Routes ---
@@ -281,9 +281,9 @@ func AdminRoutes(
 		applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case http.MethodGet:
-				adminUserHandler.HandleGetUsers(w, r)
+				adminUserHandler.GetUsers(w, r)
 			case http.MethodPost:
-				adminUserHandler.HandleCreateUser(w, r)
+				adminUserHandler.CreateUser(w, r)
 			default:
 				utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 			}
@@ -299,11 +299,11 @@ func AdminRoutes(
 			}
 			switch r.Method {
 			case http.MethodGet:
-				adminUserHandler.HandleGetUser(w, r)
+				adminUserHandler.GetUser(w, r)
 			case http.MethodPatch:
-				adminUserHandler.HandleUpdateUser(w, r)
+				adminUserHandler.UpdateUser(w, r)
 			case http.MethodDelete:
-				adminUserHandler.HandleDeleteUser(w, r)
+				adminUserHandler.DeleteUser(w, r)
 			default:
 				utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 			}
@@ -316,9 +316,9 @@ func AdminRoutes(
 		applyAdminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case http.MethodGet:
-				adminCarHandler.HandleGetCars(w, r)
+				adminCarHandler.GetCars(w, r)
 			case http.MethodPost:
-				adminCarHandler.HandleCreateCar(w, r)
+				adminCarHandler.CreateCar(w, r)
 			default:
 				utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 			}
@@ -334,9 +334,9 @@ func AdminRoutes(
 			}
 			switch r.Method {
 			case http.MethodPatch:
-				adminCarHandler.HandleUpdateCar(w, r)
+				adminCarHandler.UpdateCar(w, r)
 			case http.MethodDelete:
-				adminCarHandler.HandleDeleteCar(w, r)
+				adminCarHandler.DeleteCar(w, r)
 			default:
 				utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 			}

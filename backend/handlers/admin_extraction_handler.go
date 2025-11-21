@@ -27,8 +27,8 @@ func NewAdminExtractionHandler(es *services.ExtractionService) *AdminExtractionH
 	}
 }
 
-// HandleImportMarketPrices handles the PDF upload, extracts data, and commits directly to database.
-func (h *AdminExtractionHandler) HandleImportMarketPrices(w http.ResponseWriter, r *http.Request) {
+// ImportMarketPrices handles the PDF upload, extracts data, and commits directly to database.
+func (h *AdminExtractionHandler) ImportMarketPrices(w http.ResponseWriter, r *http.Request) {
 	// --- File Upload Handling ---
 	err := r.ParseMultipartForm(50 << 20) // 50 MB
 	if err != nil {
@@ -103,8 +103,8 @@ func (h *AdminExtractionHandler) HandleImportMarketPrices(w http.ResponseWriter,
 }
 
 // --- New Handler: Receive JSON and Save to Database ---
-// HandleGetMarketPrices retrieves all market prices from the database.
-func (h *AdminExtractionHandler) HandleGetMarketPrices(w http.ResponseWriter, r *http.Request) {
+// GetMarketPrices retrieves all market prices from the database.
+func (h *AdminExtractionHandler) GetMarketPrices(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 	defer cancel()
 

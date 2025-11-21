@@ -169,8 +169,8 @@ func (h *AdminAuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) 
 	utils.WriteJSON(w, http.StatusOK, response, "Token refreshed successfully")
 }
 
-// HandleGetAdmins handles GET /admin/admins
-func (h *AdminAuthHandler) HandleGetAdmins(w http.ResponseWriter, r *http.Request) {
+// GetAdmins handles GET /admin/admins
+func (h *AdminAuthHandler) GetAdmins(w http.ResponseWriter, r *http.Request) {
 	admins, err := h.adminService.GetManagedAdmins()
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, "Failed to retrieve admins")
@@ -185,8 +185,8 @@ func (h *AdminAuthHandler) HandleGetAdmins(w http.ResponseWriter, r *http.Reques
 	utils.WriteJSON(w, http.StatusOK, response, "Admins retrieved successfully")
 }
 
-// HandleCreateAdmin handles POST /admin/admins
-func (h *AdminAuthHandler) HandleCreateAdmin(w http.ResponseWriter, r *http.Request) {
+// CreateAdmin handles POST /admin/admins
+func (h *AdminAuthHandler) CreateAdmin(w http.ResponseWriter, r *http.Request) {
 	var req models.AdminCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
@@ -234,8 +234,8 @@ func (h *AdminAuthHandler) HandleCreateAdmin(w http.ResponseWriter, r *http.Requ
 	utils.WriteJSON(w, http.StatusCreated, response, "Admin created successfully")
 }
 
-// HandleUpdateAdmin handles PATCH /admin/admins/{id}
-func (h *AdminAuthHandler) HandleUpdateAdmin(w http.ResponseWriter, r *http.Request) {
+// UpdateAdmin handles PATCH /admin/admins/{id}
+func (h *AdminAuthHandler) UpdateAdmin(w http.ResponseWriter, r *http.Request) {
 	// Extract ID from URL (e.g., /admin/admins/1 -> 1)
 	parts := strings.Split(r.URL.Path, "/")
 	if len(parts) < 4 {
@@ -264,8 +264,8 @@ func (h *AdminAuthHandler) HandleUpdateAdmin(w http.ResponseWriter, r *http.Requ
 	utils.WriteJSON(w, http.StatusOK, nil, "Admin updated successfully")
 }
 
-// HandleDeleteAdmin handles DELETE /admin/admins/{id}
-func (h *AdminAuthHandler) HandleDeleteAdmin(w http.ResponseWriter, r *http.Request) {
+// DeleteAdmin handles DELETE /admin/admins/{id}
+func (h *AdminAuthHandler) DeleteAdmin(w http.ResponseWriter, r *http.Request) {
 	parts := strings.Split(r.URL.Path, "/")
 	if len(parts) < 4 {
 		utils.WriteError(w, http.StatusBadRequest, "Invalid admin ID")
