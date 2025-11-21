@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/uzimpp/CarJai/backend/config"
 	"github.com/uzimpp/CarJai/backend/middleware"
 	"github.com/uzimpp/CarJai/backend/models"
 	"github.com/uzimpp/CarJai/backend/services"
@@ -18,6 +19,7 @@ type AdminAuthHandler struct {
 	adminService   *services.AdminService
 	jwtManager     *utils.JWTManager
 	authMiddleware *middleware.AuthMiddleware
+	appConfig      *config.AppConfig
 }
 
 // NewAdminAuthHandler creates a new admin auth handler
@@ -25,11 +27,13 @@ func NewAdminAuthHandler(
 	adminService *services.AdminService,
 	jwtManager *utils.JWTManager,
 	authMiddleware *middleware.AuthMiddleware,
+	appConfig *config.AppConfig,
 ) *AdminAuthHandler {
 	return &AdminAuthHandler{
 		adminService:   adminService,
 		jwtManager:     jwtManager,
 		authMiddleware: authMiddleware,
+		appConfig:      appConfig,
 	}
 }
 
@@ -84,7 +88,7 @@ func (h *AdminAuthHandler) Signin(w http.ResponseWriter, r *http.Request) {
 		Value:    token,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false, // Set to true in production with HTTPS
+		Secure:   h.appConfig.CookieSecure,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   int(time.Until(expiresAt).Seconds()),
 	})
@@ -125,7 +129,7 @@ func (h *AdminAuthHandler) Signout(w http.ResponseWriter, r *http.Request) {
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false,
+		Secure:   h.appConfig.CookieSecure,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   -1, // Expire immediately
 	})

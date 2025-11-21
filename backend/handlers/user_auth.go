@@ -82,7 +82,7 @@ func (h *UserAuthHandler) Signup(w http.ResponseWriter, r *http.Request) {
 		Value:    response.Token,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false, // Set to true in production with HTTPS
+		Secure:   h.appConfig.CookieSecure,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   int(time.Until(response.ExpiresAt).Seconds()),
 	})
@@ -130,7 +130,7 @@ func (h *UserAuthHandler) Signin(w http.ResponseWriter, r *http.Request) {
 		Value:    response.Token,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false, // Set to true in production with HTTPS
+		Secure:   h.appConfig.CookieSecure,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   int(time.Until(response.ExpiresAt).Seconds()),
 	})
@@ -174,7 +174,7 @@ func (h *UserAuthHandler) GoogleSignin(w http.ResponseWriter, r *http.Request) {
 		Value:    response.Token,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false,
+		Secure:   h.appConfig.CookieSecure,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   int(time.Until(response.ExpiresAt).Seconds()),
 	})
@@ -219,7 +219,7 @@ func (h *UserAuthHandler) GoogleStart(w http.ResponseWriter, r *http.Request) {
 		Value:    state,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false,
+		Secure:   h.appConfig.CookieSecure,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   300, // 5 minutes
 	})
@@ -317,7 +317,7 @@ func (h *UserAuthHandler) GoogleCallback(w http.ResponseWriter, r *http.Request)
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false,
+		Secure:   h.appConfig.CookieSecure,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   -1,
 	})
@@ -328,7 +328,7 @@ func (h *UserAuthHandler) GoogleCallback(w http.ResponseWriter, r *http.Request)
 		Value:    response.Token,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false,
+		Secure:   h.appConfig.CookieSecure,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   int(time.Until(response.ExpiresAt).Seconds()),
 	})
@@ -388,7 +388,7 @@ func (h *UserAuthHandler) Signout(w http.ResponseWriter, r *http.Request) {
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false,
+		Secure:   h.appConfig.CookieSecure,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   -1, // Expire immediately
 	})

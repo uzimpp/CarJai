@@ -210,6 +210,7 @@ func setupRoutes(services *ServiceContainer, appConfig *config.AppConfig, db *sq
 			adminPrefix,
 			appConfig.CORSAllowedOrigins,
 			appConfig.AdminIPWhitelist,
+			appConfig,
 		),
 	)
 	mux.Handle("/health",
