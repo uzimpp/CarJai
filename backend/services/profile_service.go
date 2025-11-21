@@ -3,6 +3,8 @@ package services
 import (
 	"database/sql"
 	"fmt"
+	"net/url"
+	"regexp"
 	"strings"
 
 	"github.com/uzimpp/CarJai/backend/models"
@@ -164,14 +166,25 @@ func (s *ProfileService) GetSellerContacts(sellerID int) ([]models.SellerContact
 
 // UpsertBuyer creates or updates a buyer profile (idempotent)
 func (s *ProfileService) UpsertBuyer(userID int, req models.BuyerRequest) (*models.Buyer, error) {
+	// Validate required fields
+	if req.Province == nil || strings.TrimSpace(*req.Province) == "" {
+		return nil, fmt.Errorf("province is required")
+	}
+	if req.BudgetMin == nil {
+		return nil, fmt.Errorf("budget_min is required")
+	}
+	if req.BudgetMax == nil {
+		return nil, fmt.Errorf("budget_max is required")
+	}
+
 	// Validate budget constraints
-	if req.BudgetMin != nil && *req.BudgetMin < 0 {
+	if *req.BudgetMin < 0 {
 		return nil, fmt.Errorf("budget_min must be non-negative")
 	}
-	if req.BudgetMin != nil && req.BudgetMax != nil && *req.BudgetMin > *req.BudgetMax {
+	if *req.BudgetMin > *req.BudgetMax {
 		return nil, fmt.Errorf("budget_min must be less than or equal to budget_max")
 	}
-	if req.Province != nil && len(*req.Province) > 100 {
+	if len(*req.Province) > 100 {
 		return nil, fmt.Errorf("province must be 100 characters or less")
 	}
 
@@ -197,6 +210,101 @@ func (s *ProfileService) UpsertBuyer(userID int, req models.BuyerRequest) (*mode
 	return buyer, nil
 }
 
+// isHostInSet checks if a string is a URL with a specific host
+func isHostInSet(input string, allowedHosts []string) bool {
+	parsedURL, err := url.Parse(input)
+	if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
+		return false
+	}
+	host := strings.ToLower(parsedURL.Host)
+	for _, allowedHost := range allowedHosts {
+		if host == strings.ToLower(allowedHost) {
+			return true
+		}
+	}
+	return false
+}
+
+// validateContactValue validates contact value based on its type
+func validateContactValue(contactType, value string) error {
+	trimmedValue := strings.TrimSpace(value)
+	
+	switch contactType {
+	case "phone":
+		// Thai phone format: 0XX-XXX-XXXX or 10 digits
+		phoneRegex := regexp.MustCompile(`^(\+66|0)[0-9]{8,9}$`)
+		cleanValue := strings.ReplaceAll(strings.ReplaceAll(trimmedValue, "-", ""), " ", "")
+		if !phoneRegex.MatchString(cleanValue) {
+			return fmt.Errorf("invalid phone number format (e.g., 081-234-5678)")
+		}
+	case "email":
+		emailRegex := regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`)
+		if !emailRegex.MatchString(trimmedValue) {
+			return fmt.Errorf("invalid email format")
+		}
+	case "line":
+		// Check for other platform URLs using proper URL parsing
+		if isHostInSet(trimmedValue, []string{"facebook.com", "www.facebook.com", "fb.com", "www.fb.com", "instagram.com", "www.instagram.com"}) {
+			return fmt.Errorf("please use the correct contact type for this platform")
+		}
+		
+		// LINE ID: alphanumeric, underscore, dot, hyphen (4-20 chars)
+		lineRegex := regexp.MustCompile(`^[a-zA-Z0-9._-]{4,20}$`)
+		if !lineRegex.MatchString(trimmedValue) {
+			return fmt.Errorf("invalid LINE ID format (4-20 characters, alphanumeric)")
+		}
+	case "facebook":
+		// Check for other platform URLs using proper URL parsing
+		if isHostInSet(trimmedValue, []string{"instagram.com", "www.instagram.com", "line.me", "www.line.me"}) {
+			return fmt.Errorf("please use the correct contact type for this platform")
+		}
+		
+		// Facebook: URL or username (alphanumeric and dots only, 5-50 chars)
+		if isHostInSet(trimmedValue, []string{"facebook.com", "www.facebook.com", "fb.com", "www.fb.com"}) {
+			urlRegex := regexp.MustCompile(`^https?://(www\.)?(facebook|fb)\.com/.+$`)
+			if !urlRegex.MatchString(trimmedValue) {
+				return fmt.Errorf("invalid Facebook URL")
+			}
+		} else {
+			// Facebook username: alphanumeric and dots only, 5-50 characters
+			usernameRegex := regexp.MustCompile(`^[a-zA-Z0-9.]{5,50}$`)
+			if !usernameRegex.MatchString(trimmedValue) {
+				return fmt.Errorf("invalid Facebook username (5-50 characters, letters, numbers, and dots only)")
+			}
+		}
+	case "instagram":
+		// Check for other platform URLs using proper URL parsing
+		if isHostInSet(trimmedValue, []string{"facebook.com", "www.facebook.com", "fb.com", "www.fb.com", "line.me", "www.line.me"}) {
+			return fmt.Errorf("please use the correct contact type for this platform")
+		}
+		
+		// Instagram: URL or username (must contain underscore or dot, no hyphens)
+		if isHostInSet(trimmedValue, []string{"instagram.com", "www.instagram.com"}) {
+			urlRegex := regexp.MustCompile(`^https?://(www\.)?instagram\.com/.+$`)
+			if !urlRegex.MatchString(trimmedValue) {
+				return fmt.Errorf("invalid Instagram URL")
+			}
+		} else {
+			// Instagram username: 1-30 chars, letters, numbers, underscores, dots (no hyphens)
+			// Must contain at least one underscore or dot to distinguish from Facebook
+			usernameRegex := regexp.MustCompile(`^[a-zA-Z0-9._]{1,30}$`)
+			hasUnderscoreOrDot := regexp.MustCompile(`[._]`).MatchString(trimmedValue)
+			if !usernameRegex.MatchString(trimmedValue) {
+				return fmt.Errorf("invalid Instagram username (letters, numbers, underscores, and dots only)")
+			}
+			if !hasUnderscoreOrDot {
+				return fmt.Errorf("Instagram username must contain at least one underscore or dot")
+			}
+		}
+	case "website":
+		websiteRegex := regexp.MustCompile(`^https?://.+\..+$`)
+		if !websiteRegex.MatchString(trimmedValue) {
+			return fmt.Errorf("invalid website URL (must start with http:// or https://)")
+		}
+	}
+	return nil
+}
+
 // UpsertSeller creates or updates a seller profile (idempotent)
 func (s *ProfileService) UpsertSeller(userID int, req models.SellerRequest) (*models.Seller, *[]models.SellerContact, error) {
 	// Validate display_name
@@ -208,6 +316,23 @@ func (s *ProfileService) UpsertSeller(userID int, req models.SellerRequest) (*mo
 	}
 	if req.About != nil && len(*req.About) > 200 {
 		return nil, nil, fmt.Errorf("about must be 200 characters or less")
+	}
+	
+	// Validate contacts - at least one is required
+	if len(req.Contacts) == 0 {
+		return nil, nil, fmt.Errorf("at least one contact is required")
+	}
+	
+	// Validate each contact
+	for i, contact := range req.Contacts {
+		if strings.TrimSpace(contact.Value) == "" {
+			return nil, nil, fmt.Errorf("contact %d value is required", i+1)
+		}
+		
+		// Validate contact value based on type
+		if err := validateContactValue(contact.ContactType, contact.Value); err != nil {
+			return nil, nil, fmt.Errorf("contact %d: %w", i+1, err)
+		}
 	}
 
 	// Start transaction

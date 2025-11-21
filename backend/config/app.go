@@ -31,6 +31,16 @@ type AppConfig struct {
 	AdminJWTSecret     string
 	AdminJWTExpiration int // in hours
 	AdminJWTIssuer     string
+	// Email/SMTP configuration
+	SMTPHost     string
+	SMTPPort     string
+	SMTPUsername string
+	SMTPPassword string
+	SMTPFrom     string
+	// Password reset configuration
+	PasswordResetJWTSecret       string
+	PasswordResetTokenExpiration int // in minutes
+	FrontendURL                  string
 }
 
 // LoadAppConfig loads application configuration from environment variables
@@ -62,6 +72,16 @@ func LoadAppConfig() *AppConfig {
 		AdminJWTExpiration: utils.GetEnvAsInt("ADMIN_JWT_EXPIRATION_HOURS"),
 		AdminJWTIssuer:     utils.GetEnv("ADMIN_JWT_ISSUER"),
 		AigenAPIKey:        utils.GetEnv("AIGEN_API_KEY"),
+		// Email/SMTP
+		SMTPHost:     utils.GetEnv("SMTP_HOST"),
+		SMTPPort:     utils.GetEnv("SMTP_PORT"),
+		SMTPUsername: utils.GetEnv("SMTP_USERNAME"),
+		SMTPPassword: utils.GetEnv("SMTP_PASSWORD"),
+		SMTPFrom:     utils.GetEnv("SMTP_FROM"),
+		// Password reset
+		PasswordResetJWTSecret:       utils.GetEnv("PASSWORD_RESET_JWT_SECRET"),
+		PasswordResetTokenExpiration: utils.GetEnvAsInt("PASSWORD_RESET_TOKEN_EXPIRATION_MINUTES"),
+		FrontendURL:                  utils.GetEnv("FRONTEND_URL"),
 	}
 }
 
