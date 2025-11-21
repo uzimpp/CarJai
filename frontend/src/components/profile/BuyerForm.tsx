@@ -196,27 +196,30 @@ export default function BuyerForm({
   const validateForm = () => {
     const errors: Record<string, string> = {};
 
-    if (
-      formData.budgetMin !== null &&
-      formData.budgetMin !== undefined &&
-      formData.budgetMin < 0
-    ) {
+    // Province is required
+    if (!formData.province || formData.province.trim() === "") {
+      errors.province = "Province is required";
+    } else if (formData.province.length > 100) {
+      errors.province = "Province name must be 100 characters or less";
+    }
+
+    // Budget min is required
+    if (formData.budgetMin === null || formData.budgetMin === undefined) {
+      errors.budgetMin = "Minimum budget is required";
+    } else if (formData.budgetMin < 0) {
       errors.budgetMin = "Budget minimum must be non-negative";
     }
 
-    if (
+    // Budget max is required
+    if (formData.budgetMax === null || formData.budgetMax === undefined) {
+      errors.budgetMax = "Maximum budget is required";
+    } else if (
       formData.budgetMin !== null &&
       formData.budgetMin !== undefined &&
-      formData.budgetMax !== null &&
-      formData.budgetMax !== undefined &&
       formData.budgetMin > formData.budgetMax
     ) {
       errors.budgetMax =
         "Budget maximum must be greater than or equal to minimum";
-    }
-
-    if (formData.province && formData.province.length > 100) {
-      errors.province = "Province name must be 100 characters or less";
     }
 
     setFormErrors(errors);
@@ -244,7 +247,7 @@ export default function BuyerForm({
           htmlFor="province"
           className="block text-0 font-medium text-gray-700 mb-1"
         >
-          Province
+          Province <span className="text-red-500">*</span>
         </label>
         <input
           id="province"
@@ -306,14 +309,14 @@ export default function BuyerForm({
           htmlFor="budgetMin"
           className="block text-0 font-medium text-gray-700 mb-1"
         >
-          Minimum Budget (THB)
+          Minimum Budget (THB) <span className="text-red-500">*</span>
         </label>
         <input
           id="budgetMin"
           name="budgetMin"
           type="number"
           min="0"
-          step="10000"
+          step="1000"
           value={formData.budgetMin === null ? "" : formData.budgetMin}
           onChange={handleInputChange}
           placeholder="e.g., 500000"
@@ -335,14 +338,14 @@ export default function BuyerForm({
           htmlFor="budgetMax"
           className="block text-0 font-medium text-gray-700 mb-1"
         >
-          Maximum Budget (THB)
+          Maximum Budget (THB) <span className="text-red-500">*</span>
         </label>
         <input
           id="budgetMax"
           name="budgetMax"
           type="number"
           min="0"
-          step="10000"
+          step="1000"
           value={formData.budgetMax === null ? "" : formData.budgetMax}
           onChange={handleInputChange}
           placeholder="e.g., 1000000"

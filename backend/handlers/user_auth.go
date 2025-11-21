@@ -459,3 +459,71 @@ func (h *UserAuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request)
 
 // getClientIP extracts the client IP address from the request
 // (removed) getClientIP: use utils.ExtractClientIP for a single, shared implementation
+
+// ForgotPassword handles forgot password requests
+func (h *UserAuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req models.ForgotPasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	// Basic validation
+	if req.Email == "" {
+		utils.WriteError(w, http.StatusBadRequest, "Email is required")
+		return
+	}
+
+	// Request password reset
+	err := h.userService.RequestPasswordReset(req.Email)
+	if err != nil {
+		if strings.Contains(err.Error(), "email not found") {
+			utils.WriteError(w, http.StatusNotFound, "Email not found")
+			return
+		}
+		utils.WriteError(w, http.StatusInternalServerError, "Failed to process password reset request")
+		return
+	}
+
+	// Return success message
+	utils.WriteJSON(w, http.StatusOK, nil, "Password reset link has been sent to your email")
+}
+
+// ResetPassword handles password reset with token
+func (h *UserAuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req models.ResetPasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	// Validate request
+	if req.Token == "" || req.NewPassword == "" {
+		utils.WriteError(w, http.StatusBadRequest, "Token and new password are required")
+		return
+	}
+
+	if len(req.NewPassword) < 6 {
+		utils.WriteError(w, http.StatusBadRequest, "Password must be at least 6 characters long")
+		return
+	}
+
+	// Reset password
+	err := h.userService.ResetPasswordWithToken(req.Token, req.NewPassword)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, nil, "Password reset successfully. Please sign in with your new password.")
+}
