@@ -23,11 +23,10 @@ Technical guide for developers working on the CarJai codebase. This document cov
 
 ### Required Software
 
-- **Docker** and **Docker Compose** (recommended for local development)
-- **Go** 1.24.3 or higher (for backend development)
-- **Node.js** 18.x or 20.x (for frontend development)
-- **PostgreSQL** 15 or higher (if running without Docker)
+- **Docker** and **Docker Compose** (required for local development)
 - **Git** (for version control)
+
+**Note**: Go, Node.js, and PostgreSQL are not required to be installed locally as they run in Docker containers.
 
 ### Recommended Tools
 
@@ -39,7 +38,7 @@ Technical guide for developers working on the CarJai codebase. This document cov
 
 ## Quick Start
 
-### Using Docker (Recommended)
+### Using Docker
 
 1. **Clone the repository**
    ```bash
@@ -71,55 +70,6 @@ Technical guide for developers working on the CarJai codebase. This document cov
 6. **Seed test data (optional)**
    ```bash
    docker exec -it carjai-backend /app/scripts/seed --all
-   ```
-
-### Manual Setup
-
-#### Backend Setup
-
-1. **Navigate to backend directory**
-   ```bash
-   cd backend
-   ```
-
-2. **Install Go dependencies**
-   ```bash
-   go mod download
-   go mod tidy
-   ```
-
-3. **Set up environment variables**
-   - Copy `env.example` to `.env` in project root
-   - Configure database, JWT secrets, and API keys
-
-4. **Set up PostgreSQL database**
-   - Create database: `createdb carjai`
-   - Run migrations: `psql carjai < migrations/001_admin_auth.sql` (repeat for all migrations)
-
-5. **Run the backend**
-   ```bash
-   go run main.go
-   ```
-
-#### Frontend Setup
-
-1. **Navigate to frontend directory**
-   ```bash
-   cd frontend
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Set up environment variables**
-   - Create `.env.local` file
-   - Add: `NEXT_PUBLIC_API_URL=http://localhost:8080`
-
-4. **Run the frontend**
-   ```bash
-   npm run dev
    ```
 
 ---
@@ -303,8 +253,14 @@ Database migrations are located in `backend/migrations/`:
 11. `010_reports.sql` - Reports tables
 
 **Running migrations**:
-- Manually: Execute SQL files in order
-- Programmatically: Use migration tool (if implemented)
+```bash
+docker exec -it carjai-backend sh -c "cd /app && go run main.go migrate"
+```
+
+Or execute SQL files directly in the database container:
+```bash
+docker exec -it carjai-database psql -U carjai_user -d carjai -f /path/to/migration.sql
+```
 
 ### Seeding
 
