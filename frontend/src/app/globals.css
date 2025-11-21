@@ -93,6 +93,7 @@
   --color-maroon-800: rgba(128, 0, 32, 0.8);
   --color-red: #cd2214;
   --color-grey: #303030;
+  --color-dark-grey: #181414;
 
   --color-background: var(--color-white);
   --color-foreground: var(--color-black);
@@ -136,7 +137,8 @@
   body {
     background: var(--color-white);
     color: var(--color-black);
-    font-family: var(--font-syne), Arial, Helvetica, sans-serif;
+    font-family: var(--font-syne), Arial, Helvetica, sans-serif, sans-serif;
+    font-variant-numeric: lining-nums;
     line-height: 1.6;
   }
 
@@ -147,6 +149,10 @@
 
   section {
     margin-bottom: var(--space-xl);
+  }
+
+  button {
+    cursor: pointer;
   }
 }
 
