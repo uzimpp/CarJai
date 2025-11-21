@@ -14,7 +14,9 @@ export default function MyListingsPage() {
     useUserAuth();
   const [listings, setListings] = useState<CarListing[]>([]);
   const [isLoadingListings, setIsLoadingListings] = useState(true);
-  const [filter, setFilter] = useState<"all" | "draft" | "active">("all");
+  const [filter, setFilter] = useState<"all" | "draft" | "active" | "sold">(
+    "all"
+  );
 
   // If authenticated but roles are missing, try refreshing the session
   useEffect(() => {
@@ -53,30 +55,8 @@ export default function MyListingsPage() {
         const result = await carsAPI.getMyCars();
 
         if (result.success && result.data) {
-          // Backend returns Car[] but we need CarListing[] for display
-          // Convert Car objects to CarListing format
-          const carListings: CarListing[] = result.data.map((car) => ({
-            id: car.car.id,
-            sellerId: car.car.sellerId,
-            status: car.car.status,
-            brandName: car.car.brandName,
-            modelName: car.car.modelName,
-            submodelName: car.car.submodelName,
-            year: car.car.year,
-            price: car.car.price,
-            mileage: car.car.mileage,
-            bodyType: car.car.bodyType,
-            transmission: car.car.transmission,
-            drivetrain: car.car.drivetrain,
-            fuelTypes: car.car.fuelTypes,
-            colors: car.car.colors,
-            conditionRating: car.car.conditionRating,
-            thumbnailUrl:
-              car.images && car.images.length > 0
-                ? `/api/cars/images/${car.images[0].id}`
-                : undefined,
-          }));
-          setListings(carListings);
+          // Backend returns CarListing[] directly (already in the correct format)
+          setListings(result.data);
         }
       } catch {
         // Error handled by state
@@ -174,135 +154,271 @@ export default function MyListingsPage() {
 
   const draftCount = listings.filter((l) => l.status === "draft").length;
   const activeCount = listings.filter((l) => l.status === "active").length;
+  const soldCount = listings.filter((l) => l.status === "sold").length;
 
   return (
     <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full">
       {/* Header */}
-      <div className="mb-(--space-xl)">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-5 bold text-gray-900 mb-(--space-2xs) line-height-11">
-              My Listings
-            </h1>
-            <p className="text-1 text-gray-600 line-height-12">
-              Manage your car listings and track their status
-            </p>
-          </div>
-          <Link
-            href="/sell"
-            className="px-(--space-l) py-(--space-s) text-white bg-gradient-to-r from-maroon to-red rounded-3xl hover:shadow-lg transition-all bold text-0 shadow-md"
-          >
-            + Add New Listing
-          </Link>
+      <div className="flex items-center justify-between mb-(--space-l)">
+        <div>
+          <h1 className="text-3 bold">My Listings</h1>
         </div>
+        <Link
+          href="/sell"
+          className="p-(--space-s) aspect-square text-white bg-maroon hover:bg-red rounded-full transition-colors flex items-center justify-center"
+        >
+          <div className="flex items-center justify-center text-3 aspect-square w-full h-full">
+            +
+          </div>
+        </Link>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-(--space-m) mb-(--space-xl)">
-        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-l) border-2 border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-0 text-gray-600 mb-(--space-3xs)">
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-(--space-m) mb-(--space-l)">
+        <button
+          type="button"
+          className={`rounded-3xl shadow-[var(--shadow-md)] p-(--space-s) transition-colors ${
+            filter === "all" ? "bg-blue-950 text-white" : "bg-white text-black"
+          }`}
+          onClick={() => setFilter("all")}
+        >
+          <div className="flex items-center justify-end flex-row-reverse w-full gap-(--space-xs-s)">
+            <div className="flex flex-col justify-start w-full">
+              <p
+                className={`flex text--1 pb-auto line-height-1 ${
+                  filter === "all" ? "text-gray-300" : "text-gray-600"
+                }`}
+              >
                 Total Listings
               </p>
-              <p className="text-4 bold text-gray-900">{listings.length}</p>
+              <p
+                className={`flex text-2 font-bold line-clamp-2 ${
+                  filter === "all" ? "text-white" : "text-black"
+                }`}
+              >
+                {listings.length}
+              </p>
             </div>
-            <div className="w-14 h-14 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl flex items-center justify-center">
-              <span className="text-2xl">📋</span>
+            <div
+              className={`p-3 rounded-full ${
+                filter === "all" ? "bg-blue-500/90" : "bg-blue-100"
+              }`}
+            >
+              <svg
+                className={`w-6 h-6 ${
+                  filter === "all" ? "text-white" : "text-blue-600"
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
             </div>
           </div>
-        </div>
-
-        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-l) border-2 border-green-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-0 text-gray-600 mb-(--space-3xs)">Published</p>
-              <p className="text-4 bold text-green-600">{activeCount}</p>
-            </div>
-            <div className="w-14 h-14 bg-gradient-to-br from-green-100 to-green-200 rounded-2xl flex items-center justify-center">
-              <span className="text-2xl">✅</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-l) border-2 border-orange-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-0 text-gray-600 mb-(--space-3xs)">Drafts</p>
-              <p className="text-4 bold text-orange-600">{draftCount}</p>
-            </div>
-            <div className="w-14 h-14 bg-gradient-to-br from-orange-100 to-orange-200 rounded-2xl flex items-center justify-center">
-              <span className="text-2xl">📝</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Filter Tabs */}
-      <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-xs) mb-(--space-l) inline-flex gap-(--space-xs)">
-        <button
-          onClick={() => setFilter("all")}
-          className={`px-(--space-l) py-(--space-s) rounded-2xl transition-all medium text-0 ${
-            filter === "all"
-              ? "bg-gradient-to-r from-maroon to-red text-white shadow-md"
-              : "text-gray-600 hover:bg-gray-100"
-          }`}
-        >
-          All ({listings.length})
         </button>
+
         <button
-          onClick={() => setFilter("active")}
-          className={`px-(--space-l) py-(--space-s) rounded-2xl transition-all medium text-0 ${
+          type="button"
+          className={`rounded-3xl shadow-[var(--shadow-md)] p-(--space-s) transition-colors ${
             filter === "active"
-              ? "bg-gradient-to-r from-green-600 to-green-700 text-white shadow-md"
-              : "text-gray-600 hover:bg-gray-100"
+              ? "bg-green-950 text-white"
+              : "bg-white text-black"
           }`}
+          onClick={() => setFilter("active")}
         >
-          Published ({activeCount})
+          <div className="flex items-center justify-end flex-row-reverse w-full gap-(--space-xs-s)">
+            <div className="flex flex-col justify-start w-full">
+              <p
+                className={`flex text--1 pb-auto line-height-1 ${
+                  filter === "active" ? "text-gray-300" : "text-gray-600"
+                }`}
+              >
+                Published
+              </p>
+              <p
+                className={`flex text-2 font-bold line-clamp-2 ${
+                  filter === "active" ? "text-white" : "text-black"
+                }`}
+              >
+                {activeCount}
+              </p>
+            </div>
+            <div
+              className={`p-3 rounded-full ${
+                filter === "active" ? "bg-green-500/90" : "bg-green-100"
+              }`}
+            >
+              <svg
+                className={`w-6 h-6 ${
+                  filter === "active" ? "text-white" : "text-green-600"
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                />
+              </svg>
+            </div>
+          </div>
         </button>
+
         <button
-          onClick={() => setFilter("draft")}
-          className={`px-(--space-l) py-(--space-s) rounded-2xl transition-all medium text-0 ${
+          type="button"
+          className={`rounded-3xl shadow-[var(--shadow-md)] p-(--space-s) transition-colors ${
             filter === "draft"
-              ? "bg-gradient-to-r from-orange-600 to-orange-700 text-white shadow-md"
-              : "text-gray-600 hover:bg-gray-100"
+              ? "bg-orange-950 text-white"
+              : "bg-white text-black"
           }`}
+          onClick={() => setFilter("draft")}
         >
-          Drafts ({draftCount})
+          <div className="flex items-center justify-end flex-row-reverse w-full gap-(--space-xs-s)">
+            <div className="flex flex-col justify-start w-full">
+              <p
+                className={`flex text--1 pb-auto line-height-1 ${
+                  filter === "draft" ? "text-gray-300" : "text-gray-600"
+                }`}
+              >
+                Drafts
+              </p>
+              <p
+                className={`flex text-2 font-bold line-clamp-2 ${
+                  filter === "draft" ? "text-white" : "text-black"
+                }`}
+              >
+                {draftCount}
+              </p>
+            </div>
+            <div
+              className={`p-3 rounded-full ${
+                filter === "draft" ? "bg-orange-500/90" : "bg-orange-100"
+              }`}
+            >
+              <svg
+                className={`w-6 h-6 ${
+                  filter === "draft" ? "text-white" : "text-orange-600"
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                />
+              </svg>
+            </div>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          className={`rounded-3xl shadow-[var(--shadow-md)] p-(--space-s) transition-colors ${
+            filter === "sold"
+              ? "bg-purple-950 text-white"
+              : "bg-white text-black"
+          }`}
+          onClick={() => setFilter("sold")}
+        >
+          <div className="flex items-center justify-end flex-row-reverse w-full gap-(--space-xs-s)">
+            <div className="flex flex-col justify-start w-full">
+              <p
+                className={`flex text--1 pb-auto line-height-1 ${
+                  filter === "sold" ? "text-gray-300" : "text-gray-600"
+                }`}
+              >
+                Sold
+              </p>
+              <p
+                className={`flex text-2 font-bold line-clamp-2 ${
+                  filter === "sold" ? "text-white" : "text-black"
+                }`}
+              >
+                {soldCount}
+              </p>
+            </div>
+            <div
+              className={`p-3 rounded-full ${
+                filter === "sold" ? "bg-purple-500/90" : "bg-purple-100"
+              }`}
+            >
+              <svg
+                className={`w-6 h-6 ${
+                  filter === "sold" ? "text-white" : "text-purple-600"
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12.75L11.182 15l5.318-5.318M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21a3.745 3.745 0 01-3.068-1.593 3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z"
+                />
+              </svg>
+            </div>
+          </div>
         </button>
       </div>
 
       {/* Listings Grid */}
       {isLoadingListings ? (
-        <div className="flex items-center justify-center py-(--space-3xl)">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-maroon mx-auto"></div>
-            <p className="mt-(--space-m) text-gray-600 medium text-1">
-              Loading listings...
-            </p>
+        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)]">
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading listings...</p>
+            </div>
           </div>
         </div>
       ) : filteredListings.length === 0 ? (
-        <div className="text-center py-(--space-3xl)">
-          <div className="inline-flex items-center justify-center w-24 h-24 bg-gray-100 rounded-full mb-(--space-l)">
-            <span className="text-5xl">🚗</span>
+        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)]">
+          <div className="text-center py-20">
+            <svg
+              className="w-16 h-16 text-gray-300 mx-auto mb-4"
+              viewBox="0 0 24.00 24.00"
+              fill="none"
+            >
+              <path
+                d="M3 8L5.72187 10.2682C5.90158 10.418 6.12811 10.5 6.36205 10.5H17.6379C17.8719 10.5 18.0984 10.418 18.2781 10.2682L21 8M6.5 14H6.51M17.5 14H17.51M8.16065 4.5H15.8394C16.5571 4.5 17.2198 4.88457 17.5758 5.50772L20.473 10.5777C20.8183 11.1821 21 11.8661 21 12.5623V18.5C21 19.0523 20.5523 19.5 20 19.5H19C18.4477 19.5 18 19.0523 18 18.5V17.5H6V18.5C6 19.0523 5.55228 19.5 5 19.5H4C3.44772 19.5 3 19.0523 3 18.5V12.5623C3 11.8661 3.18166 11.1821 3.52703 10.5777L6.42416 5.50772C6.78024 4.88457 7.44293 4.5 8.16065 4.5ZM7 14C7 14.2761 6.77614 14.5 6.5 14.5C6.22386 14.5 6 14.2761 6 14C6 13.7239 6.22386 13.5 6.5 13.5C6.77614 13.5 7 13.7239 7 14ZM18 14C18 14.2761 17.7761 14.5 17.5 14.5C17.2239 14.5 17 14.2761 17 14C17 13.7239 17.2239 13.5 17.5 13.5C17.7761 13.5 18 13.7239 18 14Z"
+                stroke="currentColor"
+                strokeWidth={1.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <h2 className="text-lg font-semibold text-black mb-2">
+              No Listings Found
+            </h2>
+            <p className="text-gray-600 mb-6">
+              {filter === "all"
+                ? "You haven't created any listings yet."
+                : filter === "active"
+                ? "You don't have any published listings."
+                : filter === "draft"
+                ? "You don't have any draft listings."
+                : "You don't have any sold listings."}
+            </p>
+            {/* <Link
+              href="/sell"
+              className="inline-block px-6 py-2 text-white bg-maroon hover:bg-red rounded-lg transition-colors font-medium"
+            >
+              Create Your First Listing
+            </Link> */}
           </div>
-          <h2 className="text-3 bold text-gray-900 mb-(--space-s)">
-            No Listings Found
-          </h2>
-          <p className="text-1 text-gray-600 mb-(--space-l)">
-            {filter === "all"
-              ? "You haven't created any listings yet."
-              : filter === "active"
-              ? "You don't have any published listings."
-              : "You don't have any draft listings."}
-          </p>
-          <Link
-            href="/sell"
-            className="inline-block px-(--space-xl) py-(--space-m) text-white bg-gradient-to-r from-maroon to-red rounded-3xl hover:shadow-xl transition-all bold text-1 shadow-lg"
-          >
-            Create Your First Listing
-          </Link>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-(--space-l)">
