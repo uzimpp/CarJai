@@ -42,8 +42,8 @@ export default function Home() {
             </h2>
           </div>
           <div className="flex flex-col items-center gap-y-(--space-s) w-full">
-            <div className="w-full max-w-[768px]">
-              <SearchBar className="mx-auto" placeholder="City car" />
+            <div className="flex justify-center items-center w-full max-w-[768px]">
+                <SearchBar className="mx-auto" placeholder="City car" />
             </div>
             <div>
               {[

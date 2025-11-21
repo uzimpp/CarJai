@@ -66,11 +66,11 @@ export default function NavBar() {
   return (
     <>
       <div className="top-0 left-0 right-0 bg-white md:mx-(--space-s-m) md:rounded-b-4xl shadow-sm z-50">
-        <div className="relative flex justify-between flex-row items-center p-(--space-2xs-s) px-(--space-s-m) w-full rounded-b-4xl">
-          <div className="flex flex-row items-center gap-x-(--space-4xs) md:px-(--space-s)">
+        <div className="relative flex justify-between flex-row items-center p-(--space-2xs-s) px-(--space-s-m) gap-x-(--space-xs) w-full rounded-b-4xl">
+          <div className="flex flex-row items-center gap-x-(--space-4xs) md:px-(--space-s-m)">
             <Link
               href="/"
-              className="flex flex-row items-center gap-x-(--space-4xs)"
+              className="flex flex-row items-center gap-x-(--space-4xs) h-full my-auto"
             >
               <div className="relative w-(--space-m-l) h-(--space-m-l)">
                 <Image
@@ -89,12 +89,7 @@ export default function NavBar() {
           </div>
 
           {shouldShowSearchBar && (
-            <div className="flex-1 max-w-md mx-(--space-l)">
-              <SearchBar
-                className="bg-maroon/20"
-                placeholder="Search cars..."
-              />
-            </div>
+            <SearchBar className="bg-maroon/20" placeholder="Search cars..." />
           )}
 
           {/* Desktop nav */}
@@ -107,22 +102,22 @@ export default function NavBar() {
           </Link> */}
             <Link
               href="/browse"
-              className="text-0 text-gray-700 hover:text-maroon transition-colors font-medium"
+              className="text-0 text-gray-700 hover:text-maroon transition-colors font-medium text-nowrap"
             >
               Browse Cars
             </Link>
             <Link
               href="/about-us"
-              className="text-0 text-gray-700 hover:text-maroon transition-colors font-medium"
+              className="text-0 text-gray-700 hover:text-maroon transition-colors font-medium text-nowrap"
             >
               About
             </Link>
-            <Link
+            {/* <Link
               href="/pricing"
-              className="text-0 text-gray-700 hover:text-maroon transition-colors font-medium"
+              className="text-0 text-gray-700 hover:text-maroon transition-colors font-medium text-nowrap"
             >
               Pricing
-            </Link>
+            </Link> */}
 
             {isLoading ? (
               <div className="flex items-center gap-x-(--space-2xs) px-(--space-s) py-(--space-2xs) bg-maroon/10 rounded-full">
@@ -203,7 +198,7 @@ export default function NavBar() {
                   <div className="flex items-center justify-center gap-x-(--space-2xs) px-(--space-s) py-(--space-2xs) bg-maroon/10 rounded-md">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-maroon"></div>
                   </div>
-                ) : (
+                ) : isAuthedAdmin || isAuthedUser ? (
                   <AccountMenuContent
                     user={user}
                     roles={roles}
@@ -219,6 +214,21 @@ export default function NavBar() {
                     activeColor="hover:text-maroon hover:text-maroon"
                     signoutClass="text-red-600 hover:bg-red-50 hover:text-red-700"
                   />
+                ) : (
+                  <div className="flex flex-col items-center gap-y-(--space-2xs) w-full">
+                    <Link
+                      href="/signin"
+                      className="flex items-center justify-center text-0 text-gray-700 hover:text-maroon border border-gray-300 rounded-full transition-colors px-(--space-s) py-(--space-3xs-2xs) w-full"
+                    >
+                      Sign In
+                    </Link>
+                    <Link
+                      href="/signup"
+                      className="flex items-center justify-center text-white text-0 py-(--space-3xs-2xs) px-(--space-m) bg-maroon rounded-full hover:bg-red transition-colors shadow-sm w-full"
+                    >
+                      Sign Up
+                    </Link>
+                  </div>
                 )}
               </div>
               {/* iOS safe area spacer */}
