@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/uzimpp/CarJai/backend/config"
 	"github.com/uzimpp/CarJai/backend/handlers"
 	"github.com/uzimpp/CarJai/backend/middleware"
 	"github.com/uzimpp/CarJai/backend/services"
@@ -24,12 +25,13 @@ func AdminRoutes(
 	adminPrefix string,
 	allowedOrigins []string,
 	allowedIPs []string,
+	appConfig *config.AppConfig,
 ) *http.ServeMux {
 	// Create middleware instances
 	authMiddleware := middleware.NewAuthMiddleware(adminService, jwtManager)
 
 	// Create handler instances
-	adminAuthHandler := handlers.NewAdminAuthHandler(adminService, jwtManager, authMiddleware)
+	adminAuthHandler := handlers.NewAdminAuthHandler(adminService, jwtManager, authMiddleware, appConfig)
 	adminIPHandler := handlers.NewAdminIPHandler(adminService)
 	// Create Handler for Extraction
 	adminExtractionHandler := handlers.NewAdminExtractionHandler(extractionService)

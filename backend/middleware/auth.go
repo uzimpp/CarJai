@@ -45,8 +45,10 @@ func (m *AuthMiddleware) RequireAuth(next http.HandlerFunc) http.HandlerFunc {
 		// Validate session in database
 		session, err := m.adminService.ValidateSession(token)
 		if err != nil {
-			// Provide detailed error message for debugging
-			utils.WriteError(w, http.StatusUnauthorized, fmt.Sprintf("Invalid session: %v", err))
+			// Log detailed error server-side only
+			utils.AppLogger.Error(fmt.Sprintf("Session validation failed: %v", err))
+			// Generic error message for client
+			utils.WriteError(w, http.StatusUnauthorized, "Invalid session")
 			return
 		}
 
@@ -150,8 +152,11 @@ func (m *AuthMiddleware) RequireGlobalIPWhitelist(allowedIPs []string) func(http
 			}
 
 			if !isWhitelisted {
-				// Include detected IP in error message for debugging
-				utils.WriteError(w, http.StatusForbidden, fmt.Sprintf("Access denied: IP %s not whitelisted. Whitelisted IPs: %v", clientIP, allowedIPs))
+				// Log detailed information server-side only
+				// Commented out for production, but kept for debugging - uncomment if needed:
+				// utils.AppLogger.Warn(fmt.Sprintf("IP whitelist check failed: IP %s not in whitelist %v", clientIP, allowedIPs))
+				// Generic error message for client
+				utils.WriteError(w, http.StatusForbidden, "Access denied: IP address not authorized")
 				return
 			}
 			// IP is allowed, continue to next handler

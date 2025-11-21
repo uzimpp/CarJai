@@ -29,11 +29,11 @@ func getClientIP(r *http.Request) string {
 			return strings.TrimSpace(ips[0])
 		}
 	}
-	
+
 	if xRealIP := r.Header.Get("X-Real-IP"); xRealIP != "" {
 		return xRealIP
 	}
-	
+
 	// Fall back to RemoteAddr, but clean it up
 	ip, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
@@ -46,32 +46,40 @@ func getClientIP(r *http.Request) string {
 func LoggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		
+
 		// Extract request information
 		clientIP := getClientIP(r)
-		
+
 		// Create ResponseWriter to capture response data
 		responseBuffer := &bytes.Buffer{}
 		wrapped := &responseWriter{
-			ResponseWriter: w, 
+			ResponseWriter: w,
 			statusCode:     http.StatusOK,
 			responseData:   responseBuffer,
 		}
-		
+
 		// Call next handler
 		next.ServeHTTP(wrapped, r)
-		
+
 		// Calculate metrics
 		duration := time.Since(start)
 		requestSize := getRequestSize(r)
 		responseSize := int64(responseBuffer.Len())
-		
-		// Prepare response data for logging (limit size for performance)
-		responseData := responseBuffer.String()
-		if len(responseData) > 1000 {
-			responseData = responseData[:1000] + "...[truncated]"
+
+		// Prepare response data for logging (only in development)
+		var responseData string
+		if utils.ShouldLogResponseBody(utils.GetEnv("ENVIRONMENT")) {
+			responseData = responseBuffer.String()
+			if len(responseData) > 1000 {
+				responseData = responseData[:1000] + "...[truncated]"
+			}
+			// Sanitize sensitive data before logging
+			responseData = utils.SanitizeResponseData(responseData)
+		} else {
+			// In production, don't log response body
+			responseData = ""
 		}
-		
+
 		// Use structured logging with all available request/response information
 		utils.AppLogger.LogHTTPRequest(
 			r.Method,
@@ -113,37 +121,45 @@ func (rw *responseWriter) Write(data []byte) (int, error) {
 func AdminLoggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		
+
 		// Extract admin info from headers (set by auth middleware)
 		adminID := r.Header.Get("X-Admin-ID")
 		adminUsername := r.Header.Get("X-Admin-Username")
 		sessionID := r.Header.Get("X-Session-ID")
-		
+
 		// Extract request information
 		clientIP := getClientIP(r)
-		
+
 		// Create enhanced ResponseWriter to capture response data
 		responseBuffer := &bytes.Buffer{}
 		wrapped := &responseWriter{
-			ResponseWriter: w, 
+			ResponseWriter: w,
 			statusCode:     http.StatusOK,
 			responseData:   responseBuffer,
 		}
-		
+
 		// Call next handler
 		next.ServeHTTP(wrapped, r)
-		
+
 		// Calculate metrics
 		duration := time.Since(start)
 		requestSize := getRequestSize(r)
 		responseSize := int64(responseBuffer.Len())
-		
-		// Prepare response data for logging (limit size for performance)
-		responseData := responseBuffer.String()
-		if len(responseData) > 1000 {
-			responseData = responseData[:1000] + "...[truncated]"
+
+		// Prepare response data for logging (only in development)
+		var responseData string
+		if utils.ShouldLogResponseBody(utils.GetEnv("ENVIRONMENT")) {
+			responseData = responseBuffer.String()
+			if len(responseData) > 1000 {
+				responseData = responseData[:1000] + "...[truncated]"
+			}
+			// Sanitize sensitive data before logging
+			responseData = utils.SanitizeResponseData(responseData)
+		} else {
+			// In production, don't log response body
+			responseData = ""
 		}
-		
+
 		// Use structured logging with admin context
 		utils.AppLogger.LogHTTPRequestWithContext(
 			r.Method,
@@ -170,10 +186,10 @@ func AdminLoggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 func DetailedLoggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		
+
 		// Extract comprehensive request information
 		clientIP := getClientIP(r)
-		
+
 		// Get additional request details for comprehensive logging
 		host := r.Host
 		scheme := "http"
@@ -181,29 +197,37 @@ func DetailedLoggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			scheme = "https"
 		}
 		fullURL := scheme + "://" + host + r.URL.RequestURI()
-		
-		// Create enhanced ResponseWriter to capture response data	
+
+		// Create enhanced ResponseWriter to capture response data
 		responseBuffer := &bytes.Buffer{}
 		wrapped := &responseWriter{
-			ResponseWriter: w, 
+			ResponseWriter: w,
 			statusCode:     http.StatusOK,
 			responseData:   responseBuffer,
 		}
-		
+
 		// Call next handler
 		next.ServeHTTP(wrapped, r)
-		
+
 		// Calculate metrics
 		duration := time.Since(start)
 		requestSize := getRequestSize(r)
 		responseSize := int64(responseBuffer.Len())
-		
-		// Prepare response data for logging (limit size for performance)
-		responseData := responseBuffer.String()
-		if len(responseData) > 1000 {
-			responseData = responseData[:1000] + "...[truncated]"
+
+		// Prepare response data for logging (only in development)
+		var responseData string
+		if utils.ShouldLogResponseBody(utils.GetEnv("ENVIRONMENT")) {
+			responseData = responseBuffer.String()
+			if len(responseData) > 1000 {
+				responseData = responseData[:1000] + "...[truncated]"
+			}
+			// Sanitize sensitive data before logging
+			responseData = utils.SanitizeResponseData(responseData)
+		} else {
+			// In production, don't log response body
+			responseData = ""
 		}
-		
+
 		// Use structured logging with comprehensive context
 		utils.AppLogger.LogHTTPRequestWithContext(
 			r.Method,

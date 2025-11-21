@@ -2,6 +2,7 @@ package config
 
 import (
 	"log"
+	"os"
 	"strings"
 
 	"github.com/uzimpp/CarJai/backend/utils"
@@ -41,6 +42,8 @@ type AppConfig struct {
 	PasswordResetJWTSecret       string
 	PasswordResetTokenExpiration int // in minutes
 	FrontendURL                  string
+	// Cookie security configuration
+	CookieSecure bool // If true, cookies require HTTPS (Secure flag)
 }
 
 // LoadAppConfig loads application configuration from environment variables
@@ -82,7 +85,23 @@ func LoadAppConfig() *AppConfig {
 		PasswordResetJWTSecret:       utils.GetEnv("PASSWORD_RESET_JWT_SECRET"),
 		PasswordResetTokenExpiration: utils.GetEnvAsInt("PASSWORD_RESET_TOKEN_EXPIRATION_MINUTES"),
 		FrontendURL:                  utils.GetEnv("FRONTEND_URL"),
+		// Cookie security - use COOKIE_SECURE env var if set, otherwise default based on environment
+		CookieSecure: getCookieSecureSetting(),
 	}
+}
+
+// getCookieSecureSetting determines cookie secure flag
+// Priority: 1) COOKIE_SECURE env var (if explicitly set), 2) Environment-based (production = true)
+func getCookieSecureSetting() bool {
+	// Check if COOKIE_SECURE is explicitly set in environment (optional, so use os.Getenv)
+	cookieSecureEnv := os.Getenv("COOKIE_SECURE")
+	if cookieSecureEnv != "" {
+		// If explicitly set, use the value
+		return utils.GetEnvAsBool("COOKIE_SECURE")
+	}
+	// Fallback to environment-based logic (production = true, others = false)
+	env := strings.ToLower(strings.TrimSpace(utils.GetEnv("ENVIRONMENT")))
+	return env == "production" || env == "prod"
 }
 
 // parseAllowedIPs parses comma-separated IP addresses into a slice
