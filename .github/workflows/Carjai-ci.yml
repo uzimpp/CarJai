@@ -172,6 +172,8 @@ jobs:
   # Run All Tests (Unit + Integration)
   tests:
     name: Run All Tests
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     needs: [detect-environment, backend]
     # This job runs for all branches and PRs
