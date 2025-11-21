@@ -59,3 +59,10 @@ func ExtractIDFromPath(path, prefix string) (int, error) {
 	}
 	return id, nil
 }
+
+// ShouldLogResponseBody determines if response body should be logged
+// Returns false for production environment, true for development
+func ShouldLogResponseBody(environment string) bool {
+	env := strings.ToLower(strings.TrimSpace(environment))
+	return env != "production" && env != "prod"
+}

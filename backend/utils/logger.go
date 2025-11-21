@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"time"
 )
 
@@ -30,12 +31,12 @@ type LogEntry struct {
 	IPAddress string                 `json:"ip_address,omitempty"`
 	UserAgent string                 `json:"user_agent,omitempty"`
 	// Enhanced fields for HTTP request logging
-	Duration    string `json:"duration,omitempty"`
-	Method      string `json:"method,omitempty"`
-	Path        string `json:"path,omitempty"`
-	Status      int    `json:"status,omitempty"`
-	RequestSize int64  `json:"request_size,omitempty"`
-	ResponseSize int64 `json:"response_size,omitempty"`
+	Duration     string `json:"duration,omitempty"`
+	Method       string `json:"method,omitempty"`
+	Path         string `json:"path,omitempty"`
+	Status       int    `json:"status,omitempty"`
+	RequestSize  int64  `json:"request_size,omitempty"`
+	ResponseSize int64  `json:"response_size,omitempty"`
 }
 
 // Logger represents a structured logger
@@ -279,6 +280,31 @@ func (l *Logger) LogHTTPRequestWithContext(method, path, ipAddress, userAgent st
 	}
 
 	fmt.Println(string(jsonData))
+}
+
+// SanitizeResponseData removes sensitive information from response data before logging
+func SanitizeResponseData(data string) string {
+	if data == "" {
+		return data
+	}
+
+	// Redact tokens
+	tokenPattern := regexp.MustCompile(`"(?:token|access_token|refresh_token|id_token)":\s*"[^"]*"`)
+	data = tokenPattern.ReplaceAllString(data, `"token":"[REDACTED]"`)
+
+	// Redact passwords
+	passwordPattern := regexp.MustCompile(`"(?:password|current_password|new_password)":\s*"[^"]*"`)
+	data = passwordPattern.ReplaceAllString(data, `"password":"[REDACTED]"`)
+
+	// Redact email addresses in sensitive contexts
+	emailPattern := regexp.MustCompile(`"email":\s*"[^"]*"`)
+	data = emailPattern.ReplaceAllString(data, `"email":"[REDACTED]"`)
+
+	// Redact API keys
+	apiKeyPattern := regexp.MustCompile(`"(?:api_key|apikey|apiKey)":\s*"[^"]*"`)
+	data = apiKeyPattern.ReplaceAllString(data, `"api_key":"[REDACTED]"`)
+
+	return data
 }
 
 // Global logger instance
