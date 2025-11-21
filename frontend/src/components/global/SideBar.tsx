@@ -7,6 +7,7 @@ import { useRef, useEffect, useState } from "react";
 import type { RefObject, MutableRefObject } from "react";
 import { adminMenuItems } from "@/constants/adminMenu";
 import { Fragment } from "react";
+
 interface SideBarProps {
   onWidthChange?: (width: number) => void;
   isMobile?: boolean;
@@ -21,7 +22,7 @@ export default function SideBar({
   mobileNavRef,
 }: SideBarProps) {
   const pathname = usePathname();
-  const { adminUser, signout } = useAdminAuth();
+  const { adminUser, signout } = useAdminAuth(); 
   const sidebarRef = useRef<HTMLDivElement>(null);
   const fallbackMobileRef = useRef<HTMLDivElement>(null);
   const mobileTopRef = mobileNavRef ?? fallbackMobileRef;
@@ -45,8 +46,6 @@ export default function SideBar({
     return () => resizeObserver.disconnect();
   }, [onWidthChange, isCollapsed, isMobile]);
 
-  // No runtime height measurement for the mobile navbar; Layout uses a fixed height
-
   const handleSignout = async () => {
     try {
       await signout();
@@ -54,6 +53,11 @@ export default function SideBar({
       // Silent fail on signout
     }
   };
+
+  const filteredMenuItems = adminMenuItems.filter((item) => {
+    if (!item.requiredRole) return true;
+    return adminUser?.role === item.requiredRole;
+  });
 
   return (
     <Fragment>
@@ -95,7 +99,7 @@ export default function SideBar({
 
           {/* Navigation Menu */}
           <nav className="flex flex-col gap-y-(--space-2xs) overflow-x-visible pt-(--space-xs) border-t border-white/20">
-            {adminMenuItems.map((item) => {
+            {filteredMenuItems.map((item) => {
               const isActive = pathname === item.href;
               return (
                 <div key={item.href}>
@@ -214,7 +218,7 @@ export default function SideBar({
           {isMobileMenuOpen && (
             <div className="absolute right-0 top-full w-full bg-black text-white rounded-b-xl shadow-2xl overflow-hidden">
               <div className="flex flex-col p-(--space-s) gap-y-(--space-2xs)">
-                {adminMenuItems.map((item) => {
+                {filteredMenuItems.map((item) => {
                   const isActive = pathname === item.href;
                   return (
                     <Link

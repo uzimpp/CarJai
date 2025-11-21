@@ -2,6 +2,7 @@ interface AdminUser {
   id: number;
   username: string;
   name: string;
+  role: string;
   last_login_at: string | null;
   created_at: string;
 }
@@ -141,6 +142,16 @@ interface AdminCreateCarRequest {
   status?: string;
 }
 
+// Backend returns: {success: true, data: {admins: AdminUser[], total: number}}
+interface AdminAdminsListData {
+  admins: AdminUser[];
+  total: number;
+}
+interface AdminAdminsListResponse {
+  success: boolean;
+  data: AdminAdminsListData;
+  message?: string;
+}
 interface MarketPrice {
   id: number;
   brand: string;
@@ -217,6 +228,8 @@ export type {
   AdminManagedCar,
   AdminUpdateCarRequest,
   AdminCreateCarRequest,
+  AdminAdminsListResponse,
+  AdminAdminsListData,
   UserType,
   UserRole,
   MarketPrice,

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
+import { adminAPI } from "@/lib/adminAPI";
 import type {
   AdminManagedUser,
   AdminUpdateUserRequest,
@@ -464,40 +465,9 @@ export default function AdminUsersPage() {
         setIsLoading(true);
         setError(null);
 
-        const response = await fetch("/api/admin/users");
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch users: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-
-        if (data.success) {
-          // Extract users and total from data.data (wrapped response)
-          const responseData = data.data as
-            | { users?: AdminManagedUser[]; total?: number }
-            | AdminManagedUser[]
-            | undefined;
-
-          if (Array.isArray(responseData)) {
-            // If data.data is directly an array (legacy format)
-            setUsers(responseData);
-            setTotal(responseData.length);
-          } else if (responseData && "users" in responseData) {
-            // If data.data is an object with users and total
-            const usersData = Array.isArray(responseData.users)
-              ? responseData.users
-              : [];
-            setUsers(usersData);
-            setTotal(responseData.total ?? usersData.length);
-          } else {
-            setUsers([]);
-            setTotal(0);
-          }
-        } else {
-          throw new Error(data.error || "Failed to fetch users");
-        }
-
+        const result = await adminAPI.getUsers();
+        setUsers(result.users);
+        setTotal(result.total);
         setIsLoading(false);
       } catch (err) {
         setError(
@@ -568,39 +538,9 @@ export default function AdminUsersPage() {
     data: AdminUpdateUserRequest
   ) => {
     try {
-      const response = await fetch(`/api/admin/users/${userId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(
-          errData.error || `Failed to update user: ${response.statusText}`
-        );
-      }
-
+      const updatedUser = await adminAPI.updateUser(userId, data);
       setUsers((prevUsers) =>
-        prevUsers.map((user) => {
-          if (user.id !== userId) return user;
-
-          const updated: AdminManagedUser = {
-            ...user,
-            name: data.name ?? user.name,
-            username: data.username ?? user.username,
-          };
-
-          // Only update email for regular users
-          if (user.type === "user" && data.email !== undefined) {
-            updated.email = data.email || null;
-            updated.updated_at = new Date().toISOString();
-          }
-
-          return updated;
-        })
+        prevUsers.map((user) => (user.id === userId ? updatedUser : user))
       );
       setIsEditModalOpen(false);
       setEditingUser(null);
@@ -612,38 +552,7 @@ export default function AdminUsersPage() {
 
   const handleCreateUser = async (data: AdminCreateUserRequest) => {
     try {
-      const response = await fetch("/api/admin/users", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(
-          errData.error || `Failed to create user: ${response.statusText}`
-        );
-      }
-
-      const createdUserPublic = await response.json();
-
-      const newUser: AdminManagedUser = {
-        id: createdUserPublic.id,
-        name: createdUserPublic.name,
-        username: createdUserPublic.username,
-        email: createdUserPublic.email,
-        created_at: createdUserPublic.created_at,
-        updated_at: createdUserPublic.updated_at,
-        type: "user",
-        role: "No role",
-        roles: {
-          buyer: false,
-          seller: false,
-        },
-      };
-
+      const newUser = await adminAPI.createUser(data);
       setUsers((prevUsers) => [newUser, ...prevUsers]);
       setIsAddModalOpen(false);
     } catch (err) {
@@ -659,17 +568,7 @@ export default function AdminUsersPage() {
 
   const handleConfirmDelete = async (userId: number) => {
     try {
-      const response = await fetch(`/api/admin/users/${userId}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(
-          errData.error || `Failed to delete user: ${response.statusText}`
-        );
-      }
-
+      await adminAPI.deleteUser(userId);
       setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
       setDeletingUser(null);
       setIsDeleteModalOpen(false);
@@ -849,7 +748,7 @@ export default function AdminUsersPage() {
                   <div
                     key={user.id}
                     className="grid grid-cols-[1fr_auto] md:grid-cols-[80px_1fr_1fr_1fr_1fr_80px] gap-(--space-2xs) p-(--space-xs) transition-colors items-center hover:bg-gray-50"
-                   >
+                  >
                     {/* User ID - hidden on mobile, visible on md+ */}
                     <div className="hidden md:block text--1 text-gray-900">
                       {user.id}

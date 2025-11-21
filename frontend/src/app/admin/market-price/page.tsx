@@ -2,7 +2,7 @@
 
 import React, { useState, ChangeEvent, FormEvent, useEffect } from "react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
-import { adminAuthAPI } from "@/lib/adminAuth";
+import { adminAPI } from "@/lib/adminAPI";
 
 // Interface MarketPrice
 interface MarketPrice {
@@ -82,7 +82,7 @@ function UploadModal({
     setUploadStatus(null);
 
     try {
-      const result = await adminAuthAPI.importMarketPrices(selectedFile);
+      const result = await adminAPI.importMarketPrices(selectedFile);
       if (result.success && result.data) {
         setUploadStatus({
           message: `${result.message} Inserted: ${result.data.inserted_count}, Updated: ${result.data.updated_count}`,
@@ -224,7 +224,7 @@ export default function MarketPricePage() {
       setIsLoading(true);
       setError(null);
 
-      const data = await adminAuthAPI.getMarketPrices();
+      const data = await adminAPI.getMarketPrices();
       // Ensure data is an array before setting it
       const pricesData = Array.isArray(data) ? data : [];
       setPrices(pricesData);

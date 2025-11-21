@@ -6,6 +6,7 @@ CREATE TABLE admins (
     username VARCHAR(100) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     name VARCHAR(100) NOT NULL,
+    role VARCHAR(50) NOT NULL DEFAULT 'admin', 
     last_login_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT NOW()
 );
@@ -83,6 +84,8 @@ COMMENT ON COLUMN admins.username IS 'Unique admin username for login';
 COMMENT ON COLUMN admins.password_hash IS 'Bcrypt hashed password';
 
 COMMENT ON COLUMN admins.name IS 'Display name of the admin';
+
+COMMENT ON COLUMN admins.role IS 'Role of the admin (e.g., super_admin, admin)';
 
 COMMENT ON COLUMN admins.last_login_at IS 'Timestamp of last successful login';
 

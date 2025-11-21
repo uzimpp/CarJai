@@ -46,6 +46,19 @@ type SigninResponse struct {
 	ExpiresAt time.Time
 }
 
+// CreateAdminRequest structure for service layer
+type CreateAdminRequest struct {
+	Username string
+	Name     string
+	Password string
+}
+
+// UpdateAdminRequest structure
+type UpdateAdminRequest struct {
+	Username string
+	Name     string
+}
+
 // Signin authenticates an admin user
 func (s *AdminService) Signin(req SigninRequest) (*SigninResponse, error) {
 	// Validate input
@@ -249,4 +262,75 @@ func (s *AdminService) GetWhitelistedIPs(adminID int) ([]models.AdminIPWhitelist
 // GetAdminByID retrieves an admin by ID
 func (s *AdminService) GetAdminByID(adminID int) (*models.Admin, error) {
 	return s.adminRepo.GetAdminByID(adminID)
+}
+
+// GetManagedAdmins retrieves all admins for management
+func (s *AdminService) GetManagedAdmins() ([]models.AdminPublic, error) {
+	admins, err := s.adminRepo.GetAdmins()
+	if err != nil {
+		return nil, err
+	}
+
+	publicAdmins := make([]models.AdminPublic, len(admins))
+	for i, admin := range admins {
+		publicAdmins[i] = admin.ToPublic()
+	}
+
+	return publicAdmins, nil
+}
+
+// CreateAdmin creates a new admin with role 'admin'
+func (s *AdminService) CreateAdmin(req CreateAdminRequest, initialIP string) (*models.AdminPublic, error) {
+	// 1. Check if username already exists
+	existingAdmin, _ := s.adminRepo.GetAdminByUsername(req.Username)
+	if existingAdmin != nil {
+		return nil, fmt.Errorf("username already exists")
+	}
+
+	// 2. Hash password
+	hashedPassword, err := utils.HashPassword(req.Password)
+	if err != nil {
+		return nil, fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	// 3. Prepare admin model
+	newAdmin := &models.Admin{
+		Username:     req.Username,
+		Name:         req.Name,
+		PasswordHash: hashedPassword,
+		Role:         "admin",
+	}
+
+	// 4. Save to database
+	err = s.adminRepo.CreateAdmin(newAdmin)
+	if err != nil {
+		return nil, err
+	}
+
+	// --- Auto-add Initial IP to Whitelist ---
+	if initialIP != "" {
+		err = s.ipWhitelistRepo.AddIPToWhitelist(newAdmin.ID, initialIP, "Initial IP (Auto-added upon creation)")
+		if err != nil {
+			fmt.Printf("Warning: Failed to auto-whitelist IP for new admin: %v\n", err)
+		}
+	}
+
+	// 5. Return public data
+	publicAdmin := newAdmin.ToPublic()
+	return &publicAdmin, nil
+}
+
+func (s *AdminService) UpdateAdmin(id int, req UpdateAdminRequest) error {
+	// Check if admin exists
+	_, err := s.adminRepo.GetAdminByID(id)
+	if err != nil {
+		return err
+	}
+	// Check username uniqueness (if changed)
+	// (Simple check, in production should exclude current ID)
+	return s.adminRepo.UpdateAdmin(id, req.Username, req.Name)
+}
+
+func (s *AdminService) DeleteAdmin(id int) error {
+	return s.adminRepo.DeleteAdmin(id)
 }

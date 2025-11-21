@@ -67,6 +67,30 @@ func ConnectDatabase(dbConfig *DatabaseConfig, appConfig *AppConfig) (*sql.DB, e
 	return db, nil
 }
 
+func migrateAdminSchema(db *sql.DB) error {
+	var columnExists bool
+	query := `
+		SELECT EXISTS (
+			SELECT 1 
+			FROM information_schema.columns 
+			WHERE table_name='admins' AND column_name='role'
+		)`
+	
+	err := db.QueryRow(query).Scan(&columnExists)
+	if err != nil {
+		return err
+	}
+
+	if !columnExists {
+		fmt.Println("Migrating database: Adding 'role' column to admins table...")
+		_, err = db.Exec(`ALTER TABLE admins ADD COLUMN role VARCHAR(50) NOT NULL DEFAULT 'admin'`)
+		if err != nil {
+			return fmt.Errorf("failed to add role column: %w", err)
+		}
+	}
+	return nil
+}
+
 // waitForDatabaseAndInitialize waits for database to be ready and initializes admin user
 func waitForDatabaseAndInitialize(db *sql.DB, appConfig *AppConfig) error {
 	// Wait for database to be ready (tables exist)
@@ -86,6 +110,9 @@ func waitForDatabaseAndInitialize(db *sql.DB, appConfig *AppConfig) error {
 
 		if err == nil && tableExists {
 			// Check if users table exists
+			if err := migrateAdminSchema(db); err != nil {
+                return fmt.Errorf("failed to migrate admin schema: %w", err)
+            }
 			var usersTableExists bool
 			err = db.QueryRow(`
 				SELECT EXISTS (
@@ -125,29 +152,33 @@ func initializeAdminUser(db *sql.DB, appConfig *AppConfig) error {
 		return fmt.Errorf("failed to hash password: %w", err)
 	}
 
+	// Any admins created from the environment variables will be super admins
+	const SuperAdminRole = "super_admin"
+
 	if adminExists {
-		// Update existing admin user
+		// Update existing admin user 
 		_, err = db.Exec(`
 			UPDATE admins 
 			SET password_hash = $1, 
 				name = $2,
+				role = $3,
 				last_login_at = NULL
-			WHERE username = $3
-		`, hashedPassword, appConfig.AdminName, appConfig.AdminUsername)
+			WHERE username = $4
+		`, hashedPassword, appConfig.AdminName, SuperAdminRole, appConfig.AdminUsername) 
 		if err != nil {
 			return fmt.Errorf("failed to update admin user: %w", err)
 		}
-		fmt.Printf("Admin user '%s' updated successfully\n", appConfig.AdminUsername)
+		fmt.Printf("Admin user '%s' updated (Role: %s)\n", appConfig.AdminUsername, SuperAdminRole)
 	} else {
 		// Create new admin user
 		_, err = db.Exec(`
-			INSERT INTO admins (username, password_hash, name, created_at)
-			VALUES ($1, $2, $3, NOW())
-		`, appConfig.AdminUsername, hashedPassword, appConfig.AdminName)
+			INSERT INTO admins (username, password_hash, name, role, created_at)
+			VALUES ($1, $2, $3, $4, NOW())
+		`, appConfig.AdminUsername, hashedPassword, appConfig.AdminName, SuperAdminRole)
 		if err != nil {
 			return fmt.Errorf("failed to create admin user: %w", err)
 		}
-		fmt.Printf("Admin user '%s' created successfully\n", appConfig.AdminUsername)
+		fmt.Printf("Admin user '%s' created successfully (Role: %s)\n", appConfig.AdminUsername, SuperAdminRole)
 	}
 
 	// Initialize IP whitelist for the admin user
