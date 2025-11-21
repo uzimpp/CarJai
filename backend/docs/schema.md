@@ -58,6 +58,16 @@ erDiagram
         timestamp created_at "DEFAULT NOW()"
     }
 
+    password_reset_tokens {
+        int id PK "SERIAL"
+        int user_id FK "NOT NULL, REFERENCES users(id) ON DELETE CASCADE"
+        varchar email "NOT NULL"
+        varchar token_hash UK "UNIQUE NOT NULL (SHA-256 hash)"
+        timestamp created_at "DEFAULT NOW()"
+        timestamp expires_at "NOT NULL"
+        timestamp used_at "Nullable (NULL = unused)"
+    }
+
     sellers {
         int id PK "PRIMARY KEY, REFERENCES users(id) ON DELETE CASCADE"
         varchar display_name "NOT NULL"
@@ -260,6 +270,7 @@ erDiagram
     admins ||--o{ seller_admin_actions : "performs"
 
     users ||--o{ user_sessions : "has"
+    users ||--o{ password_reset_tokens : "has"
     users ||--o| sellers : "is (1:1)"
     users ||--o| buyers : "is (1:1)"
     users ||--o{ reports : "files"
