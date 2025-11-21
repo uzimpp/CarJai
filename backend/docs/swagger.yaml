@@ -327,7 +327,7 @@ paths:
                   example: "current_password"
                 new_password:
                   type: string
-                  minLength: 8
+                  minLength: 6
                   example: "new_password"
       responses:
         '200':
@@ -564,6 +564,84 @@ paths:
                 success: false
                 code: 404
                 message: "Seller profile not found"
+
+  /api/auth/forgot-password:
+    post:
+      tags:
+        - Authentication
+      summary: Request password reset
+      description: Send password reset email to user. Returns success even if email doesn't exist (security).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "user@example.com"
+      responses:
+        '200':
+          description: Success message (always returned)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "If your email exists in our system, you will receive a password reset link shortly"
+        '400':
+          description: Bad request (invalid email format)
+
+  /api/auth/reset-password:
+    post:
+      tags:
+        - Authentication
+      summary: Reset password with token
+      description: Reset user password using token from email
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - new_password
+              properties:
+                token:
+                  type: string
+                  example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                new_password:
+                  type: string
+                  minLength: 6
+                  example: "new_secure_password"
+      responses:
+        '200':
+          description: Password reset successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Password reset successfully. Please sign in with your new password."
+        '400':
+          description: Invalid or expired token
 
   # Car Management
   /api/cars/search:

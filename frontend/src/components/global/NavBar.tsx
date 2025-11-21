@@ -67,73 +67,79 @@ export default function NavBar() {
     <>
       <div className="top-0 left-0 right-0 bg-white md:mx-(--space-s-m) md:rounded-b-4xl shadow-sm z-50">
         <div className="relative flex justify-between flex-row items-center p-(--space-2xs-s) px-(--space-s-m) w-full rounded-b-4xl">
-        <div className="flex flex-row items-center gap-x-(--space-4xs) md:px-(--space-s)">
-          <Link
-            href="/"
-            className="flex flex-row items-center gap-x-(--space-4xs)"
-          >
+          <div className="flex flex-row items-center gap-x-(--space-4xs) md:px-(--space-s)">
+            <Link
+              href="/"
+              className="flex flex-row items-center gap-x-(--space-4xs)"
+            >
               <div className="relative w-(--space-m-l) h-(--space-m-l)">
-              <Image
-                src="/logo/logo.png"
-                alt="logo"
-                fill
-                quality={100}
-                className="object-contain"
-                priority
-              />
-            </div>
-            <h1 className="text-1 font-semibold ml-(--space-3xs) hidden md:block">
-              arJai
-            </h1>
-          </Link>
-        </div>
+                <Image
+                  src="/logo/logo.png"
+                  alt="logo"
+                  fill
+                  quality={100}
+                  className="object-contain"
+                  priority
+                />
+              </div>
+              <h1 className="text-1 font-semibold ml-(--space-3xs) hidden md:block">
+                arJai
+              </h1>
+            </Link>
+          </div>
 
-        {shouldShowSearchBar && (
-          <div className="flex-1 max-w-md mx-(--space-l)">
+          {shouldShowSearchBar && (
+            <div className="flex-1 max-w-md mx-(--space-l)">
               <SearchBar
                 className="bg-maroon/20"
                 placeholder="Search cars..."
               />
-          </div>
-        )}
+            </div>
+          )}
 
           {/* Desktop nav */}
           <nav className="hidden md:flex flex-row gap-x-(--space-m-l) items-center">
-          {/* <Link
+            {/* <Link
             href="/"
             className="text-0 text-gray-700 hover:text-maroon transition-colors font-medium"
           >
             Home
           </Link> */}
-          <Link
-            href="/browse"
-            className="text-0 text-gray-700 hover:text-maroon transition-colors font-medium"
-          >
-            Browse Cars
-          </Link>
-          <Link
-            href="/about-us"
-            className="text-0 text-gray-700 hover:text-maroon transition-colors font-medium"
-          >
-            About
-          </Link>
+            <Link
+              href="/browse"
+              className="text-0 text-gray-700 hover:text-maroon transition-colors font-medium"
+            >
+              Browse Cars
+            </Link>
+            <Link
+              href="/about-us"
+              className="text-0 text-gray-700 hover:text-maroon transition-colors font-medium"
+            >
+              About
+            </Link>
+            <Link
+              href="/pricing"
+              className="text-0 text-gray-700 hover:text-maroon transition-colors font-medium"
+            >
+              Pricing
+            </Link>
 
-          {isLoading ? (
-            <div className="flex items-center gap-x-(--space-2xs) px-(--space-s) py-(--space-2xs) bg-maroon/10 rounded-full">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-maroon"></div>
-            </div>
-          ) : (
-            <AccountBtn
-              user={user}
-              roles={roles}
-              profiles={profiles}
-              isAuthedAdmin={isAuthedAdmin}
-              isAuthedUser={isAuthedUser}
-              adminUser={adminUser}
-              handleSignout={handleSignout}
-            />
-          )}
-        </nav>
+            {isLoading ? (
+              <div className="flex items-center gap-x-(--space-2xs) px-(--space-s) py-(--space-2xs) bg-maroon/10 rounded-full">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-maroon"></div>
+              </div>
+            ) : (
+              <AccountBtn
+                user={user}
+                roles={roles}
+                profiles={profiles}
+                isAuthedAdmin={isAuthedAdmin}
+                isAuthedUser={isAuthedUser}
+                adminUser={adminUser}
+                handleSignout={handleSignout}
+              />
+            )}
+          </nav>
 
           {/* Mobile hamburger button */}
           <button

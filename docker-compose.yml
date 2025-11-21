@@ -29,6 +29,9 @@ services:
       dockerfile: dockerfile
     ports:
       - "8080:8080"
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     environment:
       PORT: ${PORT}
       ENVIRONMENT: ${ENVIRONMENT}
@@ -56,6 +59,14 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM: ${SMTP_FROM}
+      PASSWORD_RESET_JWT_SECRET: ${PASSWORD_RESET_JWT_SECRET}
+      PASSWORD_RESET_TOKEN_EXPIRATION_MINUTES: ${PASSWORD_RESET_TOKEN_EXPIRATION_MINUTES}
+      FRONTEND_URL: ${FRONTEND_URL}
     volumes:
       - ./frontend/public/assets:/app/frontend/public/assets:ro
       - ./backend/tests/price2568.pdf:/app/tests/price2568.pdf:ro

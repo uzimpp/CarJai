@@ -53,6 +53,7 @@ export default function ConditionalLayout({
     "/signup/role",
     "/signup/role/buyer",
     "/signup/role/seller",
+    "/reset-password",
     "/404",
   ];
 
@@ -71,6 +72,7 @@ export default function ConditionalLayout({
     "/signup/role",
     "/signup/role/buyer",
     "/signup/role/seller",
+    "/reset-password",
     "/404",
   ];
 
