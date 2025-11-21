@@ -6,6 +6,7 @@ import (
 
 	"github.com/uzimpp/CarJai/backend/handlers"
 	"github.com/uzimpp/CarJai/backend/middleware"
+	"github.com/uzimpp/CarJai/backend/utils"
 )
 
 // ReferenceRoutes sets up reference data routes (match style used in profile.go)
@@ -26,7 +27,7 @@ func ReferenceRoutes(db interface{}, allowedOrigins []string) *http.ServeMux {
 							if r.Method == http.MethodGet {
 								referenceHandler.GetAll(w, r)
 							} else {
-								http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+								utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 							}
 						},
 					),
@@ -45,7 +46,7 @@ func ReferenceRoutes(db interface{}, allowedOrigins []string) *http.ServeMux {
 							if r.Method == http.MethodGet {
 								referenceHandler.GetBrands(w, r)
 							} else {
-								http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+								utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 							}
 						},
 					),
@@ -64,7 +65,7 @@ func ReferenceRoutes(db interface{}, allowedOrigins []string) *http.ServeMux {
 							if r.Method == http.MethodGet {
 								referenceHandler.GetModels(w, r)
 							} else {
-								http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+								utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 							}
 						},
 					),
@@ -83,7 +84,7 @@ func ReferenceRoutes(db interface{}, allowedOrigins []string) *http.ServeMux {
 							if r.Method == http.MethodGet {
 								referenceHandler.GetSubModels(w, r)
 							} else {
-								http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+								utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
 							}
 						},
 					),

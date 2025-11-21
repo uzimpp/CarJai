@@ -36,11 +36,6 @@ func NewAdminReportsHandler(
 
 // ListReports handles GET /admin/reports
 func (h *AdminReportsHandler) ListReports(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
-		return
-	}
-
 	// Parse query parameters
 	reportType := r.URL.Query().Get("type") // "user", "car", or empty
 	status := r.URL.Query().Get("status")   // "pending", "resolved", "dismissed", or empty
@@ -87,11 +82,6 @@ func (h *AdminReportsHandler) ListReports(w http.ResponseWriter, r *http.Request
 
 // ResolveReport handles POST /admin/reports/{id}/resolve
 func (h *AdminReportsHandler) ResolveReport(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
-		return
-	}
-
 	// Get admin ID from header
 	adminIDStr := r.Header.Get("X-Admin-ID")
 	adminID, err := strconv.Atoi(adminIDStr)
@@ -120,11 +110,6 @@ func (h *AdminReportsHandler) ResolveReport(w http.ResponseWriter, r *http.Reque
 
 // DismissReport handles POST /admin/reports/{id}/dismiss
 func (h *AdminReportsHandler) DismissReport(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
-		return
-	}
-
 	// Get admin ID from header
 	adminIDStr := r.Header.Get("X-Admin-ID")
 	adminID, err := strconv.Atoi(adminIDStr)
@@ -153,11 +138,6 @@ func (h *AdminReportsHandler) DismissReport(w http.ResponseWriter, r *http.Reque
 
 // BanUser handles POST /admin/users/{id}/ban
 func (h *AdminReportsHandler) BanUser(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
-		return
-	}
-
 	// Get admin ID from header
 	adminIDStr := r.Header.Get("X-Admin-ID")
 	adminID, err := strconv.Atoi(adminIDStr)
@@ -186,11 +166,6 @@ func (h *AdminReportsHandler) BanUser(w http.ResponseWriter, r *http.Request) {
 
 // RemoveCar handles POST /admin/cars/{id}/remove
 func (h *AdminReportsHandler) RemoveCar(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
-		return
-	}
-
 	// Extract car ID from path
 	carID, err := h.extractCarID(r.URL.Path, "/admin/cars/", "/remove")
 	if err != nil {

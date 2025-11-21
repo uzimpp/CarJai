@@ -24,11 +24,6 @@ func NewAdminIPHandler(adminService *services.AdminService) *AdminIPHandler {
 
 // AddIPToWhitelist handles adding IP to whitelist
 func (h *AdminIPHandler) AddIPToWhitelist(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
-		return
-	}
-
 	// Get admin ID from context (set by auth middleware)
 	adminIDStr := r.Header.Get("X-Admin-ID")
 	adminID, err := strconv.Atoi(adminIDStr)
@@ -62,11 +57,6 @@ func (h *AdminIPHandler) AddIPToWhitelist(w http.ResponseWriter, r *http.Request
 
 // RemoveIPFromWhitelist handles removing IP from whitelist
 func (h *AdminIPHandler) RemoveIPFromWhitelist(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodDelete {
-		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
-		return
-	}
-
 	// Get admin ID from context
 	adminIDStr := r.Header.Get("X-Admin-ID")
 	adminID, err := strconv.Atoi(adminIDStr)
@@ -94,11 +84,6 @@ func (h *AdminIPHandler) RemoveIPFromWhitelist(w http.ResponseWriter, r *http.Re
 
 // CheckIPDeletionImpact checks if deleting an IP would affect the current session
 func (h *AdminIPHandler) CheckIPDeletionImpact(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
-		return
-	}
-
 	// Get IP address from query parameter
 	ipAddress := r.URL.Query().Get("ip")
 	if ipAddress == "" {
@@ -134,11 +119,6 @@ func (h *AdminIPHandler) CheckIPDeletionImpact(w http.ResponseWriter, r *http.Re
 
 // GetWhitelistedIPs handles getting whitelisted IPs
 func (h *AdminIPHandler) GetWhitelistedIPs(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		utils.WriteError(w, http.StatusMethodNotAllowed, "Method not allowed")
-		return
-	}
-
 	// Get admin ID from context
 	adminIDStr := r.Header.Get("X-Admin-ID")
 	adminID, err := strconv.Atoi(adminIDStr)

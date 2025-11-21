@@ -30,11 +30,6 @@ type submitReportRequest struct {
 
 // SubmitCarReport handles POST /api/reports/cars/{id}
 func (h *ReportHandler) SubmitCarReport(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
 		utils.WriteError(w, http.StatusUnauthorized, "Authentication required")
@@ -76,11 +71,6 @@ func (h *ReportHandler) SubmitCarReport(w http.ResponseWriter, r *http.Request) 
 
 // SubmitSellerReport handles POST /api/reports/sellers/{id}
 func (h *ReportHandler) SubmitSellerReport(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	userID, ok := middleware.GetUserIDFromContext(r)
 	if !ok {
 		utils.WriteError(w, http.StatusUnauthorized, "Authentication required")
