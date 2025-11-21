@@ -20,7 +20,7 @@ function SigninForm() {
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Forgot password modal state
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
@@ -308,7 +308,7 @@ function SigninForm() {
 
       {/* Forgot Password Modal */}
       {showForgotPasswordModal && (
-        <div className="fixed inset-0 bg-gray-400 bg-opacity-20 backdrop-blur-[1px] flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-[1px] flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl max-w-md w-full p-(--space-m) shadow-2xl">
             {!forgotPasswordSuccess ? (
               <>
@@ -322,22 +322,31 @@ function SigninForm() {
                     }}
                     className="text-gray-400 hover:text-gray-600"
                   >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    <svg
+                      className="w-6 h-6"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
                     </svg>
                   </button>
                 </div>
                 <p className="text-0 text-gray-600 mb-(--space-s)">
-                  Enter your email address and we&apos;ll send you a link to reset your password.
+                  Enter your email address and we&apos;ll send you a link to
+                  reset your password.
                 </p>
                 <form onSubmit={handleForgotPassword}>
-                  {forgotPasswordError && (
-                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-(--space-xs)">
-                      {forgotPasswordError}
-                    </div>
-                  )}
                   <div className="mb-(--space-s)">
-                    <label htmlFor="forgot-email" className="block text-0 font-medium text-gray-700 mb-2">
+                    <label
+                      htmlFor="forgot-email"
+                      className="block text-0 font-medium text-gray-700 mb-2"
+                    >
                       Email Address
                     </label>
                     <input
@@ -346,10 +355,19 @@ function SigninForm() {
                       value={forgotPasswordEmail}
                       onChange={(e) => setForgotPasswordEmail(e.target.value)}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-maroon focus:border-maroon"
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+                        forgotPasswordError
+                          ? "border-red-300 focus:ring-red focus:border-red"
+                          : "border-gray-300 focus:ring-maroon focus:border-maroon"
+                      }`}
                       placeholder="you@example.com"
                       disabled={forgotPasswordLoading}
                     />
+                    {forgotPasswordError && (
+                      <p className="mt-1 text-0 text-red-600">
+                        {forgotPasswordError}
+                      </p>
+                    )}
                   </div>
                   <button
                     type="submit"
@@ -364,16 +382,29 @@ function SigninForm() {
               <>
                 <div className="text-center">
                   <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
-                    <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    <svg
+                      className="h-6 w-6 text-green-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M5 13l4 4L19 7"
+                      />
                     </svg>
                   </div>
-                  <h3 className="text-2 font-bold text-gray-900 mb-2">Check Your Email</h3>
+                  <h3 className="text-2 font-bold text-gray-900 mb-2">
+                    Check Your Email
+                  </h3>
                   <p className="text-0 text-gray-600 mb-4">
-                    If your email exists in our system, you will receive a password reset link shortly.
+                    A password reset link has been sent to your email.
                   </p>
                   <p className="text--1 text-gray-500 mb-6">
-                    Please check your spam folder if you don&apos;t see the email in your inbox.
+                    Please check your spam folder if you don&apos;t see the
+                    email in your inbox.
                   </p>
                   <button
                     onClick={() => {

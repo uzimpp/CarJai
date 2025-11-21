@@ -524,11 +524,19 @@ func (h *UserAuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// Request password reset (always returns success to prevent user enumeration)
-	_ = h.userService.RequestPasswordReset(req.Email)
+	// Request password reset
+	err := h.userService.RequestPasswordReset(req.Email)
+	if err != nil {
+		if strings.Contains(err.Error(), "email not found") {
+			utils.WriteError(w, http.StatusNotFound, "Email not found")
+			return
+		}
+		utils.WriteError(w, http.StatusInternalServerError, "Failed to process password reset request")
+		return
+	}
 
-	// Always return success message
-	utils.WriteJSON(w, http.StatusOK, nil, "If your email exists in our system, you will receive a password reset link shortly")
+	// Return success message
+	utils.WriteJSON(w, http.StatusOK, nil, "Password reset link has been sent to your email")
 }
 
 // ResetPassword handles password reset with token

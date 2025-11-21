@@ -692,8 +692,8 @@ func (s *UserService) RequestPasswordReset(email string) error {
 	// Check if user exists
 	user, err := s.userRepo.GetUserByEmail(email)
 	if err != nil {
-		// User doesn't exist - return success anyway (no user enumeration)
-		return nil
+		// User doesn't exist - return error
+		return fmt.Errorf("email not found")
 	}
 
 	// Generate password reset token
