@@ -41,8 +41,16 @@ export const carsAPI = {
     if (params.provinceId)
       searchParams.append("provinceId", params.provinceId.toString());
     if (params.bodyType) searchParams.append("bodyType", params.bodyType);
-    if (params.transmission) searchParams.append("transmission", params.transmission);
-    if (params.drivetrain) searchParams.append("drivetrain", params.drivetrain);
+    if (params.transmission && params.transmission.length > 0) {
+      params.transmission.forEach((t) => {
+        searchParams.append("transmission", t);
+      });
+    }
+    if (params.drivetrain && params.drivetrain.length > 0) {
+      params.drivetrain.forEach((d) => {
+        searchParams.append("drivetrain", d);
+      });
+    }
     if (params.fuelTypes && params.fuelTypes.length > 0) {
       params.fuelTypes.forEach((fuelType) => {
         searchParams.append("fuelTypes", fuelType);
@@ -52,6 +60,15 @@ export const carsAPI = {
       params.colors.forEach((color) => {
         searchParams.append("colors", color);
       });
+    }
+    if (params.conditionRating !== undefined) {
+      searchParams.append("conditionRating", params.conditionRating.toString());
+    }
+    if (params.sortBy) {
+      searchParams.append("sortBy", params.sortBy);
+    }
+    if (params.sortOrder) {
+      searchParams.append("sortOrder", params.sortOrder);
     }
 
     const queryString = searchParams.toString();
@@ -87,7 +104,7 @@ export const carsAPI = {
   },
 
   // Get current user's cars
-  async getMyCars(): Promise<{ success: boolean; data: Car[] }> {
+  async getMyCars(): Promise<{ success: boolean; data: CarListing[] }> {
     return apiCall(`/api/cars/my`, {
       method: "GET",
     });
@@ -302,5 +319,4 @@ export const carsAPI = {
       method: "GET",
     });
   },
-  
 };

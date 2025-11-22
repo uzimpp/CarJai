@@ -11,7 +11,7 @@ export default function AdminAccountPage() {
   return (
     <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full flex flex-col gap-(--space-s-m)">
       {/* Header */}
-      <div className="rounded-3xl bg-gradient-to-r from-maroon to-red text-white shadow-[var(--shadow-md)] px-(--space-l) py-(--space-m)">
+      <div className="rounded-3xl bg-gradient-to-r from-maroon to-red text-white shadow-sm px-(--space-l) py-(--space-m)">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-(--space-s)">
           <div>
             <h1 className="text-3 bold">Admin Account</h1>

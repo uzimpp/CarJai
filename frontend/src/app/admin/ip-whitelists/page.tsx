@@ -131,7 +131,7 @@ export default function IPWhitelistPage() {
       </div>
 
       {/* Add IP Form */}
-      <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m)">
+      <div className="bg-white rounded-3xl shadow-sm p-(--space-m)">
         <h2 className="text-2 font-bold text-gray-900 mb-(--space-m)">
           Add IP Address
         </h2>
@@ -192,7 +192,7 @@ export default function IPWhitelistPage() {
       </div>
 
       {/* IP List */}
-      <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] overflow-hidden p-(--space-m)">
+      <div className="bg-white rounded-3xl shadow-sm overflow-hidden p-(--space-m)">
         <div className="pb-(--space-s) border-b border-gray-200">
           <h2 className="text-2 font-bold text-gray-900">
             Allowed IP List ({ipWhitelist.length})

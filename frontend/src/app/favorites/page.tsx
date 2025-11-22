@@ -52,7 +52,7 @@ export default function FavoritesPage() {
   const handleFavoriteToggle = (carId: number, isFavorited: boolean) => {
     if (!isFavorited) {
       // Remove from favorites list
-      setFavorites(prev => prev.filter(car => car.id !== carId));
+      setFavorites((prev) => prev.filter((car) => car.id !== carId));
     }
     // Note: We don't add cars here since this is the favorites page
     // Cars are added from the browse page
@@ -75,14 +75,12 @@ export default function FavoritesPage() {
 
   return (
     <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full">
-      <h1 className="text-2 font-bold text-maroon mb-(--space-m)">
-        My Favorites
-      </h1>
+      <h1 className="text-3 bold">My Favorites</h1>
 
       {error && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
           <p className="text-red-600">{error}</p>
-          <button 
+          <button
             onClick={fetchFavorites}
             className="mt-2 text-red-700 underline hover:no-underline"
           >
@@ -95,7 +93,9 @@ export default function FavoritesPage() {
         <div className="flex items-center justify-center py-20">
           <div className="text-center">
             <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-maroon mx-auto"></div>
-            <p className="mt-4 text-gray-600 font-medium">Loading favorites...</p>
+            <p className="mt-4 text-gray-600 font-medium">
+              Loading favorites...
+            </p>
           </div>
         </div>
       ) : favorites.length === 0 ? (
@@ -120,19 +120,20 @@ export default function FavoritesPage() {
         <>
           <div className="mb-4">
             <p className="text-gray-600">
-              {favorites.length} car{favorites.length !== 1 ? 's' : ''} saved
+              {favorites.length} car{favorites.length !== 1 ? "s" : ""} saved
             </p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {favorites.map((car) => (
               <CarCard
                 key={car.id}
                 car={car}
                 variant="browse"
-                showFavorite={true}
-                isFavorited={true}
-                onFavoriteToggle={handleFavoriteToggle}
+                favorite={{
+                  isFavorited: true,
+                  onToggle: handleFavoriteToggle,
+                }}
               />
             ))}
           </div>

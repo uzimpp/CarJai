@@ -93,9 +93,7 @@ export default function HistoryPage() {
     <div className="py-(--space-xl)">
       <div className="max-w-[1200px] mx-auto px-(--space-m)">
         <div className="mb-(--space-l)">
-          <h1 className="text-3 font-bold text-gray-900 mb-(--space-xs)">
-            Viewing History
-          </h1>
+          <h1 className="text-3 bold">Viewing History</h1>
           <p className="text-0 text-gray-600">
             Cars you&apos;ve recently viewed
           </p>
@@ -140,7 +138,7 @@ export default function HistoryPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-(--space-m)">
             {recentViews.map((car) => (
-              <CarCard key={`rv-${car.id}`} car={car} variant="browse" />
+              <CarCard key={`rv-${car.id}`} car={car} />
             ))}
           </div>
         )}

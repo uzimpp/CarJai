@@ -115,11 +115,6 @@ func randomTimeInRange(days int) time.Time {
 		Add(-time.Minute * time.Duration(minutesAgo))
 }
 
-// initRandom seeds the random number generator
-func initRandom() {
-	rand.Seed(time.Now().UnixNano())
-}
-
 // getBuyers gets all buyer IDs (users who have a buyer profile)
 func getBuyers(db *sql.DB) ([]int, error) {
 	rows, err := db.Query(`SELECT id FROM buyers ORDER BY id`)

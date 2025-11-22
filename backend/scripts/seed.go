@@ -38,9 +38,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Initialize random seed
-	initRandom()
-
 	// Connect to database
 	db, err := connectDB()
 	if err != nil {

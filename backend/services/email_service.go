@@ -165,47 +165,47 @@ func (s *EmailService) buildPasswordResetEmailHTML(resetLink string) string {
             padding: 0;
             box-sizing: border-box;
         }
-        body {
+        body { 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            line-height: 1.6;
-            color: #1f2937;
+            line-height: 1.6; 
+            color: #1f2937; 
             background-color: #f3f4f6;
             padding: 40px 20px;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
-        .email-wrapper {
+        .email-wrapper { 
             max-width: 500px;
-            margin: 0 auto;
+            margin: 0 auto; 
             background-color: #ffffff;
             border-radius: 8px;
             overflow: hidden;
         }
-        .header {
+        .header { 
             padding: 40px 30px 30px;
             text-align: center;
             background-color: #ffffff;
         }
-        .header h1 {
-            margin: 0;
+        .header h1 { 
+            margin: 0; 
             font-size: 28px;
             font-weight: 700;
             color: #7c2d12;
             letter-spacing: -0.5px;
         }
-        .content {
+        .content { 
             padding: 0 40px 40px;
             background-color: #ffffff;
             text-align: center;
         }
-        .content h2 {
+        .content h2 { 
             color: #1f2937;
             margin: 0 0 16px 0;
             font-size: 24px;
             font-weight: 600;
             line-height: 1.3;
         }
-        .content p {
+        .content p { 
             color: #4b5563;
             margin-bottom: 32px;
             font-size: 15px;
@@ -214,12 +214,12 @@ func (s *EmailService) buildPasswordResetEmailHTML(resetLink string) string {
         .button-container {
             margin: 32px 0;
         }
-        .button {
-            display: inline-block;
+        .button { 
+            display: inline-block; 
             padding: 14px 32px;
             background-color: #7c2d12;
             color: #ffffff !important;
-            text-decoration: none;
+            text-decoration: none; 
             border-radius: 6px;
             font-weight: 600;
             font-size: 16px;
@@ -244,7 +244,7 @@ func (s *EmailService) buildPasswordResetEmailHTML(resetLink string) string {
         @media only screen and (max-width: 600px) {
             body {
                 padding: 20px 10px;
-            }
+        }
             .content {
                 padding: 0 24px 32px;
             }

@@ -852,7 +852,7 @@ export default function AdminCarsPage() {
       case "active":
         return "bg-green-100 text-green-800";
       case "draft":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-orange-100 text-orange-800";
       case "sold":
         return "bg-blue-100 text-blue-800";
       case "deleted":
@@ -949,7 +949,7 @@ export default function AdminCarsPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)]">
+        <div className="bg-white rounded-3xl shadow-sm">
           <div className="divide-y divide-gray-200">
             {/* Column Headers - Hidden on mobile, visible on md+ */}
             <div className="hidden md:grid md:grid-cols-[1fr_1fr_1fr_1fr_1fr_80px] gap-(--space-2xs) p-(--space-xs) bg-gray-50 rounded-t-lg">

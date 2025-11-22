@@ -256,11 +256,6 @@ func (s *CarService) DeleteCarByAdmin(carID int) error {
 	return nil
 }
 
-// GetCarsBySellerID retrieves all cars for a seller
-func (s *CarService) GetCarsBySellerID(sellerID int) ([]models.Car, error) {
-	return s.carRepo.GetCarsBySellerID(sellerID)
-}
-
 // batchTranslateCarsToListItems efficiently converts cars to CarListItem using batch fetching
 // This method collects all unique codes and car IDs, then fetches related data in batches
 // to avoid N+1 query problems
@@ -438,29 +433,16 @@ func (s *CarService) GetCarListItemsByIDs(carIDs []int, lang string) ([]models.C
 // GetCarListItemsBySellerID retrieves lightweight car list items for a seller
 // Returns only essential fields needed for listing/display, with translated labels
 // Used for: seller profile, seller dashboard listings
-func (s *CarService) GetCarListItemsBySellerID(sellerID int, lang string) ([]models.CarListItem, error) {
-	cars, err := s.carRepo.GetCarsBySellerID(sellerID)
+// If status is empty string, returns all cars with all statuses
+// If status is specified (e.g., "active"), returns only cars with that status
+func (s *CarService) GetCarListItemsBySellerID(sellerID int, lang string, status string) ([]models.CarListItem, error) {
+	// Pass status as-is: empty string gets all statuses, specified status filters by that status
+	cars, err := s.carRepo.GetCarsBySellerID(sellerID, status)
 	if err != nil {
 		return nil, err
 	}
 
 	return s.batchTranslateCarsToListItems(cars, lang)
-}
-
-// SearchActiveCars retrieves active car listings with search/filter support
-func (s *CarService) SearchActiveCars(req *models.SearchCarsRequest) ([]models.Car, int, error) {
-	// Set defaults
-	if req.Status == "" {
-		req.Status = "active"
-	}
-	if req.Limit <= 0 {
-		req.Limit = 20
-	}
-	if req.Offset < 0 {
-		req.Offset = 0
-	}
-
-	return s.carRepo.GetActiveCars(req)
 }
 
 // SearchActiveCarsAsListItems retrieves active car listings as lightweight list items
@@ -508,6 +490,14 @@ func (s *CarService) UpdateCar(carID, userID int, req *models.UpdateCarRequest, 
 		return err
 	}
 
+	// Prevent editing sold cars (unless admin or changing status away from sold)
+	if car.Status == "sold" && !isAdmin {
+		// Only allow status changes away from sold
+		if req.Status == nil || *req.Status == "sold" {
+			return fmt.Errorf("cannot edit car that is marked as sold")
+		}
+	}
+
 	// If trying to change status to "active", run full publish validation
 	if req.Status != nil && *req.Status == "active" && car.Status != "active" {
 		ready, issues := s.ValidatePublish(carID)
@@ -543,6 +533,11 @@ func (s *CarService) AutoSaveDraft(carID, userID int, req *models.UpdateCarReque
 	// Check authorization
 	if err := s.checkCarOwnership(car, userID, false); err != nil {
 		return err
+	}
+
+	// Prevent editing sold cars
+	if car.Status == "sold" {
+		return fmt.Errorf("cannot edit car that is marked as sold")
 	}
 
 	// Forbid editing read-only fields (chassisNumber comes from book upload; status via dedicated endpoint)
@@ -1136,6 +1131,15 @@ func (s *CarService) GetCarCountByStatus(status string) (int, error) {
 	count, err := s.carRepo.CountCarsByStatus(status)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get car count for status %s: %w", status, err)
+	}
+	return count, nil
+}
+
+// GetCarCountBySellerIDAndStatus retrieves the count of cars for a seller by status
+func (s *CarService) GetCarCountBySellerIDAndStatus(sellerID int, status string) (int, error) {
+	count, err := s.carRepo.CountCarsBySellerIDAndStatus(sellerID, status)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get car count for seller %d and status %s: %w", sellerID, status, err)
 	}
 	return count, nil
 }
