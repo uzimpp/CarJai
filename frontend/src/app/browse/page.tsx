@@ -813,11 +813,7 @@ function BrowsePageContent() {
           >
             {/* Header with drag handle */}
             <div className="flex-shrink-0 bg-white border-b border-gray-200">
-              {/* Drag handle */}
-              <div className="flex justify-center pt-3 pb-2">
-                <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
-              </div>
-              <div className="px-4 pb-4 flex items-center justify-between">
+              <div className="px-(--space-s-m) py-2 flex items-center justify-between">
                 <h2 className="text-lg font-bold text-maroon">Filters</h2>
                 <button
                   type="button"
