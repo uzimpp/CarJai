@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# Script สำหรับรัน tests ใน Docker container
-
 set -e
 
 echo "🚀 Starting integration tests..."

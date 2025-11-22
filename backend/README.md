@@ -1,51 +1,42 @@
 # CarJai Backend
 
-A Go backend for the CarJai car marketplace featuring dual authentication, car management, and admin controls.
+Go backend API for the CarJai car marketplace.
 
-## ✨ Features
+## 🛠️ Tech Stack
 
-- 🔐 **Dual Authentication** - Separate admin and user JWT systems
-- 🚗 **Car Management** - CRUD operations for car listings
-- 👤 **User Profiles** - Buyer and seller profile management
-- 🛡️ **Security** - IP whitelist, rate limiting, CORS protection
-- 📊 **Admin Dashboard** - System administration and IP management
+- **Go 1.24.3+** - Programming language
+- **PostgreSQL 15** - Database
+- **JWT** - Authentication
 
-## 🚀 Quick Start
-
-```bash
-# Copy environment template
-cp env.example .env
-
-# Start with Docker Compose
-docker compose up -d
-
-# Or run manually
-go mod tidy
-go run main.go
-```
-## 📚 Documentation
-
-- [APIs](docs/swagger.yaml) - Complete API reference
-- [Database Schema](docs/SCHEMA.md) - Database structure and relationships
-- [Testing Guide](docs/TESTING.md) - How to test the backend
-
-## 🏗️ Project Structure
+## 🏗️ Structure
 
 ```
 backend/
-├── config/          # Configuration management
-├── handlers/        # HTTP request handlers
-├── middleware/      # CORS, auth, rate limiting
+├── config/          # Configuration
+├── handlers/        # HTTP handlers
+├── middleware/      # Auth, CORS, rate limiting
 ├── models/          # Database models & repositories
-├── routes/          # API route definitions
-├── services/        # Business logic services
-├── utils/           # Utility functions
-├── migrations/      # Database schema migrations
+├── routes/          # API routes
+├── services/        # Business logic
+├── utils/           # Utilities
+├── migrations/      # Database migrations
 ├── tests/           # Test files
-├── docs/            # Documentation
-└── main.go          # Application entry point
+└── main.go          # Entry point
 ```
 
-## 📄 License
+## 🚀 Run with Docker
 
-MIT License - see [LICENSE](../LICENSE) file for details.
+Run from project root using Docker Compose:
+
+```bash
+docker compose up -d backend
+```
+
+API available at: http://localhost:8080
+
+See root `README.md` for complete setup instructions.
+
+## 📚 Documentation
+
+- [API Reference](docs/swagger.yaml)
+- [Database Schema](docs/schema.md)
