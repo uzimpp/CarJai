@@ -16,6 +16,13 @@ import DuplicateConflictModal from "@/components/car/DuplicateConflictModal";
 import type { CarFormData, InspectionResult } from "@/types/car";
 import type { Step } from "@/types/selling";
 
+
+interface APIErrorData {
+    code?: string | number;
+    message?: string;
+    redirectToCarID?: number| null;
+  }
+
 export default function SellWithIdPage() {
   const hasHydratedRef = useRef(false);
   const isHydratingRef = useRef(false);
@@ -437,42 +444,57 @@ export default function SellWithIdPage() {
         }));
         setHasProgress(true);
       } else {
-        if (
-          result.code === "CAR_DUPLICATE_OWN_DRAFT" &&
-          result.redirectToCarID
-        ) {
-          setConflictExistingCarId(result.redirectToCarID);
-          setShowDuplicateConflictModal(true);
-          return;
-        }
-
-        if (result.code === "CAR_DUPLICATE_OWN_ACTIVE") {
-          setError(
-            "You already have an active listing for this vehicle. Please check your listings page."
-          );
-          setTimeout(() => router.replace("/listings"), 3000);
-          return;
-        }
-
-        if (result.code === "CAR_DUPLICATE_OWN_SOLD") {
-          setError("This vehicle is already marked as sold in your listings.");
-          setTimeout(() => router.replace("/listings"), 3000);
-          return;
-        }
-
-        if (result.code === "CAR_DUPLICATE_OTHER_OWNED") {
-          setError(
-            "This vehicle is already listed by another seller. You cannot create a duplicate listing."
-          );
-          setTimeout(() => router.replace("/browse"), 3000);
-          return;
-        }
-
-        throw new Error(result.message || "Failed to upload inspection");
+        handleInspectionError(result as unknown as APIErrorData);
       }
     } catch (err) {
-      throw err;
+      console.error("Upload Error:", err);
+      if (typeof err === 'object' && err !== null && 'code' in err) {
+        handleInspectionError(err as APIErrorData);
+        return;
+      }
+      if (err instanceof Error) {
+        try {
+            const jsonStart = err.message.indexOf('{');
+            const jsonEnd = err.message.lastIndexOf('}');
+            if (jsonStart !== -1 && jsonEnd !== -1) {
+                const jsonStr = err.message.substring(jsonStart, jsonEnd + 1);
+                const parsedError = JSON.parse(jsonStr);
+                handleInspectionError(parsedError);
+                return;
+            }
+      } catch (e) {
+      }
+      setError(err.message);
+      return;
     }
+    setError("An unexpected error occurred during upload.");
+    }
+  };
+
+  const handleInspectionError = (errorData: APIErrorData) => {
+    const code = errorData.code;
+
+    if (code === "CAR_DUPLICATE_OWN_DRAFT" && errorData.redirectToCarID) {
+      setConflictExistingCarId(errorData.redirectToCarID);
+      setShowDuplicateConflictModal(true);
+      return; 
+    }
+    
+    const displayMessage = errorData.message || "Failed to upload inspection";
+
+    if (code === "CAR_DUPLICATE_OWN_ACTIVE") {
+      setTimeout(() => router.replace("/listings"), 3000);
+    }
+
+    else if (code === "CAR_DUPLICATE_OWN_SOLD") {
+      setTimeout(() => router.replace("/listings"), 3000);
+    }
+
+    else if (code === "CAR_DUPLICATE_OTHER_OWNED") {
+      setTimeout(() => router.replace("/browse"), 3000);
+    }
+
+    setError(displayMessage);
   };
 
   // Helper to filter out read-only fields before saving
@@ -796,7 +818,19 @@ export default function SellWithIdPage() {
 
         {/* Error display */}
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4 flex items-start gap-3">
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              className="h-5 w-5 text-red-400 shrink-0 mt-0.5" 
+              viewBox="0 0 20 20" 
+              fill="currentColor"
+            >
+              <path 
+                fillRule="evenodd" 
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" 
+                clipRule="evenodd" 
+              />
+            </svg>
             <p className="text-red-800 text-sm">{error}</p>
           </div>
         )}
