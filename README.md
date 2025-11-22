@@ -27,7 +27,6 @@ It connects **sellers** (car owners, dealers, resellers) with **buyers** through
 - ❤️ Save favorites and view recent browsing history
 - 📞 Direct contact with sellers (phone, LINE, Facebook, Instagram)
 - 🚨 Report suspicious listings or sellers
-- 💰 View estimated market prices based on DLT data
 - 🔐 Secure authentication (email/password or Google OAuth)
 
 **For Sellers:**
