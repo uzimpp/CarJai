@@ -2,6 +2,7 @@
 
 import { useRouter, usePathname } from "next/navigation";
 import { useComparison } from "@/contexts/ComparisonContext";
+import { Tooltip } from "react-tooltip";
 
 export default function ComparisonButton() {
   const router = useRouter();
@@ -21,17 +22,26 @@ export default function ComparisonButton() {
     router.push("/compare");
   };
 
+  const isDisabled = comparedCars.length < 2;
+  const tooltipId = "comparison-button-tooltip";
+
   return (
     <div className="fixed bottom-6 right-6 z-50">
       {/* Compact Floating Button */}
       <button
         onClick={handleCompare}
-        disabled={comparedCars.length < 2}
-        className="group flex items-center gap-2 px-4 py-2.5 bg-black hover:bg-maroon text-white rounded-full shadow-lg transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-white disabled:hover:text-gray-900 disabled:hover:border-gray-200"
+        disabled={isDisabled}
+        data-tooltip-id={tooltipId}
+        data-tooltip-content={
+          isDisabled
+            ? "You need at least 2 cars to compare"
+            : "Compare selected cars"
+        }
+        className="group flex items-center gap-2 px-4 py-2.5 bg-black hover:bg-maroon text-white rounded-full shadow-lg transition-all duration-300 ease-in hover:scale-105 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:opacity-60 disabled:hover:bg-black disabled:hover:opacity-60"
         aria-label="Compare cars"
       >
         <svg
-          className="w-8 h-8 text-white transition-colors"
+          className="w-8 h-8 text-white transition-colors disabled:text-gray-400"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -47,6 +57,20 @@ export default function ComparisonButton() {
           Comparing {comparedCars.length}/3
         </span>
       </button>
+      <Tooltip
+        id={tooltipId}
+        place="top"
+        className="!bg-gray-900 !text-white !text-sm !px-3 !py-2 !rounded-lg !shadow-lg !z-[60]"
+        style={{
+          backgroundColor: "#111827",
+          color: "#ffffff",
+          fontSize: "0.875rem",
+          padding: "0.5rem 0.75rem",
+          borderRadius: "0.5rem",
+          boxShadow:
+            "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+        }}
+      />
     </div>
   );
 }

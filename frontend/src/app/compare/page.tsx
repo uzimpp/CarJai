@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { useComparison } from "@/contexts/ComparisonContext";
-import { CarListing, Car, ImageMetadata, InspectionData } from "@/types/car";
+import { CarListing, Car, ImageMetadata } from "@/types/car";
 import { carsAPI } from "@/lib/carsAPI";
 
 interface CarComparisonData {
@@ -27,69 +27,6 @@ function ComparisonRow({
         {values.map((value, idx) => (
           <div key={idx} className="text-sm text-gray-900">
             {value != null ? String(value) : "—"}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function InspectionRow({ values }: { values: (boolean | null | undefined)[] }) {
-  const renderValue = (value: boolean | null | undefined) => {
-    if (value === null || value === undefined) return "—";
-    return (
-      <span
-        className={`inline-flex items-center gap-1 ${
-          value ? "text-green-600" : "text-red-600"
-        }`}
-      >
-        {value ? (
-          <>
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-            Pass
-          </>
-        ) : (
-          <>
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-            Fail
-          </>
-        )}
-      </span>
-    );
-  };
-
-  return (
-    <div className="py-3 border-b border-gray-100">
-      {/* Grid: 3 columns for the 3 cars */}
-      <div className="grid grid-cols-3 gap-4 min-w-[450px]">
-        {/* Car values */}
-        {values.map((value, idx) => (
-          <div key={idx} className="min-w-[150px]">
-            {renderValue(value)}
           </div>
         ))}
       </div>
@@ -298,35 +235,12 @@ export default function ComparePage() {
     );
   }
 
-  // Inspection fields mapping
-  const inspectionFields = [
-    { key: "brakeResult", label: "Brake System" },
-    { key: "handbrakeResult", label: "Handbrake" },
-    { key: "alignmentResult", label: "Wheel Alignment" },
-    { key: "noiseResult", label: "Noise Level" },
-    { key: "emissionResult", label: "Emission" },
-    { key: "hornResult", label: "Horn" },
-    { key: "speedometerResult", label: "Speedometer" },
-    { key: "highLowBeamResult", label: "Headlights" },
-    { key: "signalLightsResult", label: "Signal Lights" },
-    { key: "otherLightsResult", label: "Other Lights" },
-    { key: "windshieldResult", label: "Windshield" },
-    { key: "steeringResult", label: "Steering" },
-    { key: "wheelsTiresResult", label: "Wheels & Tires" },
-    { key: "fuelTankResult", label: "Fuel Tank" },
-    { key: "chassisResult", label: "Chassis" },
-    { key: "bodyResult", label: "Body" },
-    { key: "doorsFloorResult", label: "Doors & Floor" },
-    { key: "seatbeltResult", label: "Seatbelts" },
-    { key: "wiperResult", label: "Wipers" },
-  ];
-
   return (
     <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 md:mb-8">
         <div>
-          <h1 className="flex text-center text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="flex text-center text-3 font-bold mb-2">
             Compare Cars
           </h1>
           <p className="text-gray-600 text-sm md:text-base">
@@ -461,12 +375,16 @@ export default function ComparePage() {
                   />
                   {carsData.some((d) => d.car?.car?.seats) && (
                     <ComparisonRow
-                      values={carsData.map((d) => d.car?.car?.seats)}
+                      values={carsData.map((d) =>
+                        d.car?.car?.seats ? `${d.car.car.seats} seats` : null
+                      )}
                     />
                   )}
                   {carsData.some((d) => d.car?.car?.doors) && (
                     <ComparisonRow
-                      values={carsData.map((d) => d.car?.car?.doors)}
+                      values={carsData.map((d) =>
+                        d.car?.car?.doors ? `${d.car.car.doors} doors` : null
+                      )}
                     />
                   )}
                   {carsData.some((d) => d.car?.car?.engineCc) && (
@@ -492,38 +410,6 @@ export default function ComparePage() {
                 </div>
               </div>
 
-              {/* Inspection Data */}
-              {carsData.some((d) => d.car?.inspection) && (
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-                    Inspection Results
-                  </h2>
-                  <div className="space-y-0">
-                    <ComparisonRow
-                      values={carsData.map(
-                        (d) => d.car?.inspection?.station || null
-                      )}
-                    />
-                    <InspectionRow
-                      values={carsData.map(
-                        (d) => d.car?.inspection?.overallPass
-                      )}
-                    />
-                    {inspectionFields.map((field) => (
-                      <InspectionRow
-                        key={field.key}
-                        values={carsData.map(
-                          (d) =>
-                            d.car?.inspection?.[
-                              field.key as keyof InspectionData
-                            ] as boolean | null | undefined
-                        )}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {/* Additional Details */}
               {carsData.some(
                 (d) =>
@@ -539,8 +425,8 @@ export default function ComparePage() {
                       values={carsData.map((d) =>
                         d.car?.car?.isFlooded !== undefined
                           ? d.car.car.isFlooded
-                            ? "Yes"
-                            : "No"
+                            ? "Flooded"
+                            : "Not Flooded"
                           : null
                       )}
                     />
@@ -548,8 +434,8 @@ export default function ComparePage() {
                       values={carsData.map((d) =>
                         d.car?.car?.isHeavilyDamaged !== undefined
                           ? d.car.car.isHeavilyDamaged
-                            ? "Yes"
-                            : "No"
+                            ? "Heavy Crashed"
+                            : "Never Crashed"
                           : null
                       )}
                     />

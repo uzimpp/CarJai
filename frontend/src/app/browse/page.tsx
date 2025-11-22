@@ -761,9 +761,12 @@ function BrowsePageContent() {
           )}
           {/* Results Header */}
           <div className="mb-6 flex justify-between items-center">
-            <p className="text-gray-600">
-              {total} {total === 1 ? "car" : "cars"} found
-            </p>
+            <div className="flex gap-4 items-baseline">
+              <h2 className="text-2 font-bold">Results</h2>
+              <p className="text-gray-600">
+                {total} {total === 1 ? "car" : "cars"} found
+              </p>
+            </div>
             {/* Sort Dropdown */}
             <SortDropdown
               sortBy={sortBy}
