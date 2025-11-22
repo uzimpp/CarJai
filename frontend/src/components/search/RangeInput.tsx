@@ -10,6 +10,7 @@ interface RangeInputProps {
   maxPlaceholder?: string;
   step?: number;
   min?: number; // Minimum allowed value (e.g., 0 to prevent negatives)
+  max?: number; // Maximum allowed value (e.g., 1999999999 to prevent integer overflow)
   predefinedRanges?: Array<{
     label: string;
     min?: number;
@@ -25,6 +26,7 @@ export default function RangeInput({
   maxPlaceholder = "Max",
   step = 1,
   min = 0,
+  max,
   predefinedRanges,
 }: RangeInputProps) {
   // Helper function to format number with thousand separators
@@ -76,8 +78,12 @@ export default function RangeInput({
     let validMax = maxValue;
 
     if (value !== undefined) {
-      // Ensure value is not negative and rounds to step
-      validMin = Math.max(min, Math.floor(value / step) * step);
+      // Ensure value is within bounds and rounds to step
+      let clampedValue = Math.max(min, Math.floor(value / step) * step);
+      if (max !== undefined && clampedValue > max) {
+        clampedValue = max;
+      }
+      validMin = clampedValue;
       // Ensure min is not greater than max
       if (validMax !== undefined && validMin > validMax) {
         // If min exceeds max, adjust max to be at least equal to min
@@ -93,8 +99,12 @@ export default function RangeInput({
     let validMin = minValue;
 
     if (value !== undefined) {
-      // Ensure value is not negative and rounds to step
-      validMax = Math.max(min, Math.floor(value / step) * step);
+      // Ensure value is within bounds and rounds to step
+      let clampedValue = Math.max(min, Math.floor(value / step) * step);
+      if (max !== undefined && clampedValue > max) {
+        clampedValue = max;
+      }
+      validMax = clampedValue;
       // Ensure max is not less than min
       if (validMin !== undefined && validMax < validMin) {
         // If max is less than min, adjust min to be at most equal to max
@@ -115,11 +125,19 @@ export default function RangeInput({
 
     // First, process and validate both values
     if (rangeMin !== undefined) {
-      validMin = Math.max(min, Math.floor(rangeMin / step) * step);
+      let clampedValue = Math.max(min, Math.floor(rangeMin / step) * step);
+      if (max !== undefined && clampedValue > max) {
+        clampedValue = max;
+      }
+      validMin = clampedValue;
     }
 
     if (rangeMax !== undefined) {
-      validMax = Math.max(min, Math.floor(rangeMax / step) * step);
+      let clampedValue = Math.max(min, Math.floor(rangeMax / step) * step);
+      if (max !== undefined && clampedValue > max) {
+        clampedValue = max;
+      }
+      validMax = clampedValue;
     }
 
     // Ensure max is not less than min (only if both are defined)
@@ -135,14 +153,43 @@ export default function RangeInput({
     onRangeChange(validMin, validMax);
   };
 
+  // Debounced update functions for while typing
+  const minChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const maxChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (minChangeTimeoutRef.current) {
+        clearTimeout(minChangeTimeoutRef.current);
+      }
+      if (maxChangeTimeoutRef.current) {
+        clearTimeout(maxChangeTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleMinInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let rawValue = e.target.value;
 
     // Remove commas first, then remove any non-numeric characters
     rawValue = rawValue.replace(/,/g, "").replace(/[^0-9]/g, "");
 
-    // Format with commas for display
-    const numValue = rawValue === "" ? undefined : parseFloat(rawValue);
+    // Step 1: Parse the value
+    let numValue = rawValue === "" ? undefined : parseFloat(rawValue);
+
+    // Step 2: Handle min/max clamping first
+    if (numValue !== undefined && !isNaN(numValue)) {
+      // Clamp to min and max bounds
+      numValue = Math.max(min, numValue);
+      if (max !== undefined && numValue > max) {
+        numValue = max;
+      }
+      // Round to step after clamping
+      numValue = Math.floor(numValue / step) * step;
+    }
+
+    // Step 3: Format the clamped and rounded value for display
     const formatted =
       numValue !== undefined && !isNaN(numValue)
         ? formatNumber(numValue)
@@ -150,11 +197,21 @@ export default function RangeInput({
 
     setMinInput(formatted);
 
-    // Allow typing freely - only update parent when empty
+    // Update parent immediately if empty, otherwise debounce
     if (rawValue === "") {
+      if (minChangeTimeoutRef.current) {
+        clearTimeout(minChangeTimeoutRef.current);
+        minChangeTimeoutRef.current = null;
+      }
       handleMinChange(undefined);
+    } else if (numValue !== undefined && !isNaN(numValue)) {
+      if (minChangeTimeoutRef.current) {
+        clearTimeout(minChangeTimeoutRef.current);
+      }
+      minChangeTimeoutRef.current = setTimeout(() => {
+        handleMinChange(numValue);
+      }, 500);
     }
-    // Don't validate/update parent while typing - wait for blur
   };
 
   const handleMinInputBlur = () => {
@@ -166,14 +223,21 @@ export default function RangeInput({
     }
 
     const numValue = parseNumberString(minInput);
-    if (numValue === undefined || numValue < min) {
+    if (
+      numValue === undefined ||
+      numValue < min ||
+      (max !== undefined && numValue > max)
+    ) {
       // Invalid input - revert to previous value with formatting
       setMinInput(formatNumber(minValue));
     } else {
       // Valid number - update with validated value
       handleMinChange(numValue);
       // Update display with formatted value after validation
-      const validated = Math.max(min, Math.floor(numValue / step) * step);
+      let validated = Math.max(min, Math.floor(numValue / step) * step);
+      if (max !== undefined && validated > max) {
+        validated = max;
+      }
       setMinInput(formatNumber(validated));
     }
   };
@@ -184,8 +248,21 @@ export default function RangeInput({
     // Remove commas first, then remove any non-numeric characters
     rawValue = rawValue.replace(/,/g, "").replace(/[^0-9]/g, "");
 
-    // Format with commas for display
-    const numValue = rawValue === "" ? undefined : parseFloat(rawValue);
+    // Step 1: Parse the value
+    let numValue = rawValue === "" ? undefined : parseFloat(rawValue);
+
+    // Step 2: Handle min/max clamping first
+    if (numValue !== undefined && !isNaN(numValue)) {
+      // Clamp to min and max bounds
+      numValue = Math.max(min, numValue);
+      if (max !== undefined && numValue > max) {
+        numValue = max;
+      }
+      // Round to step after clamping
+      numValue = Math.floor(numValue / step) * step;
+    }
+
+    // Step 3: Format the clamped and rounded value for display
     const formatted =
       numValue !== undefined && !isNaN(numValue)
         ? formatNumber(numValue)
@@ -193,11 +270,21 @@ export default function RangeInput({
 
     setMaxInput(formatted);
 
-    // Allow typing freely - only update parent when empty
+    // Update parent immediately if empty, otherwise debounce
     if (rawValue === "") {
+      if (maxChangeTimeoutRef.current) {
+        clearTimeout(maxChangeTimeoutRef.current);
+        maxChangeTimeoutRef.current = null;
+      }
       handleMaxChange(undefined);
+    } else if (numValue !== undefined && !isNaN(numValue)) {
+      if (maxChangeTimeoutRef.current) {
+        clearTimeout(maxChangeTimeoutRef.current);
+      }
+      maxChangeTimeoutRef.current = setTimeout(() => {
+        handleMaxChange(numValue);
+      }, 500);
     }
-    // Don't validate/update parent while typing - wait for blur
   };
 
   const handleMaxInputBlur = () => {
@@ -209,14 +296,21 @@ export default function RangeInput({
     }
 
     const numValue = parseNumberString(maxInput);
-    if (numValue === undefined || numValue < min) {
+    if (
+      numValue === undefined ||
+      numValue < min ||
+      (max !== undefined && numValue > max)
+    ) {
       // Invalid input - revert to previous value with formatting
       setMaxInput(formatNumber(maxValue));
     } else {
       // Valid number - update with validated value
       handleMaxChange(numValue);
       // Update display with formatted value after validation
-      const validated = Math.max(min, Math.floor(numValue / step) * step);
+      let validated = Math.max(min, Math.floor(numValue / step) * step);
+      if (max !== undefined && validated > max) {
+        validated = max;
+      }
       setMaxInput(formatNumber(validated));
     }
   };

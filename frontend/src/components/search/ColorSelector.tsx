@@ -95,15 +95,6 @@ export default function ColorSelector({
           );
         })}
       </div>
-      {selectedValues.length > 0 && (
-        <button
-          type="button"
-          onClick={() => onChange([])}
-          className="text--1 text-gray-500 hover:text-gray-700 underline"
-        >
-          Clear
-        </button>
-      )}
     </div>
   );
 }

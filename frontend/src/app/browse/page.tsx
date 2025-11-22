@@ -343,6 +343,10 @@ function BrowsePageContent() {
     "calc(100dvh - 128px)"
   );
 
+  // Debounce timer for search/filter changes
+  const searchDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const filterDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   const [referenceData, setReferenceData] = useState<{
     bodyTypes: { code: string; label: string }[];
     transmissions: { code: string; label: string }[];
@@ -473,8 +477,20 @@ function BrowsePageContent() {
     [filters, syncRoute]
   );
 
-  // Fetch cars
+  // Track previous values to detect what changed
+  const prevFiltersRef = useRef<SearchFiltersData>(filters);
+  const prevPageRef = useRef<number>(page);
+  const prevSortByRef = useRef<string>(sortBy);
+  const prevSortOrderRef = useRef<"asc" | "desc">(sortOrder);
+  const isInitialLoadRef = useRef<boolean>(true);
+
+  // Fetch cars with debouncing for filter changes only
   useEffect(() => {
+    // Clear any existing debounce timer
+    if (filterDebounceTimerRef.current) {
+      clearTimeout(filterDebounceTimerRef.current);
+    }
+
     const fetchCars = async () => {
       try {
         setIsLoading(true);
@@ -524,7 +540,39 @@ function BrowsePageContent() {
       }
     };
 
-    fetchCars();
+    // Check if filters changed (debounce) or if page/sort changed (immediate)
+    const filtersChanged = !areFiltersEqual(prevFiltersRef.current, filters);
+    const pageChanged = prevPageRef.current !== page;
+    const sortChanged =
+      prevSortByRef.current !== sortBy ||
+      prevSortOrderRef.current !== sortOrder;
+    const isInitialLoad = isInitialLoadRef.current;
+
+    // Update refs
+    prevFiltersRef.current = filters;
+    prevPageRef.current = page;
+    prevSortByRef.current = sortBy;
+    prevSortOrderRef.current = sortOrder;
+    isInitialLoadRef.current = false;
+
+    // Debounce filter changes (500ms), but execute immediately for:
+    // - Initial load
+    // - Page/sort changes
+    if (filtersChanged && !pageChanged && !sortChanged && !isInitialLoad) {
+      filterDebounceTimerRef.current = setTimeout(() => {
+        fetchCars();
+      }, 500);
+    } else {
+      // Execute immediately for page/sort changes or initial load
+      fetchCars();
+    }
+
+    // Cleanup on unmount or when dependencies change
+    return () => {
+      if (filterDebounceTimerRef.current) {
+        clearTimeout(filterDebounceTimerRef.current);
+      }
+    };
   }, [filters, page, sortBy, sortOrder]);
 
   // Fetch user's favorites when they're authenticated as a buyer
@@ -559,9 +607,23 @@ function BrowsePageContent() {
     });
   };
 
-  const handleFiltersChange = (newFilters: SearchFiltersData) => {
-    applyFilters(newFilters);
-  };
+  const handleFiltersChange = useCallback(
+    (newFilters: SearchFiltersData) => {
+      // Clear any existing debounce timer
+      if (filterDebounceTimerRef.current) {
+        clearTimeout(filterDebounceTimerRef.current);
+      }
+
+      // Update filters immediately for UI responsiveness
+      setFilters(newFilters);
+      setPage(1); // Reset to first page when filters change
+      setError("");
+
+      // Sync route immediately
+      syncRoute(newFilters, 1, sortBy, sortOrder);
+    },
+    [syncRoute, sortBy, sortOrder]
+  );
 
   useEffect(() => {
     const nextFilters = parseFiltersFromSearchParams(searchParams);
@@ -583,8 +645,29 @@ function BrowsePageContent() {
     setPage((current) => (current === nextPage ? current : nextPage));
   }, [searchParams, router]);
 
+  // Cleanup debounce timers on unmount
+  useEffect(() => {
+    return () => {
+      if (searchDebounceTimerRef.current) {
+        clearTimeout(searchDebounceTimerRef.current);
+      }
+      if (filterDebounceTimerRef.current) {
+        clearTimeout(filterDebounceTimerRef.current);
+      }
+    };
+  }, []);
+
   const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    // Clear any debounce timers to execute immediately
+    if (searchDebounceTimerRef.current) {
+      clearTimeout(searchDebounceTimerRef.current);
+      searchDebounceTimerRef.current = null;
+    }
+    if (filterDebounceTimerRef.current) {
+      clearTimeout(filterDebounceTimerRef.current);
+      filterDebounceTimerRef.current = null;
+    }
     const trimmed = searchInput.trim();
     const nextFilters =
       trimmed.length > 0
@@ -719,7 +802,24 @@ function BrowsePageContent() {
           searchInput={searchInput}
           onFiltersChange={handleFiltersChange}
           onSearchSubmit={handleSearchSubmit}
-          onSearchInputChange={(value) => setSearchInput(value)}
+          onSearchInputChange={(value) => {
+            setSearchInput(value);
+            // Debounce search input changes - update filters after user stops typing
+            if (searchDebounceTimerRef.current) {
+              clearTimeout(searchDebounceTimerRef.current);
+            }
+            searchDebounceTimerRef.current = setTimeout(() => {
+              const trimmed = value.trim();
+              const nextFilters =
+                trimmed.length > 0
+                  ? { ...filters, search: trimmed }
+                  : omitFilterKey(filters, "search");
+              // Update filters (this will trigger the debounced fetchCars in useEffect)
+              setFilters(nextFilters);
+              setPage(1);
+              syncRoute(nextFilters, 1, sortBy, sortOrder);
+            }, 500);
+          }}
           className="sticky self-start p-(--space-s-m) pr-0"
           style={{
             top: `${headerHeight}px`,
