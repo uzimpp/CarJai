@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
-import { useRouter, useParams } from "next/navigation"; // [แก้ไข] ลบ usePathname ออก
+import { useRouter, useParams } from "next/navigation"; 
 import Link from "next/link";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import { carsAPI } from "@/lib/carsAPI";
