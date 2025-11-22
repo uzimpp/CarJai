@@ -44,12 +44,12 @@ export default function AdminDashboard() {
           ]);
 
         setStats({
-          totalUsers: statsData?.totalUsers ?? 0,
-          activeCars: statsData?.activeCars ?? 0,
-          soldCars: statsData?.soldCars ?? 0,
-          pendingReports: statsData?.pendingReports ?? 0,
-          totalBuyers: statsData?.totalBuyers ?? 0,
-          totalSellers: statsData?.totalSellers ?? 0,
+          totalUsers: statsData?.data?.totalUsers ?? 0,
+          activeCars: statsData?.data?.activeCars ?? 0,
+          soldCars: statsData?.data?.soldCars ?? 0,
+          pendingReports: statsData?.data?.pendingReports ?? 0,
+          totalBuyers: statsData?.data?.totalBuyers ?? 0,
+          totalSellers: statsData?.data?.totalSellers ?? 0,
         });
         setChartData(Array.isArray(chartData) ? chartData : []);
         setTopBrandsData(Array.isArray(brandsData) ? brandsData : []);
