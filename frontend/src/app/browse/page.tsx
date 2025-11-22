@@ -214,7 +214,7 @@ function SortDropdown({ sortBy, sortOrder, onChange }: SortDropdownProps) {
         onClick={() => setIsOpen((o) => !o)}
         className="flex items-center gap-2 bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-maroon focus:border-transparent cursor-pointer transition-colors min-w-[200px] justify-between"
       >
-        <span className="text-sm">{currentLabel}</span>
+        <span className="text--1">{currentLabel}</span>
         <svg
           className={`w-5 h-5 transition-transform ${
             isOpen ? "rotate-180" : ""
@@ -342,6 +342,9 @@ function BrowsePageContent() {
   const [availableHeight, setAvailableHeight] = useState<string>(
     "calc(100dvh - 128px)"
   );
+  const [isFiltersOpen, setIsFiltersOpen] = useState<boolean>(true);
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] =
+    useState<boolean>(false);
 
   // Debounce timer for search/filter changes
   const searchDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -560,7 +563,7 @@ function BrowsePageContent() {
     // - Page/sort changes
     if (filtersChanged && !pageChanged && !sortChanged && !isInitialLoad) {
       filterDebounceTimerRef.current = setTimeout(() => {
-    fetchCars();
+        fetchCars();
       }, 500);
     } else {
       // Execute immediately for page/sort changes or initial load
@@ -794,147 +797,286 @@ function BrowsePageContent() {
   };
 
   return (
-    <div className="max-w-[1536px] mx-auto w-full">
-      <div className="flex flex-row">
-        {/* Filters Sidebar */}
-        <SearchFilters
-          filters={filters}
-          searchInput={searchInput}
-          onFiltersChange={handleFiltersChange}
-          onSearchSubmit={handleSearchSubmit}
-          onSearchInputChange={(value) => {
-            setSearchInput(value);
-            // Debounce search input changes - update filters after user stops typing
-            if (searchDebounceTimerRef.current) {
-              clearTimeout(searchDebounceTimerRef.current);
-            }
-            searchDebounceTimerRef.current = setTimeout(() => {
-              const trimmed = value.trim();
-              const nextFilters =
-                trimmed.length > 0
-                  ? { ...filters, search: trimmed }
-                  : omitFilterKey(filters, "search");
-              // Update filters (this will trigger the debounced fetchCars in useEffect)
-              setFilters(nextFilters);
-              setPage(1);
-              syncRoute(nextFilters, 1, sortBy, sortOrder);
-            }, 500);
-          }}
-          className="sticky self-start p-(--space-s-m) pr-0"
-          style={{
-            top: `${headerHeight}px`,
-            maxHeight: availableHeight,
-          }}
-        />
-
-        {/* Results */}
-        <div className="flex-1 p-(--space-s-m)">
-          {/* Active Filters Bar */}
-          {activeFilters.length > 0 && (
-            <div className="mb-6 flex flex-wrap items-center gap-2 p-4 rounded-lg border border-gray-200">
-              {activeFilters.map(([key, value]) => {
-                const displayText = getFilterDisplayText(
-                  key,
-                  value as string | number | string[]
-                );
-                if (!displayText) return null;
-                return (
-                  <button
-                    key={key}
-                    onClick={() => removeFilter(key as keyof SearchFiltersData)}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 rounded-full text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                  >
-                    <span>{displayText}</span>
-                    <span className="text-gray-500 hover:text-gray-700">x</span>
-                  </button>
-                );
-              })}
-              {activeFilters.length > 0 && (
+    <div className="relative max-w-[1536px] mx-auto w-full">
+      {/* Mobile Filters Bottom Sheet - Half page overlay */}
+      {isMobileFiltersOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="lg:hidden fixed inset-0 bg-black/50 z-[9998]"
+            onClick={() => setIsMobileFiltersOpen(false)}
+          />
+          {/* Bottom Sheet */}
+          <div
+            className="lg:hidden fixed bottom-0 left-0 right-0 bg-white z-[9999] rounded-t-3xl shadow-2xl overflow-hidden flex flex-col"
+            style={{ maxHeight: "60vh" }}
+          >
+            {/* Header with drag handle */}
+            <div className="flex-shrink-0 bg-white border-b border-gray-200">
+              {/* Drag handle */}
+              <div className="flex justify-center pt-3 pb-2">
+                <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
+              </div>
+              <div className="px-4 pb-4 flex items-center justify-between">
+                <h2 className="text-lg font-bold text-maroon">Filters</h2>
                 <button
-                  onClick={clearAllFilters}
-                  className="ml-auto px-4 py-1.5 text-sm text-gray-600 hover:text-gray-900 font-medium"
+                  type="button"
+                  onClick={() => setIsMobileFiltersOpen(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  Clear All
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
                 </button>
-              )}
+              </div>
             </div>
-          )}
-          {/* Results Header */}
-          <div className="mb-6 flex justify-between items-center">
-            <div className="flex gap-4 items-baseline">
-              <h2 className="text-2 font-bold">Results</h2>
-            <p className="text-gray-600">
-              {total} {total === 1 ? "car" : "cars"} found
-            </p>
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="p-4">
+                <SearchFilters
+                  filters={filters}
+                  searchInput={searchInput}
+                  onFiltersChange={handleFiltersChange}
+                  onSearchSubmit={(e) => {
+                    handleSearchSubmit(e);
+                    setIsMobileFiltersOpen(false);
+                  }}
+                  onSearchInputChange={(value) => {
+                    setSearchInput(value);
+                    // Debounce search input changes - update filters after user stops typing
+                    if (searchDebounceTimerRef.current) {
+                      clearTimeout(searchDebounceTimerRef.current);
+                    }
+                    searchDebounceTimerRef.current = setTimeout(() => {
+                      const trimmed = value.trim();
+                      const nextFilters =
+                        trimmed.length > 0
+                          ? { ...filters, search: trimmed }
+                          : omitFilterKey(filters, "search");
+                      // Update filters (this will trigger the debounced fetchCars in useEffect)
+                      setFilters(nextFilters);
+                      setPage(1);
+                      syncRoute(nextFilters, 1, sortBy, sortOrder);
+                    }, 500);
+                  }}
+                  className="!w-full"
+                  style={{ width: "100%" }}
+                />
+              </div>
             </div>
-            {/* Sort Dropdown */}
-            <SortDropdown
-              sortBy={sortBy}
-              sortOrder={sortOrder}
-              onChange={handleSortChange}
+          </div>
+        </>
+      )}
+
+      <div className="max-w-[1536px] mx-auto w-full">
+        <div className="flex flex-row">
+          {/* Filters Sidebar */}
+          <div
+            className={`sticky self-start transition-all duration-300 ease-in-out hidden ${
+              isFiltersOpen ? "lg:block" : "lg:hidden"
+            }`}
+            style={{
+              top: `${headerHeight}px`,
+              maxHeight: availableHeight,
+            }}
+          >
+            <SearchFilters
+              filters={filters}
+              searchInput={searchInput}
+              onFiltersChange={handleFiltersChange}
+              onSearchSubmit={handleSearchSubmit}
+              onSearchInputChange={(value) => {
+                setSearchInput(value);
+                // Debounce search input changes - update filters after user stops typing
+                if (searchDebounceTimerRef.current) {
+                  clearTimeout(searchDebounceTimerRef.current);
+                }
+                searchDebounceTimerRef.current = setTimeout(() => {
+                  const trimmed = value.trim();
+                  const nextFilters =
+                    trimmed.length > 0
+                      ? { ...filters, search: trimmed }
+                      : omitFilterKey(filters, "search");
+                  // Update filters (this will trigger the debounced fetchCars in useEffect)
+                  setFilters(nextFilters);
+                  setPage(1);
+                  syncRoute(nextFilters, 1, sortBy, sortOrder);
+                }, 500);
+              }}
+              className="p-(--space-s-m) pr-0"
+              style={{
+                maxHeight: availableHeight,
+              }}
             />
           </div>
 
-          {/* Error Message */}
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-              {error}
-            </div>
-          )}
-
-          {/* Loading State */}
-          {isLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-maroon mx-auto"></div>
-                <p className="mt-4 text-gray-600 font-medium">
-                  Loading cars...
-                </p>
+          {/* Results */}
+          <div className="flex-1 p-(--space-s-m) min-w-0 flex flex-col">
+            {/* Active Filters Bar */}
+            {activeFilters.length > 0 && (
+              <div className="mb-6 flex flex-wrap items-center gap-2 p-4 rounded-lg border border-gray-200 w-full">
+                {activeFilters.map(([key, value]) => {
+                  const displayText = getFilterDisplayText(
+                    key,
+                    value as string | number | string[]
+                  );
+                  if (!displayText) return null;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() =>
+                        removeFilter(key as keyof SearchFiltersData)
+                      }
+                      className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 rounded-full text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      <span>{displayText}</span>
+                      <span className="text-gray-500 hover:text-gray-700">
+                        x
+                      </span>
+                    </button>
+                  );
+                })}
+                {activeFilters.length > 0 && (
+                  <button
+                    onClick={clearAllFilters}
+                    className="ml-auto px-4 py-1.5 text-sm text-gray-600 hover:text-gray-900 font-medium"
+                  >
+                    Clear All
+                  </button>
+                )}
+              </div>
+            )}
+            {/* Results Header */}
+            <div className="mb-6 flex justify-between items-center w-full">
+              <div className="flex gap-4 items-baseline">
+                <h2 className="text-2 font-bold">Results</h2>
+                {/* <p className="text-gray-600">
+                  {total} {total === 1 ? "car" : "cars"} found
+                </p> */}
+              </div>
+              <div className="flex items-center gap-3">
+                {/* Filter Toggle Button - Icon only, visible on lg screens */}
+                <button
+                  type="button"
+                  onClick={() => setIsFiltersOpen(!isFiltersOpen)}
+                  className="lg:flex hidden items-center justify-center w-10 h-10 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-maroon focus:border-transparent transition-colors"
+                  aria-label={isFiltersOpen ? "Hide Filters" : "Show Filters"}
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.6}
+                      d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+                    />
+                  </svg>
+                </button>
+                {/* Mobile Filter Button - Icon only, visible on mobile screens */}
+                <button
+                  type="button"
+                  onClick={() => setIsMobileFiltersOpen(true)}
+                  className="lg:hidden flex items-center justify-center w-10 h-10 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-maroon focus:border-transparent transition-colors"
+                  aria-label="Open Filters"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.6}
+                      d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+                    />
+                  </svg>
+                </button>
+                {/* Sort Dropdown */}
+                <SortDropdown
+                  sortBy={sortBy}
+                  sortOrder={sortOrder}
+                  onChange={handleSortChange}
+                />
               </div>
             </div>
-          ) : !cars || cars.length === 0 ? (
-            <>
-              <div className="text-center py-12 mb-8">
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                  No Cars Found
-                </h2>
-                <p className="text-gray-600">
-                  Try adjusting your filters or search terms
-                </p>
-              </div>
-            </>
-          ) : (
-            <>
-              {/* Car Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {cars.map((car) => (
-                  <CarCard
-                    key={car.id}
-                    car={car}
-                    favorite={
-                      isBuyer
-                        ? {
-                            isFavorited: favoriteCarIds.has(car.id),
-                            onToggle: handleFavoriteToggle,
-                          }
-                        : undefined
-                    }
-                  />
-                ))}
-              </div>
 
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex justify-center items-center mt-8">
-                  <PaginateControl
-                    page={page}
-                    setPage={handlePageChange}
-                    totalPages={totalPages}
-                  />
+            {/* Error Message */}
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                {error}
+              </div>
+            )}
+
+            {/* Loading State */}
+            {isLoading ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-maroon mx-auto"></div>
+                  <p className="mt-4 text-gray-600 font-medium">
+                    Loading cars...
+                  </p>
                 </div>
-              )}
-            </>
-          )}
+              </div>
+            ) : !cars || cars.length === 0 ? (
+              <>
+                <div className="text-center py-12 mb-8">
+                  <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                    No Cars Found
+                  </h2>
+                  <p className="text-gray-600">
+                    Try adjusting your filters or search terms
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Car Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 w-full">
+                  {cars.map((car) => (
+                    <CarCard
+                      key={car.id}
+                      car={car}
+                      favorite={
+                        isBuyer
+                          ? {
+                              isFavorited: favoriteCarIds.has(car.id),
+                              onToggle: handleFavoriteToggle,
+                            }
+                          : undefined
+                      }
+                    />
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex justify-center items-center mt-8">
+                    <PaginateControl
+                      page={page}
+                      setPage={handlePageChange}
+                      totalPages={totalPages}
+                    />
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>
