@@ -27,9 +27,27 @@ export default function RangeInput({
   min = 0,
   predefinedRanges,
 }: RangeInputProps) {
-  // Local state to track raw input values for typing
-  const [minInput, setMinInput] = useState<string>(minValue?.toString() || "");
-  const [maxInput, setMaxInput] = useState<string>(maxValue?.toString() || "");
+  // Helper function to format number with thousand separators
+  const formatNumber = (num: number | undefined): string => {
+    if (num === undefined) return "";
+    return num.toLocaleString("en-US");
+  };
+
+  // Helper function to remove commas and parse number
+  const parseNumberString = (str: string): number | undefined => {
+    const cleaned = str.replace(/,/g, "");
+    if (cleaned === "") return undefined;
+    const num = parseFloat(cleaned);
+    return isNaN(num) ? undefined : num;
+  };
+
+  // Local state to track raw input values for typing (stored without commas)
+  const [minInput, setMinInput] = useState<string>(
+    minValue?.toLocaleString("en-US") || ""
+  );
+  const [maxInput, setMaxInput] = useState<string>(
+    maxValue?.toLocaleString("en-US") || ""
+  );
   const minInputRef = useRef<HTMLInputElement>(null);
   const maxInputRef = useRef<HTMLInputElement>(null);
 
@@ -37,18 +55,18 @@ export default function RangeInput({
   // Only sync if the input is not currently focused
   useEffect(() => {
     if (document.activeElement !== minInputRef.current) {
-      const currentParsed = minInput === "" ? undefined : parseFloat(minInput);
+      const currentParsed = parseNumberString(minInput);
       if (currentParsed !== minValue) {
-        setMinInput(minValue?.toString() || "");
+        setMinInput(formatNumber(minValue));
       }
     }
   }, [minValue]);
 
   useEffect(() => {
     if (document.activeElement !== maxInputRef.current) {
-      const currentParsed = maxInput === "" ? undefined : parseFloat(maxInput);
+      const currentParsed = parseNumberString(maxInput);
       if (currentParsed !== maxValue) {
-        setMaxInput(maxValue?.toString() || "");
+        setMaxInput(formatNumber(maxValue));
       }
     }
   }, [maxValue]);
@@ -118,8 +136,19 @@ export default function RangeInput({
   };
 
   const handleMinInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawValue = e.target.value;
-    setMinInput(rawValue);
+    let rawValue = e.target.value;
+
+    // Remove commas first, then remove any non-numeric characters
+    rawValue = rawValue.replace(/,/g, "").replace(/[^0-9]/g, "");
+
+    // Format with commas for display
+    const numValue = rawValue === "" ? undefined : parseFloat(rawValue);
+    const formatted =
+      numValue !== undefined && !isNaN(numValue)
+        ? formatNumber(numValue)
+        : rawValue;
+
+    setMinInput(formatted);
 
     // Allow typing freely - only update parent when empty
     if (rawValue === "") {
@@ -130,28 +159,39 @@ export default function RangeInput({
 
   const handleMinInputBlur = () => {
     // Final validation on blur
-    if (minInput === "" || minInput === "-" || minInput === ".") {
+    if (minInput === "") {
       setMinInput("");
       handleMinChange(undefined);
       return;
     }
 
-    const numValue = parseFloat(minInput);
-    if (isNaN(numValue)) {
-      // Invalid input - revert to previous value
-      setMinInput(minValue?.toString() || "");
+    const numValue = parseNumberString(minInput);
+    if (numValue === undefined || numValue < min) {
+      // Invalid input - revert to previous value with formatting
+      setMinInput(formatNumber(minValue));
     } else {
       // Valid number - update with validated value
       handleMinChange(numValue);
       // Update display with formatted value after validation
       const validated = Math.max(min, Math.floor(numValue / step) * step);
-      setMinInput(validated.toString());
+      setMinInput(formatNumber(validated));
     }
   };
 
   const handleMaxInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawValue = e.target.value;
-    setMaxInput(rawValue);
+    let rawValue = e.target.value;
+
+    // Remove commas first, then remove any non-numeric characters
+    rawValue = rawValue.replace(/,/g, "").replace(/[^0-9]/g, "");
+
+    // Format with commas for display
+    const numValue = rawValue === "" ? undefined : parseFloat(rawValue);
+    const formatted =
+      numValue !== undefined && !isNaN(numValue)
+        ? formatNumber(numValue)
+        : rawValue;
+
+    setMaxInput(formatted);
 
     // Allow typing freely - only update parent when empty
     if (rawValue === "") {
@@ -162,22 +202,22 @@ export default function RangeInput({
 
   const handleMaxInputBlur = () => {
     // Final validation on blur
-    if (maxInput === "" || maxInput === "-" || maxInput === ".") {
+    if (maxInput === "") {
       setMaxInput("");
       handleMaxChange(undefined);
       return;
     }
 
-    const numValue = parseFloat(maxInput);
-    if (isNaN(numValue)) {
-      // Invalid input - revert to previous value
-      setMaxInput(maxValue?.toString() || "");
+    const numValue = parseNumberString(maxInput);
+    if (numValue === undefined || numValue < min) {
+      // Invalid input - revert to previous value with formatting
+      setMaxInput(formatNumber(maxValue));
     } else {
       // Valid number - update with validated value
       handleMaxChange(numValue);
       // Update display with formatted value after validation
       const validated = Math.max(min, Math.floor(numValue / step) * step);
-      setMaxInput(validated.toString());
+      setMaxInput(formatNumber(validated));
     }
   };
 

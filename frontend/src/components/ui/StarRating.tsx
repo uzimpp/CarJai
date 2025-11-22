@@ -48,9 +48,6 @@ export default function StarRating({
           </button>
         );
       })}
-      <span className="ml-2 text-sm text-gray-700">
-        {value ? `${value}/${max}` : "Not rated"}
-      </span>
     </div>
   );
 }
