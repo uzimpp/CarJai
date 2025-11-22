@@ -514,6 +514,23 @@ func (s *UserService) ValidateUserSession(token string) (*models.User, error) {
 		return nil, fmt.Errorf("user not found: %w", err)
 	}
 
+	// Check if user is banned by checking seller/buyer status
+	if s.profileService != nil {
+		sellerStatus, _ := s.profileService.GetSellerStatus(user.ID)
+		buyerStatus, _ := s.profileService.GetBuyerStatus(user.ID)
+
+		if sellerStatus == "banned" || buyerStatus == "banned" {
+			// Delete the session to prevent further attempts
+			s.userSessionRepo.DeleteUserSession(token)
+			return nil, fmt.Errorf("account has been banned")
+		}
+		if sellerStatus == "suspended" || buyerStatus == "suspended" {
+			// Delete the session to prevent further attempts
+			s.userSessionRepo.DeleteUserSession(token)
+			return nil, fmt.Errorf("account has been suspended")
+		}
+	}
+
 	return user, nil
 }
 
