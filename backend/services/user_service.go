@@ -521,8 +521,15 @@ func (s *UserService) ValidateUserSession(token string) (*models.User, error) {
 
 	// Check if user is banned by checking seller/buyer status
 	if s.profileService != nil {
-		sellerStatus, _ := s.profileService.GetSellerStatus(user.ID)
-		buyerStatus, _ := s.profileService.GetBuyerStatus(user.ID)
+		sellerStatus, err := s.profileService.GetSellerStatus(user.ID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get seller status: %w", err)
+		}
+
+		buyerStatus, err := s.profileService.GetBuyerStatus(user.ID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get buyer status: %w", err)
+		}
 
 		if sellerStatus == "banned" || buyerStatus == "banned" {
 			// Delete the session to prevent further attempts
