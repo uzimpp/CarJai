@@ -14,4 +14,5 @@ export interface SearchCarsParams {
   drivetrain?: string[]; // Display codes for filtering (e.g., ["FWD", "AWD"])
   fuelTypes?: string[]; // Display codes for filtering (e.g., ["GASOLINE", "DIESEL"])
   colors?: string[]; // Display codes for filtering (e.g., ["WHITE", "BLACK"])
+  conditionRating?: number; // Minimum condition rating filter (1-5)
 }

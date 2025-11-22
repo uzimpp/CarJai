@@ -466,7 +466,7 @@ func (r *CarRepository) GetManagedCars() (*[]AdminManagedCar, error) {
 // GetTopBrandsByCount retrieves the top 10 brands by car count
 func (r *CarRepository) GetTopBrandsByCount() ([]BrandDataPoint, error) {
 	var results []BrandDataPoint
-	
+
 	query := `
 		SELECT
 			brand_name AS brand,
@@ -690,6 +690,7 @@ type SearchCarsRequest struct {
 	DrivetrainCode   *string  // Drivetrain filter (code like "FWD", "AWD", "4WD")
 	FuelTypeCodes    []string // Fuel type filters (codes like "GASOLINE", "DIESEL")
 	ColorCodes       []string // Color filters (codes like "WHITE", "BLACK", "GRAY")
+	ConditionRating  *int     // Minimum condition rating filter (1-5)
 	Status           string   // Status filter (default: "active")
 	Limit            int      // Results per page (default: 20)
 	Offset           int      // Pagination offset (default: 0)
@@ -747,6 +748,13 @@ func (r *CarRepository) GetActiveCars(req *SearchCarsRequest) ([]Car, int, error
 	if req.DrivetrainCode != nil {
 		whereClauses = append(whereClauses, fmt.Sprintf("cars.drivetrain_code = $%d", argCounter))
 		args = append(args, *req.DrivetrainCode)
+		argCounter++
+	}
+
+	// Condition rating filter (minimum rating)
+	if req.ConditionRating != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("cars.condition_rating >= $%d", argCounter))
+		args = append(args, *req.ConditionRating)
 		argCounter++
 	}
 

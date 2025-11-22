@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useEffect, useRef } from "react";
+
 interface RangeInputProps {
   minValue: number | undefined;
   maxValue: number | undefined;
@@ -25,6 +27,32 @@ export default function RangeInput({
   min = 0,
   predefinedRanges,
 }: RangeInputProps) {
+  // Local state to track raw input values for typing
+  const [minInput, setMinInput] = useState<string>(minValue?.toString() || "");
+  const [maxInput, setMaxInput] = useState<string>(maxValue?.toString() || "");
+  const minInputRef = useRef<HTMLInputElement>(null);
+  const maxInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync local state when props change (from external updates like predefined ranges)
+  // Only sync if the input is not currently focused
+  useEffect(() => {
+    if (document.activeElement !== minInputRef.current) {
+      const currentParsed = minInput === "" ? undefined : parseFloat(minInput);
+      if (currentParsed !== minValue) {
+        setMinInput(minValue?.toString() || "");
+      }
+    }
+  }, [minValue]);
+
+  useEffect(() => {
+    if (document.activeElement !== maxInputRef.current) {
+      const currentParsed = maxInput === "" ? undefined : parseFloat(maxInput);
+      if (currentParsed !== maxValue) {
+        setMaxInput(maxValue?.toString() || "");
+      }
+    }
+  }, [maxValue]);
+
   const handleMinChange = (value: number | undefined) => {
     let validMin: number | undefined = undefined;
     let validMax = maxValue;
@@ -89,46 +117,94 @@ export default function RangeInput({
     onRangeChange(validMin, validMax);
   };
 
+  const handleMinInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value;
+    setMinInput(rawValue);
+
+    // Allow typing freely - only update parent when empty
+    if (rawValue === "") {
+      handleMinChange(undefined);
+    }
+    // Don't validate/update parent while typing - wait for blur
+  };
+
+  const handleMinInputBlur = () => {
+    // Final validation on blur
+    if (minInput === "" || minInput === "-" || minInput === ".") {
+      setMinInput("");
+      handleMinChange(undefined);
+      return;
+    }
+
+    const numValue = parseFloat(minInput);
+    if (isNaN(numValue)) {
+      // Invalid input - revert to previous value
+      setMinInput(minValue?.toString() || "");
+    } else {
+      // Valid number - update with validated value
+      handleMinChange(numValue);
+      // Update display with formatted value after validation
+      const validated = Math.max(min, Math.floor(numValue / step) * step);
+      setMinInput(validated.toString());
+    }
+  };
+
+  const handleMaxInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value;
+    setMaxInput(rawValue);
+
+    // Allow typing freely - only update parent when empty
+    if (rawValue === "") {
+      handleMaxChange(undefined);
+    }
+    // Don't validate/update parent while typing - wait for blur
+  };
+
+  const handleMaxInputBlur = () => {
+    // Final validation on blur
+    if (maxInput === "" || maxInput === "-" || maxInput === ".") {
+      setMaxInput("");
+      handleMaxChange(undefined);
+      return;
+    }
+
+    const numValue = parseFloat(maxInput);
+    if (isNaN(numValue)) {
+      // Invalid input - revert to previous value
+      setMaxInput(maxValue?.toString() || "");
+    } else {
+      // Valid number - update with validated value
+      handleMaxChange(numValue);
+      // Update display with formatted value after validation
+      const validated = Math.max(min, Math.floor(numValue / step) * step);
+      setMaxInput(validated.toString());
+    }
+  };
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
         <input
-          type="number"
+          ref={minInputRef}
+          type="text"
+          inputMode="numeric"
           placeholder={minPlaceholder}
-          value={minValue || ""}
-          min={min}
-          step={step}
-          onChange={(e) => {
-            const value = e.target.value
-              ? parseFloat(e.target.value)
-              : undefined;
-            if (value !== undefined && !isNaN(value)) {
-              handleMinChange(value);
-            } else if (e.target.value === "") {
-              handleMinChange(undefined);
-            }
-          }}
+          value={minInput}
+          onChange={handleMinInputChange}
+          onBlur={handleMinInputBlur}
           className="w-full sm:w-full px-3 py-2 border border-gray-300 rounded-lg text-0 text-gray-900 focus:border-maroon focus:outline-none focus:ring-2 focus:ring-maroon/20 transition-all"
         />
         <span className="text-gray-500 text-center sm:text-left hidden sm:inline">
           -
         </span>
         <input
-          type="number"
+          ref={maxInputRef}
+          type="text"
+          inputMode="numeric"
           placeholder={maxPlaceholder}
-          value={maxValue || ""}
-          min={min}
-          step={step}
-          onChange={(e) => {
-            const value = e.target.value
-              ? parseFloat(e.target.value)
-              : undefined;
-            if (value !== undefined && !isNaN(value)) {
-              handleMaxChange(value);
-            } else if (e.target.value === "") {
-              handleMaxChange(undefined);
-            }
-          }}
+          value={maxInput}
+          onChange={handleMaxInputChange}
+          onBlur={handleMaxInputBlur}
           className="w-full sm:w-full px-3 py-2 border border-gray-300 rounded-lg text-0 text-gray-900 focus:border-maroon focus:outline-none focus:ring-2 focus:ring-maroon/20 transition-all"
         />
       </div>

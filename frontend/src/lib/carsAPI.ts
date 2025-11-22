@@ -61,6 +61,9 @@ export const carsAPI = {
         searchParams.append("colors", color);
       });
     }
+    if (params.conditionRating !== undefined) {
+      searchParams.append("conditionRating", params.conditionRating.toString());
+    }
 
     const queryString = searchParams.toString();
     const endpoint = `/api/cars/search${queryString ? `?${queryString}` : ""}`;

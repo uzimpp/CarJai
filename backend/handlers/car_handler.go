@@ -267,6 +267,13 @@ func (h *CarHandler) SearchCars(w http.ResponseWriter, r *http.Request) {
 		req.ColorCodes = colors
 	}
 
+	// Parse condition rating
+	if conditionRatingStr := query.Get("conditionRating"); conditionRatingStr != "" {
+		if conditionRating, err := strconv.Atoi(conditionRatingStr); err == nil && conditionRating >= 1 && conditionRating <= 5 {
+			req.ConditionRating = &conditionRating
+		}
+	}
+
 	// Parse pagination
 	page := 1
 	if pageStr := query.Get("page"); pageStr != "" {

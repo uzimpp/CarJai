@@ -124,6 +124,10 @@ const parseFiltersFromSearchParams = (
   const colors = searchParams.getAll("colors");
   if (colors.length > 0) nextFilters.colors = colors;
 
+  const conditionRating = parseNumber(searchParams.get("conditionRating"));
+  if (conditionRating !== undefined)
+    nextFilters.conditionRating = conditionRating;
+
   return nextFilters;
 };
 
@@ -168,6 +172,8 @@ const buildSearchParams = (
   if (filters.colors && filters.colors.length > 0) {
     filters.colors.forEach((color) => params.append("colors", color));
   }
+  if (filters.conditionRating !== undefined)
+    params.set("conditionRating", filters.conditionRating.toString());
   if (page > 1) params.set("page", page.toString());
 
   return params;
