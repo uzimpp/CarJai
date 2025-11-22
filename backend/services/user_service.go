@@ -233,17 +233,11 @@ func (s *UserService) Signin(emailOrUsername, password, ipAddress, userAgent str
 		return nil, fmt.Errorf("invalid credentials")
 	}
 
-	// Check if user is banned by checking seller/buyer status
-	var sellerStatus, buyerStatus string
-	if s.profileService != nil {
-		sellerStatus, _ = s.profileService.GetSellerStatus(user.ID)
-		buyerStatus, _ = s.profileService.GetBuyerStatus(user.ID)
-	}
-
-	if sellerStatus == "banned" || buyerStatus == "banned" {
+	// Check if user is banned or suspended
+	if user.Status == "banned" {
 		return nil, fmt.Errorf("your account has been banned")
 	}
-	if sellerStatus == "suspended" || buyerStatus == "suspended" {
+	if user.Status == "suspended" {
 		return nil, fmt.Errorf("your account has been suspended")
 	}
 
@@ -381,17 +375,11 @@ func (s *UserService) SigninWithGoogleIDToken(idToken, ipAddress, userAgent stri
 		}
 	}
 
-	// Check if user is banned by checking seller/buyer status
-	var sellerStatus, buyerStatus string
-	if s.profileService != nil {
-		sellerStatus, _ = s.profileService.GetSellerStatus(user.ID)
-		buyerStatus, _ = s.profileService.GetBuyerStatus(user.ID)
-	}
-
-	if sellerStatus == "banned" || buyerStatus == "banned" {
+	// Check if user is banned or suspended
+	if user.Status == "banned" {
 		return nil, fmt.Errorf("your account has been banned")
 	}
-	if sellerStatus == "suspended" || buyerStatus == "suspended" {
+	if user.Status == "suspended" {
 		return nil, fmt.Errorf("your account has been suspended")
 	}
 
@@ -517,6 +505,18 @@ func (s *UserService) ValidateUserSession(token string) (*models.User, error) {
 	user, err := s.userRepo.GetUserByID(claims.UserID)
 	if err != nil {
 		return nil, fmt.Errorf("user not found: %w", err)
+	}
+
+	// Check if user is banned or suspended
+	if user.Status == "banned" {
+		// Delete the session to prevent further attempts
+		s.userSessionRepo.DeleteUserSession(token)
+		return nil, fmt.Errorf("account has been banned")
+	}
+	if user.Status == "suspended" {
+		// Delete the session to prevent further attempts
+		s.userSessionRepo.DeleteUserSession(token)
+		return nil, fmt.Errorf("account has been suspended")
 	}
 
 	return user, nil
@@ -699,6 +699,11 @@ func (s *UserService) RequestPasswordReset(email string) error {
 	if err != nil {
 		// User doesn't exist - return error
 		return fmt.Errorf("email not found")
+	}
+
+	// Don't send reset emails to banned/suspended users (return nil to prevent user enumeration)
+	if user.Status == "banned" || user.Status == "suspended" {
+		return nil
 	}
 
 	// Generate password reset token

@@ -144,8 +144,8 @@ func (s *ReportService) UpdateReportStatus(id int, status string, adminNotes *st
     return nil
 }
 
-// Admin seller actions (audit logged)
-func (s *ReportService) BanSeller(sellerID, adminID int, notes *string) (int, error) {
+// Admin user actions (audit logged)
+func (s *ReportService) BanUser(userID, adminID int, notes *string) (int, error) {
     tx, err := s.db.Begin()
     if err != nil {
         return 0, err
@@ -156,26 +156,28 @@ func (s *ReportService) BanSeller(sellerID, adminID int, notes *string) (int, er
         }
     }()
     
-    // Update seller status to 'banned'
-    _, err = tx.Exec("UPDATE sellers SET status = 'banned' WHERE id = $1", sellerID)
+    // Update user status to 'banned'
+    result, err := tx.Exec("UPDATE users SET status = 'banned' WHERE id = $1", userID)
     if err != nil {
-        return 0, fmt.Errorf("failed to update seller status: %w", err)
+        return 0, fmt.Errorf("failed to update user status: %w", err)
     }
     
-    // Update buyer status to 'banned' (if user is also a buyer)
-    _, err = tx.Exec("UPDATE buyers SET status = 'banned' WHERE id = $1", sellerID)
+    rowsAffected, err := result.RowsAffected()
     if err != nil {
-        return 0, fmt.Errorf("failed to update buyer status: %w", err)
+        return 0, fmt.Errorf("failed to get rows affected: %w", err)
+    }
+    if rowsAffected == 0 {
+        return 0, fmt.Errorf("user not found")
     }
     
     // Invalidate all user sessions
-    _, err = tx.Exec("DELETE FROM user_sessions WHERE user_id = $1", sellerID)
+    _, err = tx.Exec("DELETE FROM user_sessions WHERE user_id = $1", userID)
     if err != nil {
         return 0, fmt.Errorf("failed to invalidate user sessions: %w", err)
     }
     
     // Log the admin action
-    id, err := s.repo.LogSellerAdminActionTx(tx, sellerID, adminID, "ban", notes, nil)
+    id, err := s.repo.LogSellerAdminActionTx(tx, userID, adminID, "ban", notes, nil)
     if err != nil {
         return 0, err
     }
@@ -186,7 +188,7 @@ func (s *ReportService) BanSeller(sellerID, adminID int, notes *string) (int, er
     return id, nil
 }
 
-func (s *ReportService) SuspendSeller(sellerID, adminID int, until time.Time, notes *string) (int, error) {
+func (s *ReportService) SuspendUser(userID, adminID int, until time.Time, notes *string) (int, error) {
     tx, err := s.db.Begin()
     if err != nil {
         return 0, err
@@ -196,7 +198,28 @@ func (s *ReportService) SuspendSeller(sellerID, adminID int, until time.Time, no
             _ = tx.Rollback()
         }
     }()
-    id, err := s.repo.LogSellerAdminActionTx(tx, sellerID, adminID, "suspend", notes, &until)
+    
+    // Update user status to 'suspended'
+    result, err := tx.Exec("UPDATE users SET status = 'suspended' WHERE id = $1", userID)
+    if err != nil {
+        return 0, fmt.Errorf("failed to update user status: %w", err)
+    }
+    
+    rowsAffected, err := result.RowsAffected()
+    if err != nil {
+        return 0, fmt.Errorf("failed to get rows affected: %w", err)
+    }
+    if rowsAffected == 0 {
+        return 0, fmt.Errorf("user not found")
+    }
+    
+    // Invalidate all user sessions
+    _, err = tx.Exec("DELETE FROM user_sessions WHERE user_id = $1", userID)
+    if err != nil {
+        return 0, fmt.Errorf("failed to invalidate user sessions: %w", err)
+    }
+    
+    id, err := s.repo.LogSellerAdminActionTx(tx, userID, adminID, "suspend", notes, &until)
     if err != nil {
         return 0, err
     }
@@ -206,7 +229,7 @@ func (s *ReportService) SuspendSeller(sellerID, adminID int, until time.Time, no
     return id, nil
 }
 
-func (s *ReportService) WarnSeller(sellerID, adminID int, notes *string) (int, error) {
+func (s *ReportService) WarnUser(userID, adminID int, notes *string) (int, error) {
     tx, err := s.db.Begin()
     if err != nil {
         return 0, err
@@ -216,10 +239,58 @@ func (s *ReportService) WarnSeller(sellerID, adminID int, notes *string) (int, e
             _ = tx.Rollback()
         }
     }()
-    id, err := s.repo.LogSellerAdminActionTx(tx, sellerID, adminID, "warn", notes, nil)
+    id, err := s.repo.LogSellerAdminActionTx(tx, userID, adminID, "warn", notes, nil)
     if err != nil {
         return 0, err
     }
+    if err = tx.Commit(); err != nil {
+        return 0, err
+    }
+    return id, nil
+}
+
+// UnbanUser restores a banned user to active status
+func (s *ReportService) UnbanUser(userID, adminID int, notes *string) (int, error) {
+    tx, err := s.db.Begin()
+    if err != nil {
+        return 0, err
+    }
+    defer func() {
+        if err != nil {
+            _ = tx.Rollback()
+        }
+    }()
+    
+    // Check if user exists
+    var userExists bool
+    err = tx.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)", userID).Scan(&userExists)
+    if err != nil {
+        return 0, fmt.Errorf("failed to check user existence: %w", err)
+    }
+    if !userExists {
+        return 0, fmt.Errorf("user not found")
+    }
+    
+    // Update user status to 'active'
+    result, err := tx.Exec("UPDATE users SET status = 'active' WHERE id = $1", userID)
+    if err != nil {
+        return 0, fmt.Errorf("failed to update user status: %w", err)
+    }
+    
+    rowsAffected, err := result.RowsAffected()
+    if err != nil {
+        return 0, fmt.Errorf("failed to get rows affected: %w", err)
+    }
+    if rowsAffected == 0 {
+        return 0, fmt.Errorf("user not found")
+    }
+    
+    // Log the admin action
+    id, err := s.repo.LogSellerAdminActionTx(tx, userID, adminID, "unban", notes, nil)
+    if err != nil {
+        return 0, err
+    }
+    
     if err = tx.Commit(); err != nil {
         return 0, err
     }

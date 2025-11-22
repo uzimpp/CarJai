@@ -13,6 +13,7 @@ type User struct {
 	Username     string     `json:"username" db:"username"`
 	Name         string     `json:"name" db:"name"`
 	PasswordHash string     `json:"-" db:"password_hash"`
+	Status       string     `json:"status" db:"status"` // active, banned, suspended
 	GoogleID     *string    `json:"googleId,omitempty" db:"google_id"`
 	AuthProvider *string    `json:"provider,omitempty" db:"auth_provider"`
 	LinkedAt     *time.Time `json:"linkedAt,omitempty" db:"provider_linked_at"`
