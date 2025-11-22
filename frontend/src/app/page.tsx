@@ -43,23 +43,34 @@ export default function Home() {
           </div>
           <div className="flex flex-col items-center gap-y-(--space-s) w-full">
             <div className="flex justify-center items-center w-full max-w-[768px]">
-                <SearchBar className="mx-auto" placeholder="City car" />
+              <SearchBar className="mx-auto" placeholder="City car" />
             </div>
             <div>
               {[
-                { label: "Compact Cars", q: "compact" },
-                { label: "Family Cars", q: "family" },
-                { label: "Performance", q: "sport" },
-                { label: "Electric", q: "electric" },
-              ].map((c) => (
-                <Link
-                  key={c.q}
-                  href={`/browse?q=${encodeURIComponent(c.q)}`}
-                  className="text-white bg-maroon hover:bg-red px-(--space-m) py-(--space-2xs) rounded-full text-0 font-medium transition-all hover:shadow-lg hover:scale-105"
-                >
-                  {c.label}
-                </Link>
-              ))}
+                { label: "Compact Cars", bodyType: "CITYCAR" },
+                { label: "Family Cars", bodyType: "SUV" },
+                { label: "Performance", bodyType: "SPORTLUX" },
+                { label: "Electric", fuelTypes: ["ELECTRIC"] },
+              ].map((c) => {
+                const params = new URLSearchParams();
+                if (c.bodyType) {
+                  params.set("bodyType", c.bodyType);
+                }
+                if (c.fuelTypes) {
+                  c.fuelTypes.forEach((fuel) =>
+                    params.append("fuelTypes", fuel)
+                  );
+                }
+                return (
+                  <Link
+                    key={c.label}
+                    href={`/browse?${params.toString()}`}
+                    className="text-white bg-maroon hover:bg-red px-(--space-m) py-(--space-2xs) rounded-full text-0 font-medium transition-all hover:shadow-lg hover:scale-105"
+                  >
+                    {c.label}
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -99,32 +110,43 @@ export default function Home() {
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-(--space-m)">
-          {categories.map((cat) => (
-            <Link
-              key={cat.title}
-              href={`/browse?category=${encodeURIComponent(cat.title)}`}
-              className="group relative shadow-lg rounded-tr-5xl rounded-2xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
-            >
-              <div
-                className={`w-full h-full flex flex-col justify-center p-(--space-m-xl) gap-y-(--space-l) inset-0 bg-gradient-to-br rounded-tr-xl rounded-xl ${cat.gradient}`}
+          {categories.map((cat) => {
+            // Map category titles to bodyType or fuelTypes
+            const params = new URLSearchParams();
+            if (cat.title === "City & Compact") {
+              params.set("bodyType", "CITYCAR");
+            } else if (cat.title === "Luxury & Performance") {
+              params.set("bodyType", "SPORTLUX");
+            } else if (cat.title === "Family Cars") {
+              params.set("bodyType", "SUV");
+            }
+            return (
+              <Link
+                key={cat.title}
+                href={`/browse?${params.toString()}`}
+                className="group relative shadow-lg rounded-tr-5xl rounded-2xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
               >
-                <div>
-                  <h3 className="text-3 font-bold text-white mb-2 line-height-12">
-                    {cat.title}
-                  </h3>
-                  <p className="text-0 text-white/90">{cat.description}</p>
+                <div
+                  className={`w-full h-full flex flex-col justify-center p-(--space-m-xl) gap-y-(--space-l) inset-0 bg-gradient-to-br rounded-tr-xl rounded-xl ${cat.gradient}`}
+                >
+                  <div>
+                    <h3 className="text-3 font-bold text-white mb-2 line-height-12">
+                      {cat.title}
+                    </h3>
+                    <p className="text-0 text-white/90">{cat.description}</p>
+                  </div>
+                  <div className="relative aspect-[2/1] w-full">
+                    <Image
+                      src={cat.image}
+                      alt={cat.title}
+                      fill
+                      className="object-contain group-hover:scale-110 transition-transform duration-500 drop-shadow-2xl"
+                    />
+                  </div>
                 </div>
-                <div className="relative aspect-[2/1] w-full">
-                  <Image
-                    src={cat.image}
-                    alt={cat.title}
-                    fill
-                    className="object-contain group-hover:scale-110 transition-transform duration-500 drop-shadow-2xl"
-                  />
-                </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       </section>
 

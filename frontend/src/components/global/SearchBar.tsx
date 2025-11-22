@@ -331,11 +331,22 @@ export default function SearchBar({
                       </svg>
                       <span className="truncate text-sm">{item}</span>
                     </div>
-                    <button
-                      type="button"
+                    <div
                       onClick={(e) => handleDeleteHistory(e, item)}
-                      className="ml-2 p-1 rounded-full hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
+                      className="ml-2 p-1 rounded-full hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0 cursor-pointer"
                       aria-label="Delete from history"
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleDeleteHistory(
+                            e as unknown as React.MouseEvent,
+                            item
+                          );
+                        }
+                      }}
                     >
                       <svg
                         className="w-4 h-4"
@@ -350,7 +361,7 @@ export default function SearchBar({
                           d="M6 18L18 6M6 6l12 12"
                         />
                       </svg>
-                    </button>
+                    </div>
                   </button>
                 ))}
               </div>
