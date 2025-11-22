@@ -256,6 +256,11 @@ func (s *CarService) DeleteCarByAdmin(carID int) error {
 	return nil
 }
 
+// GetCarsBySellerID retrieves all cars for a seller
+func (s *CarService) GetCarsBySellerID(sellerID int) ([]models.Car, error) {
+	return s.carRepo.GetCarsBySellerID(sellerID)
+}
+
 // batchTranslateCarsToListItems efficiently converts cars to CarListItem using batch fetching
 // This method collects all unique codes and car IDs, then fetches related data in batches
 // to avoid N+1 query problems
@@ -433,16 +438,29 @@ func (s *CarService) GetCarListItemsByIDs(carIDs []int, lang string) ([]models.C
 // GetCarListItemsBySellerID retrieves lightweight car list items for a seller
 // Returns only essential fields needed for listing/display, with translated labels
 // Used for: seller profile, seller dashboard listings
-// If status is empty string, returns all cars with all statuses
-// If status is specified (e.g., "active"), returns only cars with that status
-func (s *CarService) GetCarListItemsBySellerID(sellerID int, lang string, status string) ([]models.CarListItem, error) {
-	// Pass status as-is: empty string gets all statuses, specified status filters by that status
-	cars, err := s.carRepo.GetCarsBySellerID(sellerID, status)
+func (s *CarService) GetCarListItemsBySellerID(sellerID int, lang string) ([]models.CarListItem, error) {
+	cars, err := s.carRepo.GetCarsBySellerID(sellerID)
 	if err != nil {
 		return nil, err
 	}
 
 	return s.batchTranslateCarsToListItems(cars, lang)
+}
+
+// SearchActiveCars retrieves active car listings with search/filter support
+func (s *CarService) SearchActiveCars(req *models.SearchCarsRequest) ([]models.Car, int, error) {
+	// Set defaults
+	if req.Status == "" {
+		req.Status = "active"
+	}
+	if req.Limit <= 0 {
+		req.Limit = 20
+	}
+	if req.Offset < 0 {
+		req.Offset = 0
+	}
+
+	return s.carRepo.GetActiveCars(req)
 }
 
 // SearchActiveCarsAsListItems retrieves active car listings as lightweight list items

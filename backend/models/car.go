@@ -638,9 +638,8 @@ func (r *CarRepository) CountCarsByStatus(status string) (int, error) {
 	return count, nil
 }
 
-// GetCarsBySellerID retrieves cars for a seller, optionally filtered by status
-// If status is empty string, returns all cars. Otherwise filters by the specified status.
-func (r *CarRepository) GetCarsBySellerID(sellerID int, status string) ([]Car, error) {
+// GetCarsBySellerID retrieves all cars for a seller
+func (r *CarRepository) GetCarsBySellerID(sellerID int) ([]Car, error) {
 	query := `
 		SELECT id, seller_id, body_type_code, transmission_code,
 			drivetrain_code, brand_name, model_name, submodel_name, 
@@ -649,19 +648,10 @@ func (r *CarRepository) GetCarsBySellerID(sellerID int, status string) ([]Car, e
 			province_id, description, price, is_flooded, 
 			is_heavily_damaged, status, condition_rating, created_at, updated_at
 		FROM cars
-		WHERE seller_id = $1`
+		WHERE seller_id = $1
+		ORDER BY created_at DESC`
 
-	args := []interface{}{sellerID}
-	argNum := 2
-
-	if status != "" {
-		query += fmt.Sprintf(" AND status = $%d", argNum)
-		args = append(args, status)
-	}
-
-	query += " ORDER BY created_at DESC"
-
-	rows, err := r.db.DB.Query(query, args...)
+	rows, err := r.db.DB.Query(query, sellerID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get cars by seller: %w", err)
 	}

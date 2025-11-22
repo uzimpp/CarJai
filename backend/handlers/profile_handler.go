@@ -150,13 +150,13 @@ func (h *ProfileHandler) GetSellerProfile(w http.ResponseWriter, r *http.Request
 		contacts = []models.SellerContact{}
 	}
 
-	// Get seller's active cars only (lightweight list items only)
+	// Get seller's cars (lightweight list items only)
 	// Get language preference (default to English)
 	lang := r.URL.Query().Get("lang")
 	if lang == "" {
 		lang = "en"
 	}
-	cars, err := h.carService.GetCarListItemsBySellerID(sellerID, lang, "active")
+	cars, err := h.carService.GetCarListItemsBySellerID(sellerID, lang)
 	if err != nil {
 		// Return seller without cars if cars fetch fails
 		cars = []models.CarListItem{}
