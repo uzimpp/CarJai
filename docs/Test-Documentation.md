@@ -27,16 +27,8 @@ Comprehensive guide to testing strategies, test structure, running tests, and te
 - Fast execution
 - High coverage target
 
-**Integration Tests**:
-- Test component interactions
-- Test API endpoints with test database
-- Test database operations
-- Test authentication flows
-
-**End-to-End Tests** (To be implemented):
-- Test complete user workflows
-- Test frontend-backend integration
-- Browser automation
+**Integration Tests** :
+- `extraction_service_test.go` - Tests PDF extraction with real database connection
 
 ### Testing Approach
 
@@ -47,9 +39,7 @@ Comprehensive guide to testing strategies, test structure, running tests, and te
 - Mock external services (OCR, OAuth)
 
 **Frontend (TypeScript/React)**:
-- Component testing (To be implemented)
-- Integration testing (To be implemented)
-- E2E testing (To be implemented)
+- No tests currently implemented
 
 ---
 
@@ -59,13 +49,14 @@ Comprehensive guide to testing strategies, test structure, running tests, and te
 
 ```
 backend/tests/
-├── handlers/              # Handler integration tests
-│   ├── admin_auth_test.go
+├── handlers/              # Handler unit tests 
+│   ├── admin_auth_handler_test.go
 │   ├── car_handler_test.go
-│   ├── user_auth_test.go
+│   ├── user_auth_handler_test.go
+│   ├── mocks.go           # Mock services for testing
 │   └── ...
-├── extraction_service_test.go  # OCR service tests
-├── http_test.go                # HTTP integration tests
+├── extraction_service_test.go  # Integration test (uses real database)
+├── http_test.go                # HTTP utility tests
 ├── ip_test.go                  # IP whitelist tests
 ├── jwt_test.go                 # JWT authentication tests
 ├── password_test.go            # Password hashing tests
@@ -99,16 +90,15 @@ backend/tests/
 - Error handling
 - Status codes
 - Response format
+- **Note**: Uses mocks (mockCarService, mockUserService, etc.) - not real database
 
 **Service Tests**:
 - Business logic validation
 - Data processing
 - External service integration (mocked)
 
-**Integration Tests** (`http_test.go`):
-- Full HTTP request flow
-- Database integration
-- End-to-end API testing
+**Integration Tests**:
+- `extraction_service_test.go` - Tests PDF extraction with real database connection
 
 ---
 
@@ -240,7 +230,7 @@ docker exec -it carjai-backend /app/scripts/seed --reports
 
 **Cars**:
 - 30 demo cars
-- Random brands, models, years (2015-2024)
+- Random brands, models, years
 - Images, fuel types, colors, inspections
 - All cars have status `active`
 - Chassis numbers start with `DEMO`
@@ -527,6 +517,4 @@ func (m *MockOCRService) Extract(image []byte) (string, error) {
 - **Go Testing Package**: https://pkg.go.dev/testing
 
 ---
-
-**Last Updated**: 2024
 

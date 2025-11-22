@@ -22,7 +22,7 @@ Complete reference for the CarJai REST API, including endpoints, authentication,
 
 **Production**: (Configure based on deployment)
 
-All API endpoints are prefixed with `/api/` except admin endpoints (`/admin/`) and health check (`/health`).
+All API endpoints are prefixed with `/api/` except health check (`/health`).
 
 ---
 
@@ -40,10 +40,12 @@ CarJai uses dual JWT authentication systems: one for regular users and one for a
 - `POST /api/auth/google/signin` - Sign in with Google ID token
 - `GET /api/auth/google/start` - Start Google OAuth flow
 - `GET /api/auth/google/callback` - Google OAuth callback
+- `GET /api/auth/me` - Get current user information
 - `POST /api/auth/signout` - Sign out
-- `POST /api/auth/password-reset/request` - Request password reset
-- `POST /api/auth/password-reset/verify` - Verify password reset token
-- `POST /api/auth/password-reset/reset` - Reset password
+- `POST /api/auth/refresh` - Refresh authentication token
+- `POST /api/auth/change-password` - Change user password
+- `POST /api/auth/forgot-password` - Request password reset
+- `POST /api/auth/reset-password` - Reset password with token
 
 **How it works**:
 1. User signs in via `/api/auth/signin` or `/api/auth/google/signin`
@@ -56,13 +58,15 @@ CarJai uses dual JWT authentication systems: one for regular users and one for a
 **Method**: Cookie-based JWT tokens (separate from user tokens)
 
 **Endpoints**:
-- `POST /admin/auth/signin` - Admin sign in
-- `POST /admin/auth/signout` - Admin sign out
+- `POST /api/admin/auth/signin` - Admin sign in
+- `GET /api/admin/auth/me` - Get current admin information
+- `POST /api/admin/auth/signout` - Admin sign out
+- `POST /api/admin/auth/refresh` - Refresh admin authentication token
 
 **IP Whitelist**: Admin endpoints require IP whitelist validation
 
 **How it works**:
-1. Admin signs in via `/admin/auth/signin` (from whitelisted IP)
+1. Admin signs in via `/api/admin/auth/signin` (from whitelisted IP)
 2. Server returns admin JWT token in HTTP-only cookie
 3. Client includes cookie in subsequent admin requests
 4. Server validates token and IP address
@@ -117,6 +121,7 @@ All API responses follow a consistent JSON format:
 - `401 Unauthorized` - Authentication required or invalid
 - `403 Forbidden` - Insufficient permissions
 - `404 Not Found` - Resource not found
+- `409 Conflict` - Duplicate resource or conflict
 - `429 Too Many Requests` - Rate limit exceeded
 - `500 Internal Server Error` - Server error
 - `503 Service Unavailable` - Service temporarily unavailable
@@ -202,7 +207,7 @@ Check system health and database connectivity.
   "code": 200,
   "data": {
     "status": "healthy",
-    "timestamp": "2024-01-01T00:00:00Z",
+    "timestamp": "2025-01-01T00:00:00Z",
     "version": "1.0.0",
     "services": {
       "database": {
@@ -236,13 +241,6 @@ Create a new user account.
 ```
 
 **Response**: `201 Created`
-```json
-{
-  "success": true,
-  "code": 201,
-  "message": "User created successfully"
-}
-```
 
 #### `POST /api/auth/signin`
 
@@ -275,11 +273,82 @@ Sign in with Google ID token.
 
 **Response**: `200 OK` (JWT token in cookie)
 
+#### `GET /api/auth/me`
+
+Get current user information.
+
+**Authentication**: Required (User JWT)
+
+**Response**: `200 OK`
+
+#### `POST /api/auth/signout`
+
+Sign out current user.
+
+**Authentication**: Required (User JWT)
+
+**Response**: `200 OK`
+
+#### `POST /api/auth/refresh`
+
+Refresh user authentication token.
+
+**Authentication**: Required (User JWT)
+
+**Response**: `200 OK`
+
+#### `POST /api/auth/change-password`
+
+Change user password.
+
+**Authentication**: Required (User JWT)
+
+**Request Body**:
+```json
+{
+  "current_password": "old_password",
+  "new_password": "new_password"
+}
+```
+
+**Response**: `200 OK`
+
+#### `POST /api/auth/forgot-password`
+
+Request password reset email.
+
+**Authentication**: Not required
+
+**Request Body**:
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+**Response**: `200 OK`
+
+#### `POST /api/auth/reset-password`
+
+Reset password with token.
+
+**Authentication**: Not required
+
+**Request Body**:
+```json
+{
+  "token": "reset_token_here",
+  "new_password": "new_secure_password"
+}
+```
+
+**Response**: `200 OK`
+
 ---
 
 ### User Profile
 
-#### `GET /api/profile`
+#### `GET /api/profile/self`
 
 Get current user's profile.
 
@@ -297,29 +366,72 @@ Get current user's profile.
       "username": "user123",
       "name": "John Doe"
     },
-    "roles": ["buyer", "seller"],
+    "roles": {
+      "buyer": true,
+      "seller": true
+    },
     "profiles": {
-      "buyer": { ... },
-      "seller": { ... }
+      "buyerComplete": true,
+      "sellerComplete": false
     }
   }
 }
 ```
 
-#### `PUT /api/profile`
+#### `PATCH /api/profile/self`
 
-Update user profile.
+Update current user profile.
 
 **Authentication**: Required (User JWT)
 
 **Request Body**:
 ```json
 {
-  "name": "John Updated"
+  "username": "newusername",
+  "name": "New Name",
+  "buyer": {
+    "province": "Bangkok",
+    "budgetMin": 300000,
+    "budgetMax": 1500000
+  },
+  "seller": {
+    "displayName": "My Shop",
+    "about": "About my shop",
+    "contacts": [
+      {
+        "contactType": "phone",
+        "value": "0812345678",
+        "label": "Mobile"
+      }
+    ]
+  }
 }
 ```
 
 **Response**: `200 OK`
+
+#### `GET /api/profile/seller/{id}`
+
+Get seller profile by ID (public endpoint).
+
+**Authentication**: Not required
+
+**Response**: `200 OK`
+```json
+{
+  "success": true,
+  "code": 200,
+  "data": {
+    "seller": {
+      "id": 1,
+      "displayName": "My Car Shop",
+      "about": "Best cars in town"
+    },
+    "contacts": [ ... ],
+    "cars": [ ... ]
+  }
+}
+```
 
 ---
 
@@ -332,18 +444,19 @@ Search and filter cars.
 **Authentication**: Not required
 
 **Query Parameters**:
-- `brand` - Filter by brand
-- `model` - Filter by model
-- `year_min` - Minimum year
-- `year_max` - Maximum year
-- `price_min` - Minimum price
-- `price_max` - Maximum price
-- `province` - Filter by province
-- `body_type` - Filter by body type
-- `transmission` - Filter by transmission
-- `fuel_type` - Filter by fuel type
-- `page` - Page number (pagination)
-- `limit` - Items per page
+- `q` - Search query (brand, model, description)
+- `bodyType` - Filter by body type code
+- `transmission` - Filter by transmission code
+- `drivetrain` - Filter by drivetrain code
+- `fuelTypes` - Filter by fuel type codes (array)
+- `colors` - Filter by color codes (array)
+- `provinceId` - Filter by province ID
+- `minPrice` - Minimum price
+- `maxPrice` - Maximum price
+- `minYear` - Minimum year
+- `maxYear` - Maximum year
+- `page` - Page number (default: 1)
+- `limit` - Items per page (default: 20, max: 100)
 
 **Response**: `200 OK`
 ```json
@@ -352,32 +465,9 @@ Search and filter cars.
   "code": 200,
   "data": {
     "cars": [ ... ],
-    "pagination": {
-      "page": 1,
-      "limit": 20,
-      "total": 100,
-      "total_pages": 5
-    }
-  }
-}
-```
-
-#### `GET /api/cars/{id}`
-
-Get car details by ID.
-
-**Authentication**: Not required (seller contact info requires authentication)
-
-**Response**: `200 OK`
-```json
-{
-  "success": true,
-  "code": 200,
-  "data": {
-    "car": { ... },
-    "images": [ ... ],
-    "inspection": { ... },
-    "seller": { ... }
+    "total": 100,
+    "page": 1,
+    "limit": 20
   }
 }
 ```
@@ -388,13 +478,47 @@ Create a new car listing.
 
 **Authentication**: Required (User JWT, must be seller)
 
-**Request Body**: (Multipart form data)
+**Request Body**: (JSON or Multipart form data)
 - Car information fields
 - Images (multiple files)
 - Inspection certificate (file)
 - Registration book (file, optional)
 
 **Response**: `201 Created`
+
+#### `GET /api/cars/my`
+
+Get current user's cars.
+
+**Authentication**: Required (User JWT)
+
+**Query Parameters**:
+- `lang` - Language preference (en, th, default: en)
+
+**Response**: `200 OK`
+
+#### `GET /api/cars/{id}`
+
+Get car details by ID.
+
+**Authentication**: Not required (seller contact info requires authentication)
+
+**Query Parameters**:
+- `lang` - Language preference (en, th, default: en)
+
+**Response**: `200 OK`
+```json
+{
+  "success": true,
+  "code": 200,
+  "data": {
+    "car": { ... },
+    "images": [ ... ],
+    "inspection": { ... },
+    "sellerContacts": [ ... ]
+  }
+}
+```
 
 #### `PUT /api/cars/{id}`
 
@@ -412,13 +536,139 @@ Delete car listing.
 
 **Response**: `200 OK`
 
----
+#### `POST /api/cars/{id}/images`
 
-### Favourites
+Upload car images.
 
-#### `GET /api/favorites`
+**Authentication**: Required (User JWT, must be owner)
 
-Get user's favourite cars.
+**Request Body**: (Multipart form data)
+- `images` - Array of image files
+
+**Response**: `200 OK`
+
+#### `PUT /api/cars/{id}/images/order`
+
+Reorder car images.
+
+**Authentication**: Required (User JWT, must be owner)
+
+**Request Body**:
+```json
+{
+  "imageIds": [1, 2, 3]
+}
+```
+
+**Response**: `200 OK`
+
+#### `GET /api/cars/images/{image_id}`
+
+Get car image.
+
+**Authentication**: Not required
+
+**Response**: `200 OK` (image binary)
+
+#### `DELETE /api/cars/images/{image_id}`
+
+Delete car image.
+
+**Authentication**: Required (User JWT, must be owner)
+
+**Response**: `200 OK`
+
+#### `PUT /api/cars/{id}/status`
+
+Update car status.
+
+**Authentication**: Required (User JWT, must be owner)
+
+**Request Body**:
+```json
+{
+  "status": "active"
+}
+```
+
+**Response**: `200 OK`
+
+#### `POST /api/cars/{id}/book`
+
+Upload registration book to existing car.
+
+**Authentication**: Required (User JWT, must be owner)
+
+**Request Body**: (Multipart form data)
+- `book_file` - Registration book image file
+
+**Response**: `200 OK`
+
+#### `POST /api/cars/{id}/inspection`
+
+Upload inspection results via URL.
+
+**Authentication**: Required (User JWT, must be owner)
+
+**Request Body**:
+```json
+{
+  "url": "https://example.com/inspection"
+}
+```
+
+**Response**: `200 OK`
+
+#### `PATCH /api/cars/{id}/draft`
+
+Auto-save car draft.
+
+**Authentication**: Required (User JWT, must be owner)
+
+**Request Body**: (JSON)
+- Car information fields
+
+**Response**: `200 OK`
+
+#### `GET /api/cars/{id}/review`
+
+Review car publish readiness.
+
+**Authentication**: Required (User JWT, must be owner)
+
+**Response**: `200 OK`
+```json
+{
+  "ready": false,
+  "issues": [
+    "At least 5 images are required",
+    "Valid price is required"
+  ]
+}
+```
+
+#### `POST /api/cars/{id}/discard`
+
+Discard car draft.
+
+**Authentication**: Required (User JWT, must be owner)
+
+**Response**: `200 OK`
+
+#### `GET /api/cars/{id}/restore-progress`
+
+Get car data for restoring progress (owner only).
+
+**Authentication**: Required (User JWT, must be owner)
+
+**Query Parameters**:
+- `lang` - Language preference (en, th, default: en)
+
+**Response**: `200 OK`
+
+#### `GET /api/cars/{id}/estimate`
+
+Get estimated market price for a car.
 
 **Authentication**: Required (User JWT)
 
@@ -426,33 +676,44 @@ Get user's favourite cars.
 ```json
 {
   "success": true,
-  "code": 200,
   "data": {
-    "favorites": [ ... ]
+    "estimatedPrice": 450000
   }
 }
 ```
 
-#### `POST /api/favorites`
+---
 
-Add car to favourites.
+### Favourites
 
-**Authentication**: Required (User JWT)
+#### `GET /api/favorites/my`
 
-**Request Body**:
+Get current user's favourite listings (buyer-only).
+
+**Authentication**: Required (User JWT, buyer role)
+
+**Response**: `200 OK`
 ```json
 {
-  "car_id": 123
+  "success": true,
+  "code": 200,
+  "data": [ ... ]
 }
 ```
 
-**Response**: `201 Created`
+#### `POST /api/favorites/{carId}`
 
-#### `DELETE /api/favorites/{car_id}`
+Add car to favourites (buyer-only).
 
-Remove car from favourites.
+**Authentication**: Required (User JWT, buyer role)
 
-**Authentication**: Required (User JWT)
+**Response**: `200 OK`
+
+#### `DELETE /api/favorites/{carId}`
+
+Remove car from favourites (buyer-only).
+
+**Authentication**: Required (User JWT, buyer role)
 
 **Response**: `200 OK`
 
@@ -462,26 +723,28 @@ Remove car from favourites.
 
 #### `GET /api/recent-views`
 
-Get user's recent viewing history.
+Get current user's recent views (buyer-only).
 
-**Authentication**: Required (User JWT)
+**Authentication**: Required (User JWT, buyer role)
+
+**Query Parameters**:
+- `limit` - Maximum number of views to return (default: 20, max: 100)
+- `lang` - Language preference (en, th, default: en)
 
 **Response**: `200 OK`
 ```json
 {
   "success": true,
   "code": 200,
-  "data": {
-    "recent_views": [ ... ]
-  }
+  "data": [ ... ]
 }
 ```
 
 #### `POST /api/recent-views`
 
-Track car view (automatically called when viewing car details).
+Record a car view (buyer-only).
 
-**Authentication**: Required (User JWT)
+**Authentication**: Required (User JWT, buyer role)
 
 **Request Body**:
 ```json
@@ -490,42 +753,40 @@ Track car view (automatically called when viewing car details).
 }
 ```
 
-**Response**: `201 Created`
+**Response**: `200 OK`
 
 ---
 
 ### Reports
 
-#### `GET /api/reports`
+#### `POST /api/reports/cars/{id}`
 
-Get user's reports.
-
-**Authentication**: Required (User JWT)
-
-**Response**: `200 OK`
-```json
-{
-  "success": true,
-  "code": 200,
-  "data": {
-    "reports": [ ... ]
-  }
-}
-```
-
-#### `POST /api/reports`
-
-Create a new report.
+Submit car report.
 
 **Authentication**: Required (User JWT)
 
 **Request Body**:
 ```json
 {
-  "report_type": "car",
-  "car_id": 123,
-  "topic": "False Information",
-  "sub_topics": ["Wrong mileage", "Fake photos"],
+  "topic": "false_information",
+  "subTopics": ["Wrong mileage", "Fake photos"],
+  "description": "Detailed description of the issue"
+}
+```
+
+**Response**: `201 Created`
+
+#### `POST /api/reports/sellers/{id}`
+
+Submit seller report.
+
+**Authentication**: Required (User JWT)
+
+**Request Body**:
+```json
+{
+  "topic": "fraud",
+  "subTopics": ["Fake car", "No response"],
   "description": "Detailed description of the issue"
 }
 ```
@@ -534,46 +795,128 @@ Create a new report.
 
 ---
 
+### Reference Data
+
+#### `GET /api/reference-data/all`
+
+Get all reference data for dropdowns and filters.
+
+**Authentication**: Not required
+
+**Query Parameters**:
+- `lang` - Language preference (en, th, default: en)
+
+**Response**: `200 OK`
+```json
+{
+  "success": true,
+  "data": {
+    "bodyTypes": [ ... ],
+    "transmissions": [ ... ],
+    "fuelTypes": [ ... ],
+    "drivetrains": [ ... ],
+    "colors": [ ... ],
+    "provinces": [ ... ]
+  }
+}
+```
+
+#### `GET /api/reference-data/brands`
+
+Get all car brands.
+
+**Authentication**: Not required
+
+**Query Parameters**:
+- `lang` - Language preference (en, th, default: en)
+
+**Response**: `200 OK`
+
+#### `GET /api/reference-data/models`
+
+Get all car models.
+
+**Authentication**: Not required
+
+**Query Parameters**:
+- `lang` - Language preference (en, th, default: en)
+
+**Response**: `200 OK`
+
+#### `GET /api/reference-data/submodels`
+
+Get all car submodels.
+
+**Authentication**: Not required
+
+**Query Parameters**:
+- `lang` - Language preference (en, th, default: en)
+
+**Response**: `200 OK`
+
+---
+
 ### Admin Endpoints
 
-All admin endpoints are prefixed with `/admin/` and require:
+All admin endpoints are prefixed with `/api/admin/` and require:
 1. Admin JWT authentication
 2. IP whitelist validation
 
+#### Admin Authentication
+
+- `POST /api/admin/auth/signin` - Admin sign in
+- `GET /api/admin/auth/me` - Get current admin information
+- `POST /api/admin/auth/signout` - Admin sign out
+- `POST /api/admin/auth/refresh` - Refresh admin authentication token
+
 #### Admin Dashboard
 
-- `GET /admin/dashboard` - Get dashboard statistics
+- `GET /api/admin/dashboard/stats` - Get dashboard statistics
+- `GET /api/admin/dashboard/chart` - Get user activity chart data
+- `GET /api/admin/dashboard/top-brands` - Get top 10 active brands
+- `GET /api/admin/dashboard/recent-reports` - Get recent pending reports
 
-#### Admin Users
+#### Admin Account Management
 
-- `GET /admin/users` - List all users
-- `GET /admin/users/{id}` - Get user details
-- `PUT /admin/users/{id}/ban` - Ban user
-- `PUT /admin/users/{id}/unban` - Unban user
+- `GET /api/admin/admins` - List all admins
+- `POST /api/admin/admins` - Create a new admin
+- `PATCH /api/admin/admins/{id}` - Update an admin
+- `DELETE /api/admin/admins/{id}` - Delete an admin
 
-#### Admin Cars
+#### Admin User Management
 
-- `GET /admin/cars` - List all cars
-- `GET /admin/cars/{id}` - Get car details
-- `PUT /admin/cars/{id}` - Update car
-- `DELETE /admin/cars/{id}` - Delete car
+- `GET /api/admin/users` - List all users
+- `POST /api/admin/users` - Create a new user
+- `GET /api/admin/users/{id}` - Get user details
+- `PATCH /api/admin/users/{id}` - Update a user
+- `DELETE /api/admin/users/{id}` - Delete a user
+- `POST /api/admin/users/{id}/ban` - Ban a user
 
-#### Admin Reports
+#### Admin Car Management
 
-- `GET /admin/reports` - List all reports
-- `GET /admin/reports/{id}` - Get report details
-- `PUT /admin/reports/{id}` - Update report status
+- `GET /api/admin/cars` - List all cars
+- `POST /api/admin/cars` - Create a new car
+- `PATCH /api/admin/cars/{id}` - Update a car
+- `DELETE /api/admin/cars/{id}` - Delete a car
+- `POST /api/admin/cars/{id}/remove` - Remove a car listing
+
+#### Admin Reports Management
+
+- `GET /api/admin/reports` - List all reports
+- `POST /api/admin/reports/{id}/resolve` - Resolve a report
+- `POST /api/admin/reports/{id}/dismiss` - Dismiss a report
 
 #### Admin IP Whitelist
 
-- `GET /admin/ip-whitelists` - List all whitelisted IPs
-- `POST /admin/ip-whitelists` - Add IP to whitelist
-- `DELETE /admin/ip-whitelists/{id}` - Remove IP from whitelist
+- `GET /api/admin/ip-whitelist` - View whitelisted IP addresses
+- `POST /api/admin/ip-whitelist/add` - Add IP address to whitelist
+- `DELETE /api/admin/ip-whitelist/remove` - Remove IP address from whitelist
+- `POST /api/admin/ip-whitelist/check` - Check IP deletion impact
 
 #### Admin Market Price
 
-- `GET /admin/market-price` - List market prices
-- `POST /admin/market-price/upload` - Upload DLT PDF
+- `GET /api/admin/market-price/data` - Get all market prices
+- `POST /api/admin/market-price/upload` - Upload DLT PDF
 
 ---
 
@@ -607,6 +950,3 @@ You can use tools like Swagger UI or Postman to import and test the API.
 - **Project README**: `README.md`
 
 ---
-
-**Last Updated**: 2024
-

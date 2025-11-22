@@ -14,7 +14,6 @@ Comprehensive documentation of the CarJai system architecture, infrastructure, d
 6. [Data Flow](#data-flow)
 7. [Monitoring & Logging](#monitoring--logging)
 8. [Performance](#performance)
-9. [Scalability](#scalability)
 
 ---
 
@@ -198,11 +197,13 @@ services:
 - Keep migration history for rollback
 
 **Migration Execution**:
-```bash
-# Manual execution
-psql -U user -d database -f migrations/001_admin_auth.sql
+- Migrations run automatically when the database container is first created
+- SQL files in `backend/migrations/` are executed in numerical order by PostgreSQL's `docker-entrypoint-initdb.d` mechanism
 
-# Or use migration tool (if implemented)
+For manual execution:
+```bash
+# Execute SQL files directly in the database container
+docker exec -it carjai-database psql -U carjai_user -d carjai -f /docker-entrypoint-initdb.d/001_admin_auth.sql
 ```
 
 ---
@@ -505,44 +506,6 @@ Seller Uploads Document
 
 ---
 
-## Scalability
-
-### Horizontal Scaling
-
-**Frontend**:
-- Stateless Next.js application
-- Can scale horizontally
-- Load balancer required
-
-**Backend**:
-- Stateless Go HTTP server
-- Can scale horizontally
-- Shared database
-- Session management (if needed)
-
-**Database**:
-- PostgreSQL replication
-- Read replicas for read-heavy workloads
-- Connection pooling
-- Database sharding (if needed)
-
-### Vertical Scaling
-
-**Resource Scaling**:
-- Increase container resources
-- Database server resources
-- CPU and memory allocation
-
-### Caching Strategy
-
-**Potential Caching**:
-- Redis for session storage
-- Cache frequently accessed data
-- API response caching
-- Database query result caching
-
----
-
 ## Additional Resources
 
 - **API Documentation**: `docs/API-Documentation.md`
@@ -551,6 +514,4 @@ Seller Uploads Document
 - **Database Schema**: `backend/docs/schema.md`
 
 ---
-
-**Last Updated**: 2024
 

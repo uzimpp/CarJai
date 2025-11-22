@@ -62,10 +62,10 @@ Technical guide for developers working on the CarJai codebase. This document cov
    - Backend API: http://localhost:8080
    - Database: localhost:5432 (credentials in .env)
 
-5. **Run database migrations**
-   ```bash
-   docker exec -it carjai-backend sh -c "cd /app && go run main.go migrate"
-   ```
+5. **Database migrations**
+   - Migrations run automatically when the database container is first created
+   - The `backend/migrations` directory is mounted to `/docker-entrypoint-initdb.d` in the PostgreSQL container
+   - Migrations execute in numerical order on first database initialization
 
 6. **Seed test data (optional)**
    ```bash
@@ -253,13 +253,18 @@ Database migrations are located in `backend/migrations/`:
 11. `010_reports.sql` - Reports tables
 
 **Running migrations**:
-```bash
-docker exec -it carjai-backend sh -c "cd /app && go run main.go migrate"
-```
+- Migrations run automatically when the database container is first created
+- SQL files in `backend/migrations/` are executed in numerical order by PostgreSQL's `docker-entrypoint-initdb.d` mechanism
 
-Or execute SQL files directly in the database container:
+To run migrations manually (e.g., on existing database):
 ```bash
-docker exec -it carjai-database psql -U carjai_user -d carjai -f /path/to/migration.sql
+# Execute SQL files directly in the database container
+docker exec -it carjai-database psql -U carjai_user -d carjai -f /docker-entrypoint-initdb.d/001_admin_auth.sql
+
+# Or run all migrations in order
+for file in $(ls -v /docker-entrypoint-initdb.d/*.sql); do
+  docker exec -it carjai-database psql -U carjai_user -d carjai -f "$file"
+done
 ```
 
 ### Seeding
@@ -449,12 +454,7 @@ docker exec -it carjai-backend go test -v -run TestFunctionName ./...
 
 ### Frontend Tests
 
-(To be implemented)
-
-**Note**: When frontend tests are implemented, they should also be run in Docker:
-```bash
-docker exec -it carjai-frontend npm test
-```
+No frontend tests are currently implemented.
 
 ---
 
@@ -499,6 +499,4 @@ docker exec -it carjai-frontend npm test
 - **Frontend README**: `frontend/README.md`
 
 ---
-
-**Last Updated**: 2024
 

@@ -189,7 +189,7 @@ This guide provides comprehensive instructions for all users of the CarJai platf
      - Transmission (Manual, Automatic, CVT)
      - Drivetrain (FWD, RWD, AWD, 4WD)
      - Fuel Types (can select multiple)
-     - Colors (can select multiple)
+     - Colors (can select up to 3 colors: primary, secondary, tertiary)
 
 3. **Step 2: Chassis Number**
    - Enter chassis number (optional but recommended)
@@ -476,6 +476,4 @@ For technical support or questions:
 - Contact platform administrators
 
 ---
-
-**Last Updated**: 2024
 
