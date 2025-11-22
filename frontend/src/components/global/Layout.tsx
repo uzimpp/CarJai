@@ -6,7 +6,7 @@ import NavBar from "@/components/global/NavBar";
 import SideBar from "@/components/global/SideBar";
 import Footer from "@/components/global/Footer";
 import Signup from "@/components/auth/Signup";
-import ComparisonBar from "@/components/comparison/ComparisonBar";
+import ComparisonButton from "@/components/comparison/ComparisonButton";
 import { Fragment } from "react";
 
 interface ConditionalLayoutProps {
@@ -189,7 +189,7 @@ export default function ConditionalLayout({
       </footer>
 
       {/* Comparison Bar - shows when cars are selected for comparison */}
-      {!isAdminPage && <ComparisonBar />}
+      {!isAdminPage && <ComparisonButton />}
     </Fragment>
   );
 }

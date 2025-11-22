@@ -1135,6 +1135,15 @@ func (s *CarService) GetCarCountByStatus(status string) (int, error) {
 	return count, nil
 }
 
+// GetCarCountBySellerIDAndStatus retrieves the count of cars for a seller by status
+func (s *CarService) GetCarCountBySellerIDAndStatus(sellerID int, status string) (int, error) {
+	count, err := s.carRepo.CountCarsBySellerIDAndStatus(sellerID, status)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get car count for seller %d and status %s: %w", sellerID, status, err)
+	}
+	return count, nil
+}
+
 type ImagesDisplay struct {
 	Images []ImageMetadata `json:"images,omitempty"`
 }

@@ -38,7 +38,7 @@ function CarCard({ car, variant = "browse", favorite, actions }: CarCardProps) {
       } else {
         if (!canAddMore) {
           alert(
-            `You can compare up to 4 cars. Please remove a car from comparison first.`
+            `You can compare up to 3 cars. Please remove a car from comparison first.`
           );
           return;
         }

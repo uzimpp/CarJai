@@ -17,35 +17,29 @@ interface CarComparisonData {
 function ComparisonRow({
   label,
   values,
-  isMobile = false,
 }: {
   label: string;
   values: (string | number | null | undefined)[];
-  isMobile?: boolean;
 }) {
-  if (isMobile) {
-    return (
-      <div className="space-y-2 py-3 border-b border-gray-100">
-        <div className="font-medium text-gray-700 text-sm mb-2">{label}</div>
-        <div className="grid grid-cols-2 gap-2">
-          {values.map((value, idx) => (
-            <div key={idx} className="text-sm text-gray-900">
-              {value != null ? String(value) : "—"}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="grid grid-cols-[200px_repeat(var(--cols),1fr)] gap-4 py-3 border-b border-gray-100">
-      <div className="font-medium text-gray-700 text-sm">{label}</div>
-      {values.map((value, idx) => (
-        <div key={idx} className="text-sm text-gray-900">
-          {value != null ? String(value) : "—"}
+    <div className="py-3 border-b border-gray-100">
+      {/* Title above on small screens */}
+      <div className="font-medium text-gray-700 text-sm mb-2 lg:hidden">
+        {label}
+      </div>
+      {/* Grid: 3 columns on small, 4 columns (label + 3 cars) on large */}
+      <div className="grid grid-cols-3 lg:grid-cols-[200px_repeat(3,1fr)] gap-4 min-w-[450px]">
+        {/* Label column (only visible on large screens) */}
+        <div className="hidden lg:block font-medium text-gray-700 text-sm sticky left-0 bg-white pr-2">
+          {label}
         </div>
-      ))}
+        {/* Car values */}
+        {values.map((value, idx) => (
+          <div key={idx} className="text-sm text-gray-900 min-w-[150px]">
+            {value != null ? String(value) : "—"}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -53,11 +47,9 @@ function ComparisonRow({
 function InspectionRow({
   label,
   values,
-  isMobile = false,
 }: {
   label: string;
   values: (boolean | null | undefined)[];
-  isMobile?: boolean;
 }) {
   const renderValue = (value: boolean | null | undefined) => {
     if (value === null || value === undefined) return "—";
@@ -106,25 +98,25 @@ function InspectionRow({
     );
   };
 
-  if (isMobile) {
-    return (
-      <div className="space-y-2 py-3 border-b border-gray-100">
-        <div className="font-medium text-gray-700 text-sm mb-2">{label}</div>
-        <div className="grid grid-cols-2 gap-2">
-          {values.map((value, idx) => (
-            <div key={idx}>{renderValue(value)}</div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="grid grid-cols-[200px_repeat(var(--cols),1fr)] gap-4 py-3 border-b border-gray-100">
-      <div className="font-medium text-gray-700 text-sm">{label}</div>
-      {values.map((value, idx) => (
-        <div key={idx}>{renderValue(value)}</div>
-      ))}
+    <div className="py-3 border-b border-gray-100">
+      {/* Title above on small screens */}
+      <div className="font-medium text-gray-700 text-sm mb-2 lg:hidden">
+        {label}
+      </div>
+      {/* Grid: 3 columns on small, 4 columns (label + 3 cars) on large */}
+      <div className="grid grid-cols-3 lg:grid-cols-[200px_repeat(3,1fr)] gap-4 min-w-[450px]">
+        {/* Label column (only visible on large screens) */}
+        <div className="hidden lg:block font-medium text-gray-700 text-sm sticky left-0 bg-white pr-2">
+          {label}
+        </div>
+        {/* Car values */}
+        {values.map((value, idx) => (
+          <div key={idx} className="min-w-[150px]">
+            {renderValue(value)}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -267,16 +259,6 @@ export default function ComparePage() {
     useComparison();
   const [carsData, setCarsData] = useState<CarComparisonData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
 
   useEffect(() => {
     if (comparedCars.length < 2) {
@@ -340,8 +322,6 @@ export default function ComparePage() {
     );
   }
 
-  const cols = comparedCars.length;
-
   // Inspection fields mapping
   const inspectionFields = [
     { key: "brakeResult", label: "Brake System" },
@@ -402,45 +382,39 @@ export default function ComparePage() {
         </div>
       ) : (
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div
-            className="overflow-x-auto"
-            style={{ "--cols": cols } as React.CSSProperties}
-          >
+          <div className="overflow-x-auto -mx-4 md:mx-0 px-4 md:px-0">
             {/* Car Images Row */}
-            <div
-              className={`grid ${
-                isMobile
-                  ? "grid-cols-2"
-                  : "grid-cols-[200px_repeat(var(--cols),1fr)]"
-              } gap-4 p-4 md:p-6 bg-gray-50 border-b-2 border-gray-200`}
-            >
-              {!isMobile && (
-                <div className="font-semibold text-gray-900 text-sm md:text-base">
+            <div className="p-4 md:p-6 bg-gray-50 border-b-2 border-gray-200">
+              {/* Title above on small screens */}
+              <div className="font-semibold text-gray-900 text-sm md:text-base mb-4 lg:hidden">
+                Car
+              </div>
+              {/* Grid: 3 columns on small, 4 columns (label + 3 cars) on large */}
+              <div className="grid grid-cols-3 lg:grid-cols-[200px_repeat(3,1fr)] gap-4 min-w-[450px]">
+                {/* Label column (only visible on large screens) */}
+                <div className="hidden lg:block font-semibold text-gray-900 text-sm md:text-base sticky left-0 bg-gray-50 pr-2">
                   Car
                 </div>
-              )}
-              {comparedCars.map((car, idx) => {
-                const carData = carsData[idx]?.car;
-                return (
-                  <div key={car.id} className="space-y-2">
-                    {isMobile && (
+                {/* Car images */}
+                {comparedCars.map((car, idx) => {
+                  const carData = carsData[idx]?.car;
+                  return (
+                    <div key={car.id} className="space-y-2 min-w-[150px]">
                       <div className="text-xs font-medium text-gray-700 mb-2">
                         {car.brandName} {car.modelName}
                       </div>
-                    )}
-                    <CarImageNavigator
-                      car={car}
-                      carData={carData}
-                      onRemove={() => removeFromComparison(car.id)}
-                    />
-                    {isMobile && (
+                      <CarImageNavigator
+                        car={car}
+                        carData={carData}
+                        onRemove={() => removeFromComparison(car.id)}
+                      />
                       <div className="text-sm font-semibold text-maroon">
                         ฿{car.price?.toLocaleString() || "N/A"}
                       </div>
-                    )}
-                  </div>
-                );
-              })}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Comparison Sections */}
@@ -456,7 +430,6 @@ export default function ComparePage() {
                     values={comparedCars.map((car) =>
                       car.price ? `฿${car.price.toLocaleString()}` : null
                     )}
-                    isMobile={isMobile}
                   />
                   <ComparisonRow
                     label="Brand & Model"
@@ -466,61 +439,46 @@ export default function ComparePage() {
                           .filter(Boolean)
                           .join(" ") || null
                     )}
-                    isMobile={isMobile}
                   />
                   <ComparisonRow
                     label="Year"
                     values={comparedCars.map((car) => car.year)}
-                    isMobile={isMobile}
                   />
                   <ComparisonRow
                     label="Mileage"
                     values={comparedCars.map((car) =>
                       car.mileage ? `${car.mileage.toLocaleString()} km` : null
                     )}
-                    isMobile={isMobile}
                   />
                   <ComparisonRow
                     label="Condition Rating"
                     values={comparedCars.map((car) =>
                       car.conditionRating ? `${car.conditionRating}/5` : null
                     )}
-                    isMobile={isMobile}
                   />
                   {carsData.some((d) => d.car?.car?.description) && (
-                    <>
-                      {isMobile ? (
-                        <div className="space-y-2 py-3 border-b border-gray-100">
-                          <div className="font-medium text-gray-700 text-sm mb-2">
-                            Description
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            {carsData.map((d, idx) => (
-                              <div
-                                key={idx}
-                                className="text-sm text-gray-900 whitespace-pre-wrap"
-                              >
-                                {d.car?.car?.description || "—"}
-                              </div>
-                            ))}
-                          </div>
+                    <div className="py-3 border-b border-gray-100">
+                      {/* Title above on small screens */}
+                      <div className="font-medium text-gray-700 text-sm mb-2 lg:hidden">
+                        Description
+                      </div>
+                      {/* Grid: 3 columns on small, 4 columns (label + 3 cars) on large */}
+                      <div className="grid grid-cols-3 lg:grid-cols-[200px_repeat(3,1fr)] gap-4 min-w-[450px]">
+                        {/* Label column (only visible on large screens) */}
+                        <div className="hidden lg:block font-medium text-gray-700 text-sm sticky left-0 bg-white pr-2">
+                          Description
                         </div>
-                      ) : (
-                        <div className="grid grid-cols-[200px_repeat(var(--cols),1fr)] gap-4 py-3 border-b border-gray-100">
-                          <div className="font-medium text-gray-700 text-sm">
-                            Description
+                        {/* Car descriptions */}
+                        {carsData.map((d, idx) => (
+                          <div
+                            key={idx}
+                            className="text-sm text-gray-900 whitespace-pre-wrap min-w-[150px]"
+                          >
+                            {d.car?.car?.description || "—"}
                           </div>
-                          {carsData.map((d, idx) => (
-                            <div
-                              key={idx}
-                              className="text-sm text-gray-900 whitespace-pre-wrap"
-                            >
-                              {d.car?.car?.description || "—"}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
@@ -534,17 +492,14 @@ export default function ComparePage() {
                   <ComparisonRow
                     label="Body Type"
                     values={comparedCars.map((car) => car.bodyType)}
-                    isMobile={isMobile}
                   />
                   <ComparisonRow
                     label="Transmission"
                     values={comparedCars.map((car) => car.transmission)}
-                    isMobile={isMobile}
                   />
                   <ComparisonRow
                     label="Drivetrain"
                     values={comparedCars.map((car) => car.drivetrain)}
-                    isMobile={isMobile}
                   />
                   <ComparisonRow
                     label="Fuel Types"
@@ -553,7 +508,6 @@ export default function ComparePage() {
                         ? car.fuelTypes.join(", ")
                         : null
                     )}
-                    isMobile={isMobile}
                   />
                   <ComparisonRow
                     label="Colors"
@@ -562,20 +516,17 @@ export default function ComparePage() {
                         ? car.colors.join(", ")
                         : null
                     )}
-                    isMobile={isMobile}
                   />
                   {carsData.some((d) => d.car?.car?.seats) && (
                     <ComparisonRow
                       label="Seats"
                       values={carsData.map((d) => d.car?.car?.seats)}
-                      isMobile={isMobile}
                     />
                   )}
                   {carsData.some((d) => d.car?.car?.doors) && (
                     <ComparisonRow
                       label="Doors"
                       values={carsData.map((d) => d.car?.car?.doors)}
-                      isMobile={isMobile}
                     />
                   )}
                   {carsData.some((d) => d.car?.car?.engineCc) && (
@@ -586,7 +537,6 @@ export default function ComparePage() {
                           ? `${d.car.car.engineCc.toLocaleString()} cc`
                           : null
                       )}
-                      isMobile={isMobile}
                     />
                   )}
                   {carsData.some((d) => d.car?.car?.licensePlate) && (
@@ -599,7 +549,6 @@ export default function ComparePage() {
                             } ${d.car.car.province || ""}`.trim()
                           : null
                       )}
-                      isMobile={isMobile}
                     />
                   )}
                 </div>
@@ -617,14 +566,12 @@ export default function ComparePage() {
                       values={carsData.map(
                         (d) => d.car?.inspection?.station || null
                       )}
-                      isMobile={isMobile}
                     />
                     <InspectionRow
                       label="Overall Pass"
                       values={carsData.map(
                         (d) => d.car?.inspection?.overallPass
                       )}
-                      isMobile={isMobile}
                     />
                     {inspectionFields.map((field) => (
                       <InspectionRow
@@ -636,7 +583,6 @@ export default function ComparePage() {
                               field.key as keyof InspectionData
                             ] as boolean | null | undefined
                         )}
-                        isMobile={isMobile}
                       />
                     ))}
                   </div>
@@ -663,7 +609,6 @@ export default function ComparePage() {
                             : "No"
                           : null
                       )}
-                      isMobile={isMobile}
                     />
                     <ComparisonRow
                       label="Heavily Damaged"
@@ -674,7 +619,6 @@ export default function ComparePage() {
                             : "No"
                           : null
                       )}
-                      isMobile={isMobile}
                     />
                   </div>
                 </div>
@@ -682,23 +626,22 @@ export default function ComparePage() {
 
               {/* View Details Links */}
               <div className="pt-4 border-t border-gray-200">
-                <div
-                  className={`grid ${
-                    isMobile
-                      ? "grid-cols-2"
-                      : "grid-cols-[200px_repeat(var(--cols),1fr)]"
-                  } gap-4`}
-                >
-                  {!isMobile && (
-                    <div className="font-medium text-gray-700 text-sm">
-                      Actions
-                    </div>
-                  )}
+                {/* Title above on small screens */}
+                <div className="font-medium text-gray-700 text-sm mb-2 lg:hidden">
+                  Actions
+                </div>
+                {/* Grid: 3 columns on small, 4 columns (label + 3 cars) on large */}
+                <div className="grid grid-cols-3 lg:grid-cols-[200px_repeat(3,1fr)] gap-4 min-w-[450px]">
+                  {/* Label column (only visible on large screens) */}
+                  <div className="hidden lg:block font-medium text-gray-700 text-sm sticky left-0 bg-white pr-2">
+                    Actions
+                  </div>
+                  {/* Action buttons */}
                   {comparedCars.map((car) => (
                     <Link
                       key={car.id}
                       href={`/car/${car.id}`}
-                      className="inline-block px-4 py-2 text-sm font-medium text-center text-white bg-maroon hover:bg-red rounded-lg transition-colors"
+                      className="inline-block px-4 py-2 text-sm font-medium text-center text-white bg-maroon hover:bg-red rounded-lg transition-colors min-w-[150px]"
                     >
                       View Details
                     </Link>

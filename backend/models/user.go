@@ -212,9 +212,10 @@ type ProfileData struct {
 
 // SellerData contains seller profile with contacts and cars (used in services)
 type SellerData struct {
-	Seller   Seller          `json:"seller"`
-	Contacts []SellerContact `json:"contacts"`
-	Cars     []CarListItem   `json:"cars,omitempty"` // Lightweight car list items for efficient listing
+	Seller        Seller          `json:"seller"`
+	Contacts      []SellerContact `json:"contacts"`
+	Cars          []CarListItem   `json:"cars,omitempty"`          // Lightweight car list items for efficient listing
+	SoldCarsCount int             `json:"soldCarsCount,omitempty"` // Count of sold cars
 }
 
 // PublicSellerResponse represents the public seller profile response (API response only)

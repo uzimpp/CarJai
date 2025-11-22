@@ -22,7 +22,7 @@ const ComparisonContext = createContext<ComparisonContextType | undefined>(
   undefined
 );
 
-const MAX_COMPARISON_ITEMS = 4;
+const MAX_COMPARISON_ITEMS = 3;
 const STORAGE_KEY = "carjai_comparison";
 
 export function ComparisonProvider({

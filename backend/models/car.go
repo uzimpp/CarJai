@@ -638,6 +638,19 @@ func (r *CarRepository) CountCarsByStatus(status string) (int, error) {
 	return count, nil
 }
 
+// CountCarsBySellerIDAndStatus counts cars for a seller by status
+func (r *CarRepository) CountCarsBySellerIDAndStatus(sellerID int, status string) (int, error) {
+	var count int
+	query := `SELECT COUNT(*) FROM cars WHERE seller_id = $1 AND status = $2`
+
+	err := r.db.DB.QueryRow(query, sellerID, status).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count cars by seller and status: %w", err)
+	}
+
+	return count, nil
+}
+
 // GetCarsBySellerID retrieves cars for a seller, optionally filtered by status
 // If status is empty string, returns all cars. Otherwise filters by the specified status.
 func (r *CarRepository) GetCarsBySellerID(sellerID int, status string) ([]Car, error) {

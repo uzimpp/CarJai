@@ -162,10 +162,18 @@ func (h *ProfileHandler) GetSellerProfile(w http.ResponseWriter, r *http.Request
 		cars = []models.CarListItem{}
 	}
 
+	// Get sold cars count
+	soldCarsCount, err := h.carService.GetCarCountBySellerIDAndStatus(sellerID, "sold")
+	if err != nil {
+		// If fetching sold cars count fails, just set it to 0
+		soldCarsCount = 0
+	}
+
 	response := models.SellerData{
-		Seller:   *seller,
-		Contacts: contacts,
-		Cars:     cars,
+		Seller:        *seller,
+		Contacts:      contacts,
+		Cars:          cars,
+		SoldCarsCount: soldCarsCount,
 	}
 	utils.WriteJSON(w, http.StatusOK, response, "")
 }
