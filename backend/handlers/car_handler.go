@@ -193,7 +193,7 @@ func (h *CarHandler) GetMyCars(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get user's cars as lightweight list items (always translated for display)
-	listItems, err := h.carService.GetCarListItemsBySellerID(userID, lang)
+	listItems, err := h.carService.GetCarListItemsBySellerID(userID, lang, "")
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get cars: %v", err))
 		return
