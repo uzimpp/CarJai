@@ -1,7 +1,6 @@
 "use client";
 
 interface RangeInputProps {
-  label: string;
   minValue: number | undefined;
   maxValue: number | undefined;
   onRangeChange: (min: number | undefined, max: number | undefined) => void;
@@ -17,7 +16,6 @@ interface RangeInputProps {
 }
 
 export default function RangeInput({
-  label,
   minValue,
   maxValue,
   onRangeChange,
@@ -92,80 +90,75 @@ export default function RangeInput({
   };
 
   return (
-    <div>
-      <label className="block text--1 font-medium text-gray-700 mb-3">
-        {label}
-      </label>
-      <div className="space-y-3">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-          <input
-            type="number"
-            placeholder={minPlaceholder}
-            value={minValue || ""}
-            min={min}
-            step={step}
-            onChange={(e) => {
-              const value = e.target.value
-                ? parseFloat(e.target.value)
-                : undefined;
-              if (value !== undefined && !isNaN(value)) {
-                handleMinChange(value);
-              } else if (e.target.value === "") {
-                handleMinChange(undefined);
-              }
-            }}
-            className="w-full sm:w-full px-3 py-2 border border-gray-300 rounded-lg text-0 text-gray-900 focus:border-maroon focus:outline-none focus:ring-2 focus:ring-maroon/20 transition-all"
-          />
-          <span className="text-gray-500 text-center sm:text-left hidden sm:inline">
-            -
-          </span>
-          <input
-            type="number"
-            placeholder={maxPlaceholder}
-            value={maxValue || ""}
-            min={min}
-            step={step}
-            onChange={(e) => {
-              const value = e.target.value
-                ? parseFloat(e.target.value)
-                : undefined;
-              if (value !== undefined && !isNaN(value)) {
-                handleMaxChange(value);
-              } else if (e.target.value === "") {
-                handleMaxChange(undefined);
-              }
-            }}
-            className="w-full sm:w-full px-3 py-2 border border-gray-300 rounded-lg text-0 text-gray-900 focus:border-maroon focus:outline-none focus:ring-2 focus:ring-maroon/20 transition-all"
-          />
-        </div>
-        {predefinedRanges && predefinedRanges.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {predefinedRanges.map((range) => {
-              const isActive =
-                (minValue === range.min ||
-                  (range.min === undefined && minValue === undefined)) &&
-                (maxValue === range.max ||
-                  (range.max === undefined && maxValue === undefined));
-              return (
-                <button
-                  key={range.label}
-                  type="button"
-                  onClick={() => {
-                    handlePredefinedRange(range.min, range.max);
-                  }}
-                  className={`px-3 py-1 rounded-full border-1 text--1 transition-all text-center whitespace-nowrap ${
-                    isActive
-                      ? "border-maroon bg-maroon/10 text-maroon"
-                      : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
-                  }`}
-                >
-                  {range.label}
-                </button>
-              );
-            })}
-          </div>
-        )}
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+        <input
+          type="number"
+          placeholder={minPlaceholder}
+          value={minValue || ""}
+          min={min}
+          step={step}
+          onChange={(e) => {
+            const value = e.target.value
+              ? parseFloat(e.target.value)
+              : undefined;
+            if (value !== undefined && !isNaN(value)) {
+              handleMinChange(value);
+            } else if (e.target.value === "") {
+              handleMinChange(undefined);
+            }
+          }}
+          className="w-full sm:w-full px-3 py-2 border border-gray-300 rounded-lg text-0 text-gray-900 focus:border-maroon focus:outline-none focus:ring-2 focus:ring-maroon/20 transition-all"
+        />
+        <span className="text-gray-500 text-center sm:text-left hidden sm:inline">
+          -
+        </span>
+        <input
+          type="number"
+          placeholder={maxPlaceholder}
+          value={maxValue || ""}
+          min={min}
+          step={step}
+          onChange={(e) => {
+            const value = e.target.value
+              ? parseFloat(e.target.value)
+              : undefined;
+            if (value !== undefined && !isNaN(value)) {
+              handleMaxChange(value);
+            } else if (e.target.value === "") {
+              handleMaxChange(undefined);
+            }
+          }}
+          className="w-full sm:w-full px-3 py-2 border border-gray-300 rounded-lg text-0 text-gray-900 focus:border-maroon focus:outline-none focus:ring-2 focus:ring-maroon/20 transition-all"
+        />
       </div>
+      {predefinedRanges && predefinedRanges.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {predefinedRanges.map((range) => {
+            const isActive =
+              (minValue === range.min ||
+                (range.min === undefined && minValue === undefined)) &&
+              (maxValue === range.max ||
+                (range.max === undefined && maxValue === undefined));
+            return (
+              <button
+                key={range.label}
+                type="button"
+                onClick={() => {
+                  handlePredefinedRange(range.min, range.max);
+                }}
+                className={`px-3 py-1 rounded-full border-1 text--1 transition-all text-center whitespace-nowrap ${
+                  isActive
+                    ? "border-maroon bg-maroon/10 text-maroon"
+                    : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
+                }`}
+              >
+                {range.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

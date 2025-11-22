@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
-import SearchBar from "@/components/global/SearchBar";
+import SearchBar from "@/components/search/SearchBar";
 import AccountBtn from "@/components/global/AccountBtn";
 import AccountMenuContent from "@/components/global/AccountMenuContent";
 
@@ -89,7 +89,7 @@ export default function NavBar() {
           </div>
 
           {shouldShowSearchBar && (
-            <SearchBar className="bg-maroon/20" placeholder="Search cars..." />
+            <SearchBar placeholder="Search cars..." />
           )}
 
           {/* Desktop nav */}

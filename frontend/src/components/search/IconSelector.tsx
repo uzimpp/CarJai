@@ -7,7 +7,6 @@ interface IconOption {
 }
 
 interface IconSelectorProps {
-  label: string;
   options: IconOption[];
   selectedValues: string[];
   onChange: (values: string[]) => void;
@@ -16,7 +15,6 @@ interface IconSelectorProps {
 }
 
 export default function IconSelector({
-  label,
   options,
   selectedValues,
   onChange,
@@ -46,40 +44,33 @@ export default function IconSelector({
       : "grid-cols-3";
 
   return (
-    <div>
-      <label className="block text--1 font-medium text-gray-700 mb-3">
-        {label}
-      </label>
-      <div className={`grid ${gridColsClass} gap-3`}>
-        {options.map((option) => {
-          const isSelected = selectedValues.includes(option.code);
-          return (
-            <button
-              key={option.code}
-              type="button"
-              onClick={() => handleClick(option.code)}
-              className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all ${
-                isSelected
-                  ? "border-maroon bg-maroon/10"
-                  : "border-gray-200 bg-white hover:border-gray-300"
+    <div className={`grid ${gridColsClass} gap-3`}>
+      {options.map((option) => {
+        const isSelected = selectedValues.includes(option.code);
+        return (
+          <button
+            key={option.code}
+            type="button"
+            onClick={() => handleClick(option.code)}
+            className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all ${
+              isSelected
+                ? "border-maroon bg-maroon/10"
+                : "border-gray-200 bg-white hover:border-gray-300"
+            }`}
+          >
+            <div className={`${isSelected ? "text-maroon" : "text-gray-600"}`}>
+              {option.icon}
+            </div>
+            <span
+              className={`text--1 text-center ${
+                isSelected ? "text-maroon font-medium" : "text-gray-700"
               }`}
             >
-              <div
-                className={`${isSelected ? "text-maroon" : "text-gray-600"}`}
-              >
-                {option.icon}
-              </div>
-              <span
-                className={`text--1 text-center ${
-                  isSelected ? "text-maroon font-medium" : "text-gray-700"
-                }`}
-              >
-                {option.label}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+              {option.label}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }

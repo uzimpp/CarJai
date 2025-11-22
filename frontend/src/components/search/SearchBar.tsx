@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { carsAPI } from "@/lib/carsAPI";
+import SearchInputField from "./SearchInputField";
 
 type SearchBarProps = {
   className?: string;
@@ -182,16 +183,6 @@ export default function SearchBar({
     inputRef.current?.focus();
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setQueryText(e.target.value);
-    setShowDropdown(true);
-    setSelectedIndex(-1);
-  };
-
-  const handleInputFocus = () => {
-    setShowDropdown(true);
-  };
-
   const handleHistoryClick = (item: string) => {
     handleSearch(item);
   };
@@ -227,70 +218,26 @@ export default function SearchBar({
   const showDropdownContent =
     showDropdown && (queryText.trim() || searchHistory.length > 0);
 
+  const handleInputFocus = () => {
+    setShowDropdown(true);
+  };
+
   return (
-    <div ref={searchRef} className="relative w-full max-w-md">
-      <form
-        onSubmit={handleSubmit}
-        className={`flex flex-row w-full rounded-full items-center bg-white border border-gray-200 focus-within:border-maroon focus-within:ring-2 focus-within:ring-maroon/20 transition-all ${className}`}
-      >
-        <div className="flex items-center">
-          <button
-            type="submit"
-            className="rounded-full mx-(--space-2xs) px-(--space-3xs) py-(--space-3xs) text-maroon transition-colors hover:bg-maroon/20 focus:outline-none"
-            aria-label="Search"
-          >
-            <svg
-              className="w-(--space-s) h-(--space-s)"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2.5}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-          </button>
-        </div>
-        <div className="relative w-full">
-          <input
-            ref={inputRef}
-            type="text"
-            value={queryText}
-            onChange={handleInputChange}
-            onFocus={handleInputFocus}
-            onKeyDown={handleKeyDown}
-            placeholder={placeholder}
-            className="w-full flex my-(--space-2xs) text-maroon focus:outline-none bg-transparent"
-            autoComplete="off"
-          />
-          {queryText && (
-            <button
-              type="button"
-              onClick={handleClear}
-              className="rounded-full absolute right-(--space-2xs) top-1/2 -translate-y-1/2 p-(--space-3xs) text-maroon/80 bg-maroon/10 hover:text-white hover:bg-maroon transition-colors focus:outline-none"
-              aria-label="Clear search"
-            >
-              <svg
-                className="w-(--space-s) h-(--space-s)"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2.5}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          )}
-        </div>
+    <div ref={searchRef} className={`relative w-full max-w-md ${className}`}>
+      <form onSubmit={handleSubmit}>
+        <SearchInputField
+          ref={inputRef}
+          value={queryText}
+          onChange={(value) => {
+            setQueryText(value);
+            setShowDropdown(true);
+            setSelectedIndex(-1);
+          }}
+          onKeyDown={handleKeyDown}
+          onFocus={handleInputFocus}
+          placeholder={placeholder}
+          inputClassName="text-maroon"
+        />
       </form>
 
       {/* Dropdown */}

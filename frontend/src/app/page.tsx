@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import SearchBar from "@/components/global/SearchBar";
+import SearchBar from "@/components/search/SearchBar";
 import Cta from "@/components/global/Cta";
 
 export default function Home() {

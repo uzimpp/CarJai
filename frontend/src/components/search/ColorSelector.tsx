@@ -6,7 +6,6 @@ interface ColorOption {
 }
 
 interface ColorSelectorProps {
-  label: string;
   options: ColorOption[];
   selectedValues: string[];
   onChange: (values: string[]) => void;
@@ -14,7 +13,6 @@ interface ColorSelectorProps {
 }
 
 export default function ColorSelector({
-  label,
   options,
   selectedValues,
   onChange,
@@ -30,10 +28,7 @@ export default function ColorSelector({
 
   return (
     <div>
-      <label className="block text--1 font-medium text-gray-700 mb-3">
-        {label}
-      </label>
-      <div className="grid grid-cols-4 gap-4 mb-3">
+      <div className="grid grid-cols-4 gap-4">
         {options.map((color) => {
           const isSelected = selectedValues.includes(color.code);
           const colorArray = colorMap[color.code] || ["#6B7280"];

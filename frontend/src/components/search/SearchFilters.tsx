@@ -12,6 +12,8 @@ import RangeInput from "./RangeInput";
 import IconSelector from "./IconSelector";
 import ColorSelector from "./ColorSelector";
 import DropdownFilter from "./DropdownFilter";
+import SearchInputField from "./SearchInputField";
+import CollapsibleFilterSection from "./CollapsibleFilterSection";
 import { CheckBoxes } from "@/components/ui/CheckBoxes";
 import StarRating from "@/components/ui/StarRating";
 
@@ -128,359 +130,350 @@ export default function SearchFilters({
     <div className="h-[calc(100dvh-var(--navbar-height))] flex flex-col">
       <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] flex flex-col h-full overflow-hidden">
         <div className="flex-1 overflow-y-auto pr-2">
-          <form onSubmit={onSearchSubmit} className="space-y-4 p-(--space-s-m)">
+          <form onSubmit={onSearchSubmit} className="space-y-3 p-(--space-s-m)">
             {/* Search */}
             <div className="">
-              <label className="block text--1 font-medium text-gray-700 mb-2">
+              <label className="block text--1 font-medium text-gray-700 mb-3">
                 Search
               </label>
               <div className="relative">
-                <div className="flex flex-row w-full rounded-full items-center bg-white border border-gray-200 focus-within:border-maroon focus-within:ring-2 focus-within:ring-maroon/20 transition-all">
-                  <div className="flex items-center">
-                    <button
-                      type="submit"
-                      className="rounded-full mx-(--space-2xs) px-(--space-3xs) py-(--space-3xs) text-maroon transition-colors hover:bg-maroon/20 focus:outline-none"
-                      aria-label="Search"
-                    >
-                      <svg
-                        className="w-(--space-s) h-(--space-s)"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2.5}
-                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                  <input
-                    type="text"
-                    value={searchInput}
-                    onChange={(e) => onSearchInputChange(e.target.value)}
-                    placeholder="Search cars, brands, models..."
-                    className="w-full flex my-(--space-2xs) text-gray-900 focus:outline-none bg-transparent"
-                    autoComplete="off"
-                  />
-                  {searchInput && (
-                    <button
-                      type="button"
-                      onClick={() => onSearchInputChange("")}
-                      className="rounded-full mr-(--space-2xs) p-(--space-3xs) text-maroon/80 bg-maroon/10 hover:text-white hover:bg-maroon transition-colors focus:outline-none"
-                      aria-label="Clear search"
-                    >
-                      <svg
-                        className="w-(--space-s) h-(--space-s)"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2.5}
-                          d="M6 18L18 6M6 6l12 12"
-                        />
-                      </svg>
-                    </button>
-                  )}
-                </div>
+                <SearchInputField
+                  value={searchInput}
+                  onChange={onSearchInputChange}
+                  placeholder="Search cars, brands, models..."
+                />
               </div>
             </div>
 
             {/* Filters Section */}
-            <div className="space-y-4 pt-4 border-t border-gray-100">
+            <div className="border-t border-gray-100">
               {/* Price Range */}
-              <RangeInput
+              <CollapsibleFilterSection
                 label="Price Range (฿)"
-                minValue={filters.minPrice}
-                maxValue={filters.maxPrice}
-                onRangeChange={(min, max) => {
-                  const nextFilters = { ...filters };
-                  min === undefined
-                    ? delete nextFilters.minPrice
-                    : (nextFilters.minPrice = min);
-                  max === undefined
-                    ? delete nextFilters.maxPrice
-                    : (nextFilters.maxPrice = max);
-                  onFiltersChange(nextFilters);
-                }}
-                step={1000}
-                min={0}
-                predefinedRanges={[
-                  { label: "≤ ฿500,000", min: undefined, max: 500000 },
-                  { label: "฿500K - ฿1M", min: 500000, max: 1000000 },
-                  { label: "฿1M - ฿2M", min: 1000000, max: 2000000 },
-                  { label: "≥ ฿2M", min: 2000000, max: undefined },
-                ]}
-              />
+                defaultExpanded={!!(filters.minPrice || filters.maxPrice)}
+              >
+                <RangeInput
+                  minValue={filters.minPrice}
+                  maxValue={filters.maxPrice}
+                  onRangeChange={(min, max) => {
+                    const nextFilters = { ...filters };
+                    min === undefined
+                      ? delete nextFilters.minPrice
+                      : (nextFilters.minPrice = min);
+                    max === undefined
+                      ? delete nextFilters.maxPrice
+                      : (nextFilters.maxPrice = max);
+                    onFiltersChange(nextFilters);
+                  }}
+                  step={1000}
+                  min={0}
+                  predefinedRanges={[
+                    { label: "≤ ฿500,000", min: undefined, max: 500000 },
+                    { label: "฿500K - ฿1M", min: 500000, max: 1000000 },
+                    { label: "฿1M - ฿2M", min: 1000000, max: 2000000 },
+                    { label: "≥ ฿2M", min: 2000000, max: undefined },
+                  ]}
+                />
+              </CollapsibleFilterSection>
 
               {/* Year Range */}
-              <DualRangeSlider
+              <CollapsibleFilterSection
                 label="Year Range"
-                min={1990}
-                max={new Date().getFullYear()}
-                minValue={filters.minYear}
-                maxValue={filters.maxYear}
-                onMinChange={(value) => handleChange("minYear", value)}
-                onMaxChange={(value) => handleChange("maxYear", value)}
-                step={1}
-                formatValue={(v) => v.toString()}
-              />
+                defaultExpanded={!!(filters.minYear || filters.maxYear)}
+              >
+                <DualRangeSlider
+                  min={1990}
+                  max={new Date().getFullYear()}
+                  minValue={filters.minYear}
+                  maxValue={filters.maxYear}
+                  onMinChange={(value) => handleChange("minYear", value)}
+                  onMaxChange={(value) => handleChange("maxYear", value)}
+                  step={1}
+                  formatValue={(v) => v.toString()}
+                />
+              </CollapsibleFilterSection>
 
               {/* Mileage Range */}
-              <RangeInput
+              <CollapsibleFilterSection
                 label="Mileage (km)"
-                minValue={filters.minMileage}
-                maxValue={filters.maxMileage}
-                onRangeChange={(min, max) => {
-                  const nextFilters = { ...filters };
-                  min === undefined
-                    ? delete nextFilters.minMileage
-                    : (nextFilters.minMileage = min);
-                  max === undefined
-                    ? delete nextFilters.maxMileage
-                    : (nextFilters.maxMileage = max);
-                  onFiltersChange(nextFilters);
-                }}
-                predefinedRanges={[
-                  { label: "≤ 15,000 km", min: undefined, max: 15000 },
-                  { label: "15,000 - 30,000 km", min: 15000, max: 30000 },
-                  { label: "≤ 100,000 km", min: undefined, max: 100000 },
-                ]}
-                step={1000}
-                min={0}
-              />
+                defaultExpanded={!!(filters.minMileage || filters.maxMileage)}
+              >
+                <RangeInput
+                  minValue={filters.minMileage}
+                  maxValue={filters.maxMileage}
+                  onRangeChange={(min, max) => {
+                    const nextFilters = { ...filters };
+                    min === undefined
+                      ? delete nextFilters.minMileage
+                      : (nextFilters.minMileage = min);
+                    max === undefined
+                      ? delete nextFilters.maxMileage
+                      : (nextFilters.maxMileage = max);
+                    onFiltersChange(nextFilters);
+                  }}
+                  predefinedRanges={[
+                    { label: "≤ 15,000 km", min: undefined, max: 15000 },
+                    { label: "15,000 - 30,000 km", min: 15000, max: 30000 },
+                    { label: "≤ 100,000 km", min: undefined, max: 100000 },
+                  ]}
+                  step={1000}
+                  min={0}
+                />
+              </CollapsibleFilterSection>
 
               {/* Body Type */}
-              <IconSelector
+              <CollapsibleFilterSection
                 label="Body Type"
-                options={[
-                  {
-                    code: "CITYCAR",
-                    label: "City Car",
-                    icon: <span className="text-3xl">🚗</span>,
-                  },
-                  {
-                    code: "DAILY",
-                    label: "Sedan",
-                    icon: <span className="text-3xl">🚙</span>,
-                  },
-                  {
-                    code: "SPORTLUX",
-                    label: "Luxury",
-                    icon: <span className="text-3xl">🏎️</span>,
-                  },
-                  {
-                    code: "SUV",
-                    label: "SUV",
-                    icon: <span className="text-3xl">🚐</span>,
-                  },
-                  {
-                    code: "VAN",
-                    label: "Van",
-                    icon: <span className="text-3xl">🚐</span>,
-                  },
-                  {
-                    code: "PICKUP",
-                    label: "Pickup",
-                    icon: <span className="text-3xl">🛻</span>,
-                  },
-                ]}
-                selectedValues={filters.bodyType ? [filters.bodyType] : []}
-                onChange={(values) =>
-                  handleChange(
-                    "bodyType",
-                    values.length > 0 ? values[0] : undefined
-                  )
-                }
-                multiple={false}
-                columns={3}
-              />
+                defaultExpanded={!!filters.bodyType}
+              >
+                <IconSelector
+                  options={[
+                    {
+                      code: "CITYCAR",
+                      label: "City Car",
+                      icon: <span className="text-3xl">🚗</span>,
+                    },
+                    {
+                      code: "DAILY",
+                      label: "Sedan",
+                      icon: <span className="text-3xl">🚙</span>,
+                    },
+                    {
+                      code: "SPORTLUX",
+                      label: "Luxury",
+                      icon: <span className="text-3xl">🏎️</span>,
+                    },
+                    {
+                      code: "SUV",
+                      label: "SUV",
+                      icon: <span className="text-3xl">🚐</span>,
+                    },
+                    {
+                      code: "VAN",
+                      label: "Van",
+                      icon: <span className="text-3xl">🚐</span>,
+                    },
+                    {
+                      code: "PICKUP",
+                      label: "Pickup",
+                      icon: <span className="text-3xl">🛻</span>,
+                    },
+                  ]}
+                  selectedValues={filters.bodyType ? [filters.bodyType] : []}
+                  onChange={(values) =>
+                    handleChange(
+                      "bodyType",
+                      values.length > 0 ? values[0] : undefined
+                    )
+                  }
+                  multiple={false}
+                  columns={3}
+                />
+              </CollapsibleFilterSection>
 
               {/* Transmission */}
-              <CheckBoxes
-                name="transmission"
+              <CollapsibleFilterSection
                 label="Transmission"
-                values={filters.transmission || []}
-                options={referenceData.transmissions.map((t) => ({
-                  value: t.code,
-                  label: t.label,
-                }))}
-                onChange={(values) =>
-                  handleChange(
-                    "transmission",
-                    values.length > 0 ? values : undefined
-                  )
+                defaultExpanded={
+                  !!filters.transmission && filters.transmission.length > 0
                 }
-                direction="column"
-              />
+              >
+                <CheckBoxes
+                  name="transmission"
+                  values={filters.transmission || []}
+                  options={referenceData.transmissions.map((t) => ({
+                    value: t.code,
+                    label: t.label,
+                  }))}
+                  onChange={(values) =>
+                    handleChange(
+                      "transmission",
+                      values.length > 0 ? values : undefined
+                    )
+                  }
+                  direction="column"
+                />
+              </CollapsibleFilterSection>
 
               {/* Drivetrain */}
-              <CheckBoxes
-                name="drivetrain"
+              <CollapsibleFilterSection
                 label="Drivetrain"
-                values={filters.drivetrain || []}
-                options={referenceData.drivetrains.map((d) => ({
-                  value: d.code,
-                  label: d.label,
-                }))}
-                onChange={(values) =>
-                  handleChange(
-                    "drivetrain",
-                    values.length > 0 ? values : undefined
-                  )
+                defaultExpanded={
+                  !!filters.drivetrain && filters.drivetrain.length > 0
                 }
-                direction="column"
-              />
+              >
+                <CheckBoxes
+                  name="drivetrain"
+                  values={filters.drivetrain || []}
+                  options={referenceData.drivetrains.map((d) => ({
+                    value: d.code,
+                    label: d.label,
+                  }))}
+                  onChange={(values) =>
+                    handleChange(
+                      "drivetrain",
+                      values.length > 0 ? values : undefined
+                    )
+                  }
+                  direction="column"
+                />
+              </CollapsibleFilterSection>
 
               {/* Fuel Types */}
-              <IconSelector
+              <CollapsibleFilterSection
                 label="Fuel Type"
-                options={[
-                  {
-                    code: "GASOLINE",
-                    label: "Gasoline",
-                    icon: (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="w-6 h-6"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <g
-                          fill="none"
-                          stroke="currentColor"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={1.4}
-                        >
-                          <path d="M20 13.277c0-4.525-4.59-8.481-6.81-10.136a2.004 2.004 0 0 0-2.38 0C8.59 4.796 4 8.752 4 13.277c0 5.98 5 7.973 8 7.973s8-1.993 8-7.973"></path>
-                          <path d="M7 13.277c0 1.322.527 2.59 1.464 3.524A5.009 5.009 0 0 0 12 18.26"></path>
-                        </g>
-                      </svg>
-                    ),
-                  },
-                  {
-                    code: "DIESEL",
-                    label: "Diesel",
-                    icon: (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="w-6 h-6"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                      >
-                        <g
-                          fill="none"
-                          stroke="currentColor"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={1.4}
-                          color="currentColor"
-                        >
-                          <path d="M5 6v-.5c0-.943 0-1.414.293-1.707S6.057 3.5 7 3.5s1.414 0 1.707.293S9 4.557 9 5.5V6m6-1h3" />
-                          <path d="M16 2h-1.333C12.793 2 12 2.934 12 4.667C12 5.533 11.603 6 10.667 6H7c-1.886 0-2.828 0-3.414.586S3 8.114 3 10v5c0 3.3 0 4.95 1.025 5.975S6.7 22 10 22h4c3.3 0 4.95 0 5.975-1.025S21 18.3 21 15V7c0-2.357 0-3.536-.732-4.268C19.535 2 18.357 2 16 2" />
-                          <path d="M9 14.587c0-1.464 1.264-2.911 2.15-3.747a1.23 1.23 0 0 1 1.7 0c.886.836 2.15 2.283 2.15 3.747a2.933 2.933 0 0 1-3 2.913c-1.864 0-3-1.477-3-2.913" />
-                        </g>
-                      </svg>
-                    ),
-                  },
-                  {
-                    code: "HYBRID",
-                    label: "Hybrid",
-                    icon: (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="w-6 h-6"
-                        viewBox="0 0 32 32"
-                      >
-                        <path
-                          fill="currentColor"
-                          d="M26 22a3.958 3.958 0 0 0-2.02.566L17.414 16l6.567-6.567A3.952 3.952 0 0 0 26 10a4 4 0 1 0-4-4a3.951 3.951 0 0 0 .567 2.019L16 14.586L9.434 8.02A3.958 3.958 0 0 0 10 6a4 4 0 1 0-4 4a3.958 3.958 0 0 0 2.02-.566L14.586 16l-6.567 6.567A3.952 3.952 0 0 0 6 22a4 4 0 1 0 4 4a3.951 3.951 0 0 0-.567-2.019L16 17.414l6.566 6.566A3.958 3.958 0 0 0 22 26a4 4 0 1 0 4-4Zm0-18a2 2 0 1 1-2 2a2.002 2.002 0 0 1 2-2ZM6 28a2 2 0 1 1 2-2a2.002 2.002 0 0 1-2 2Z"
-                        />
-                      </svg>
-                    ),
-                  },
-                  {
-                    code: "ELECTRIC",
-                    label: "Electric",
-                    icon: (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="w-6 h-6"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          fill="none"
-                          stroke="currentColor"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={1.4}
-                          d="M13 2v8h7l-9 12v-8H4Z"
-                        />
-                      </svg>
-                    ),
-                  },
-                  {
-                    code: "LPG",
-                    label: "LPG/NGV",
-                    icon: (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="w-6 h-6"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                      >
-                        <g
-                          fill="none"
-                          stroke="currentColor"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={1.4}
-                        >
-                          <path d="M5 21c.5-4.5 2.5-8 7-10" />
-                          <path d="M9 18c6.218 0 10.5-3.288 11-12V4h-4.014c-9 0-11.986 4-12 9c0 1 0 3 2 5h3z" />
-                        </g>
-                      </svg>
-                    ),
-                  },
-                ]}
-                selectedValues={filters.fuelTypes || []}
-                onChange={(values) =>
-                  handleChange(
-                    "fuelTypes",
-                    values.length > 0 ? values : undefined
-                  )
+                defaultExpanded={
+                  !!filters.fuelTypes && filters.fuelTypes.length > 0
                 }
-                multiple={true}
-                columns={3}
-              />
+              >
+                <IconSelector
+                  options={[
+                    {
+                      code: "GASOLINE",
+                      label: "Gasoline",
+                      icon: (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="w-6 h-6"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <g
+                            fill="none"
+                            stroke="currentColor"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.4}
+                          >
+                            <path d="M20 13.277c0-4.525-4.59-8.481-6.81-10.136a2.004 2.004 0 0 0-2.38 0C8.59 4.796 4 8.752 4 13.277c0 5.98 5 7.973 8 7.973s8-1.993 8-7.973"></path>
+                            <path d="M7 13.277c0 1.322.527 2.59 1.464 3.524A5.009 5.009 0 0 0 12 18.26"></path>
+                          </g>
+                        </svg>
+                      ),
+                    },
+                    {
+                      code: "DIESEL",
+                      label: "Diesel",
+                      icon: (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="w-6 h-6"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                        >
+                          <g
+                            fill="none"
+                            stroke="currentColor"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.4}
+                            color="currentColor"
+                          >
+                            <path d="M5 6v-.5c0-.943 0-1.414.293-1.707S6.057 3.5 7 3.5s1.414 0 1.707.293S9 4.557 9 5.5V6m6-1h3" />
+                            <path d="M16 2h-1.333C12.793 2 12 2.934 12 4.667C12 5.533 11.603 6 10.667 6H7c-1.886 0-2.828 0-3.414.586S3 8.114 3 10v5c0 3.3 0 4.95 1.025 5.975S6.7 22 10 22h4c3.3 0 4.95 0 5.975-1.025S21 18.3 21 15V7c0-2.357 0-3.536-.732-4.268C19.535 2 18.357 2 16 2" />
+                            <path d="M9 14.587c0-1.464 1.264-2.911 2.15-3.747a1.23 1.23 0 0 1 1.7 0c.886.836 2.15 2.283 2.15 3.747a2.933 2.933 0 0 1-3 2.913c-1.864 0-3-1.477-3-2.913" />
+                          </g>
+                        </svg>
+                      ),
+                    },
+                    {
+                      code: "HYBRID",
+                      label: "Hybrid",
+                      icon: (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="w-6 h-6"
+                          viewBox="0 0 32 32"
+                        >
+                          <path
+                            fill="currentColor"
+                            d="M26 22a3.958 3.958 0 0 0-2.02.566L17.414 16l6.567-6.567A3.952 3.952 0 0 0 26 10a4 4 0 1 0-4-4a3.951 3.951 0 0 0 .567 2.019L16 14.586L9.434 8.02A3.958 3.958 0 0 0 10 6a4 4 0 1 0-4 4a3.958 3.958 0 0 0 2.02-.566L14.586 16l-6.567 6.567A3.952 3.952 0 0 0 6 22a4 4 0 1 0 4 4a3.951 3.951 0 0 0-.567-2.019L16 17.414l6.566 6.566A3.958 3.958 0 0 0 22 26a4 4 0 1 0 4-4Zm0-18a2 2 0 1 1-2 2a2.002 2.002 0 0 1 2-2ZM6 28a2 2 0 1 1 2-2a2.002 2.002 0 0 1-2 2Z"
+                          />
+                        </svg>
+                      ),
+                    },
+                    {
+                      code: "ELECTRIC",
+                      label: "Electric",
+                      icon: (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="w-6 h-6"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            fill="none"
+                            stroke="currentColor"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.4}
+                            d="M13 2v8h7l-9 12v-8H4Z"
+                          />
+                        </svg>
+                      ),
+                    },
+                    {
+                      code: "LPG",
+                      label: "LPG/NGV",
+                      icon: (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="w-6 h-6"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                        >
+                          <g
+                            fill="none"
+                            stroke="currentColor"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.4}
+                          >
+                            <path d="M5 21c.5-4.5 2.5-8 7-10" />
+                            <path d="M9 18c6.218 0 10.5-3.288 11-12V4h-4.014c-9 0-11.986 4-12 9c0 1 0 3 2 5h3z" />
+                          </g>
+                        </svg>
+                      ),
+                    },
+                  ]}
+                  selectedValues={filters.fuelTypes || []}
+                  onChange={(values) =>
+                    handleChange(
+                      "fuelTypes",
+                      values.length > 0 ? values : undefined
+                    )
+                  }
+                  multiple={true}
+                  columns={3}
+                />
+              </CollapsibleFilterSection>
 
               {/* Colors */}
-              <ColorSelector
+              <CollapsibleFilterSection
                 label="Colors"
-                options={referenceData.colors.map((c) => ({
-                  code: c.code,
-                  label: c.label,
-                }))}
-                selectedValues={filters.colors || []}
-                onChange={(values) =>
-                  handleChange("colors", values.length > 0 ? values : undefined)
-                }
-                colorMap={COLOR_MAP}
-              />
+                defaultExpanded={!!filters.colors && filters.colors.length > 0}
+              >
+                <ColorSelector
+                  options={referenceData.colors.map((c) => ({
+                    code: c.code,
+                    label: c.label,
+                  }))}
+                  selectedValues={filters.colors || []}
+                  onChange={(values) =>
+                    handleChange(
+                      "colors",
+                      values.length > 0 ? values : undefined
+                    )
+                  }
+                  colorMap={COLOR_MAP}
+                />
+              </CollapsibleFilterSection>
 
               {/* Condition Rating */}
-              <div>
-                <label className="block text--1 font-medium text-gray-700 mb-3">
-                  Condition Rating
-                </label>
+              <CollapsibleFilterSection
+                label="Condition Rating"
+                defaultExpanded={!!filters.conditionRating}
+              >
                 <div className="flex flex-col items-center gap-3 flex-wrap">
                   <StarRating
                     value={filters.conditionRating}
@@ -501,24 +494,28 @@ export default function SearchFilters({
                     </button>
                   )}
                 </div>
-              </div>
+              </CollapsibleFilterSection>
 
               {/* Province */}
-              <DropdownFilter
+              <CollapsibleFilterSection
                 label="Province"
-                value={filters.provinceId}
-                options={referenceData.provinces.map((p) => ({
-                  code: p.id.toString(),
-                  label: p.label,
-                }))}
-                onChange={(value) =>
-                  handleChange(
-                    "provinceId",
-                    value ? parseInt(value as string) : undefined
-                  )
-                }
-                allOptionLabel="All Provinces"
-              />
+                defaultExpanded={!!filters.provinceId}
+              >
+                <DropdownFilter
+                  value={filters.provinceId}
+                  options={referenceData.provinces.map((p) => ({
+                    code: p.id.toString(),
+                    label: p.label,
+                  }))}
+                  onChange={(value) =>
+                    handleChange(
+                      "provinceId",
+                      value ? parseInt(value as string) : undefined
+                    )
+                  }
+                  allOptionLabel="All Provinces"
+                />
+              </CollapsibleFilterSection>
             </div>
           </form>
         </div>
