@@ -357,12 +357,12 @@ export default function AdminDashboard() {
                 >
                   <div
                     className={`p-2 rounded-full flex-shrink-0 ${
-                      isUserReport ? "bg-red-100" : "bg-rose-100"
+                      isUserReport ? "bg-blue-100" : "bg-orange-100"
                     }`}
                   >
                     {isUserReport ? (
                       <svg
-                        className="w-5 h-5 text-red-600"
+                        className="w-5 h-5 text-blue-600"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -376,7 +376,7 @@ export default function AdminDashboard() {
                       </svg>
                     ) : (
                       <svg
-                        className="w-5 h-5 text-rose-600"
+                        className="w-5 h-5 text-orange-600"
                         viewBox="0 0 24.00 24.00"
                         fill="none"
                       >
