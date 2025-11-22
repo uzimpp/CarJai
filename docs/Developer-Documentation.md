@@ -452,9 +452,9 @@ docker cp carjai-backend:/app/coverage.html ./coverage.html
 docker exec -it carjai-backend go test -v -run TestFunctionName ./...
 ```
 
-### Frontend Tests
 
-No frontend tests are currently implemented.
+
+
 
 ---
 

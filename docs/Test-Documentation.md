@@ -38,8 +38,7 @@ Comprehensive guide to testing strategies, test structure, running tests, and te
 - Test fixtures for consistent data
 - Mock external services (OCR, OAuth)
 
-**Frontend (TypeScript/React)**:
-- No tests currently implemented
+
 
 ---
 
@@ -90,7 +89,7 @@ backend/tests/
 - Error handling
 - Status codes
 - Response format
-- **Note**: Uses mocks (mockCarService, mockUserService, etc.) - not real database
+
 
 **Service Tests**:
 - Business logic validation
