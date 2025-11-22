@@ -487,12 +487,4 @@ This is a reference price. You can set your asking price higher or lower based o
 - **Privacy Policy**: Visit `/privacy` for privacy information
 - **Terms of Service**: Visit `/terms` for terms and conditions
 
-### Contact
-
-For technical support or questions:
-- Check the guides and documentation
-- Report issues through the platform's report feature
-- Contact platform administrators
-
----
 
