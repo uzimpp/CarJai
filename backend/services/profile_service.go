@@ -113,29 +113,6 @@ func (s *ProfileService) GetSellerByUserID(userID int) (*models.Seller, error) {
 	return seller, nil
 }
 
-func (s *ProfileService) GetSellerStatus(userID int) (string, error) {
-    var status sql.NullString
-    err := s.db.DB.QueryRow("SELECT status FROM sellers WHERE id = $1", userID).Scan(&status)
-    if err != nil {
-        return "", nil
-    }
-    if status.Valid {
-        return status.String, nil
-    }
-    return "", nil
-}
-
-func (s *ProfileService) GetBuyerStatus(userID int) (string, error) {
-    var status sql.NullString
-    err := s.db.DB.QueryRow("SELECT status FROM buyers WHERE id = $1", userID).Scan(&status)
-    if err != nil {
-        return "", nil
-    }
-    if status.Valid {
-        return status.String, nil
-    }
-    return "", nil
-}
 
 // GetSellerContacts retrieves all contacts for a seller
 func (s *ProfileService) GetSellerContacts(sellerID int) ([]models.SellerContact, error) {
