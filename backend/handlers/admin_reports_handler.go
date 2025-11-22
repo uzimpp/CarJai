@@ -153,15 +153,43 @@ func (h *AdminReportsHandler) BanUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Ban the seller (seller ID = user ID)
+	// Ban the user
 	notes := "User banned by admin"
-	_, err = h.reportService.BanSeller(userID, adminID, &notes)
+	_, err = h.reportService.BanUser(userID, adminID, &notes)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	utils.WriteJSON(w, http.StatusOK, nil, "User banned successfully")
+}
+
+// UnbanUser handles POST /admin/users/{id}/unban
+func (h *AdminReportsHandler) UnbanUser(w http.ResponseWriter, r *http.Request) {
+	// Get admin ID from header
+	adminIDStr := r.Header.Get("X-Admin-ID")
+	adminID, err := strconv.Atoi(adminIDStr)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid admin ID")
+		return
+	}
+
+	// Extract user ID from path
+	userID, err := h.extractUserID(r.URL.Path, "/admin/users/", "/unban")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid user ID")
+		return
+	}
+
+	// Unban the user
+	notes := "User unbanned by admin"
+	_, err = h.reportService.UnbanUser(userID, adminID, &notes)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, nil, "User unbanned successfully")
 }
 
 // RemoveCar handles POST /admin/cars/{id}/remove
