@@ -12,23 +12,23 @@ interface CollapsibleFilterSectionProps {
 export default function CollapsibleFilterSection({
   label,
   children,
-  defaultExpanded = false,
+  defaultExpanded = true,
   hasActiveFilter = false,
 }: CollapsibleFilterSectionProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
   return (
-    <div className="border-b border-gray-100 flex flex-col py-3">
+    <div className="border-b border-gray-100 flex flex-col py-6">
       <button
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full flex items-center justify-between px-0 hover:opacity-80 transition-opacity"
       >
-        <span className="block text-0 text-gray-700 text-left">
+        <span className="block text--1 semi-bold text-grey text-left">
           {label}
         </span>
         <svg
-          className={`w-5 h-5 text-maroon transition-transform duration-200 flex-shrink-0 ${
+          className={`w-5 h-5 text-grey transition-transform duration-200 flex-shrink-0 ${
             isExpanded ? "rotate-180" : ""
           }`}
           fill="none"
@@ -39,7 +39,7 @@ export default function CollapsibleFilterSection({
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
-            strokeWidth={2}
+            strokeWidth={1.6}
             d="M19 9l-7 7-7-7"
           />
         </svg>

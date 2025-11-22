@@ -44,9 +44,9 @@ export default function ColorSelector({
               aria-label={color.label}
             >
               <div
-                className={`w-8 h-8 rounded-full transition-all relative border-2 overflow-hidden ${
+                className={`w-8 h-8 rounded-full transition-all transform relative border-2 overflow-hidden ${
                   isSelected
-                    ? "border-gray-300 group-hover:border-gray-400 scale-105"
+                    ? "border-gray-300 group-hover:border-gray-300 scale-105"
                     : "border-gray-200 group-hover:border-gray-300"
                 }`}
                 style={{
@@ -74,7 +74,7 @@ export default function ColorSelector({
                     {/* Dark circle background for better contrast */}
                     <div className="absolute inset-0 rounded-full bg-black/30 flex items-center justify-center">
                       <svg
-                        className="w-6 h-6 text-white drop-shadow-lg"
+                        className="w-5 h-5 text-white drop-shadow-lg"
                         fill="none"
                         stroke="currentColor"
                         strokeWidth={2}

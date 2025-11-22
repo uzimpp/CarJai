@@ -40,6 +40,8 @@ interface SearchFiltersProps {
   onFiltersChange: (filters: SearchFiltersData) => void;
   onSearchSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onSearchInputChange: (value: string) => void;
+  style?: React.CSSProperties;
+  className?: string;
 }
 
 export interface SearchFiltersData {
@@ -65,6 +67,8 @@ export default function SearchFilters({
   onFiltersChange,
   onSearchSubmit,
   onSearchInputChange,
+  style,
+  className = "",
 }: SearchFiltersProps) {
   const [referenceData, setReferenceData] = useState<{
     provinces: ProvinceOption[];
@@ -127,26 +131,35 @@ export default function SearchFilters({
   const hasActiveFilters = Object.keys(filters).length > 0;
 
   return (
-    <div className="h-[calc(100dvh-var(--navbar-height))] flex flex-col">
-      <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] flex flex-col h-full overflow-hidden">
+    <div className={`flex flex-col w-[385px] ${className}`} style={style}>
+      <div className="bg-white rounded-3xl shadow-sm flex flex-col h-full overflow-hidden max-h-full">
         <div className="flex-1 overflow-y-auto pr-2">
-          <form onSubmit={onSearchSubmit} className="space-y-3 p-(--space-s-m)">
+          <form onSubmit={onSearchSubmit} className="p-(--space-s-m)">
             {/* Search */}
-            <div className="relative">
+            <div className="relative mb-5">
               <SearchInputField
                 value={searchInput}
                 onChange={onSearchInputChange}
                 placeholder="Search cars, brands, models..."
+                className="bg-gray-100"
               />
             </div>
 
+            <div className="flex flex-row items-center justify-between">
+              <h2 className="text-0 font-bold text-maroon mb-2">Filters</h2>
+              {hasActiveFilters && (
+                <button
+                  onClick={clearFilters}
+                  className="text--1 text-maroon hover:text-maroon/80 transition-colors"
+                >
+                  Clear All
+                </button>
+              )}
+            </div>
             {/* Filters Section */}
-            <div className="border-t border-gray-100">
+            <div className="border-t border-gray-100 ">
               {/* Price Range */}
-              <CollapsibleFilterSection
-                label="Price Range (฿)"
-                defaultExpanded={!!(filters.minPrice || filters.maxPrice)}
-              >
+              <CollapsibleFilterSection label="Price Range (฿)">
                 <RangeInput
                   minValue={filters.minPrice}
                   maxValue={filters.maxPrice}
@@ -163,19 +176,16 @@ export default function SearchFilters({
                   step={1000}
                   min={0}
                   predefinedRanges={[
-                    { label: "≤ ฿500,000", min: undefined, max: 500000 },
-                    { label: "฿500K - ฿1M", min: 500000, max: 1000000 },
-                    { label: "฿1M - ฿2M", min: 1000000, max: 2000000 },
-                    { label: "≥ ฿2M", min: 2000000, max: undefined },
+                    { label: "≤ 300k", min: undefined, max: 300000 },
+                    { label: "300k - 500k", min: 300000, max: 500000 },
+                    { label: "500k - 1M", min: 500000, max: 1000000 },
+                    { label: "≥ 1M", min: 1000000, max: undefined },
                   ]}
                 />
               </CollapsibleFilterSection>
 
               {/* Year Range */}
-              <CollapsibleFilterSection
-                label="Year Range"
-                defaultExpanded={!!(filters.minYear || filters.maxYear)}
-              >
+              <CollapsibleFilterSection label="Year Range">
                 <DualRangeSlider
                   min={1990}
                   max={new Date().getFullYear()}
@@ -189,10 +199,7 @@ export default function SearchFilters({
               </CollapsibleFilterSection>
 
               {/* Mileage Range */}
-              <CollapsibleFilterSection
-                label="Mileage (km)"
-                defaultExpanded={!!(filters.minMileage || filters.maxMileage)}
-              >
+              <CollapsibleFilterSection label="Mileage (km)">
                 <RangeInput
                   minValue={filters.minMileage}
                   maxValue={filters.maxMileage}
@@ -216,111 +223,26 @@ export default function SearchFilters({
                 />
               </CollapsibleFilterSection>
 
-              {/* Body Type */}
-              <CollapsibleFilterSection
-                label="Body Type"
-                defaultExpanded={!!filters.bodyType}
-              >
-                <IconSelector
-                  options={[
-                    {
-                      code: "CITYCAR",
-                      label: "City Car",
-                      icon: <span className="text-3xl">🚗</span>,
-                    },
-                    {
-                      code: "DAILY",
-                      label: "Sedan",
-                      icon: <span className="text-3xl">🚙</span>,
-                    },
-                    {
-                      code: "SPORTLUX",
-                      label: "Luxury",
-                      icon: <span className="text-3xl">🏎️</span>,
-                    },
-                    {
-                      code: "SUV",
-                      label: "SUV",
-                      icon: <span className="text-3xl">🚐</span>,
-                    },
-                    {
-                      code: "VAN",
-                      label: "Van",
-                      icon: <span className="text-3xl">🚐</span>,
-                    },
-                    {
-                      code: "PICKUP",
-                      label: "Pickup",
-                      icon: <span className="text-3xl">🛻</span>,
-                    },
-                  ]}
-                  selectedValues={filters.bodyType ? [filters.bodyType] : []}
-                  onChange={(values) =>
-                    handleChange(
-                      "bodyType",
-                      values.length > 0 ? values[0] : undefined
-                    )
-                  }
-                  multiple={false}
-                  columns={3}
-                />
-              </CollapsibleFilterSection>
-
-              {/* Transmission */}
-              <CollapsibleFilterSection
-                label="Transmission"
-                defaultExpanded={
-                  !!filters.transmission && filters.transmission.length > 0
-                }
-              >
-                <CheckBoxes
-                  name="transmission"
-                  values={filters.transmission || []}
-                  options={referenceData.transmissions.map((t) => ({
-                    value: t.code,
-                    label: t.label,
+              {/* Colors */}
+              <CollapsibleFilterSection label="Colors">
+                <ColorSelector
+                  options={referenceData.colors.map((c) => ({
+                    code: c.code,
+                    label: c.label,
                   }))}
+                  selectedValues={filters.colors || []}
                   onChange={(values) =>
                     handleChange(
-                      "transmission",
+                      "colors",
                       values.length > 0 ? values : undefined
                     )
                   }
-                  direction="column"
-                />
-              </CollapsibleFilterSection>
-
-              {/* Drivetrain */}
-              <CollapsibleFilterSection
-                label="Drivetrain"
-                defaultExpanded={
-                  !!filters.drivetrain && filters.drivetrain.length > 0
-                }
-              >
-                <CheckBoxes
-                  name="drivetrain"
-                  values={filters.drivetrain || []}
-                  options={referenceData.drivetrains.map((d) => ({
-                    value: d.code,
-                    label: d.label,
-                  }))}
-                  onChange={(values) =>
-                    handleChange(
-                      "drivetrain",
-                      values.length > 0 ? values : undefined
-                    )
-                  }
-                  direction="column"
+                  colorMap={COLOR_MAP}
                 />
               </CollapsibleFilterSection>
 
               {/* Fuel Types */}
-              <CollapsibleFilterSection
-                label="Fuel Type"
-                defaultExpanded={
-                  !!filters.fuelTypes && filters.fuelTypes.length > 0
-                }
-              >
+              <CollapsibleFilterSection label="Fuel Type">
                 <IconSelector
                   options={[
                     {
@@ -443,32 +365,55 @@ export default function SearchFilters({
                 />
               </CollapsibleFilterSection>
 
-              {/* Colors */}
-              <CollapsibleFilterSection
-                label="Colors"
-                defaultExpanded={!!filters.colors && filters.colors.length > 0}
-              >
-                <ColorSelector
-                  options={referenceData.colors.map((c) => ({
-                    code: c.code,
-                    label: c.label,
-                  }))}
-                  selectedValues={filters.colors || []}
+              {/* Body Type */}
+              <CollapsibleFilterSection label="Body Type">
+                <IconSelector
+                  options={[
+                    {
+                      code: "CITYCAR",
+                      label: "City Car",
+                      icon: <span className="text-3xl">🚗</span>,
+                    },
+                    {
+                      code: "DAILY",
+                      label: "Sedan",
+                      icon: <span className="text-3xl">🚙</span>,
+                    },
+                    {
+                      code: "SPORTLUX",
+                      label: "Luxury",
+                      icon: <span className="text-3xl">🏎️</span>,
+                    },
+                    {
+                      code: "SUV",
+                      label: "SUV",
+                      icon: <span className="text-3xl">🚐</span>,
+                    },
+                    {
+                      code: "VAN",
+                      label: "Van",
+                      icon: <span className="text-3xl">🚐</span>,
+                    },
+                    {
+                      code: "PICKUP",
+                      label: "Pickup",
+                      icon: <span className="text-3xl">🛻</span>,
+                    },
+                  ]}
+                  selectedValues={filters.bodyType ? [filters.bodyType] : []}
                   onChange={(values) =>
                     handleChange(
-                      "colors",
-                      values.length > 0 ? values : undefined
+                      "bodyType",
+                      values.length > 0 ? values[0] : undefined
                     )
                   }
-                  colorMap={COLOR_MAP}
+                  multiple={false}
+                  columns={3}
                 />
               </CollapsibleFilterSection>
 
               {/* Condition Rating */}
-              <CollapsibleFilterSection
-                label="Condition Rating"
-                defaultExpanded={!!filters.conditionRating}
-              >
+              <CollapsibleFilterSection label="Condition Rating">
                 <div className="flex flex-col items-center justify-start gap-3 flex-wrap">
                   <StarRating
                     value={filters.conditionRating}
@@ -483,10 +428,7 @@ export default function SearchFilters({
               </CollapsibleFilterSection>
 
               {/* Province */}
-              <CollapsibleFilterSection
-                label="Province"
-                defaultExpanded={!!filters.provinceId}
-              >
+              <CollapsibleFilterSection label="Province">
                 <DropdownFilter
                   value={filters.provinceId}
                   options={referenceData.provinces.map((p) => ({
@@ -502,18 +444,47 @@ export default function SearchFilters({
                   allOptionLabel="All Provinces"
                 />
               </CollapsibleFilterSection>
+
+              {/* Transmission */}
+              <CollapsibleFilterSection label="Transmission">
+                <CheckBoxes
+                  name="transmission"
+                  values={filters.transmission || []}
+                  options={referenceData.transmissions.map((t) => ({
+                    value: t.code,
+                    label: t.label,
+                  }))}
+                  onChange={(values) =>
+                    handleChange(
+                      "transmission",
+                      values.length > 0 ? values : undefined
+                    )
+                  }
+                  direction="column"
+                />
+              </CollapsibleFilterSection>
+
+              {/* Drivetrain */}
+              <CollapsibleFilterSection label="Drivetrain">
+                <CheckBoxes
+                  name="drivetrain"
+                  values={filters.drivetrain || []}
+                  options={referenceData.drivetrains.map((d) => ({
+                    value: d.code,
+                    label: d.label,
+                  }))}
+                  onChange={(values) =>
+                    handleChange(
+                      "drivetrain",
+                      values.length > 0 ? values : undefined
+                    )
+                  }
+                  direction="column"
+                />
+              </CollapsibleFilterSection>
             </div>
           </form>
         </div>
-
-        {hasActiveFilters && (
-          <button
-            onClick={clearFilters}
-            className="text--1 text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            Clear All
-          </button>
-        )}
       </div>
     </div>
   );

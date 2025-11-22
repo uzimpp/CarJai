@@ -4,6 +4,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ChangeEvent,
   type FormEvent,
@@ -19,6 +20,8 @@ import { CarListing } from "@/types/car";
 import type { SearchCarsParams } from "@/types/search";
 import CarCard from "@/components/car/CarCard";
 import { useUserAuth } from "@/hooks/useUserAuth";
+import { referenceAPI } from "@/lib/referenceAPI";
+import PaginateControl from "@/components/ui/PaginateControl";
 
 const isArrayEqual = (a?: string[], b?: string[]) => {
   if (!a && !b) return true;
@@ -136,9 +139,129 @@ const parsePageFromSearchParams = (searchParams: URLSearchParams): number => {
   return pageParam && pageParam > 0 ? pageParam : 1;
 };
 
+const parseSortFromSearchParams = (
+  searchParams: URLSearchParams
+): {
+  sortBy: string;
+  sortOrder: "asc" | "desc";
+} => {
+  const sortBy = searchParams.get("sortBy") || "created_at";
+  const sortOrder = (searchParams.get("sortOrder") as "asc" | "desc") || "desc";
+
+  // Validate sortBy
+  const validSortFields = [
+    "price",
+    "year",
+    "mileage",
+    "created_at",
+    "condition_rating",
+  ];
+  const validatedSortBy = validSortFields.includes(sortBy)
+    ? sortBy
+    : "created_at";
+
+  return {
+    sortBy: validatedSortBy,
+    sortOrder: sortOrder === "asc" || sortOrder === "desc" ? sortOrder : "desc",
+  };
+};
+
+// Sort dropdown component
+interface SortDropdownProps {
+  sortBy: string;
+  sortOrder: "asc" | "desc";
+  onChange: (sortBy: string, sortOrder: "asc" | "desc") => void;
+}
+
+function SortDropdown({ sortBy, sortOrder, onChange }: SortDropdownProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (!dropdownRef.current) return;
+      if (!dropdownRef.current.contains(e.target as Node)) setIsOpen(false);
+    }
+    if (isOpen) document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [isOpen]);
+
+  const sortOptions = [
+    { value: "created_at-desc", label: "Latest Listings" },
+    { value: "price-desc", label: "Price (High-Low)" },
+    { value: "price-asc", label: "Price (Low-High)" },
+    { value: "year-desc", label: "Year (New-Old)" },
+    { value: "year-asc", label: "Year (Old-New)" },
+    { value: "mileage-asc", label: "Mileage (Low-High)" },
+    { value: "mileage-desc", label: "Mileage (High-Low)" },
+  ];
+
+  const currentValue = `${sortBy}-${sortOrder}`;
+  const currentLabel =
+    sortOptions.find((opt) => opt.value === currentValue)?.label ||
+    "Latest Listings";
+
+  const handleSelect = (value: string) => {
+    const [newSortBy, newSortOrder] = value.split("-");
+    onChange(newSortBy, newSortOrder as "asc" | "desc");
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen((o) => !o)}
+        className="flex items-center gap-2 bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-maroon focus:border-transparent cursor-pointer transition-colors min-w-[200px] justify-between"
+      >
+        <span className="text-sm">{currentLabel}</span>
+        <svg
+          className={`w-5 h-5 transition-transform ${
+            isOpen ? "rotate-180" : ""
+          }`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
+      </button>
+      {isOpen && (
+        <div className="absolute right-0 mt-2 w-full bg-white border border-gray-300 rounded-lg shadow-[var(--shadow-md)] z-50 overflow-hidden">
+          {sortOptions.map((option) => {
+            const isSelected = option.value === currentValue;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => handleSelect(option.value)}
+                className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                  isSelected
+                    ? "bg-maroon/10 text-maroon font-medium"
+                    : "text-gray-700 hover:bg-gray-100"
+                }`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const buildSearchParams = (
   filters: SearchFiltersData,
-  page: number
+  page: number,
+  sortBy?: string,
+  sortOrder?: "asc" | "desc"
 ): URLSearchParams => {
   const params = new URLSearchParams();
 
@@ -176,6 +299,14 @@ const buildSearchParams = (
     params.set("conditionRating", filters.conditionRating.toString());
   if (page > 1) params.set("page", page.toString());
 
+  // Add sorting parameters (always include if provided, defaults handled in parse)
+  if (sortBy) {
+    params.set("sortBy", sortBy);
+  }
+  if (sortOrder) {
+    params.set("sortOrder", sortOrder);
+  }
+
   return params;
 };
 
@@ -191,6 +322,10 @@ function BrowsePageContent() {
     () => parsePageFromSearchParams(searchParams),
     [searchParams]
   );
+  const initialSort = useMemo(
+    () => parseSortFromSearchParams(searchParams),
+    [searchParams]
+  );
 
   const [cars, setCars] = useState<CarListing[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -199,14 +334,114 @@ function BrowsePageContent() {
   const [page, setPage] = useState(initialPage);
   const [filters, setFilters] = useState<SearchFiltersData>(initialFilters);
   const [searchInput, setSearchInput] = useState(initialFilters.search ?? "");
+  const [sortBy, setSortBy] = useState<string>(initialSort.sortBy);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">(
+    initialSort.sortOrder
+  );
   const [favoriteCarIds, setFavoriteCarIds] = useState<Set<number>>(new Set());
+  const [headerHeight, setHeaderHeight] = useState<number>(80); // Default fallback
+  const [availableHeight, setAvailableHeight] = useState<string>(
+    "calc(100dvh - 128px)"
+  );
+
+  const [referenceData, setReferenceData] = useState<{
+    bodyTypes: { code: string; label: string }[];
+    transmissions: { code: string; label: string }[];
+    drivetrains: { code: string; label: string }[];
+    fuelTypes: { code: string; label: string }[];
+    provinces: { id: number; label: string }[];
+  }>({
+    bodyTypes: [],
+    transmissions: [],
+    drivetrains: [],
+    fuelTypes: [],
+    provinces: [],
+  });
 
   const { isAuthenticated, roles } = useUserAuth();
   const isBuyer = isAuthenticated && roles?.buyer;
 
+  // Measure header height dynamically using ref
+  useEffect(() => {
+    const updateHeight = () => {
+      // Find the header element (from Layout component)
+      const headerElement = document.querySelector(
+        'header.fixed, header[class*="fixed"]'
+      );
+      if (headerElement) {
+        const height = headerElement.getBoundingClientRect().height;
+        setHeaderHeight(height);
+        setAvailableHeight(`calc(100dvh - ${height}px)`);
+      } else {
+        // Fallback if header not found
+        const fallbackHeight = 80;
+        setHeaderHeight(fallbackHeight);
+        setAvailableHeight(`calc(100dvh - ${fallbackHeight}px)`);
+      }
+    };
+
+    // Initial measurement with a slight delay to ensure DOM is ready
+    const timeoutId = setTimeout(updateHeight, 0);
+
+    // Update on resize
+    window.addEventListener("resize", updateHeight);
+
+    // Use ResizeObserver for more accurate measurements
+    const headerElement = document.querySelector(
+      'header.fixed, header[class*="fixed"]'
+    );
+    let resizeObserver: ResizeObserver | null = null;
+
+    if (headerElement && typeof ResizeObserver !== "undefined") {
+      resizeObserver = new ResizeObserver(() => {
+        updateHeight();
+      });
+      resizeObserver.observe(headerElement);
+    }
+
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener("resize", updateHeight);
+      if (resizeObserver && headerElement) {
+        resizeObserver.unobserve(headerElement);
+      }
+    };
+  }, []);
+
+  // Fetch reference data for filter labels
+  useEffect(() => {
+    const fetchReferenceData = async () => {
+      try {
+        const result = await referenceAPI.getAll("en");
+        if (result.success) {
+          setReferenceData({
+            bodyTypes: result.data.bodyTypes || [],
+            transmissions: result.data.transmissions || [],
+            drivetrains: result.data.drivetrains || [],
+            fuelTypes: result.data.fuelTypes || [],
+            provinces: result.data.provinces || [],
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch reference data:", error);
+      }
+    };
+    fetchReferenceData();
+  }, []);
+
   const syncRoute = useCallback(
-    (nextFilters: SearchFiltersData, nextPage: number) => {
-      const params = buildSearchParams(nextFilters, nextPage);
+    (
+      nextFilters: SearchFiltersData,
+      nextPage: number,
+      nextSortBy?: string,
+      nextSortOrder?: "asc" | "desc"
+    ) => {
+      const params = buildSearchParams(
+        nextFilters,
+        nextPage,
+        nextSortBy,
+        nextSortOrder
+      );
       const queryString = params.toString();
       router.replace(queryString ? `/browse?${queryString}` : "/browse", {
         scroll: false,
@@ -224,9 +459,19 @@ function BrowsePageContent() {
       setSearchInput(nextFilters.search ?? "");
       setError("");
 
-      syncRoute(nextFilters, pageToUse);
+      syncRoute(nextFilters, pageToUse, sortBy, sortOrder);
     },
-    [syncRoute]
+    [syncRoute, sortBy, sortOrder]
+  );
+
+  const handleSortChange = useCallback(
+    (newSortBy: string, newSortOrder: "asc" | "desc") => {
+      setSortBy(newSortBy);
+      setSortOrder(newSortOrder);
+      setPage(1); // Reset to first page when sorting changes
+      syncRoute(filters, 1, newSortBy, newSortOrder);
+    },
+    [filters, syncRoute]
   );
 
   // Fetch cars
@@ -256,6 +501,12 @@ function BrowsePageContent() {
         if (filters.colors && filters.colors.length > 0)
           params.colors = filters.colors;
         if (filters.provinceId) params.provinceId = filters.provinceId;
+        if (filters.conditionRating !== undefined)
+          params.conditionRating = filters.conditionRating;
+
+        // Add sorting parameters
+        params.sortBy = sortBy;
+        params.sortOrder = sortOrder;
 
         const result = await carsAPI.search(params);
 
@@ -275,7 +526,7 @@ function BrowsePageContent() {
     };
 
     fetchCars();
-  }, [filters, page]);
+  }, [filters, page, sortBy, sortOrder]);
 
   // Fetch user's favorites when they're authenticated as a buyer
   useEffect(() => {
@@ -343,35 +594,183 @@ function BrowsePageContent() {
     applyFilters(nextFilters);
   };
 
-  const goToPage = (nextPage: number) => {
-    if (nextPage === page) return;
-    setPage(nextPage);
-    syncRoute(filters, nextPage);
-  };
-
   const totalPages = Math.ceil(total / 12);
 
+  const handlePageChange = (nextPage: number) => {
+    if (nextPage === page) return;
+    setPage(nextPage);
+    syncRoute(filters, nextPage, sortBy, sortOrder);
+  };
+
+  // Helper functions for active filters display
+  const getFilterLabel = (
+    key: string,
+    value: string | number | string[]
+  ): string => {
+    if (key === "search" && typeof value === "string") {
+      return value;
+    }
+    if (key === "bodyType" && typeof value === "string") {
+      const bodyType = referenceData.bodyTypes.find((bt) => bt.code === value);
+      return bodyType?.label || value;
+    }
+    if (key === "transmission" && Array.isArray(value)) {
+      return value
+        .map((code) => {
+          const option = referenceData.transmissions.find(
+            (t) => t.code === code
+          );
+          return option?.label || code;
+        })
+        .join(", ");
+    }
+    if (key === "drivetrain" && Array.isArray(value)) {
+      return value
+        .map((code) => {
+          const option = referenceData.drivetrains.find((d) => d.code === code);
+          return option?.label || code;
+        })
+        .join(", ");
+    }
+    if (key === "fuelTypes" && Array.isArray(value)) {
+      return value
+        .map((code) => {
+          const option = referenceData.fuelTypes.find((f) => f.code === code);
+          return option?.label || code;
+        })
+        .join(", ");
+    }
+    if (key === "provinceId" && typeof value === "number") {
+      const province = referenceData.provinces.find((p) => p.id === value);
+      return province?.label || `Province ${value}`;
+    }
+    if (key === "minPrice" || key === "maxPrice") {
+      return `${((value as number) / 1000).toFixed(0)}k`;
+    }
+    if (key === "minYear" && typeof value === "number") {
+      return `${value}`;
+    }
+    if (key === "maxYear" && typeof value === "number") {
+      return `${value}`;
+    }
+    if (key === "minMileage" || key === "maxMileage") {
+      return `${((value as number) / 1000).toFixed(0)}k km`;
+    }
+    if (key === "conditionRating" && typeof value === "number") {
+      return `${value} stars`;
+    }
+    return String(value);
+  };
+
+  const getFilterDisplayText = (
+    key: string,
+    value: string | number | string[]
+  ): string => {
+    if (key === "search") return getFilterLabel(key, value);
+    if (key === "minPrice" && filters.maxPrice) {
+      return `Price Range ${getFilterLabel(
+        "minPrice",
+        value
+      )} - ${getFilterLabel("maxPrice", filters.maxPrice)}`;
+    }
+    if (key === "maxPrice" && filters.minPrice) return ""; // Skip, handled by minPrice
+    if (key === "minYear" && filters.maxYear) {
+      return `Year ${getFilterLabel("minYear", value)} - ${getFilterLabel(
+        "maxYear",
+        filters.maxYear
+      )}`;
+    }
+    if (key === "maxYear" && filters.minYear) return ""; // Skip, handled by minYear
+    if (key === "minMileage" && filters.maxMileage) {
+      return `Mileage ${getFilterLabel("minMileage", value)} - ${getFilterLabel(
+        "maxMileage",
+        filters.maxMileage
+      )}`;
+    }
+    if (key === "maxMileage" && filters.minMileage) return ""; // Skip, handled by minMileage
+    return getFilterLabel(key, value);
+  };
+
+  const activeFilters = Object.entries(filters).filter(([key, value]) => {
+    if (!value) return false;
+    if (Array.isArray(value) && value.length === 0) return false;
+    // Skip ranges that are handled by their min/max pairs
+    if (key === "maxPrice" && filters.minPrice) return false;
+    if (key === "maxYear" && filters.minYear) return false;
+    if (key === "maxMileage" && filters.minMileage) return false;
+    return true;
+  });
+
+  const removeFilter = (key: keyof SearchFiltersData) => {
+    const nextFilters = { ...filters };
+    delete nextFilters[key];
+    applyFilters(nextFilters);
+  };
+
+  const clearAllFilters = () => {
+    applyFilters({});
+  };
+
   return (
-    <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full">
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+    <div className="max-w-[1536px] mx-auto w-full">
+      <div className="flex flex-row">
         {/* Filters Sidebar */}
-        <div className="lg:col-span-1">
-          <SearchFilters
-            filters={filters}
-            searchInput={searchInput}
-            onFiltersChange={handleFiltersChange}
-            onSearchSubmit={handleSearchSubmit}
-            onSearchInputChange={(value) => setSearchInput(value)}
-          />
-        </div>
+        <SearchFilters
+          filters={filters}
+          searchInput={searchInput}
+          onFiltersChange={handleFiltersChange}
+          onSearchSubmit={handleSearchSubmit}
+          onSearchInputChange={(value) => setSearchInput(value)}
+          className="sticky self-start p-(--space-s-m) pr-0"
+          style={{
+            top: `${headerHeight}px`,
+            maxHeight: availableHeight,
+          }}
+        />
 
         {/* Results */}
-        <div className="lg:col-span-3">
+        <div className="flex-1 p-(--space-s-m)">
+          {/* Active Filters Bar */}
+          {activeFilters.length > 0 && (
+            <div className="mb-6 flex flex-wrap items-center gap-2 p-4 rounded-lg border border-gray-200">
+              {activeFilters.map(([key, value]) => {
+                const displayText = getFilterDisplayText(
+                  key,
+                  value as string | number | string[]
+                );
+                if (!displayText) return null;
+                return (
+                  <button
+                    key={key}
+                    onClick={() => removeFilter(key as keyof SearchFiltersData)}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 rounded-full text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                  >
+                    <span>{displayText}</span>
+                    <span className="text-gray-500 hover:text-gray-700">x</span>
+                  </button>
+                );
+              })}
+              {activeFilters.length > 0 && (
+                <button
+                  onClick={clearAllFilters}
+                  className="ml-auto px-4 py-1.5 text-sm text-gray-600 hover:text-gray-900 font-medium"
+                >
+                  Clear All
+                </button>
+              )}
+            </div>
+          )}
           {/* Results Header */}
           <div className="mb-6 flex justify-between items-center">
             <p className="text-gray-600">
               {total} {total === 1 ? "car" : "cars"} found
             </p>
+            {/* Sort Dropdown */}
+            <SortDropdown
+              sortBy={sortBy}
+              sortOrder={sortOrder}
+              onChange={handleSortChange}
+            />
           </div>
 
           {/* Error Message */}
@@ -392,54 +791,44 @@ function BrowsePageContent() {
               </div>
             </div>
           ) : !cars || cars.length === 0 ? (
-            <div className="text-center py-20">
-              <div className="inline-flex items-center justify-center w-24 h-24 bg-gray-100 rounded-full mb-6">
-                <span className="text-5xl">🚗</span>
+            <>
+              <div className="text-center py-12 mb-8">
+                <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                  No Cars Found
+                </h2>
+                <p className="text-gray-600">
+                  Try adjusting your filters or search terms
+                </p>
               </div>
-              <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-                No Cars Found
-              </h2>
-              <p className="text-gray-600">
-                Try adjusting your filters or search terms
-              </p>
-            </div>
+            </>
           ) : (
             <>
               {/* Car Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {cars.map((car) => (
                   <CarCard
                     key={car.id}
                     car={car}
-                    variant="browse"
-                    showFavorite={isBuyer}
-                    isFavorited={favoriteCarIds.has(car.id)}
-                    onFavoriteToggle={handleFavoriteToggle}
-                    showCompare={true}
+                    favorite={
+                      isBuyer
+                        ? {
+                            isFavorited: favoriteCarIds.has(car.id),
+                            onToggle: handleFavoriteToggle,
+                          }
+                        : undefined
+                    }
                   />
                 ))}
               </div>
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex justify-center items-center gap-2">
-                  <button
-                    onClick={() => goToPage(Math.max(1, page - 1))}
-                    disabled={page === 1}
-                    className="px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Previous
-                  </button>
-                  <span className="px-4 py-2 text-gray-600">
-                    Page {page} of {totalPages}
-                  </span>
-                  <button
-                    onClick={() => goToPage(Math.min(totalPages, page + 1))}
-                    disabled={page === totalPages}
-                    className="px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Next
-                  </button>
+                <div className="flex justify-center items-center mt-8">
+                  <PaginateControl
+                    page={page}
+                    setPage={handlePageChange}
+                    totalPages={totalPages}
+                  />
                 </div>
               )}
             </>

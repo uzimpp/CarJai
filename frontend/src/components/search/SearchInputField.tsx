@@ -31,7 +31,7 @@ const SearchInputField = forwardRef<HTMLInputElement, SearchInputFieldProps>(
 
     return (
       <div
-        className={`flex flex-row w-full rounded-full items-center bg-white border border-gray-200 focus-within:border-maroon focus-within:ring-2 focus-within:ring-maroon/20 transition-all ${className}`}
+        className={`flex flex-row w-full rounded-full items-center bg-white border border-gray-200 focus-within:border-maroon focus-within:ring-2 focus-within:ring-maroon/20 transition-all !${className}`}
       >
         <div className="flex items-center">
           <button

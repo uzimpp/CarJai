@@ -232,7 +232,7 @@ export default function RangeInput({
           value={minInput}
           onChange={handleMinInputChange}
           onBlur={handleMinInputBlur}
-          className="w-full sm:w-full px-3 py-2 border border-gray-300 rounded-lg text-0 text-gray-900 focus:border-maroon focus:outline-none focus:ring-2 focus:ring-maroon/20 transition-all"
+          className="w-full sm:w-full px-3 py-2 bg-gray-100 rounded-lg text-black focus:bg-gray-200 focus:outline-none transition-all"
         />
         <span className="text-gray-500 text-center sm:text-left hidden sm:inline">
           -
@@ -245,7 +245,7 @@ export default function RangeInput({
           value={maxInput}
           onChange={handleMaxInputChange}
           onBlur={handleMaxInputBlur}
-          className="w-full sm:w-full px-3 py-2 border border-gray-300 rounded-lg text-0 text-gray-900 focus:border-maroon focus:outline-none focus:ring-2 focus:ring-maroon/20 transition-all"
+          className="w-full sm:w-full px-3 py-2 bg-gray-100 rounded-lg text-black focus:bg-gray-200 focus:outline-none transition-all"
         />
       </div>
       {predefinedRanges && predefinedRanges.length > 0 && (
@@ -263,10 +263,10 @@ export default function RangeInput({
                 onClick={() => {
                   handlePredefinedRange(range.min, range.max);
                 }}
-                className={`px-3 py-1 rounded-full border-1 text--1 transition-all text-center whitespace-nowrap ${
+                className={`px-3 py-1 rounded-full border-1 text--1 transition-all duration-300 ease-in-out text-center whitespace-nowrap ${
                   isActive
-                    ? "border-maroon bg-maroon/10 text-maroon"
-                    : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
+                    ? "border-maroon bg-maroon text-white shadow-sm"
+                    : "border-maroon bg-white text-maroon hover:bg-maroon/10 hover:shadow-sm"
                 }`}
               >
                 {range.label}
