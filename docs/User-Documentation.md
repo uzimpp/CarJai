@@ -342,21 +342,29 @@ This is a reference price. You can set your asking price higher or lower based o
 1. **View All Listings**
    - Go to Admin Dashboard
    - Click "Cars" in the sidebar or visit `/admin/cars`
-   - View all car listings (active and sold)
+   - View all car listings (active, sold, and draft)
 
-2. **Edit Listings**
+2. **Add Car Listing**
+   - Click "Add Car" button
+   - Fill in all car information
+   - Save the listing
+
+3. **Edit Listings**
    - Click "Edit" on any listing
    - Modify any field
    - Save changes
 
-3. **Delete Listings**
+4. **Change Status**
+   - Click "Edit" on any listing
+   - Change status to:
+     - **Active**: Listing is visible to buyers
+     - **Draft**: Listing is saved but not visible to buyers
+     - **Sold**: Listing is marked as sold and removed from marketplace
+
+5. **Delete Listings**
    - Click "Delete" on any listing
    - Confirm deletion
    - Listing will be permanently removed
-
-4. **Mark as Sold**
-   - Click "Mark as Sold" on any listing
-   - Listing will be removed from marketplace
 
 ### Managing Users
 
@@ -365,21 +373,20 @@ This is a reference price. You can set your asking price higher or lower based o
    - Click "Users" in the sidebar or visit `/admin/users`
    - View all registered users (buyers and sellers)
 
-2. **View User Details**
-   - Click on any user to view:
-     - Profile information
-     - Listings (if seller)
-     - Activity history
+2. **Add User**
+   - Click "Add User" button
+   - Enter username, email, name, and password
+   - Save the new user
 
-3. **Ban/Suspend Users**
-   - Click "Ban" or "Suspend" on any user
-   - Select reason
-   - User will be unable to access the platform
+3. **Edit User**
+   - Click "Edit" on any user
+   - Modify username, name, or email
+   - Save changes
 
-4. **Unban Users**
-   - Find banned user in the list
-   - Click "Unban"
-   - User access will be restored
+4. **Delete User**
+   - Click "Delete" on any user
+   - Confirm deletion
+   - User account will be permanently removed
 
 ### Managing Reports
 
@@ -428,24 +435,27 @@ This is a reference price. You can set your asking price higher or lower based o
 
 1. **Dashboard Overview**
    - Go to Admin Dashboard at `/admin/dashboard`
-   - View system statistics:
-     - Total users (buyers and sellers)
-     - Total car listings (active and sold)
-     - Total reports (by status)
-     - Recent activity
+   - View key statistics:
+     - **Pending Reports**: Number of reports awaiting review
+     - **Active Cars**: Number of active car listings
+     - **Sold Cars**: Number of sold car listings
+     - **Total Users**: Total number of registered users
 
-2. **Statistics**
-   - User growth over time
-   - Listing statistics
-   - Report statistics
-   - Platform health metrics
+2. **Visualizations**
+   - **User Activity**: Activity overview chart showing daily activity trends (last 30 days)
+   - **User Roles**: Donut chart showing distribution of buyers vs. sellers
+   - **Car Status**: Donut chart showing distribution of car statuses (active, sold, draft)
+   - **Top Brands**: Chart showing most popular car brands
+   - **Recent Reports**: List of recent pending reports
 
 ### Managing Admin Accounts
+
+**Note**: Only Super Admin can access this page.
 
 1. **View All Admins**
    - Go to Admin Dashboard
    - Click "Admins" in the sidebar or visit `/admin/admins`
-   - View all admin accounts
+   - View all admin accounts (Super Admin only)
 
 2. **Create Admin Account**
    - Click "Create Admin"
