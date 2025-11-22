@@ -43,13 +43,15 @@ export default function AdminDashboard() {
             adminAPI.getRecentReports(),
           ]);
 
+        const actualStats = (statsData as unknown as { data?: DashboardStats })?.data || statsData;
+
         setStats({
-          totalUsers: statsData?.totalUsers ?? 0,
-          activeCars: statsData?.activeCars ?? 0,
-          soldCars: statsData?.soldCars ?? 0,
-          pendingReports: statsData?.pendingReports ?? 0,
-          totalBuyers: statsData?.totalBuyers ?? 0,
-          totalSellers: statsData?.totalSellers ?? 0,
+          totalUsers: actualStats?.totalUsers ?? 0,
+          activeCars: actualStats?.activeCars ?? 0,
+          soldCars: actualStats?.soldCars ?? 0,
+          pendingReports: actualStats?.pendingReports ?? 0,
+          totalBuyers: actualStats?.totalBuyers ?? 0,
+          totalSellers: actualStats?.totalSellers ?? 0,
         });
         setChartData(Array.isArray(chartData) ? chartData : []);
         setTopBrandsData(Array.isArray(brandsData) ? brandsData : []);
