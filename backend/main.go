@@ -111,6 +111,17 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 		appConfig.SMTPFrom,
 	)
 
+	// Validate SMTP configuration
+	if err := emailService.TestConnection(); err != nil {
+		log.Printf("⚠️  SMTP validation failed: %v", err)
+		log.Printf("⚠️  Password reset emails will not work")
+	} else {
+		log.Println("✅ SMTP connection validated")
+	}
+
+	// Create password reset token repository
+	resetTokenRepo := models.NewPasswordResetTokenRepository(database.DB)
+
 	// Create user service
 	userService := services.NewUserService(
 		userRepo,
@@ -120,6 +131,7 @@ func initializeServices(db *sql.DB, appConfig *config.AppConfig) *ServiceContain
 		appConfig.PasswordResetJWTSecret,
 		appConfig.PasswordResetTokenExpiration,
 		appConfig.FrontendURL,
+		resetTokenRepo,
 	)
 
 	// Set profile service on user service (to avoid circular dependency)

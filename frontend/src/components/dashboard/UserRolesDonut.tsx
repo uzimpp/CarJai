@@ -71,7 +71,7 @@ const UserRolesDonut = ({ buyers, sellers }: { buyers: number, sellers: number }
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
             ))}
           </Pie>
-          <Tooltip formatter={(value: number) => [value, 'Users']} />
+          <Tooltip formatter={(value: number, name: string) => [value, name]} />
           <Legend 
             iconType="circle" 
             wrapperStyle={{ 
