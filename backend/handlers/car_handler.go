@@ -193,7 +193,7 @@ func (h *CarHandler) GetMyCars(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get user's cars as lightweight list items (always translated for display)
-	listItems, err := h.carService.GetCarListItemsBySellerID(userID, lang)
+	listItems, err := h.carService.GetCarListItemsBySellerID(userID, lang, "")
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get cars: %v", err))
 		return
@@ -265,6 +265,21 @@ func (h *CarHandler) SearchCars(w http.ResponseWriter, r *http.Request) {
 	// Parse colors (multiple values)
 	if colors := query["colors"]; len(colors) > 0 {
 		req.ColorCodes = colors
+	}
+
+	// Parse condition rating
+	if conditionRatingStr := query.Get("conditionRating"); conditionRatingStr != "" {
+		if conditionRating, err := strconv.Atoi(conditionRatingStr); err == nil && conditionRating >= 1 && conditionRating <= 5 {
+			req.ConditionRating = &conditionRating
+		}
+	}
+
+	// Parse sorting
+	if sortBy := query.Get("sortBy"); sortBy != "" {
+		req.SortBy = sortBy
+	}
+	if sortOrder := query.Get("sortOrder"); sortOrder != "" {
+		req.SortOrder = sortOrder
 	}
 
 	// Parse pagination

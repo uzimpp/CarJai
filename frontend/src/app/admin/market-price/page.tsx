@@ -23,20 +23,6 @@ interface StatusResponse {
   error?: string;
 }
 
-// Type for JSON error structure
-interface GoErrorResponse {
-  success: boolean;
-  error: string;
-  code: number;
-}
-
-// Type for successful import response
-interface ImportSuccessResponse {
-  message: string;
-  inserted_count: number;
-  updated_count: number;
-}
-
 // Upload Modal Component
 function UploadModal({
   isOpen,
@@ -215,7 +201,7 @@ export default function MarketPricePage() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(20);
+  const [rowsPerPage] = useState(20);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
   // Fetch market prices
@@ -354,7 +340,7 @@ export default function MarketPricePage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)]">
+        <div className="bg-white rounded-3xl shadow-sm">
           <div className="divide-y divide-gray-200">
             {/* Column Headers - Hidden on mobile, visible on md+ */}
             <div className="hidden md:grid md:grid-cols-[1.5fr_1.5fr_1fr_1.2fr_1.2fr] gap-(--space-2xs) p-(--space-xs) bg-gray-50 rounded-t-lg">

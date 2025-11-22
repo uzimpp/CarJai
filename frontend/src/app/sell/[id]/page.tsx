@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
-import { useRouter, useParams } from "next/navigation"; 
+import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import { carsAPI } from "@/lib/carsAPI";
@@ -866,9 +866,8 @@ export default function SellWithIdPage() {
             <div>
               <h2 className="text-2xl font-semibold mb-6">Step 1: Documents</h2>
               <p className="text-gray-600 mb-6">
-                Upload your inspection report and optionally your registration
-                book. Book OCR is just a helper to auto-fill fields — you can
-                also edit them manually.
+                Upload inspection report and registration book (optional).
+                Fields auto-fill but are editable.
               </p>
               <Step1DocumentsForm
                 formData={formData}
@@ -909,11 +908,11 @@ export default function SellWithIdPage() {
           {currentStep === "specs" && (
             <div>
               <h2 className="text-2xl font-semibold mb-6">
-                Step 2: Vehicle Specifications
+                Step 2: Specifications
               </h2>
               <p className="text-gray-600 mb-6">
-                Select the specifications for your vehicle including body type,
-                transmission, drivetrain, fuel type, and model details.
+                Select body type, transmission, drivetrain, fuel type, and
+                condition.
               </p>
               <Step2DetailsForm
                 formData={formData}
@@ -950,11 +949,10 @@ export default function SellWithIdPage() {
           {currentStep === "pricing" && (
             <div>
               <h2 className="text-2xl font-semibold mb-6">
-                Step 3: Pricing, Images & Description
+                Step 3: Pricing & Images
               </h2>
               <p className="text-gray-600 mb-6">
-                Set your asking price, upload 5-12 high-quality images, write a
-                description, and disclose any damage history.
+                Set price, upload 5-12 images, and write a description.
               </p>
 
               {isEstimating && (
@@ -1026,23 +1024,43 @@ export default function SellWithIdPage() {
                 Step 4: Review & Publish
               </h2>
               <p className="text-gray-600 mb-6">
-                Review all information and make any final edits before
-                publishing your listing.
+                Review and edit before publishing.
               </p>
               <Step4ReviewForm
+                carId={carId}
                 formData={formData}
                 onChange={handleFormChange}
                 onPublish={handlePublish}
                 onBack={() => setCurrentStep("pricing")}
                 isSubmitting={isSubmitting}
                 reviewResult={reviewResult}
+                brandOptions={brandOptions}
+                modelOptions={modelOptions}
+                subModelOptions={subModelOptions}
+                isBrandLoading={isBrandLoading}
+                isModelLoading={isModelLoading}
+                isSubModelLoading={isSubModelLoading}
               />
             </div>
           )}
 
           {currentStep === "success" && (
             <div className="text-center py-12">
-              <div className="text-6xl mb-4">✅</div>
+              <div className="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
+                <svg
+                  className="w-8 h-8 text-green-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
               <h2 className="text-3xl font-bold text-green-600 mb-2">
                 Success!
               </h2>

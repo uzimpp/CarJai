@@ -466,7 +466,7 @@ func (r *CarRepository) GetManagedCars() (*[]AdminManagedCar, error) {
 // GetTopBrandsByCount retrieves the top 10 brands by car count
 func (r *CarRepository) GetTopBrandsByCount() ([]BrandDataPoint, error) {
 	var results []BrandDataPoint
-	
+
 	query := `
 		SELECT
 			brand_name AS brand,
@@ -638,8 +638,22 @@ func (r *CarRepository) CountCarsByStatus(status string) (int, error) {
 	return count, nil
 }
 
-// GetCarsBySellerID retrieves all cars for a seller
-func (r *CarRepository) GetCarsBySellerID(sellerID int) ([]Car, error) {
+// CountCarsBySellerIDAndStatus counts cars for a seller by status
+func (r *CarRepository) CountCarsBySellerIDAndStatus(sellerID int, status string) (int, error) {
+	var count int
+	query := `SELECT COUNT(*) FROM cars WHERE seller_id = $1 AND status = $2`
+
+	err := r.db.DB.QueryRow(query, sellerID, status).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count cars by seller and status: %w", err)
+	}
+
+	return count, nil
+}
+
+// GetCarsBySellerID retrieves cars for a seller, optionally filtered by status
+// If status is empty string, returns all cars. Otherwise filters by the specified status.
+func (r *CarRepository) GetCarsBySellerID(sellerID int, status string) ([]Car, error) {
 	query := `
 		SELECT id, seller_id, body_type_code, transmission_code,
 			drivetrain_code, brand_name, model_name, submodel_name, 
@@ -648,10 +662,19 @@ func (r *CarRepository) GetCarsBySellerID(sellerID int) ([]Car, error) {
 			province_id, description, price, is_flooded, 
 			is_heavily_damaged, status, condition_rating, created_at, updated_at
 		FROM cars
-		WHERE seller_id = $1
-		ORDER BY created_at DESC`
+		WHERE seller_id = $1`
 
-	rows, err := r.db.DB.Query(query, sellerID)
+	args := []interface{}{sellerID}
+	argNum := 2
+
+	if status != "" {
+		query += fmt.Sprintf(" AND status = $%d", argNum)
+		args = append(args, status)
+	}
+
+	query += " ORDER BY created_at DESC"
+
+	rows, err := r.db.DB.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get cars by seller: %w", err)
 	}
@@ -690,6 +713,9 @@ type SearchCarsRequest struct {
 	DrivetrainCode   *string  // Drivetrain filter (code like "FWD", "AWD", "4WD")
 	FuelTypeCodes    []string // Fuel type filters (codes like "GASOLINE", "DIESEL")
 	ColorCodes       []string // Color filters (codes like "WHITE", "BLACK", "GRAY")
+	ConditionRating  *int     // Minimum condition rating filter (1-5)
+	SortBy           string   // Sort field: "price", "year", "mileage", "created_at", "condition_rating"
+	SortOrder        string   // Sort order: "asc" or "desc" (default: "desc")
 	Status           string   // Status filter (default: "active")
 	Limit            int      // Results per page (default: 20)
 	Offset           int      // Pagination offset (default: 0)
@@ -750,6 +776,13 @@ func (r *CarRepository) GetActiveCars(req *SearchCarsRequest) ([]Car, int, error
 		argCounter++
 	}
 
+	// Condition rating filter (minimum rating)
+	if req.ConditionRating != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("cars.condition_rating >= $%d", argCounter))
+		args = append(args, *req.ConditionRating)
+		argCounter++
+	}
+
 	// Fuel type filter (requires JOIN with car_fuel)
 	fuelJoin := ""
 	if len(req.FuelTypeCodes) > 0 {
@@ -791,6 +824,30 @@ func (r *CarRepository) GetActiveCars(req *SearchCarsRequest) ([]Car, int, error
 
 	whereSQL := strings.Join(whereClauses, " AND ")
 
+	// Validate and set sort parameters
+	sortBy := req.SortBy
+	if sortBy == "" {
+		sortBy = "created_at" // Default sort
+	}
+
+	// Validate sort field to prevent SQL injection
+	validSortFields := map[string]string{
+		"price":            "cars.price",
+		"year":             "cars.year",
+		"mileage":          "cars.mileage",
+		"created_at":       "cars.created_at",
+		"condition_rating": "cars.condition_rating",
+	}
+	sortField, ok := validSortFields[sortBy]
+	if !ok {
+		sortField = "cars.created_at" // Default to created_at if invalid
+	}
+
+	sortOrder := req.SortOrder
+	if sortOrder != "asc" && sortOrder != "desc" {
+		sortOrder = "desc" // Default to descending
+	}
+
 	// Count total results (with DISTINCT if joins are used)
 	countQuery := ""
 	joinClause := fuelJoin + colorJoin
@@ -819,8 +876,8 @@ func (r *CarRepository) GetActiveCars(req *SearchCarsRequest) ([]Car, int, error
             cars.status, cars.condition_rating, cars.created_at, cars.updated_at
         FROM cars%s
         WHERE %s
-        ORDER BY cars.created_at DESC
-        LIMIT $%d OFFSET $%d`, selectClause, joinClause, whereSQL, argCounter, argCounter+1)
+        ORDER BY %s %s
+        LIMIT $%d OFFSET $%d`, selectClause, joinClause, whereSQL, sortField, sortOrder, argCounter, argCounter+1)
 
 	args = append(args, req.Limit, req.Offset)
 

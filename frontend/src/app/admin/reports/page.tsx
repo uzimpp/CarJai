@@ -187,26 +187,26 @@ export default function AdminReportsPage() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-(--space-m)">
-        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m)">
+        <div className="bg-white rounded-3xl shadow-sm p-(--space-m)">
           <p className="text--1 text-gray-600 mb-1">Total Reports</p>
           <p className="text-3xl font-bold text-gray-900">{total}</p>
         </div>
-        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m)">
+        <div className="bg-white rounded-3xl shadow-sm p-(--space-m)">
           <p className="text--1 text-gray-600 mb-1">Pending</p>
           <p className="text-3xl font-bold text-gray-900">{pendingCount}</p>
         </div>
-        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m)">
+        <div className="bg-white rounded-3xl shadow-sm p-(--space-m)">
           <p className="text--1 text-gray-600 mb-1">User Reports</p>
           <p className="text-3xl font-bold text-gray-900">{userReportsCount}</p>
         </div>
-        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m)">
+        <div className="bg-white rounded-3xl shadow-sm p-(--space-m)">
           <p className="text--1 text-gray-600 mb-1">Car Reports</p>
           <p className="text-3xl font-bold text-gray-900">{carReportsCount}</p>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m)">
+      <div className="bg-white rounded-3xl shadow-sm p-(--space-m)">
         <div className="flex flex-wrap gap-(--space-s)">
           {/* Type Filter */}
           <div className="flex gap-(--space-2xs)">
@@ -293,7 +293,7 @@ export default function AdminReportsPage() {
       </div>
 
       {/* Reports Section */}
-      <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] overflow-hidden">
+      <div className="bg-white rounded-3xl shadow-sm overflow-hidden">
         <div className="px-(--space-m) py-(--space-s) border-b border-gray-200">
           <h2 className="text-2 font-bold text-gray-900">
             Reports{" "}

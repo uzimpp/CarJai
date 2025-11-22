@@ -443,9 +443,8 @@ export default function AdminUsersPage() {
   const [filteredUsers, setFilteredUsers] = useState<AdminManagedUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage] = useState(10);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [editingUser, setEditingUser] = useState<AdminManagedUser | null>(null);
@@ -467,7 +466,6 @@ export default function AdminUsersPage() {
 
         const result = await adminAPI.getUsers();
         setUsers(result.users);
-        setTotal(result.total);
         setIsLoading(false);
       } catch (err) {
         setError(
@@ -682,7 +680,7 @@ export default function AdminUsersPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)]">
+        <div className="bg-white rounded-3xl shadow-sm">
           <div className="divide-y divide-gray-200">
             {/* Column Headers - Hidden on mobile, visible on md+ */}
             <div className="hidden md:grid md:grid-cols-[80px_1fr_1fr_1fr_1fr_80px] gap-(--space-2xs) p-(--space-xs) bg-gray-50 rounded-t-lg">

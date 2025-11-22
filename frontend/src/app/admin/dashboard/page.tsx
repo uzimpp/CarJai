@@ -46,12 +46,12 @@ export default function AdminDashboard() {
         const actualStats = (statsData as unknown as { data?: DashboardStats })?.data || statsData;
 
         setStats({
-          totalUsers: actualStats?.totalUsers ?? 0,
-          activeCars: actualStats?.activeCars ?? 0,
-          soldCars: actualStats?.soldCars ?? 0,
-          pendingReports: actualStats?.pendingReports ?? 0,
-          totalBuyers: actualStats?.totalBuyers ?? 0,
-          totalSellers: actualStats?.totalSellers ?? 0,
+          totalUsers: statsData?.data?.totalUsers ?? 0,
+          activeCars: statsData?.data?.activeCars ?? 0,
+          soldCars: statsData?.data?.soldCars ?? 0,
+          pendingReports: statsData?.data?.pendingReports ?? 0,
+          totalBuyers: statsData?.data?.totalBuyers ?? 0,
+          totalSellers: statsData?.data?.totalSellers ?? 0,
         });
         setChartData(Array.isArray(chartData) ? chartData : []);
         setTopBrandsData(Array.isArray(brandsData) ? brandsData : []);
@@ -113,7 +113,7 @@ export default function AdminDashboard() {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-(--space-m) mb-(--space-l)">
         {/* Pending Reports */}
-        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m)">
+        <div className="bg-white rounded-3xl shadow-sm p-(--space-m)">
           <div className="flex items-center justify-between">
             <div>
               <p className="text--1 text-gray-600 mb-1">Pending Reports</p>
@@ -127,9 +127,9 @@ export default function AdminDashboard() {
                 View all →
               </Link>
             </div>
-            <div className="p-3 bg-orange-100 rounded-full">
+            <div className="p-3 bg-rose-100 rounded-full">
               <svg
-                className="w-8 h-8 text-orange-600"
+                className="w-8 h-8 text-rose-600"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -146,7 +146,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Active Cars */}
-        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m)">
+        <div className="bg-white rounded-3xl shadow-sm p-(--space-m)">
           <div className="flex items-center justify-between">
             <div>
               <p className="text--1 text-gray-600 mb-1">Active Cars</p>
@@ -179,7 +179,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Sold Cars */}
-        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m)">
+        <div className="bg-white rounded-3xl shadow-sm p-(--space-m)">
           <div className="flex items-center justify-between">
             <div>
               <p className="text--1 text-gray-600 mb-1">Sold Cars</p>
@@ -212,7 +212,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Total Users */}
-        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m)">
+        <div className="bg-white rounded-3xl shadow-sm p-(--space-m)">
           <div className="flex items-center justify-between">
             <div>
               <p className="text--1 text-gray-600 mb-1">Total Users</p>
@@ -248,7 +248,7 @@ export default function AdminDashboard() {
       {/* --- Row 1: Activity Chart & User Roles --- */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-(--space-m) mb-(--space-l)">
         {/* Col 1.1: Activity Chart (Line) */}
-        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m) h-[450px]">
+        <div className="bg-white rounded-3xl shadow-sm p-(--space-m)">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-1 font-bold text-gray-900">
               Activity Overview (Last 30 Days)
@@ -267,12 +267,12 @@ export default function AdminDashboard() {
         </div>
 
         {/* Col 1.2: User Roles (Donut) */}
-        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m) h-[450px]">
+        <div className="bg-white rounded-3xl shadow-sm p-(--space-m)">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-1 font-bold text-gray-900">User Roles</h2>
           </div>
           {isLoading ? (
-            <div className="h-96 flex items-center justify-center bg-gray-50 rounded-xl">
+            <div className="h-64 flex items-center justify-center bg-gray-50 rounded-xl">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon"></div>
             </div>
           ) : (
@@ -290,12 +290,12 @@ export default function AdminDashboard() {
       {/* --- Row 2: Top Brands & Car Status --- */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-(--space-m) mb-(--space-l)">
         {/* Col 2.1: Car Status (Donut) */}
-        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m) h-[450px]">
+        <div className="bg-white rounded-3xl shadow-sm p-(--space-m)">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-1 font-bold text-gray-900">Car Status</h2>
           </div>
           {isLoading ? (
-            <div className="h-96 flex items-center justify-center bg-gray-50 rounded-xl">
+            <div className="h-64 flex items-center justify-center bg-gray-50 rounded-xl">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon"></div>
             </div>
           ) : (
@@ -307,12 +307,12 @@ export default function AdminDashboard() {
         </div>
 
         {/* Col 2.2: Top 10 Brands (Bar) */}
-        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m) h-[450px]">
+        <div className="bg-white rounded-3xl shadow-sm p-(--space-m)">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-1 font-bold text-gray-900">Top 10 Brands</h2>
           </div>
           {isLoading ? (
-            <div className="h-96 flex items-center justify-center bg-gray-50 rounded-xl">
+            <div className="h-64 flex items-center justify-center bg-gray-50 rounded-xl">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon"></div>
             </div>
           ) : (
@@ -325,7 +325,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Recent Reports */}
-      <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m) mt-(--space-l)">
+      <div className="bg-white rounded-3xl shadow-sm p-(--space-m) mt-(--space-l)">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-1 font-bold text-gray-900">Recent Reports</h2>
           <Link
@@ -359,12 +359,12 @@ export default function AdminDashboard() {
                 >
                   <div
                     className={`p-2 rounded-full flex-shrink-0 ${
-                      isUserReport ? "bg-red-100" : "bg-orange-100"
+                      isUserReport ? "bg-blue-100" : "bg-orange-100"
                     }`}
                   >
                     {isUserReport ? (
                       <svg
-                        className="w-5 h-5 text-red-600"
+                        className="w-6 h-6 text-blue-600"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -378,7 +378,7 @@ export default function AdminDashboard() {
                       </svg>
                     ) : (
                       <svg
-                        className="w-5 h-5 text-orange-600"
+                        className="w-6 h-6 text-orange-600"
                         viewBox="0 0 24.00 24.00"
                         fill="none"
                       >
@@ -402,7 +402,7 @@ export default function AdminDashboard() {
                       <span
                         className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                           report.status === "pending"
-                            ? "bg-orange-100 text-orange-800"
+                            ? "bg-rose-100 text-rose-800"
                             : "bg-gray-100 text-gray-800"
                         }`}
                       >

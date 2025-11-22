@@ -17,12 +17,12 @@ const (
 
 // Car generation ranges and options
 var (
-	PRICE_RANGE     = [2]int{300000, 1500000} // ฿300k - ฿1.5M
-	YEAR_RANGE      = [2]int{2015, 2024}      // 2015-2024
-	MILEAGE_RANGE   = [2]int{10000, 200000}   // 10k-200k km
-	CONDITION_RANGE = [2]int{3, 5}            // Rating 3-5
-	ENGINE_CC_RANGE = [2]int{1000, 3500}      // 1000-3500cc
-	SEATS_RANGE     = [2]int{2, 8}            // 2-8 seats
+	PRICE_RANGE     = [2]int{299, 2999}    // ฿299 - ฿2,999 * 1000 = ฿299,000 - ฿2,999,000
+	YEAR_RANGE      = [2]int{2012, 2025}   // 2012-2025
+	MILEAGE_RANGE   = [2]int{5000, 150000} // 5k-150k km
+	CONDITION_RANGE = [2]int{2, 5}         // Rating 3-5
+	ENGINE_CC_RANGE = [2]int{1000, 3500}   // 1000-3500cc
+	SEATS_RANGE     = [2]int{2, 8}         // 2-8 seats
 
 	// Body type codes
 	BODY_TYPES = []string{"PICKUP", "SUV", "CITYCAR", "DAILY", "VAN", "SPORTLUX"}
@@ -55,6 +55,64 @@ var brandModels = map[string][]string{
 	"KIA":           {"Seltos", "Sorento", "Cerato", "Rio"},
 	"VOLKSWAGEN":    {"Tiguan", "Golf", "Passat", "Polo"},
 	"PORSCHE":       {"Cayenne", "Macan", "911", "Panamera"},
+}
+
+// Model submodels mapping
+var modelSubmodels = map[string][]string{
+	"Civic":        {"EL", "EX", "Sport", "Type R", "RS"},
+	"Accord":       {"EX", "EX-L", "Touring", "Sport"},
+	"CR-V":         {"LX", "EX", "EX-L", "Touring"},
+	"HR-V":         {"LX", "EX", "EX-L"},
+	"City":         {"E", "EL", "EX", "RS"},
+	"Camry":        {"LE", "XLE", "SE", "XSE", "TRD"},
+	"Corolla":      {"LE", "XLE", "SE", "XSE", "GR"},
+	"Fortuner":     {"G", "V", "Legender", "Rocco"},
+	"Yaris":        {"E", "G", "S"},
+	"Vios":         {"E", "G", "S"},
+	"Hilux":        {"Prerunner", "4WD", "Revo", "Rocco"},
+	"CX-5":         {"Sport", "Touring", "Grand Touring", "Signature"},
+	"CX-3":         {"Sport", "Touring", "Grand Touring"},
+	"Mazda3":       {"Sport", "Touring", "Grand Touring"},
+	"Mazda2":       {"Sport", "Touring"},
+	"MX-5":         {"Sport", "Club", "Grand Touring"},
+	"Almera":       {"E", "VL", "V", "Tekna"},
+	"Note":         {"E", "VL", "V"},
+	"Navara":       {"E", "VL", "V", "Pro-4X"},
+	"Terra":        {"E", "VL", "V", "Pro-4X"},
+	"GT-R":         {"Premium", "Track Edition", "Nismo"},
+	"Pajero Sport": {"GLX", "GLS", "Ultimate"},
+	"Triton":       {"GLX", "GLS", "Ultimate"},
+	"Attrage":      {"GLS", "GLS Premium"},
+	"Mirage":       {"GLX", "GLS"},
+	"D-Max":        {"Prerunner", "4WD", "X-Series", "Rocco"},
+	"MU-X":         {"LS", "LS-A", "LS-U"},
+	"C-Class":      {"C200", "C300", "AMG C43", "AMG C63"},
+	"E-Class":      {"E200", "E300", "AMG E53", "AMG E63"},
+	"GLC":          {"GLC200", "GLC300", "AMG GLC43"},
+	"S-Class":      {"S350", "S450", "S500", "AMG S63"},
+	"3 Series":     {"320i", "330i", "M340i", "M3"},
+	"5 Series":     {"520i", "530i", "M550i", "M5"},
+	"X3":           {"xDrive20i", "xDrive30i", "M40i"},
+	"X5":           {"xDrive30d", "xDrive40i", "M50i", "X5M"},
+	"Model 3":      {"Standard Range", "Long Range", "Performance"},
+	"Model Y":      {"Long Range", "Performance"},
+	"Model S":      {"Long Range", "Plaid"},
+	"Tucson":       {"GL", "GLS", "Premium"},
+	"Santa Fe":     {"GL", "GLS", "Premium"},
+	"Elantra":      {"GL", "GLS", "Premium"},
+	"Accent":       {"GL", "GLS"},
+	"Seltos":       {"EX", "GT-Line", "GT"},
+	"Sorento":      {"EX", "GT-Line", "GT"},
+	"Cerato":       {"EX", "GT-Line", "GT"},
+	"Rio":          {"EX", "GT-Line"},
+	"Tiguan":       {"Comfortline", "Highline", "R-Line"},
+	"Golf":         {"Comfortline", "Highline", "GTI", "R"},
+	"Passat":       {"Comfortline", "Highline"},
+	"Polo":         {"Comfortline", "Highline"},
+	"Cayenne":      {"Base", "S", "Turbo", "GTS"},
+	"Macan":        {"Base", "S", "GTS", "Turbo"},
+	"911":          {"Carrera", "Carrera S", "Turbo", "GT3"},
+	"Panamera":     {"Base", "S", "Turbo", "GTS"},
 }
 
 // Image files available
@@ -195,9 +253,17 @@ func createCar(db *sql.DB, sellerID, index int, provinces []int) (int, error) {
 	// Random data using configuration
 	brand := randomKey(brandModels)
 	model := randomItem(brandModels[brand])
+
+	// Get submodel (may be empty if model doesn't have submodels)
+	var submodel *string
+	if submodels, exists := modelSubmodels[model]; exists && len(submodels) > 0 {
+		submodelStr := randomItem(submodels)
+		submodel = &submodelStr
+	}
+
 	year := randomInt(YEAR_RANGE[0], YEAR_RANGE[1])
 	mileage := randomInt(MILEAGE_RANGE[0], MILEAGE_RANGE[1])
-	price := randomInt(PRICE_RANGE[0], PRICE_RANGE[1])
+	price := randomInt(PRICE_RANGE[0], PRICE_RANGE[1]) * 1000
 	provinceID := randomItem(provinces)
 	bodyType := randomItem(BODY_TYPES)
 	transmission := randomItem(TRANSMISSIONS)
@@ -209,21 +275,27 @@ func createCar(db *sql.DB, sellerID, index int, provinces []int) (int, error) {
 	chassisNumber := fmt.Sprintf("DEMO%d%08d", year, index)
 	prefix := randomPrefix()
 	number := fmt.Sprintf("%d", randomInt(1000, 9999))
-	description := fmt.Sprintf("Well-maintained %s %s in excellent condition", brand, model)
+
+	// Build description with submodel if available
+	carName := fmt.Sprintf("%s %s", brand, model)
+	if submodel != nil && *submodel != "" {
+		carName = fmt.Sprintf("%s %s", carName, *submodel)
+	}
+	description := fmt.Sprintf("Well-maintained %s in excellent condition", carName)
 
 	// Insert car
 	var carID int
 	err := db.QueryRow(`
 		INSERT INTO cars (
 			seller_id, body_type_code, transmission_code, drivetrain_code,
-			brand_name, model_name, chassis_number, year, mileage, engine_cc,
+			brand_name, model_name, submodel_name, chassis_number, year, mileage, engine_cc,
 			seats, doors, prefix, number, province_id, description, price,
 			is_flooded, is_heavily_damaged, status, condition_rating
 		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-			$11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
+			$12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22
 		) RETURNING id
-	`, sellerID, bodyType, transmission, drivetrain, brand, model, chassisNumber,
+	`, sellerID, bodyType, transmission, drivetrain, brand, model, submodel, chassisNumber,
 		year, mileage, engineCC, seats, doors, prefix, number, provinceID,
 		description, price, false, false, "active", conditionRating).Scan(&carID)
 	if err != nil {
@@ -306,11 +378,48 @@ func addCarImages(db *sql.DB, carID int, imageFiles []string) error {
 
 // addInspectionResult adds an inspection result to a car
 func addInspectionResult(db *sql.DB, carID int) error {
-	// 80% chance of passing inspection
-	overallPass := rand.Float32() < 0.8
+	// Randomly generate each individual test result independently
+	// Each test has a random chance of passing (typically 70-90% chance)
+	brakeResult := rand.Float32() < 0.85
+	handbrakeResult := rand.Float32() < 0.80
+	alignmentResult := rand.Float32() < 0.75
+	noiseResult := rand.Float32() < 0.70
+	emissionResult := rand.Float32() < 0.75
+	hornResult := rand.Float32() < 0.90
+	speedometerResult := rand.Float32() < 0.85
+	highLowBeamResult := rand.Float32() < 0.80
+	signalLightsResult := rand.Float32() < 0.75
+	otherLightsResult := rand.Float32() < 0.80
+	windshieldResult := rand.Float32() < 0.85
+	steeringResult := rand.Float32() < 0.80
+	wheelsTiresResult := rand.Float32() < 0.75
+	fuelTankResult := rand.Float32() < 0.85
+	chassisResult := rand.Float32() < 0.80
+	bodyResult := rand.Float32() < 0.85
+	doorsFloorResult := rand.Float32() < 0.85
+	seatbeltResult := rand.Float32() < 0.90
+	wiperResult := rand.Float32() < 0.80
 
-	// If overall pass, all individual results should pass
-	individualPass := overallPass || rand.Float32() < 0.9
+	// Collect all individual results in a slice
+	individualResults := []bool{
+		brakeResult, handbrakeResult, alignmentResult, noiseResult, emissionResult,
+		hornResult, speedometerResult, highLowBeamResult, signalLightsResult, otherLightsResult,
+		windshieldResult, steeringResult, wheelsTiresResult, fuelTankResult, chassisResult,
+		bodyResult, doorsFloorResult, seatbeltResult, wiperResult,
+	}
+
+	// Calculate passing count
+	passedCount := 0
+	for _, result := range individualResults {
+		if result {
+			passedCount++
+		}
+	}
+
+	totalTests := len(individualResults)
+
+	// Overall pass only if passing percentage is >= 50%
+	overallPass := float32(passedCount)/float32(totalTests) >= 0.5
 
 	_, err := db.Exec(`
 		INSERT INTO car_inspection_results (
@@ -323,10 +432,10 @@ func addInspectionResult(db *sql.DB, carID int) error {
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22
 		)
 	`, carID, "Bangkok Inspection Center", overallPass,
-		individualPass, individualPass, individualPass, individualPass, individualPass,
-		individualPass, individualPass, individualPass, individualPass,
-		individualPass, individualPass, individualPass, individualPass,
-		individualPass, individualPass, individualPass, individualPass, individualPass, individualPass)
+		brakeResult, handbrakeResult, alignmentResult, noiseResult, emissionResult,
+		hornResult, speedometerResult, highLowBeamResult, signalLightsResult, otherLightsResult,
+		windshieldResult, steeringResult, wheelsTiresResult, fuelTankResult, chassisResult,
+		bodyResult, doorsFloorResult, seatbeltResult, wiperResult)
 
 	return err
 }
