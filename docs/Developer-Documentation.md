@@ -321,6 +321,17 @@ All environment variables are configured in `.env` file (root directory).
 - `GOOGLE_CLIENT_ID` - Google OAuth client ID
 - `GOOGLE_CLIENT_SECRET` - Google OAuth client secret
 - `GOOGLE_REDIRECT_URI` - OAuth redirect URI
+- `BACKEND_URL` - Backend URL (for OAuth callback fallback)
+
+**Email Service** (for password reset):
+- `SMTP_HOST` - SMTP server host
+- `SMTP_PORT` - SMTP server port
+- `SMTP_USERNAME` - SMTP username
+- `SMTP_PASSWORD` - SMTP password
+- `SMTP_FROM` - From email address
+- `PASSWORD_RESET_JWT_SECRET` - JWT secret for password reset tokens
+- `PASSWORD_RESET_TOKEN_EXPIRATION` - Token expiration in minutes (default: 30)
+- `FRONTEND_URL` - Frontend URL (for reset link)
 
 **OCR Service**:
 - `AIGEN_API_KEY` - Aigen API key for document extraction
