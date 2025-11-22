@@ -60,7 +60,7 @@ export default function RangeInput({
         setMinInput(formatNumber(minValue));
       }
     }
-  }, [minValue]);
+  }, [minValue, minInput]);
 
   useEffect(() => {
     if (document.activeElement !== maxInputRef.current) {

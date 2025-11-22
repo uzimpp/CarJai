@@ -23,20 +23,6 @@ interface StatusResponse {
   error?: string;
 }
 
-// Type for JSON error structure
-interface GoErrorResponse {
-  success: boolean;
-  error: string;
-  code: number;
-}
-
-// Type for successful import response
-interface ImportSuccessResponse {
-  message: string;
-  inserted_count: number;
-  updated_count: number;
-}
-
 // Upload Modal Component
 function UploadModal({
   isOpen,
@@ -215,7 +201,7 @@ export default function MarketPricePage() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(20);
+  const [rowsPerPage] = useState(20);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
   // Fetch market prices

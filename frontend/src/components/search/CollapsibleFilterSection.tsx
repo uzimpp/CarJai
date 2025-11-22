@@ -13,7 +13,6 @@ export default function CollapsibleFilterSection({
   label,
   children,
   defaultExpanded = true,
-  hasActiveFilter = false,
 }: CollapsibleFilterSectionProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 

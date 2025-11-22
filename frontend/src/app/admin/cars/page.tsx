@@ -702,9 +702,8 @@ export default function AdminCarsPage() {
   const [filteredCars, setFilteredCars] = useState<AdminManagedCar[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage] = useState(10);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [editingCar, setEditingCar] = useState<AdminManagedCar | null>(null);
@@ -724,7 +723,6 @@ export default function AdminCarsPage() {
 
         const result = await adminAPI.getCars();
         setCars(result.cars);
-        setTotal(result.total);
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "An unexpected error occurred"

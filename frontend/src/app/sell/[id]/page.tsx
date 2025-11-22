@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
-import { useRouter, useParams, usePathname } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import { carsAPI } from "@/lib/carsAPI";
@@ -21,7 +21,6 @@ export default function SellWithIdPage() {
   const isHydratingRef = useRef(false);
   const router = useRouter();
   const params = useParams();
-  const pathname = usePathname();
   const carId = parseInt(params.id as string);
   const { isAuthenticated, isLoading, roles, profiles, validateSession } =
     useUserAuth();
@@ -29,7 +28,6 @@ export default function SellWithIdPage() {
   // Progress tracking
   const [hasProgress, setHasProgress] = useState(false);
   const hasProgressRef = useRef(false);
-  const initializedPathRef = useRef(false);
   const suppressAutoDiscardRef = useRef(false);
 
   // Step management

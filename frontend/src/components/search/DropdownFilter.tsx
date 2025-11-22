@@ -17,7 +17,6 @@ export default function DropdownFilter({
   value,
   options,
   onChange,
-  placeholder = "All",
   allOptionLabel = "All",
 }: DropdownFilterProps) {
   return (

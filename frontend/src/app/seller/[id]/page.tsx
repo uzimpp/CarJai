@@ -329,40 +329,41 @@ export default function SellerPage() {
       {/* Content */}
       <div className="pb-(--space-xl)">
         {/* Main Content */}
-          <div className="flex items-center justify-between mb-(--space-m)">
-            <h2 className="text-3 font-bold text-gray-900">Available Cars</h2>
+        <div className="flex items-center justify-between mb-(--space-m)">
+          <h2 className="text-3 font-bold text-gray-900">Available Cars</h2>
+        </div>
+        {cars.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+              <svg
+                className="w-8 h-8 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"
+                />
+              </svg>
+            </div>
+            <p className="text-base text-gray-600 font-medium">
+              No active listings
+            </p>
+            <p className="text-sm text-gray-500 mt-2">
+              This seller doesn&apos;t have any active cars listed at the
+              moment.
+            </p>
           </div>
-          {cars.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-                <svg
-                  className="w-8 h-8 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"
-                  />
-                </svg>
-              </div>
-              <p className="text-base text-gray-600 font-medium">
-                No active listings
-              </p>
-              <p className="text-sm text-gray-500 mt-2">
-                This seller doesn't have any active cars listed at the moment.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-(--space-m)">
-              {cars.map((car) => (
-                <CarCard key={car.id} car={car} />
-              ))}
-            </div>
-          )}
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-(--space-m)">
+            {cars.map((car) => (
+              <CarCard key={car.id} car={car} />
+            ))}
+          </div>
+        )}
 
         {/* Report Feedback */}
         {reportFeedback && (
