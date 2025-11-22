@@ -1,6 +1,8 @@
 package models
 
 import (
+	"database/sql"
+	"fmt"
 	"time"
 )
 
@@ -318,4 +320,94 @@ type ResetPasswordRequest struct {
 type ResetPasswordResponse struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
+}
+
+// PasswordResetToken represents a password reset token in database
+type PasswordResetToken struct {
+	ID        int        `db:"id"`
+	UserID    int        `db:"user_id"`
+	Email     string     `db:"email"`
+	TokenHash string     `db:"token_hash"`
+	CreatedAt time.Time  `db:"created_at"`
+	ExpiresAt time.Time  `db:"expires_at"`
+	UsedAt    *time.Time `db:"used_at"`
+}
+
+// PasswordResetTokenRepository handles database operations for reset tokens
+type PasswordResetTokenRepository struct {
+	db *sql.DB
+}
+
+// NewPasswordResetTokenRepository creates a new repository
+func NewPasswordResetTokenRepository(db *sql.DB) *PasswordResetTokenRepository {
+	return &PasswordResetTokenRepository{db: db}
+}
+
+// StoreToken stores a new reset token (invalidates old ones automatically via unique constraint)
+func (r *PasswordResetTokenRepository) StoreToken(userID int, email, tokenHash string, expiresAt time.Time) error {
+	// Delete any existing unused tokens for this user first
+	deleteQuery := `DELETE FROM password_reset_tokens WHERE user_id = $1 AND used_at IS NULL`
+	_, _ = r.db.Exec(deleteQuery, userID)
+
+	// Insert new token
+	query := `
+		INSERT INTO password_reset_tokens (user_id, email, token_hash, expires_at)
+		VALUES ($1, $2, $3, $4)
+	`
+	_, err := r.db.Exec(query, userID, email, tokenHash, expiresAt)
+	return err
+}
+
+// ValidateAndUseToken checks if token is valid and marks it as used (atomic operation)
+func (r *PasswordResetTokenRepository) ValidateAndUseToken(tokenHash string) (*PasswordResetToken, error) {
+	// Start transaction for atomic operation
+	tx, err := r.db.Begin()
+	if err != nil {
+		return nil, fmt.Errorf("failed to start transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	// Get token with row lock
+	query := `
+		SELECT id, user_id, email, token_hash, created_at, expires_at, used_at
+		FROM password_reset_tokens
+		WHERE token_hash = $1
+		AND used_at IS NULL
+		AND expires_at > NOW()
+		FOR UPDATE
+	`
+	var token PasswordResetToken
+	err = tx.QueryRow(query, tokenHash).Scan(
+		&token.ID, &token.UserID, &token.Email, &token.TokenHash,
+		&token.CreatedAt, &token.ExpiresAt, &token.UsedAt,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("token not found, expired, or already used")
+		}
+		return nil, fmt.Errorf("failed to query token: %w", err)
+	}
+
+	// Mark as used
+	updateQuery := `UPDATE password_reset_tokens SET used_at = NOW() WHERE id = $1`
+	_, err = tx.Exec(updateQuery, token.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to mark token as used: %w", err)
+	}
+
+	// Commit transaction
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return &token, nil
+}
+
+// CleanupExpiredTokens removes old expired tokens (run periodically)
+func (r *PasswordResetTokenRepository) CleanupExpiredTokens() (int64, error) {
+	result, err := r.db.Exec(`SELECT cleanup_expired_reset_tokens()`)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
