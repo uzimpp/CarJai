@@ -330,22 +330,17 @@ This is a reference price. You can set your asking price higher or lower based o
    - Click "Cars" in the sidebar or visit `/admin/cars`
    - View all car listings (active and sold)
 
-2. **Approve Listings**
-   - New listings may require approval (if configured)
-   - Review listing details
-   - Click "Approve" to make listing visible
-
-3. **Edit Listings**
+2. **Edit Listings**
    - Click "Edit" on any listing
    - Modify any field
    - Save changes
 
-4. **Delete Listings**
+3. **Delete Listings**
    - Click "Delete" on any listing
    - Confirm deletion
    - Listing will be permanently removed
 
-5. **Mark as Sold**
+4. **Mark as Sold**
    - Click "Mark as Sold" on any listing
    - Listing will be removed from marketplace
 
