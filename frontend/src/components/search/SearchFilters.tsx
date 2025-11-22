@@ -1,30 +1,43 @@
 "use client";
 
-import { useState, useEffect, type FormEvent, type ChangeEvent } from "react";
+import { useState, useEffect } from "react";
+import type { FormEvent } from "react";
 import {
   referenceAPI,
   type ProvinceOption,
   type ReferenceOption,
 } from "@/lib/referenceAPI";
+import DualRangeSlider from "./DualRangeSlider";
+import RangeInput from "./RangeInput";
+import IconSelector from "./IconSelector";
+import ColorSelector from "./ColorSelector";
+import DropdownFilter from "./DropdownFilter";
+import { CheckBoxes } from "@/components/ui/CheckBoxes";
+import StarRating from "@/components/ui/StarRating";
 
-export type CategoryValue = "all" | "electric" | "sport" | "family" | "compact";
-
-export type CategoryOption = {
-  value: CategoryValue;
-  label: string;
-  fuelTypes?: string[];
-  bodyType?: string;
+// Color code to hex mapping (matching backend color codes)
+const COLOR_MAP: Record<string, string[]> = {
+  RED: ["#EF4444"],
+  GRAY: ["#6B7280"],
+  BLUE: ["#3B82F6"],
+  LIGHT_BLUE: ["#60A5FA"],
+  YELLOW: ["#FBBF24"],
+  PINK: ["#EC4899"],
+  WHITE: ["#FFFFFF"],
+  BROWN: ["#92400E"],
+  BLACK: ["#000000"],
+  ORANGE: ["#F97316"],
+  PURPLE: ["#A855F7"],
+  GREEN: ["#10B981"],
+  MULTICOLOR: ["#EF4444", "#3B82F6", "#FBBF24"], // Red, Blue, Yellow
 };
 
 interface SearchFiltersProps {
   filters: SearchFiltersData;
   searchInput: string;
-  category: CategoryValue;
-  categoryOptions: CategoryOption[];
   onFiltersChange: (filters: SearchFiltersData) => void;
   onSearchSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onSearchInputChange: (value: string) => void;
-  onCategoryChange: (value: CategoryValue) => void;
 }
 
 export interface SearchFiltersData {
@@ -33,10 +46,11 @@ export interface SearchFiltersData {
   maxPrice?: number;
   minYear?: number;
   maxYear?: number;
+  minMileage?: number;
   maxMileage?: number;
   bodyType?: string;
-  transmission?: string;
-  drivetrain?: string;
+  transmission?: string[];
+  drivetrain?: string[];
   fuelTypes?: string[];
   colors?: string[];
   provinceId?: number;
@@ -46,14 +60,10 @@ export interface SearchFiltersData {
 export default function SearchFilters({
   filters,
   searchInput,
-  category,
-  categoryOptions,
   onFiltersChange,
   onSearchSubmit,
   onSearchInputChange,
-  onCategoryChange,
 }: SearchFiltersProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
   const [referenceData, setReferenceData] = useState<{
     provinces: ProvinceOption[];
     transmissions: ReferenceOption[];
@@ -112,325 +122,414 @@ export default function SearchFilters({
     onFiltersChange({});
   };
 
+  const hasActiveFilters = Object.keys(filters).length > 0;
+
   return (
-    <div className="space-y-6">
-      {/* Search Bar and Category */}
-      <div className="bg-white rounded-2xl shadow-lg p-6">
-        <form onSubmit={onSearchSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Search
-            </label>
-            <input
-              type="text"
-              value={searchInput}
-              onChange={(e) => onSearchInputChange(e.target.value)}
-              placeholder="Search cars, e.g. Mitsu"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base text-gray-900 focus:border-maroon focus:outline-none focus:ring-2 focus:ring-maroon/40"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Category
-            </label>
-            <select
-              value={category}
-              onChange={(e) =>
-                onCategoryChange(e.target.value as CategoryValue)
-              }
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base text-gray-900 focus:border-maroon focus:outline-none focus:ring-2 focus:ring-maroon/40"
-            >
-              {categoryOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <button
-            type="submit"
-            className="w-full rounded-lg bg-maroon px-6 py-3 text-base font-semibold text-white transition-colors hover:bg-maroon/90 focus:outline-none focus:ring-2 focus:ring-maroon/40"
-          >
-            Search
-          </button>
-        </form>
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white rounded-2xl shadow-lg p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-semibold text-gray-900">Filters</h3>
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="text-sm text-maroon hover:underline"
-          >
-            {isExpanded ? "Hide" : "Show"} Filters
-          </button>
-        </div>
-
-        {isExpanded && (
-          <div className="space-y-4">
-
-          {/* Price Range */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Min Price (฿)
+    <div className="h-[calc(100dvh-var(--navbar-height))] flex flex-col">
+      <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] flex flex-col h-full overflow-hidden">
+        <div className="flex-1 overflow-y-auto pr-2">
+          <form onSubmit={onSearchSubmit} className="space-y-4 p-(--space-s-m)">
+            {/* Search */}
+            <div className="">
+              <label className="block text--1 font-medium text-gray-700 mb-2">
+                Search
               </label>
-              <input
-                type="number"
-                placeholder="0"
-                value={filters.minPrice || ""}
-                onChange={(e) =>
-                  handleChange(
-                    "minPrice",
-                    e.target.value ? parseInt(e.target.value) : undefined
-                  )
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Max Price (฿)
-              </label>
-              <input
-                type="number"
-                placeholder="Any"
-                value={filters.maxPrice || ""}
-                onChange={(e) =>
-                  handleChange(
-                    "maxPrice",
-                    e.target.value ? parseInt(e.target.value) : undefined
-                  )
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
-              />
-            </div>
-          </div>
-
-          {/* Year Range */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Min Year
-              </label>
-              <input
-                type="number"
-                placeholder="1990"
-                value={filters.minYear || ""}
-                onChange={(e) =>
-                  handleChange(
-                    "minYear",
-                    e.target.value ? parseInt(e.target.value) : undefined
-                  )
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Max Year
-              </label>
-              <input
-                type="number"
-                placeholder="2024"
-                value={filters.maxYear || ""}
-                onChange={(e) =>
-                  handleChange(
-                    "maxYear",
-                    e.target.value ? parseInt(e.target.value) : undefined
-                  )
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
-              />
-            </div>
-          </div>
-
-          {/* Max Mileage */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Max Mileage (km)
-            </label>
-            <input
-              type="number"
-              placeholder="Any"
-              value={filters.maxMileage || ""}
-              onChange={(e) =>
-                handleChange(
-                  "maxMileage",
-                  e.target.value ? parseInt(e.target.value) : undefined
-                )
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
-            />
-          </div>
-
-          {/* Body Type */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Body Type
-            </label>
-            <select
-              value={filters.bodyType || ""}
-              onChange={(e) =>
-                handleChange("bodyType", e.target.value || undefined)
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
-            >
-              <option value="">All Types</option>
-              <option value="PICKUP">Pickup</option>
-              <option value="VAN">Van</option>
-              <option value="CITYCAR">City Car</option>
-              <option value="DAILY">Daily Use</option>
-              <option value="SUV">SUV</option>
-              <option value="SPORTLUX">Sport / Luxury</option>
-            </select>
-          </div>
-
-          {/* Fuel Types */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Fuel Type
-            </label>
-            <div className="space-y-2">
-              {[
-                { code: "GASOLINE", label: "Gasoline" },
-                { code: "DIESEL", label: "Diesel" },
-                { code: "ELECTRIC", label: "Electric" },
-                { code: "HYBRID", label: "Hybrid" },
-                { code: "LPG", label: "LPG" },
-                { code: "CNG", label: "CNG" },
-              ].map((fuel) => (
-                <label key={fuel.code} className="flex items-center">
+              <div className="relative">
+                <div className="flex flex-row w-full rounded-full items-center bg-white border border-gray-200 focus-within:border-maroon focus-within:ring-2 focus-within:ring-maroon/20 transition-all">
+                  <div className="flex items-center">
+                    <button
+                      type="submit"
+                      className="rounded-full mx-(--space-2xs) px-(--space-3xs) py-(--space-3xs) text-maroon transition-colors hover:bg-maroon/20 focus:outline-none"
+                      aria-label="Search"
+                    >
+                      <svg
+                        className="w-(--space-s) h-(--space-s)"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2.5}
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                        />
+                      </svg>
+                    </button>
+                  </div>
                   <input
-                    type="checkbox"
-                    checked={filters.fuelTypes?.includes(fuel.code) || false}
-                    onChange={(e) => {
-                      const currentFuels = filters.fuelTypes || [];
-                      const newFuels = e.target.checked
-                        ? [...currentFuels, fuel.code]
-                        : currentFuels.filter((f) => f !== fuel.code);
-                      handleChange(
-                        "fuelTypes",
-                        newFuels.length > 0 ? newFuels : undefined
-                      );
-                    }}
-                    className="w-4 h-4 text-maroon border-gray-300 rounded focus:ring-maroon"
+                    type="text"
+                    value={searchInput}
+                    onChange={(e) => onSearchInputChange(e.target.value)}
+                    placeholder="Search cars, brands, models..."
+                    className="w-full flex my-(--space-2xs) text-gray-900 focus:outline-none bg-transparent"
+                    autoComplete="off"
                   />
-                  <span className="ml-2 text-sm text-gray-700">
-                    {fuel.label}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-            {/* Transmission */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Transmission
-              </label>
-              <select
-                value={filters.transmission || ""}
-                onChange={(e) =>
-                  handleChange("transmission", e.target.value || undefined)
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
-              >
-                <option value="">All Types</option>
-                {referenceData.transmissions.map((transmission) => (
-                  <option key={transmission.code} value={transmission.code}>
-                    {transmission.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Drivetrain */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Drivetrain
-              </label>
-              <select
-                value={filters.drivetrain || ""}
-                onChange={(e) =>
-                  handleChange("drivetrain", e.target.value || undefined)
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
-              >
-                <option value="">All Types</option>
-                {referenceData.drivetrains.map((drivetrain) => (
-                  <option key={drivetrain.code} value={drivetrain.code}>
-                    {drivetrain.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Colors */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Colors
-              </label>
-              <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
-                {referenceData.colors.map((color) => (
-                  <label key={color.code} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={filters.colors?.includes(color.code) || false}
-                      onChange={(e) => {
-                        const currentColors = filters.colors || [];
-                        const newColors = e.target.checked
-                          ? [...currentColors, color.code]
-                          : currentColors.filter((c) => c !== color.code);
-                        handleChange(
-                          "colors",
-                          newColors.length > 0 ? newColors : undefined
-                        );
-                      }}
-                      className="w-4 h-4 text-maroon border-gray-300 rounded focus:ring-maroon"
-                    />
-                    <span className="ml-2 text-sm text-gray-700">
-                      {color.label}
-                    </span>
-                  </label>
-                ))}
+                  {searchInput && (
+                    <button
+                      type="button"
+                      onClick={() => onSearchInputChange("")}
+                      className="rounded-full mr-(--space-2xs) p-(--space-3xs) text-maroon/80 bg-maroon/10 hover:text-white hover:bg-maroon transition-colors focus:outline-none"
+                      aria-label="Clear search"
+                    >
+                      <svg
+                        className="w-(--space-s) h-(--space-s)"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2.5}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Province */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Province
-              </label>
-              <select
-                value={filters.provinceId || ""}
-                onChange={(e) =>
+            {/* Filters Section */}
+            <div className="space-y-4 pt-4 border-t border-gray-100">
+              {/* Price Range */}
+              <RangeInput
+                label="Price Range (฿)"
+                minValue={filters.minPrice}
+                maxValue={filters.maxPrice}
+                onRangeChange={(min, max) => {
+                  const nextFilters = { ...filters };
+                  min === undefined
+                    ? delete nextFilters.minPrice
+                    : (nextFilters.minPrice = min);
+                  max === undefined
+                    ? delete nextFilters.maxPrice
+                    : (nextFilters.maxPrice = max);
+                  onFiltersChange(nextFilters);
+                }}
+                step={1000}
+                min={0}
+                predefinedRanges={[
+                  { label: "≤ ฿500,000", min: undefined, max: 500000 },
+                  { label: "฿500K - ฿1M", min: 500000, max: 1000000 },
+                  { label: "฿1M - ฿2M", min: 1000000, max: 2000000 },
+                  { label: "≥ ฿2M", min: 2000000, max: undefined },
+                ]}
+              />
+
+              {/* Year Range */}
+              <DualRangeSlider
+                label="Year Range"
+                min={1990}
+                max={new Date().getFullYear()}
+                minValue={filters.minYear}
+                maxValue={filters.maxYear}
+                onMinChange={(value) => handleChange("minYear", value)}
+                onMaxChange={(value) => handleChange("maxYear", value)}
+                step={1}
+                formatValue={(v) => v.toString()}
+              />
+
+              {/* Mileage Range */}
+              <RangeInput
+                label="Mileage (km)"
+                minValue={filters.minMileage}
+                maxValue={filters.maxMileage}
+                onRangeChange={(min, max) => {
+                  const nextFilters = { ...filters };
+                  min === undefined
+                    ? delete nextFilters.minMileage
+                    : (nextFilters.minMileage = min);
+                  max === undefined
+                    ? delete nextFilters.maxMileage
+                    : (nextFilters.maxMileage = max);
+                  onFiltersChange(nextFilters);
+                }}
+                predefinedRanges={[
+                  { label: "≤ 15,000 km", min: undefined, max: 15000 },
+                  { label: "15,000 - 30,000 km", min: 15000, max: 30000 },
+                  { label: "≤ 100,000 km", min: undefined, max: 100000 },
+                ]}
+                step={1000}
+                min={0}
+              />
+
+              {/* Body Type */}
+              <IconSelector
+                label="Body Type"
+                options={[
+                  {
+                    code: "CITYCAR",
+                    label: "City Car",
+                    icon: <span className="text-3xl">🚗</span>,
+                  },
+                  {
+                    code: "DAILY",
+                    label: "Sedan",
+                    icon: <span className="text-3xl">🚙</span>,
+                  },
+                  {
+                    code: "SPORTLUX",
+                    label: "Luxury",
+                    icon: <span className="text-3xl">🏎️</span>,
+                  },
+                  {
+                    code: "SUV",
+                    label: "SUV",
+                    icon: <span className="text-3xl">🚐</span>,
+                  },
+                  {
+                    code: "VAN",
+                    label: "Van",
+                    icon: <span className="text-3xl">🚐</span>,
+                  },
+                  {
+                    code: "PICKUP",
+                    label: "Pickup",
+                    icon: <span className="text-3xl">🛻</span>,
+                  },
+                ]}
+                selectedValues={filters.bodyType ? [filters.bodyType] : []}
+                onChange={(values) =>
                   handleChange(
-                    "provinceId",
-                    e.target.value ? parseInt(e.target.value) : undefined
+                    "bodyType",
+                    values.length > 0 ? values[0] : undefined
                   )
                 }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
-              >
-                <option value="">All Provinces</option>
-                {referenceData.provinces.map((province) => (
-                  <option key={province.id} value={province.id}>
-                    {province.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+                multiple={false}
+                columns={3}
+              />
 
-          {/* Clear Button */}
+              {/* Transmission */}
+              <CheckBoxes
+                name="transmission"
+                label="Transmission"
+                values={filters.transmission || []}
+                options={referenceData.transmissions.map((t) => ({
+                  value: t.code,
+                  label: t.label,
+                }))}
+                onChange={(values) =>
+                  handleChange(
+                    "transmission",
+                    values.length > 0 ? values : undefined
+                  )
+                }
+                direction="column"
+              />
+
+              {/* Drivetrain */}
+              <CheckBoxes
+                name="drivetrain"
+                label="Drivetrain"
+                values={filters.drivetrain || []}
+                options={referenceData.drivetrains.map((d) => ({
+                  value: d.code,
+                  label: d.label,
+                }))}
+                onChange={(values) =>
+                  handleChange(
+                    "drivetrain",
+                    values.length > 0 ? values : undefined
+                  )
+                }
+                direction="column"
+              />
+
+              {/* Fuel Types */}
+              <IconSelector
+                label="Fuel Type"
+                options={[
+                  {
+                    code: "GASOLINE",
+                    label: "Gasoline",
+                    icon: (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="w-6 h-6"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <g
+                          fill="none"
+                          stroke="currentColor"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.4}
+                        >
+                          <path d="M20 13.277c0-4.525-4.59-8.481-6.81-10.136a2.004 2.004 0 0 0-2.38 0C8.59 4.796 4 8.752 4 13.277c0 5.98 5 7.973 8 7.973s8-1.993 8-7.973"></path>
+                          <path d="M7 13.277c0 1.322.527 2.59 1.464 3.524A5.009 5.009 0 0 0 12 18.26"></path>
+                        </g>
+                      </svg>
+                    ),
+                  },
+                  {
+                    code: "DIESEL",
+                    label: "Diesel",
+                    icon: (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="w-6 h-6"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                      >
+                        <g
+                          fill="none"
+                          stroke="currentColor"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.4}
+                          color="currentColor"
+                        >
+                          <path d="M5 6v-.5c0-.943 0-1.414.293-1.707S6.057 3.5 7 3.5s1.414 0 1.707.293S9 4.557 9 5.5V6m6-1h3" />
+                          <path d="M16 2h-1.333C12.793 2 12 2.934 12 4.667C12 5.533 11.603 6 10.667 6H7c-1.886 0-2.828 0-3.414.586S3 8.114 3 10v5c0 3.3 0 4.95 1.025 5.975S6.7 22 10 22h4c3.3 0 4.95 0 5.975-1.025S21 18.3 21 15V7c0-2.357 0-3.536-.732-4.268C19.535 2 18.357 2 16 2" />
+                          <path d="M9 14.587c0-1.464 1.264-2.911 2.15-3.747a1.23 1.23 0 0 1 1.7 0c.886.836 2.15 2.283 2.15 3.747a2.933 2.933 0 0 1-3 2.913c-1.864 0-3-1.477-3-2.913" />
+                        </g>
+                      </svg>
+                    ),
+                  },
+                  {
+                    code: "HYBRID",
+                    label: "Hybrid",
+                    icon: (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="w-6 h-6"
+                        viewBox="0 0 32 32"
+                      >
+                        <path
+                          fill="currentColor"
+                          d="M26 22a3.958 3.958 0 0 0-2.02.566L17.414 16l6.567-6.567A3.952 3.952 0 0 0 26 10a4 4 0 1 0-4-4a3.951 3.951 0 0 0 .567 2.019L16 14.586L9.434 8.02A3.958 3.958 0 0 0 10 6a4 4 0 1 0-4 4a3.958 3.958 0 0 0 2.02-.566L14.586 16l-6.567 6.567A3.952 3.952 0 0 0 6 22a4 4 0 1 0 4 4a3.951 3.951 0 0 0-.567-2.019L16 17.414l6.566 6.566A3.958 3.958 0 0 0 22 26a4 4 0 1 0 4-4Zm0-18a2 2 0 1 1-2 2a2.002 2.002 0 0 1 2-2ZM6 28a2 2 0 1 1 2-2a2.002 2.002 0 0 1-2 2Z"
+                        />
+                      </svg>
+                    ),
+                  },
+                  {
+                    code: "ELECTRIC",
+                    label: "Electric",
+                    icon: (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="w-6 h-6"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          fill="none"
+                          stroke="currentColor"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.4}
+                          d="M13 2v8h7l-9 12v-8H4Z"
+                        />
+                      </svg>
+                    ),
+                  },
+                  {
+                    code: "LPG",
+                    label: "LPG/NGV",
+                    icon: (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="w-6 h-6"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                      >
+                        <g
+                          fill="none"
+                          stroke="currentColor"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.4}
+                        >
+                          <path d="M5 21c.5-4.5 2.5-8 7-10" />
+                          <path d="M9 18c6.218 0 10.5-3.288 11-12V4h-4.014c-9 0-11.986 4-12 9c0 1 0 3 2 5h3z" />
+                        </g>
+                      </svg>
+                    ),
+                  },
+                ]}
+                selectedValues={filters.fuelTypes || []}
+                onChange={(values) =>
+                  handleChange(
+                    "fuelTypes",
+                    values.length > 0 ? values : undefined
+                  )
+                }
+                multiple={true}
+                columns={3}
+              />
+
+              {/* Colors */}
+              <ColorSelector
+                label="Colors"
+                options={referenceData.colors.map((c) => ({
+                  code: c.code,
+                  label: c.label,
+                }))}
+                selectedValues={filters.colors || []}
+                onChange={(values) =>
+                  handleChange("colors", values.length > 0 ? values : undefined)
+                }
+                colorMap={COLOR_MAP}
+              />
+
+              {/* Condition Rating */}
+              <div>
+                <label className="block text--1 font-medium text-gray-700 mb-3">
+                  Condition Rating
+                </label>
+                <div className="flex flex-col items-center gap-3 flex-wrap">
+                  <StarRating
+                    value={filters.conditionRating}
+                    onChange={(value) =>
+                      handleChange(
+                        "conditionRating",
+                        value === filters.conditionRating ? undefined : value
+                      )
+                    }
+                  />
+                  {filters.conditionRating && (
+                    <button
+                      type="button"
+                      onClick={() => handleChange("conditionRating", undefined)}
+                      className="text--1 text-gray-500 hover:text-gray-700 underline"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Province */}
+              <DropdownFilter
+                label="Province"
+                value={filters.provinceId}
+                options={referenceData.provinces.map((p) => ({
+                  code: p.id.toString(),
+                  label: p.label,
+                }))}
+                onChange={(value) =>
+                  handleChange(
+                    "provinceId",
+                    value ? parseInt(value as string) : undefined
+                  )
+                }
+                allOptionLabel="All Provinces"
+              />
+            </div>
+          </form>
+        </div>
+
+        {hasActiveFilters && (
           <button
             onClick={clearFilters}
-            className="w-full px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            className="text--1 text-gray-600 hover:text-gray-900 transition-colors"
           >
-            Clear All Filters
+            Clear All
           </button>
-          </div>
         )}
       </div>
     </div>
