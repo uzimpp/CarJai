@@ -5,44 +5,54 @@ import { InlineAlert } from "@/components/ui/InlineAlert";
 import { TextField } from "@/components/ui/TextField";
 import { Choices } from "@/components/ui/Choices";
 import { CheckBoxes } from "@/components/ui/CheckBoxes";
+import ComboboxInput from "@/components/ui/ComboboxInput";
 import type { CarFormData } from "@/types/car";
 import {
   MIN_DESCRIPTION_LENGTH,
   MAX_DESCRIPTION_LENGTH,
 } from "@/constants/car";
 import { referenceAPI } from "@/lib/referenceAPI";
+import { DAMAGE_OPTIONS } from "@/constants/car";
+import { FormSection } from "@/components/ui/FormSection";
+import {
+  BodyTypeIcons,
+  FuelTypeIcons,
+  TransmissionIcons,
+  DrivetrainIcons,
+} from "@/components/search/filterIcons";
 import type { ChoiceOption } from "@/components/ui/Choices";
-import type { CheckOption } from "@/components/ui/CheckBoxes";
+import CarImageUploader from "@/components/car/CarImageUploader";
 
 interface Step4ReviewFormProps {
+  carId: number;
   formData: Partial<CarFormData>;
   onChange: (updates: Partial<CarFormData>) => void;
   onPublish: () => void;
   onBack: () => void;
   isSubmitting: boolean;
   reviewResult: { ready: boolean; issues: string[] } | null;
+  brandOptions: string[];
+  modelOptions: string[];
+  subModelOptions: string[];
+  isBrandLoading: boolean;
+  isModelLoading: boolean;
+  isSubModelLoading: boolean;
 }
 
-const DAMAGE_OPTIONS: CheckOption<string>[] = [
-  {
-    value: "flooded",
-    label: "Flooded Vehicle",
-    description: "This vehicle has been damaged by flooding",
-  },
-  {
-    value: "heavilyDamaged",
-    label: "Heavy Crash History",
-    description: "This vehicle has been in a major accident",
-  },
-];
-
 export default function Step4ReviewForm({
+  carId,
   formData,
   onChange,
   onPublish,
   onBack,
   isSubmitting,
   reviewResult,
+  brandOptions,
+  modelOptions,
+  subModelOptions,
+  isBrandLoading,
+  isModelLoading,
+  isSubModelLoading,
 }: Step4ReviewFormProps) {
   // Reference options for review-time editing
   const [bodyTypeOptions, setBodyTypeOptions] = useState<
@@ -58,25 +68,59 @@ export default function Step4ReviewForm({
     ChoiceOption<string>[]
   >([]);
 
+  // Load reference options with icons
   useEffect(() => {
     let mounted = true;
     referenceAPI.getAll("en").then((res) => {
       if (!mounted || !res.success) return;
-      const toChoice = (
+
+      const toBodyTypeChoice = (
         arr: { code: string; label: string }[]
       ): ChoiceOption<string>[] =>
-        arr.map((o) => ({ value: o.label, label: o.label }));
-      setBodyTypeOptions(toChoice(res.data.bodyTypes));
-      setTransmissionOptions(toChoice(res.data.transmissions));
-      setDrivetrainOptions(toChoice(res.data.drivetrains));
-      setFuelTypeOptions(toChoice(res.data.fuelTypes));
+        arr.map((o) => ({
+          value: o.label,
+          label: o.label,
+          icon: BodyTypeIcons[o.code],
+        }));
+
+      const toTransmissionChoice = (
+        arr: { code: string; label: string }[]
+      ): ChoiceOption<string>[] =>
+        arr.map((o) => ({
+          value: o.label,
+          label: o.label,
+          icon: TransmissionIcons[o.code],
+        }));
+
+      const toDrivetrainChoice = (
+        arr: { code: string; label: string }[]
+      ): ChoiceOption<string>[] =>
+        arr.map((o) => ({
+          value: o.label,
+          label: o.label,
+          icon: DrivetrainIcons[o.code],
+        }));
+
+      const toFuelTypeChoice = (
+        arr: { code: string; label: string }[]
+      ): ChoiceOption<string>[] =>
+        arr.map((o) => ({
+          value: o.label,
+          label: o.label,
+          icon: FuelTypeIcons[o.code],
+        }));
+
+      setBodyTypeOptions(toBodyTypeChoice(res.data.bodyTypes));
+      setTransmissionOptions(toTransmissionChoice(res.data.transmissions));
+      setDrivetrainOptions(toDrivetrainChoice(res.data.drivetrains));
+      setFuelTypeOptions(toFuelTypeChoice(res.data.fuelTypes));
     });
     return () => {
       mounted = false;
     };
   }, []);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    new Set()
+    new Set(["documents", "details", "pricing"])
   );
 
   const toggleSection = (section: string) => {
@@ -107,32 +151,6 @@ export default function Step4ReviewForm({
     });
   };
 
-  const EditableSection = ({
-    id,
-    title,
-    children,
-  }: {
-    id: string;
-    title: string;
-    children: React.ReactNode;
-  }) => {
-    const isExpanded = expandedSections.has(id);
-    return (
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-        <button
-          onClick={() => toggleSection(id)}
-          className="w-full px-6 py-4 flex justify-between items-center hover:bg-gray-50"
-        >
-          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-          <span className="text-gray-500">
-            {isExpanded ? "▼ Collapse" : "► Expand to Edit"}
-          </span>
-        </button>
-        {isExpanded && <div className="px-6 pb-6">{children}</div>}
-      </div>
-    );
-  };
-
   return (
     <div className="space-y-6">
       {/* Review Status */}
@@ -140,16 +158,12 @@ export default function Step4ReviewForm({
         <div>
           {reviewResult.ready ? (
             <InlineAlert type="success">
-              ✓ Your listing is ready to publish! Review the details below and
-              click Publish when ready.
+              Ready to publish! Review below and click Publish.
             </InlineAlert>
           ) : (
             <InlineAlert type="warning">
               <>
-                <p className="mb-2">
-                  Your listing is not yet ready. Please address the following
-                  issues:
-                </p>
+                <p className="mb-2">Not ready. Please address:</p>
                 <ul className="list-disc list-inside space-y-1">
                   {reviewResult.issues.map((issue, index) => (
                     <li key={index}>{issue}</li>
@@ -205,172 +219,259 @@ export default function Step4ReviewForm({
         </div>
       </div>
 
+      {/* Images Section */}
+      <FormSection
+        title="Vehicle Images"
+        description="Drag to reorder (first image is the main photo)"
+      >
+        <CarImageUploader key={carId} carId={carId} />
+      </FormSection>
+
       {/* Editable Sections */}
-      <div className="space-y-4">
+      <div className="space-y-6">
         {/* Document Information */}
-        <EditableSection id="documents" title="📄 Document Information">
-          <div className="space-y-6">
+        {expandedSections.has("documents") && (
+          <FormSection
+            title="Documents"
+            description="Inspection and registration information"
+          >
             {(formData.chassisNumber ||
               formData.licensePlate ||
               formData.station) && (
-              <div className="space-y-4">
-                <h4 className="font-semibold text-gray-900">
-                  Inspection & Registration
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <TextField
-                    label="License Plate"
-                    value={formData.licensePlate || ""}
-                    onChange={() => {}}
-                    disabled
-                  />
-                  <TextField
-                    label="Chassis Number"
-                    value={formData.chassisNumber || ""}
-                    onChange={() => {}}
-                    disabled
-                  />
-                  <TextField
-                    label="Inspection Station"
-                    value={formData.station || ""}
-                    onChange={() => {}}
-                    disabled
-                  />
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <TextField
+                  label="License Plate"
+                  value={formData.licensePlate || ""}
+                  onChange={() => {}}
+                  disabled
+                />
+                <TextField
+                  label="Chassis Number"
+                  value={formData.chassisNumber || ""}
+                  onChange={() => {}}
+                  disabled
+                />
+                <TextField
+                  label="Inspection Station"
+                  value={formData.station || ""}
+                  onChange={() => {}}
+                  disabled
+                />
               </div>
             )}
-          </div>
-        </EditableSection>
+          </FormSection>
+        )}
 
         {/* Vehicle Details */}
-        <EditableSection id="details" title="🚗 Vehicle Details">
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <TextField
-                label="Model Name *"
-                value={formData.modelName || ""}
-                onChange={(e) => onChange({ modelName: e.target.value })}
+        {expandedSections.has("details") && (
+          <FormSection title="Vehicle Details">
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <ComboboxInput
+                  label="Brand"
+                  value={formData.brandName || ""}
+                  onChange={(value) => {
+                    onChange({
+                      brandName: value,
+                      modelName: "",
+                      submodelName: "",
+                    });
+                  }}
+                  options={brandOptions}
+                  loading={isBrandLoading}
+                  placeholder="Select or type Brand"
+                  required
+                />
+                <ComboboxInput
+                  label="Model Name"
+                  value={formData.modelName || ""}
+                  onChange={(value) => {
+                    onChange({ modelName: value, submodelName: "" });
+                  }}
+                  options={modelOptions}
+                  loading={isModelLoading}
+                  disabled={!formData.brandName || isBrandLoading}
+                  placeholder="Select or type Model"
+                  required
+                />
+                <ComboboxInput
+                  label="Submodel Name"
+                  value={formData.submodelName || ""}
+                  onChange={(value) => onChange({ submodelName: value })}
+                  options={subModelOptions}
+                  loading={isSubModelLoading}
+                  disabled={
+                    !formData.brandName || !formData.modelName || isModelLoading
+                  }
+                  placeholder="Select or type Submodel"
+                />
+                <TextField
+                  label="Mileage (km)"
+                  type="number"
+                  value={formData.mileage?.toString() || ""}
+                  onChange={(e) =>
+                    onChange({ mileage: parseInt(e.target.value) || undefined })
+                  }
+                  required
+                />
+              </div>
+
+              <Choices
+                name="bodyType"
+                label="Body Type"
+                value={formData.bodyTypeName || null}
+                options={bodyTypeOptions}
+                onChange={(value) => onChange({ bodyTypeName: value })}
+                direction="row"
+                columns={3}
                 required
               />
-              <TextField
-                label="Submodel Name"
-                value={formData.submodelName || ""}
-                onChange={(e) => onChange({ submodelName: e.target.value })}
+
+              <Choices
+                name="transmission"
+                label="Transmission"
+                value={formData.transmissionName || null}
+                options={transmissionOptions}
+                onChange={(value) => onChange({ transmissionName: value })}
+                direction="row"
+                columns={2}
+                required
               />
-              <TextField
-                label="Mileage (km) *"
-                type="number"
-                value={formData.mileage?.toString() || ""}
-                onChange={(e) =>
-                  onChange({ mileage: parseInt(e.target.value) || undefined })
-                }
+
+              <Choices
+                name="drivetrain"
+                label="Drivetrain"
+                value={formData.drivetrainName || null}
+                options={drivetrainOptions}
+                onChange={(value) => onChange({ drivetrainName: value })}
+                direction="row"
+                columns={4}
+                required
+              />
+
+              <CheckBoxes
+                name="fuelType"
+                label="Fuel Type"
+                values={formData.fuelLabels || []}
+                options={fuelTypeOptions}
+                onChange={(values) => onChange({ fuelLabels: values })}
+                direction="row"
+                columns={3}
                 required
               />
             </div>
-
-            <Choices
-              name="bodyType"
-              label="Body Type *"
-              value={formData.bodyTypeName || null}
-              options={bodyTypeOptions}
-              onChange={(value) => onChange({ bodyTypeName: value })}
-              direction="row"
-              required
-            />
-
-            <Choices
-              name="transmission"
-              label="Transmission *"
-              value={formData.transmissionName || null}
-              options={transmissionOptions}
-              onChange={(value) => onChange({ transmissionName: value })}
-              direction="row"
-              required
-            />
-
-            <Choices
-              name="drivetrain"
-              label="Drivetrain *"
-              value={formData.drivetrainName || null}
-              options={drivetrainOptions}
-              onChange={(value) => onChange({ drivetrainName: value })}
-              direction="row"
-              required
-            />
-
-            <CheckBoxes
-              name="fuelType"
-              label="Fuel Type *"
-              values={formData.fuelLabels || []}
-              options={fuelTypeOptions}
-              onChange={(values) => onChange({ fuelLabels: values })}
-              direction="row"
-            />
-          </div>
-        </EditableSection>
+          </FormSection>
+        )}
 
         {/* Pricing & Description */}
-        <EditableSection id="pricing" title="💰 Pricing & Description">
-          <div className="space-y-6">
-            <TextField
-              label="Price (฿) *"
-              type="number"
-              value={formData.price?.toString() || ""}
-              onChange={(e) =>
-                onChange({ price: parseInt(e.target.value) || undefined })
-              }
-              required
-            />
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Description *
-              </label>
-              <textarea
-                value={description}
-                onChange={(e) => onChange({ description: e.target.value })}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent ${
-                  !descriptionValid && description.length > 0
-                    ? "border-red-500"
-                    : "border-gray-300"
-                }`}
-                rows={4}
-                minLength={MIN_DESCRIPTION_LENGTH}
-                maxLength={MAX_DESCRIPTION_LENGTH}
+        {expandedSections.has("pricing") && (
+          <FormSection
+            title="Pricing & Description"
+            description={`${MIN_DESCRIPTION_LENGTH}-${MAX_DESCRIPTION_LENGTH} characters`}
+            required
+          >
+            <div className="space-y-6">
+              <TextField
+                type="number"
+                value={formData.price?.toString() || ""}
+                onChange={(e) =>
+                  onChange({ price: parseInt(e.target.value) || undefined })
+                }
+                placeholder="e.g., 500000"
                 required
               />
-              <div className="flex justify-between mt-2 text-sm">
-                <span
-                  className={
-                    descriptionValid
-                      ? "text-green-600"
-                      : descriptionLength > 0
-                      ? "text-red-600"
-                      : "text-gray-500"
-                  }
-                >
-                  {descriptionLength < MIN_DESCRIPTION_LENGTH
-                    ? `Need ${MIN_DESCRIPTION_LENGTH - descriptionLength} more`
-                    : descriptionValid
-                    ? "✓ Valid"
-                    : `${descriptionLength - MAX_DESCRIPTION_LENGTH} over`}
-                </span>
-                <span className="text-gray-500">
-                  {descriptionLength}/{MAX_DESCRIPTION_LENGTH}
-                </span>
+
+              <div>
+                <textarea
+                  value={description}
+                  onChange={(e) => onChange({ description: e.target.value })}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent ${
+                    !descriptionValid && description.length > 0
+                      ? "border-red-500"
+                      : "border-gray-300"
+                  }`}
+                  rows={4}
+                  minLength={MIN_DESCRIPTION_LENGTH}
+                  maxLength={MAX_DESCRIPTION_LENGTH}
+                  placeholder="Describe condition, features, history, etc."
+                  required
+                />
+                <div className="flex justify-between mt-2 text-sm">
+                  <span
+                    className={
+                      descriptionValid
+                        ? "text-green-600"
+                        : descriptionLength > 0
+                        ? "text-red-600"
+                        : "text-gray-500"
+                    }
+                  >
+                    {descriptionLength < MIN_DESCRIPTION_LENGTH
+                      ? `Need ${
+                          MIN_DESCRIPTION_LENGTH - descriptionLength
+                        } more`
+                      : descriptionValid
+                      ? "✓ Valid"
+                      : `${descriptionLength - MAX_DESCRIPTION_LENGTH} over`}
+                  </span>
+                  <span className="text-gray-500">
+                    {descriptionLength}/{MAX_DESCRIPTION_LENGTH}
+                  </span>
+                </div>
               </div>
             </div>
+          </FormSection>
+        )}
 
+        {/* Damage History */}
+        {expandedSections.has("damage") && (
+          <FormSection title="Damage History">
             <CheckBoxes
               name="damageHistory"
-              label="Damage History"
               values={damageFlags}
               options={DAMAGE_OPTIONS}
               onChange={handleDamageFlagsChange}
               direction="column"
             />
-          </div>
-        </EditableSection>
+          </FormSection>
+        )}
+
+        {/* Section Toggles */}
+        <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
+          <button
+            type="button"
+            onClick={() => toggleSection("documents")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              expandedSections.has("documents")
+                ? "bg-maroon text-white hover:bg-red-800"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            {expandedSections.has("documents") ? "Hide" : "Show"} Documents
+          </button>
+          <button
+            type="button"
+            onClick={() => toggleSection("details")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              expandedSections.has("details")
+                ? "bg-maroon text-white hover:bg-red-800"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            {expandedSections.has("details") ? "Hide" : "Show"} Details
+          </button>
+          <button
+            type="button"
+            onClick={() => toggleSection("pricing")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              expandedSections.has("pricing")
+                ? "bg-maroon text-white hover:bg-red-800"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            {expandedSections.has("pricing") ? "Hide" : "Show"} Pricing
+          </button>
+        </div>
       </div>
 
       {/* Action Buttons */}

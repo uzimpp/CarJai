@@ -75,9 +75,7 @@ export default function SellLanding() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-3 bold mb-4">
-            Sell Your Car
-          </h1>
+          <h1 className="text-3 bold mb-4">Sell Your Car</h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             Create a listing in just a few steps. Upload your vehicle documents,
             add details, and publish!

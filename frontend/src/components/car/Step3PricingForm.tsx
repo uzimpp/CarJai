@@ -2,6 +2,7 @@
 
 import { TextField } from "@/components/ui/TextField";
 import { FormSection } from "@/components/ui/FormSection";
+import { useToast } from "@/components/ui/Toast";
 import CarImageUploader from "@/components/car/CarImageUploader";
 import type { CarFormData } from "@/types/car";
 import {
@@ -50,7 +51,8 @@ export default function Step3PricingForm({
       {/* Images */}
       <FormSection
         title="Vehicle Images"
-        description={`Upload ${MIN_IMAGES}-12 high-quality images (JPEG, PNG, WebP, GIF). First image becomes the main photo. Max 50MB per image.`}
+        description={`Upload ${MIN_IMAGES}-12 images (JPEG, PNG, WebP, GIF). First image is the main photo. Max 50MB per image.`}
+        required
       >
         <CarImageUploader
           carId={carId}
@@ -61,24 +63,19 @@ export default function Step3PricingForm({
           }}
         />
         <InlineAlert type="info">
-          Tip: Include angles like front, rear, sides, interior, dashboard, and
-          engine for better buyer interest.
+          Tip: Include front, rear, sides, interior, dashboard, and engine
+          angles.
         </InlineAlert>
       </FormSection>
       {/* Price */}
-      <FormSection
-        title="Pricing"
-        description="Set your asking price for the vehicle"
-      >
+      <FormSection title="Price (฿)" required>
         <TextField
-          label="Price (฿) *"
           type="number"
           value={formData.price?.toString() || ""}
           onChange={(e) =>
             onChange({ price: parseInt(e.target.value) || undefined })
           }
           placeholder="e.g., 500000"
-          helper="Enter your desired selling price in Thai Baht"
           required
         />
       </FormSection>
@@ -86,12 +83,10 @@ export default function Step3PricingForm({
       {/* Description */}
       <FormSection
         title="Description"
-        description={`Write a brief description of your vehicle (${MIN_DESCRIPTION_LENGTH}-${MAX_DESCRIPTION_LENGTH} characters)`}
+        description={`${MIN_DESCRIPTION_LENGTH}-${MAX_DESCRIPTION_LENGTH} characters`}
+        required
       >
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Description *
-          </label>
           <textarea
             value={description}
             onChange={(e) => onChange({ description: e.target.value })}
@@ -100,7 +95,7 @@ export default function Step3PricingForm({
                 ? "border-red-500"
                 : "border-gray-300"
             }`}
-            placeholder="Describe your vehicle (condition, features, history, etc.)"
+            placeholder="Describe condition, features, history, etc."
             rows={4}
             minLength={MIN_DESCRIPTION_LENGTH}
             maxLength={MAX_DESCRIPTION_LENGTH}
@@ -136,7 +131,7 @@ export default function Step3PricingForm({
       {/* Validation Messages */}
       {!imagesUploaded && (
         <InlineAlert type="warning">
-          Please add at least {MIN_IMAGES} images before continuing
+          Add at least {MIN_IMAGES} images to continue
         </InlineAlert>
       )}
 

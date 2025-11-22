@@ -560,7 +560,7 @@ function BrowsePageContent() {
     // - Page/sort changes
     if (filtersChanged && !pageChanged && !sortChanged && !isInitialLoad) {
       filterDebounceTimerRef.current = setTimeout(() => {
-        fetchCars();
+    fetchCars();
       }, 500);
     } else {
       // Execute immediately for page/sort changes or initial load
@@ -863,9 +863,9 @@ function BrowsePageContent() {
           <div className="mb-6 flex justify-between items-center">
             <div className="flex gap-4 items-baseline">
               <h2 className="text-2 font-bold">Results</h2>
-              <p className="text-gray-600">
-                {total} {total === 1 ? "car" : "cars"} found
-              </p>
+            <p className="text-gray-600">
+              {total} {total === 1 ? "car" : "cars"} found
+            </p>
             </div>
             {/* Sort Dropdown */}
             <SortDropdown
