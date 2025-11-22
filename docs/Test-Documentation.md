@@ -307,6 +307,8 @@ docker exec -it carjai-backend sh -c "cd /app && go test -coverprofile=coverage.
 - Tests run on every push and pull request
 - Tests run on multiple Node.js versions (frontend)
 - Tests run with PostgreSQL service container (backend)
+- Maintainability index calculated using Lizard
+- Artifacts uploaded: test coverage reports and maintainability reports
 
 **Test Workflow**:
 1. Checkout code
@@ -316,7 +318,8 @@ docker exec -it carjai-backend sh -c "cd /app && go test -coverprofile=coverage.
 5. Run migrations
 6. Run tests
 7. Generate coverage reports
-8. Upload artifacts
+8. Calculate maintainability index (using Lizard)
+9. Upload artifacts (test coverage, maintainability report)
 
 ### Docker Health Checks
 

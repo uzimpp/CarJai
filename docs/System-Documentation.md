@@ -113,8 +113,10 @@ services:
 1. **CI Pipeline** (`.github/workflows/Carjai-ci.yml`):
    - Frontend build and lint
    - Backend tests
+   - Maintainability index calculation (Lizard)
    - Docker health checks
    - Automated testing on push/PR
+   - Artifacts: test coverage and maintainability reports
 
 2. **Auto Merge** (`.github/workflows/develop-to-main-auto-merge.yml`):
    - Docker health checks
@@ -127,8 +129,10 @@ services:
 3. Dependency installation
 4. Build
 5. Test execution
-6. Docker health checks
-7. Merge (if on develop branch)
+6. Maintainability analysis (Lizard)
+7. Generate artifacts (coverage, maintainability reports)
+8. Docker health checks
+9. Merge (if on develop branch)
 
 ### Production Infrastructure
 
