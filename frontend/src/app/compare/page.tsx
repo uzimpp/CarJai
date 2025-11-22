@@ -1,0 +1,714 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
+import { useComparison } from "@/contexts/ComparisonContext";
+import { CarListing, Car, ImageMetadata, InspectionData } from "@/types/car";
+import { carsAPI } from "@/lib/carsAPI";
+
+interface CarComparisonData {
+  car: Car | null;
+  isLoading: boolean;
+  error: string | null;
+}
+
+function ComparisonRow({
+  label,
+  values,
+  isMobile = false,
+}: {
+  label: string;
+  values: (string | number | null | undefined)[];
+  isMobile?: boolean;
+}) {
+  if (isMobile) {
+    return (
+      <div className="space-y-2 py-3 border-b border-gray-100">
+        <div className="font-medium text-gray-700 text-sm mb-2">{label}</div>
+        <div className="grid grid-cols-2 gap-2">
+          {values.map((value, idx) => (
+            <div key={idx} className="text-sm text-gray-900">
+              {value != null ? String(value) : "—"}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-[200px_repeat(var(--cols),1fr)] gap-4 py-3 border-b border-gray-100">
+      <div className="font-medium text-gray-700 text-sm">{label}</div>
+      {values.map((value, idx) => (
+        <div key={idx} className="text-sm text-gray-900">
+          {value != null ? String(value) : "—"}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function InspectionRow({
+  label,
+  values,
+  isMobile = false,
+}: {
+  label: string;
+  values: (boolean | null | undefined)[];
+  isMobile?: boolean;
+}) {
+  const renderValue = (value: boolean | null | undefined) => {
+    if (value === null || value === undefined) return "—";
+    return (
+      <span
+        className={`inline-flex items-center gap-1 ${
+          value ? "text-green-600" : "text-red-600"
+        }`}
+      >
+        {value ? (
+          <>
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+            Pass
+          </>
+        ) : (
+          <>
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+            Fail
+          </>
+        )}
+      </span>
+    );
+  };
+
+  if (isMobile) {
+    return (
+      <div className="space-y-2 py-3 border-b border-gray-100">
+        <div className="font-medium text-gray-700 text-sm mb-2">{label}</div>
+        <div className="grid grid-cols-2 gap-2">
+          {values.map((value, idx) => (
+            <div key={idx}>{renderValue(value)}</div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-[200px_repeat(var(--cols),1fr)] gap-4 py-3 border-b border-gray-100">
+      <div className="font-medium text-gray-700 text-sm">{label}</div>
+      {values.map((value, idx) => (
+        <div key={idx}>{renderValue(value)}</div>
+      ))}
+    </div>
+  );
+}
+
+function CarImageNavigator({
+  car,
+  carData,
+  onRemove,
+}: {
+  car: CarListing;
+  carData: Car | null;
+  onRemove: () => void;
+}) {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  const images: ImageMetadata[] = carData?.images || [];
+  const hasMultipleImages = images.length > 1;
+  const currentImage = images[currentImageIndex] || images[0];
+  const imageUrl = currentImage?.url || car.thumbnailUrl;
+
+  const handlePrevious = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (hasMultipleImages) {
+      setCurrentImageIndex((prev) =>
+        prev === 0 ? images.length - 1 : prev - 1
+      );
+    }
+  };
+
+  const handleNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (hasMultipleImages) {
+      setCurrentImageIndex((prev) =>
+        prev === images.length - 1 ? 0 : prev + 1
+      );
+    }
+  };
+
+  const handleImageClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (hasMultipleImages) {
+      handleNext(e);
+    }
+  };
+
+  return (
+    <div className="relative w-full aspect-square bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg overflow-hidden group">
+      {imageUrl ? (
+        <Image
+          src={imageUrl}
+          alt={`${car.brandName} ${car.modelName}`}
+          fill
+          className="object-cover cursor-pointer"
+          unoptimized
+          onClick={handleImageClick}
+        />
+      ) : (
+        <div className="flex items-center justify-center h-full text-6xl">
+          🚗
+        </div>
+      )}
+
+      {/* Navigation Buttons */}
+      {hasMultipleImages && (
+        <>
+          <button
+            onClick={handlePrevious}
+            className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-gray-700 flex items-center justify-center shadow-md transition-all opacity-0 group-hover:opacity-100"
+            aria-label="Previous image"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </button>
+          <button
+            onClick={handleNext}
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-gray-700 flex items-center justify-center shadow-md transition-all opacity-0 group-hover:opacity-100"
+            aria-label="Next image"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </button>
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 px-2 py-1 rounded-full bg-black/50 text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+            {currentImageIndex + 1} / {images.length}
+          </div>
+        </>
+      )}
+
+      {/* Remove Button */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemove();
+        }}
+        className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-gray-700 flex items-center justify-center shadow-md transition-colors z-10"
+        aria-label="Remove from comparison"
+      >
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M6 18L18 6M6 6l12 12"
+          />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+export default function ComparePage() {
+  const router = useRouter();
+  const { comparedCars, clearComparison, removeFromComparison } =
+    useComparison();
+  const [carsData, setCarsData] = useState<CarComparisonData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  useEffect(() => {
+    if (comparedCars.length < 2) {
+      router.push("/browse");
+    }
+  }, [comparedCars.length, router]);
+
+  useEffect(() => {
+    const fetchAllCars = async () => {
+      setIsLoading(true);
+      try {
+        const promises = comparedCars.map(async (car) => {
+          try {
+            const response = await carsAPI.getById(car.id);
+            return {
+              car: response.success ? response.data : null,
+              isLoading: false,
+              error: response.success ? null : "Failed to load",
+            } as CarComparisonData;
+          } catch (error) {
+            return {
+              car: null,
+              isLoading: false,
+              error: "Failed to load",
+            } as CarComparisonData;
+          }
+        });
+
+        const results = await Promise.all(promises);
+        setCarsData(results);
+      } catch (error) {
+        console.error("Error fetching car data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (comparedCars.length >= 2) {
+      fetchAllCars();
+    }
+  }, [comparedCars]);
+
+  if (comparedCars.length < 2) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="text-center">
+          <h1 className="text-2xl font-semibold text-gray-900 mb-2">
+            Not Enough Cars to Compare
+          </h1>
+          <p className="text-gray-600 mb-4">
+            Please select at least 2 cars to compare.
+          </p>
+          <Link
+            href="/browse"
+            className="inline-block px-6 py-2 text-white bg-maroon hover:bg-red rounded-lg transition-colors"
+          >
+            Browse Cars
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const cols = comparedCars.length;
+
+  // Inspection fields mapping
+  const inspectionFields = [
+    { key: "brakeResult", label: "Brake System" },
+    { key: "handbrakeResult", label: "Handbrake" },
+    { key: "alignmentResult", label: "Wheel Alignment" },
+    { key: "noiseResult", label: "Noise Level" },
+    { key: "emissionResult", label: "Emission" },
+    { key: "hornResult", label: "Horn" },
+    { key: "speedometerResult", label: "Speedometer" },
+    { key: "highLowBeamResult", label: "Headlights" },
+    { key: "signalLightsResult", label: "Signal Lights" },
+    { key: "otherLightsResult", label: "Other Lights" },
+    { key: "windshieldResult", label: "Windshield" },
+    { key: "steeringResult", label: "Steering" },
+    { key: "wheelsTiresResult", label: "Wheels & Tires" },
+    { key: "fuelTankResult", label: "Fuel Tank" },
+    { key: "chassisResult", label: "Chassis" },
+    { key: "bodyResult", label: "Body" },
+    { key: "doorsFloorResult", label: "Doors & Floor" },
+    { key: "seatbeltResult", label: "Seatbelts" },
+    { key: "wiperResult", label: "Wipers" },
+  ];
+
+  return (
+    <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 md:mb-8">
+        <div>
+          <h1 className="flex text-center text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+            Compare Cars
+          </h1>
+          <p className="text-gray-600 text-sm md:text-base">
+            Side-by-side comparison of {comparedCars.length} cars
+          </p>
+        </div>
+        <div className="flex items-center gap-2 md:gap-3">
+          <button
+            onClick={clearComparison}
+            className="px-3 md:px-4 py-2 text-xs md:text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            Clear All
+          </button>
+          <Link
+            href="/browse"
+            className="px-3 md:px-4 py-2 text-xs md:text-sm font-medium text-white bg-maroon hover:bg-red rounded-lg transition-colors"
+          >
+            Add More Cars
+          </Link>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading car details...</p>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          <div
+            className="overflow-x-auto"
+            style={{ "--cols": cols } as React.CSSProperties}
+          >
+            {/* Car Images Row */}
+            <div
+              className={`grid ${
+                isMobile
+                  ? "grid-cols-2"
+                  : "grid-cols-[200px_repeat(var(--cols),1fr)]"
+              } gap-4 p-4 md:p-6 bg-gray-50 border-b-2 border-gray-200`}
+            >
+              {!isMobile && (
+                <div className="font-semibold text-gray-900 text-sm md:text-base">
+                  Car
+                </div>
+              )}
+              {comparedCars.map((car, idx) => {
+                const carData = carsData[idx]?.car;
+                return (
+                  <div key={car.id} className="space-y-2">
+                    {isMobile && (
+                      <div className="text-xs font-medium text-gray-700 mb-2">
+                        {car.brandName} {car.modelName}
+                      </div>
+                    )}
+                    <CarImageNavigator
+                      car={car}
+                      carData={carData}
+                      onRemove={() => removeFromComparison(car.id)}
+                    />
+                    {isMobile && (
+                      <div className="text-sm font-semibold text-maroon">
+                        ฿{car.price?.toLocaleString() || "N/A"}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Comparison Sections */}
+            <div className="p-4 md:p-6 space-y-6">
+              {/* Basic Information */}
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                  Basic Information
+                </h2>
+                <div className="space-y-0">
+                  <ComparisonRow
+                    label="Price"
+                    values={comparedCars.map((car) =>
+                      car.price ? `฿${car.price.toLocaleString()}` : null
+                    )}
+                    isMobile={isMobile}
+                  />
+                  <ComparisonRow
+                    label="Brand & Model"
+                    values={comparedCars.map(
+                      (car) =>
+                        [car.brandName, car.modelName, car.submodelName]
+                          .filter(Boolean)
+                          .join(" ") || null
+                    )}
+                    isMobile={isMobile}
+                  />
+                  <ComparisonRow
+                    label="Year"
+                    values={comparedCars.map((car) => car.year)}
+                    isMobile={isMobile}
+                  />
+                  <ComparisonRow
+                    label="Mileage"
+                    values={comparedCars.map((car) =>
+                      car.mileage ? `${car.mileage.toLocaleString()} km` : null
+                    )}
+                    isMobile={isMobile}
+                  />
+                  <ComparisonRow
+                    label="Condition Rating"
+                    values={comparedCars.map((car) =>
+                      car.conditionRating ? `${car.conditionRating}/5` : null
+                    )}
+                    isMobile={isMobile}
+                  />
+                  {carsData.some((d) => d.car?.car?.description) && (
+                    <>
+                      {isMobile ? (
+                        <div className="space-y-2 py-3 border-b border-gray-100">
+                          <div className="font-medium text-gray-700 text-sm mb-2">
+                            Description
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            {carsData.map((d, idx) => (
+                              <div
+                                key={idx}
+                                className="text-sm text-gray-900 whitespace-pre-wrap"
+                              >
+                                {d.car?.car?.description || "—"}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-[200px_repeat(var(--cols),1fr)] gap-4 py-3 border-b border-gray-100">
+                          <div className="font-medium text-gray-700 text-sm">
+                            Description
+                          </div>
+                          {carsData.map((d, idx) => (
+                            <div
+                              key={idx}
+                              className="text-sm text-gray-900 whitespace-pre-wrap"
+                            >
+                              {d.car?.car?.description || "—"}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Specifications */}
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                  Specifications
+                </h2>
+                <div className="space-y-0">
+                  <ComparisonRow
+                    label="Body Type"
+                    values={comparedCars.map((car) => car.bodyType)}
+                    isMobile={isMobile}
+                  />
+                  <ComparisonRow
+                    label="Transmission"
+                    values={comparedCars.map((car) => car.transmission)}
+                    isMobile={isMobile}
+                  />
+                  <ComparisonRow
+                    label="Drivetrain"
+                    values={comparedCars.map((car) => car.drivetrain)}
+                    isMobile={isMobile}
+                  />
+                  <ComparisonRow
+                    label="Fuel Types"
+                    values={comparedCars.map((car) =>
+                      car.fuelTypes && car.fuelTypes.length > 0
+                        ? car.fuelTypes.join(", ")
+                        : null
+                    )}
+                    isMobile={isMobile}
+                  />
+                  <ComparisonRow
+                    label="Colors"
+                    values={comparedCars.map((car) =>
+                      car.colors && car.colors.length > 0
+                        ? car.colors.join(", ")
+                        : null
+                    )}
+                    isMobile={isMobile}
+                  />
+                  {carsData.some((d) => d.car?.car?.seats) && (
+                    <ComparisonRow
+                      label="Seats"
+                      values={carsData.map((d) => d.car?.car?.seats)}
+                      isMobile={isMobile}
+                    />
+                  )}
+                  {carsData.some((d) => d.car?.car?.doors) && (
+                    <ComparisonRow
+                      label="Doors"
+                      values={carsData.map((d) => d.car?.car?.doors)}
+                      isMobile={isMobile}
+                    />
+                  )}
+                  {carsData.some((d) => d.car?.car?.engineCc) && (
+                    <ComparisonRow
+                      label="Engine CC"
+                      values={carsData.map((d) =>
+                        d.car?.car?.engineCc
+                          ? `${d.car.car.engineCc.toLocaleString()} cc`
+                          : null
+                      )}
+                      isMobile={isMobile}
+                    />
+                  )}
+                  {carsData.some((d) => d.car?.car?.licensePlate) && (
+                    <ComparisonRow
+                      label="License Plate"
+                      values={carsData.map((d) =>
+                        d.car?.car?.licensePlate
+                          ? `${d.car.car.prefix || ""} ${
+                              d.car.car.number || ""
+                            } ${d.car.car.province || ""}`.trim()
+                          : null
+                      )}
+                      isMobile={isMobile}
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* Inspection Data */}
+              {carsData.some((d) => d.car?.inspection) && (
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                    Inspection Results
+                  </h2>
+                  <div className="space-y-0">
+                    <ComparisonRow
+                      label="Inspection Station"
+                      values={carsData.map(
+                        (d) => d.car?.inspection?.station || null
+                      )}
+                      isMobile={isMobile}
+                    />
+                    <InspectionRow
+                      label="Overall Pass"
+                      values={carsData.map(
+                        (d) => d.car?.inspection?.overallPass
+                      )}
+                      isMobile={isMobile}
+                    />
+                    {inspectionFields.map((field) => (
+                      <InspectionRow
+                        key={field.key}
+                        label={field.label}
+                        values={carsData.map(
+                          (d) =>
+                            d.car?.inspection?.[
+                              field.key as keyof InspectionData
+                            ] as boolean | null | undefined
+                        )}
+                        isMobile={isMobile}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Additional Details */}
+              {carsData.some(
+                (d) =>
+                  d.car?.car?.isFlooded !== undefined ||
+                  d.car?.car?.isHeavilyDamaged !== undefined
+              ) && (
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                    Additional Details
+                  </h2>
+                  <div className="space-y-0">
+                    <ComparisonRow
+                      label="Flooded"
+                      values={carsData.map((d) =>
+                        d.car?.car?.isFlooded !== undefined
+                          ? d.car.car.isFlooded
+                            ? "Yes"
+                            : "No"
+                          : null
+                      )}
+                      isMobile={isMobile}
+                    />
+                    <ComparisonRow
+                      label="Heavily Damaged"
+                      values={carsData.map((d) =>
+                        d.car?.car?.isHeavilyDamaged !== undefined
+                          ? d.car.car.isHeavilyDamaged
+                            ? "Yes"
+                            : "No"
+                          : null
+                      )}
+                      isMobile={isMobile}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* View Details Links */}
+              <div className="pt-4 border-t border-gray-200">
+                <div
+                  className={`grid ${
+                    isMobile
+                      ? "grid-cols-2"
+                      : "grid-cols-[200px_repeat(var(--cols),1fr)]"
+                  } gap-4`}
+                >
+                  {!isMobile && (
+                    <div className="font-medium text-gray-700 text-sm">
+                      Actions
+                    </div>
+                  )}
+                  {comparedCars.map((car) => (
+                    <Link
+                      key={car.id}
+                      href={`/car/${car.id}`}
+                      className="inline-block px-4 py-2 text-sm font-medium text-center text-white bg-maroon hover:bg-red rounded-lg transition-colors"
+                    >
+                      View Details
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
