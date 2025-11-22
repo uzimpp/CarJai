@@ -134,7 +134,7 @@ export default function SellerWelcomePage() {
 
           {/* Selling Guides */}
           <Link
-            href="/guides/seller"
+            href="/guides#seller"
             className="group rounded-2xl border-2 border-gray-200 bg-white p-8 shadow-sm hover:shadow-lg hover:border-red-800 transition-all hover:-translate-y-1 text-left inline-block w-full"
           >
             <div className="flex items-center gap-3 mb-4">

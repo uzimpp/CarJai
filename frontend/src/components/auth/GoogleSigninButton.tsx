@@ -1,7 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-
 interface GoogleSigninButtonProps {
   mode?: "signin" | "signup";
   className?: string;
@@ -13,8 +11,6 @@ export default function GoogleSigninButton({
   className = "",
   disabled = false,
 }: GoogleSigninButtonProps) {
-  const router = useRouter();
-
   const handleGoogleSignin = async () => {
     // Use backend-callback flow: navigate to backend start endpoint.
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";

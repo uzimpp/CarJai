@@ -9,6 +9,12 @@ import type { CarFormData } from "@/types/car";
 import { DAMAGE_OPTIONS } from "@/constants/car";
 import { referenceAPI } from "@/lib/referenceAPI";
 import type { ChoiceOption } from "@/components/ui/Choices";
+import {
+  BodyTypeIcons,
+  FuelTypeIcons,
+  TransmissionIcons,
+  DrivetrainIcons,
+} from "@/components/search/filterIcons";
 
 interface Step2DetailsFormProps {
   formData: Partial<CarFormData>;
@@ -16,7 +22,6 @@ interface Step2DetailsFormProps {
   onContinue: () => void;
   onBack: () => void;
   isSubmitting: boolean;
-
 }
 
 export default function Step2DetailsForm({
@@ -25,8 +30,7 @@ export default function Step2DetailsForm({
   onContinue,
   onBack,
   isSubmitting,
-}: 
-Step2DetailsFormProps) {
+}: Step2DetailsFormProps) {
   // Fetch reference options
   const [bodyTypeOptions, setBodyTypeOptions] = useState<
     ChoiceOption<string>[]
@@ -46,14 +50,51 @@ Step2DetailsFormProps) {
     let mounted = true;
     referenceAPI.getAll("en").then((res) => {
       if (!mounted || !res.success) return;
-      const toChoice = (
+
+      // Map body types with icons
+      const toBodyTypeChoice = (
         arr: { code: string; label: string }[]
       ): ChoiceOption<string>[] =>
-        arr.map((o) => ({ value: o.label, label: o.label }));
-      setBodyTypeOptions(toChoice(res.data.bodyTypes));
-      setTransmissionOptions(toChoice(res.data.transmissions));
-      setDrivetrainOptions(toChoice(res.data.drivetrains));
-      setFuelTypeOptions(toChoice(res.data.fuelTypes));
+        arr.map((o) => ({
+          value: o.label,
+          label: o.label,
+          icon: BodyTypeIcons[o.code],
+        }));
+
+      // Map transmissions with icons
+      const toTransmissionChoice = (
+        arr: { code: string; label: string }[]
+      ): ChoiceOption<string>[] =>
+        arr.map((o) => ({
+          value: o.label,
+          label: o.label,
+          icon: TransmissionIcons[o.code],
+        }));
+
+      // Map drivetrains with icons
+      const toDrivetrainChoice = (
+        arr: { code: string; label: string }[]
+      ): ChoiceOption<string>[] =>
+        arr.map((o) => ({
+          value: o.label,
+          label: o.label,
+          icon: DrivetrainIcons[o.code],
+        }));
+
+      // Map fuel types with icons
+      const toFuelTypeChoice = (
+        arr: { code: string; label: string }[]
+      ): ChoiceOption<string>[] =>
+        arr.map((o) => ({
+          value: o.label,
+          label: o.label,
+          icon: FuelTypeIcons[o.code],
+        }));
+
+      setBodyTypeOptions(toBodyTypeChoice(res.data.bodyTypes));
+      setTransmissionOptions(toTransmissionChoice(res.data.transmissions));
+      setDrivetrainOptions(toDrivetrainChoice(res.data.drivetrains));
+      setFuelTypeOptions(toFuelTypeChoice(res.data.fuelTypes));
     });
     return () => {
       mounted = false;
@@ -83,46 +124,40 @@ Step2DetailsFormProps) {
   return (
     <div className="space-y-6">
       {/* Body Type Selection */}
-      <FormSection
-        title="Body Type"
-        description="Select the body type of your vehicle"
-      >
+      <FormSection title="Body Type" required>
         <Choices
           name="bodyType"
           value={formData.bodyTypeName || null}
           options={bodyTypeOptions}
           onChange={(value) => onChange({ bodyTypeName: value })}
           direction="row"
+          columns={3}
           required
         />
       </FormSection>
 
       {/* Transmission Selection */}
-      <FormSection
-        title="Transmission"
-        description="Select the transmission type"
-      >
+      <FormSection title="Transmission" required>
         <Choices
           name="transmission"
           value={formData.transmissionName || null}
           options={transmissionOptions}
           onChange={(value) => onChange({ transmissionName: value })}
           direction="row"
+          columns={2}
           required
         />
       </FormSection>
 
       {/* Drivetrain Selection */}
-      <FormSection
-        title="Drivetrain"
-        description="Select the drivetrain configuration"
-      >
+      <FormSection title="Drivetrain" required>
         <Choices
           name="drivetrain"
           value={formData.drivetrainName || null}
           options={drivetrainOptions}
           onChange={(value) => onChange({ drivetrainName: value })}
           direction="row"
+          columns={4}
           required
         />
       </FormSection>
@@ -130,7 +165,8 @@ Step2DetailsFormProps) {
       {/* Fuel Type Selection */}
       <FormSection
         title="Fuel Type"
-        description="Select one or more fuel types (e.g., hybrid vehicles may have multiple)"
+        description="Select one or more (hybrid vehicles may have multiple)"
+        required
       >
         <CheckBoxes
           name="fuelType"
@@ -138,14 +174,12 @@ Step2DetailsFormProps) {
           options={fuelTypeOptions}
           onChange={(values) => onChange({ fuelLabels: values })}
           direction="row"
+          columns={3}
         />
       </FormSection>
 
       {/* Condition Rating */}
-      <FormSection
-        title="Overall Condition"
-        description="Rate your vehicle's overall condition"
-      >
+      <FormSection title="Overall Condition" required>
         <StarRating
           value={formData.conditionRating}
           onChange={(val) => onChange({ conditionRating: val })}
@@ -156,7 +190,7 @@ Step2DetailsFormProps) {
       {/* Damage History */}
       <FormSection
         title="Vehicle History"
-        description="Disclose any damage history (optional but recommended for transparency)"
+        description="Optional but recommended"
       >
         <CheckBoxes
           name="damageHistory"

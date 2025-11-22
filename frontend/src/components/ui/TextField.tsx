@@ -5,15 +5,17 @@ export interface TextFieldProps
   label?: string;
   helper?: string;
   error?: string;
+  required?: boolean;
 }
 
 export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
-  ({ label, helper, error, disabled, ...props }, ref) => {
+  ({ label, helper, error, disabled, required, ...props }, ref) => {
     return (
       <div className="w-full">
         {label && (
           <label className="block text-0 font-medium text-gray-700 mb-1">
             {label}
+            {required && <span className="text-red-600 ml-1">*</span>}
           </label>
         )}
         <input

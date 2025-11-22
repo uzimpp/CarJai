@@ -86,7 +86,7 @@ export default function BuyerWelcomePage() {
 
           {/* Buying Guides */}
           <Link
-            href="/guides/buyer"
+            href="/guides#buyer"
             className="group rounded-2xl border-2 border-gray-200 bg-white p-8 shadow-sm hover:shadow-lg hover:border-red-800 transition-all hover:-translate-y-1 text-left inline-block w-full"
           >
             <div className="flex items-center gap-3 mb-4">

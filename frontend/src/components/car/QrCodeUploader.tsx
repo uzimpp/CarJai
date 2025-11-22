@@ -101,26 +101,18 @@ export default function QrCodeUploader({
       {/* Hidden canvas for processing */}
       <canvas ref={canvasRef} style={{ display: "none" }} />
 
-      {imageSrc && (
-        <div className="flex justify-center w-full">
-          <Image
-            src={imageSrc}
-            alt="Preview"
-            className="max-w-full max-h-64 mx-auto rounded-md object-contain"
-            width={500}
-            height={500}
-          />
-        </div>
-      )}
-
       {error && (
-        <div className="p-4 text-red-800 bg-red-100 border border-red-300 rounded-lg text-center">
+        <div className="mb-4 p-4 text-red-800 bg-red-50 border border-red-200 rounded-lg text-center text-sm">
           {error}
         </div>
       )}
 
       <div
-        className="pt-4 p-6 border-2 border-dashed rounded-xl text-center bg-gray-50"
+        className={`p-8 border-2 border-dashed rounded-xl transition-colors ${
+          isLoading
+            ? "bg-gray-100 border-gray-400"
+            : "bg-gray-50 border-gray-300 hover:border-gray-400"
+        }`}
         onDragEnter={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -139,13 +131,34 @@ export default function QrCodeUploader({
           className="hidden"
           disabled={isLoading}
         />
-        <button
-          onClick={handleUploadClick}
-          disabled={isLoading}
-          className="w-full px-6 py-3 bg-maroon text-white rounded-lg font-semibold hover:bg-red-800 disabled:bg-gray-400 disabled:cursor-wait transition-colors"
-        >
-          {isLoading ? "Scanning QR Code..." : "Select Image"}
-        </button>
+        {imageSrc ? (
+          <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+            <Image
+              src={imageSrc}
+              alt="Preview"
+              className="w-full h-auto max-h-64 mx-auto object-contain"
+              width={500}
+              height={500}
+            />
+          </div>
+        ) : (
+          <div className="space-y-3 text-center">
+            <p className="text-sm text-gray-700 font-medium">
+              Drag and drop here, or
+            </p>
+            <button
+              onClick={handleUploadClick}
+              disabled={isLoading}
+              className="inline-block px-6 py-2.5 bg-maroon text-white rounded-lg font-semibold hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm hover:shadow-md"
+            >
+              {isLoading ? "Scanning QR Code..." : "Select Image"}
+            </button>
+            <p className="text-xs text-gray-600 mt-2">
+              Upload a photo/screenshot of the QR code from your inspection
+              receipt.
+            </p>
+          </div>
+        )}
       </div>
     </Fragment>
   );

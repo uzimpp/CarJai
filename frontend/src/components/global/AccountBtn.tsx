@@ -97,7 +97,7 @@ export default function AccountBtn({
           <div className="flex items-center gap-x-(--space-2xs)">
             <Link
               href="/signin"
-              className="text-0 text-gray-700 hover:text-maroon border border-gray-300 rounded-full transition-colors px-(--space-s) py-(--space-3xs-2xs)"
+              className="flex items-center justify-center text-0 text-gray-700 hover:text-maroon border border-gray-300 rounded-full transition-colors px-(--space-s) py-(--space-3xs-2xs)"
             >
               Sign In
             </Link>

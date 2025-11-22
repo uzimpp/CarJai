@@ -144,8 +144,18 @@ export const adminAPI = {
   },
 
   // --- Dashboard API ---
-  async getDashboardStats(): Promise<DashboardStats> {
-    return apiCall<DashboardStats>(`${adminPrefix}/dashboard/stats`, {
+  async getDashboardStats(): Promise<{
+    success: boolean;
+    code: number;
+    data: DashboardStats;
+    message?: string;
+  }> {
+    return apiCall<{
+      success: boolean;
+      code: number;
+      data: DashboardStats;
+      message?: string;
+    }>(`${adminPrefix}/dashboard/stats`, {
       method: "GET",
     });
   },

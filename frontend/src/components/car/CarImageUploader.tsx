@@ -38,6 +38,7 @@ export default function CarImageUploader({
   const [, setDragActive] = useState(false); // used to style dropzone
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const draggedIndexRef = useRef<number | null>(null);
 
   // Load existing images on mount
   useEffect(() => {
@@ -242,43 +243,59 @@ export default function CarImageUploader({
 
   const handleDragStart = (index: number) => {
     setDraggedIndex(index);
+    draggedIndexRef.current = index;
   };
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>, index: number) => {
     e.preventDefault();
-    if (draggedIndex === null || draggedIndex === index) return;
 
-    const newImages = [...images];
-    const draggedImage = newImages[draggedIndex];
-    newImages.splice(draggedIndex, 1);
-    newImages.splice(index, 0, draggedImage);
+    const currentDraggedIndex = draggedIndexRef.current;
+    if (currentDraggedIndex === null || currentDraggedIndex === index) {
+      return;
+    }
 
-    // Update order
-    newImages.forEach((img, i) => {
-      img.order = i;
+    // Update images using functional update to get latest state
+    setImages((prevImages) => {
+      const newImages = [...prevImages];
+      const draggedImage = newImages[currentDraggedIndex];
+      newImages.splice(currentDraggedIndex, 1);
+      newImages.splice(index, 0, draggedImage);
+
+      // Update order
+      newImages.forEach((img, i) => {
+        img.order = i;
+      });
+
+      return newImages;
     });
 
-    setImages(newImages);
+    // Update both state and ref
     setDraggedIndex(index);
+    draggedIndexRef.current = index;
   };
 
   const handleDragEnd = async () => {
     setDraggedIndex(null);
+    draggedIndexRef.current = null;
 
-    // Save new order to backend if all images are uploaded
-    const allUploaded = images.every(
-      (img) => img.status === "uploaded" && img.serverId
-    );
+    // Use functional update to get latest images state
+    setImages((prevImages) => {
+      // Save new order to backend if all images are uploaded
+      const allUploaded = prevImages.every(
+        (img) => img.status === "uploaded" && img.serverId
+      );
 
-    if (allUploaded && images.length > 0) {
-      const imageIds = images.map((img) => img.serverId!);
+      if (allUploaded && prevImages.length > 0) {
+        const imageIds = prevImages.map((img) => img.serverId!);
 
-      try {
-        await carsAPI.reorderImages(carId, imageIds);
-      } catch {
-        setError("Failed to save image order");
+        // Call API asynchronously
+        carsAPI.reorderImages(carId, imageIds).catch(() => {
+          setError("Failed to save image order");
+        });
       }
-    }
+
+      return prevImages;
+    });
   };
 
   return (
@@ -337,7 +354,7 @@ export default function CarImageUploader({
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {images.map((img: ImagePreview, index: number) => (
           <div
-            key={`${img.preview}-${index}`}
+            key={img.serverId || `temp-${img.preview}-${index}`}
             draggable
             onDragStart={() => handleDragStart(index)}
             onDragOver={(e: DragEvent<HTMLDivElement>) =>
@@ -355,12 +372,12 @@ export default function CarImageUploader({
               {index + 1}
               {index === 0 && " (Main)"}
             </div>
-
             {/* {img.status === "uploading" && (
               <div className="absolute top-2 right-12 z-10 px-2 py-1 bg-blue-500 text-white text-xs font-bold rounded">
                 ⏳
               </div>
-            )}
+            )} */}
+            {/* 
             {img.status === "uploaded" && (
               <div className="absolute top-2 right-12 z-10 px-2 py-1 bg-green-500 text-white text-xs font-bold rounded">
                 ✓
@@ -371,7 +388,6 @@ export default function CarImageUploader({
                 ✗
               </div>
             )} */}
-
             {/* Remove Button */}
             <button
               onClick={() => removeImage(index)}
@@ -392,7 +408,6 @@ export default function CarImageUploader({
                 />
               </svg>
             </button>
-
             {/* Image Preview */}
             <Image
               src={img.preview}
@@ -402,7 +417,6 @@ export default function CarImageUploader({
               height={192}
               unoptimized
             />
-
             {/* File Info */}
             {img.file && (
               <div className="p-2 bg-gray-50">

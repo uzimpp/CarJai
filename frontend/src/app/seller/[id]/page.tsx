@@ -21,6 +21,7 @@ export default function SellerPage() {
   const [contacts, setContacts] = useState<SellerContact[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [cars, setCars] = useState<CarListing[]>([]);
+  const [soldCarsCount, setSoldCarsCount] = useState<number>(0);
   const [notFoundState, setNotFoundState] = useState(false);
   const [isReportSellerOpen, setIsReportSellerOpen] = useState(false);
   const [reportFeedback, setReportFeedback] = useState<string>("");
@@ -39,6 +40,8 @@ export default function SellerPage() {
         setSeller(sellerRes.data.seller);
         setContacts(sellerRes.data.contacts || []);
         setCars(sellerRes.data.cars || []);
+        setSoldCarsCount(sellerRes.data.soldCarsCount || 0);
+
         setIsLoading(false);
       } catch (error) {
         if (!mounted) return;
@@ -172,138 +175,204 @@ export default function SellerPage() {
     }
   };
 
+  const getContactLink = (type: string, value: string) => {
+    switch (type.toLowerCase()) {
+      case "phone":
+        return `tel:${value}`;
+      case "email":
+        return `mailto:${value}`;
+      case "website":
+        return value.startsWith("http") ? value : `https://${value}`;
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full">
-      {/* Hero */}
-      <div className="bg-maroon text-white rounded-4xl">
-        <div className="max-w-[1200px] mx-auto px-(--space-m) py-(--space-xl)">
-          <div className="flex items-center gap-(--space-l)">
-            <div className="w-24 h-24 rounded-full bg-white/10 ring-4 ring-white/20 flex items-center justify-center text-2xl font-bold">
-              {seller.displayName?.[0] || "S"}
+      {/* Hero Section */}
+      <div className="bg-maroon rounded-4xl shadow-xl overflow-hidden mb-(--space-xl)">
+        <div className="mx-auto px-(--space-m) py-(--space-m)">
+          <div className="flex flex-col gap-(--space-s)">
+            {/* Seller Info */}
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-(--space-m)">
+              <div className="w-24 h-24 rounded-full bg-white/20 backdrop-blur-sm ring-4 ring-white/30 flex items-center justify-center text-4xl font-bold text-white shadow-lg">
+                {seller.displayName?.[0]?.toUpperCase() || "S"}
+              </div>
+              <div className="flex-1">
+                <h1 className="text-5 md:text-6 font-bold leading-tight text-white mb-2">
+                  {seller.displayName}
+                </h1>
+                {seller.about && (
+                  <p className="text-0 md:text-base text-white/95 mt-2 leading-relaxed max-w-2xl">
+                    {seller.about}
+                  </p>
+                )}
+                {/* Stats */}
+                <div className="mt-4 flex flex-wrap items-center gap-4 text-white/90">
+                  {cars.length > 0 && (
+                    <span className="text-sm font-medium">
+                      {cars.length}{" "}
+                      {cars.length === 1 ? "Active Listing" : "Active Listings"}
+                    </span>
+                  )}
+                  {soldCarsCount > 0 && (
+                    <>
+                      <span className="text-white/50">•</span>
+                      <span className="text-sm font-medium">
+                        {soldCarsCount}{" "}
+                        {soldCarsCount === 1 ? "Car Sold" : "Cars Sold"}
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
-            <div className="flex-1">
-              <h1 className="text-5 font-bold leading-tight">
-                {seller.displayName}
-              </h1>
-              {seller.about && (
-                <p className="text-0 text-white/90 mt-(--space-2xs)">
-                  {seller.about}
-                </p>
-              )}
-            </div>
+
+            {/* Contact Info & Actions */}
+            {(contacts.length > 0 || seller.mapLink || isBuyer) && (
+              <div className="border-t border-white/20 pt-(--space-m) mt-(--space-m)">
+                <div className="flex flex-col md:flex-row gap-(--space-m) items-start md:items-center">
+                  {/* Contact Information */}
+                  {contacts.length > 0 && (
+                    <div className="flex-1 flex flex-wrap items-center gap-3">
+                      {contacts.map((contact) => {
+                        const link = getContactLink(
+                          contact.contactType,
+                          contact.value
+                        );
+                        const ContactWrapper = link ? "a" : "div";
+                        return (
+                          <ContactWrapper
+                            key={contact.id}
+                            href={link || undefined}
+                            target={
+                              link &&
+                              contact.contactType.toLowerCase() !== "phone" &&
+                              contact.contactType.toLowerCase() !== "email"
+                                ? "_blank"
+                                : undefined
+                            }
+                            rel={
+                              link &&
+                              contact.contactType.toLowerCase() === "website"
+                                ? "noopener noreferrer"
+                                : undefined
+                            }
+                            className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all text-sm text-white ${
+                              link ? "cursor-pointer" : ""
+                            }`}
+                          >
+                            <div className="text-white">
+                              {getContactIcon(contact.contactType)}
+                            </div>
+                            <span className="font-medium">{contact.value}</span>
+                            {contact.label && (
+                              <span className="text-xs text-white/70 bg-white/10 px-2 py-0.5 rounded-full">
+                                {contact.label}
+                              </span>
+                            )}
+                          </ContactWrapper>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {seller.mapLink && (
+                      <a
+                        href={seller.mapLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2 text-sm text-white bg-white/10 hover:bg-white/20 rounded-lg transition-all font-medium"
+                      >
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                        </svg>
+                        View on Map
+                      </a>
+                    )}
+                    {isBuyer && (
+                      <button
+                        onClick={() => setIsReportSellerOpen(true)}
+                        className="inline-flex items-center gap-2 px-4 py-2 text-sm border-2 border-white/30 hover:border-white/50 bg-transparent hover:bg-white/10 text-white rounded-lg transition-all font-medium"
+                      >
+                        <FlagIcon className="h-5 w-5" aria-hidden="true" />
+                        Report Seller
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="max-w-[1200px] mx-auto px-(--space-m) py-(--space-xl)">
-        <div className="grid md:grid-cols-3 gap-(--space-l)">
-          {/* Main */}
-          <div className="md:col-span-2">
-            <div className="bg-white rounded-lg border border-gray-200 p-(--space-l)">
-              <h2 className="text-2 font-bold text-gray-900 mb-(--space-m)">
-                Cars from {seller.displayName}
-              </h2>
-              {cars.length === 0 ? (
-                <p className="text-0 text-gray-600">No active cars.</p>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-(--space-m)">
-                  {cars.map((car) => (
-                    <CarCard key={car.id} car={car} variant="seller" />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Sidebar */}
-          <div className="md:col-span-1">
-            <div className="bg-white rounded-lg border border-gray-200 p-(--space-l) sticky top-(--space-l)">
-              <h2 className="text-2 font-bold text-gray-900 mb-(--space-m)">
-                Contact Information
-              </h2>
-              {contacts.length > 0 ? (
-                <div className="space-y-(--space-s)">
-                  {contacts.map((contact) => (
-                    <div
-                      key={contact.id}
-                      className="flex items-start p-(--space-s) rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex-shrink-0 text-maroon mt-1">
-                        {getContactIcon(contact.contactType)}
-                      </div>
-                      <div className="ml-3 flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <p className="text--1 font-medium text-gray-900 capitalize">
-                            {contact.contactType}
-                          </p>
-                          {contact.label && (
-                            <span className="text--2 text-gray-500 ml-2">
-                              ({contact.label})
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-0 text-gray-600 break-all mt-1">
-                          {contact.value}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text--1 text-gray-600">
-                  No contact information available
-                </p>
-              )}
-
-              {seller.mapLink && (
-                <div className="mt-(--space-m)">
-                  <a
-                    href={seller.mapLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center text-0 text-maroon hover:text-maroon-dark font-medium"
-                  >
-                    <svg
-                      className="w-5 h-5 mr-2"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                    </svg>
-                    View on Map
-                  </a>
-                </div>
-              )}
-              {isBuyer && (
-                <button
-                  onClick={() => setIsReportSellerOpen(true)}
-                  className="mt-(--space-s) w-full inline-flex items-center justify-center gap-2 px-3.5 py-2 border-[3px] border-rose-300 rounded-[14px] bg-transparent text-rose-700 hover:bg-rose-50 hover:text-rose-800 transition-colors text-base font-medium"
-                >
-                  <FlagIcon className="h-5 w-5" aria-hidden="true" />
-                  Report Seller
-                </button>
-              )}
-              {reportFeedback && (
-                <div className="mt-(--space-s) text--1 text-green-700 bg-green-50 border border-green-200 rounded p-2">
-                  {reportFeedback}
-                </div>
-              )}
-            </div>
-          </div>
+      <div className="pb-(--space-xl)">
+        {/* Main Content */}
+        <div className="flex items-center justify-between mb-(--space-m)">
+          <h2 className="text-3 font-bold text-gray-900">Available Cars</h2>
         </div>
+        {cars.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+              <svg
+                className="w-8 h-8 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"
+                />
+              </svg>
+            </div>
+            <p className="text-base text-gray-600 font-medium">
+              No active listings
+            </p>
+            <p className="text-sm text-gray-500 mt-2">
+              This seller doesn&apos;t have any active cars listed at the
+              moment.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-(--space-m)">
+            {cars.map((car) => (
+              <CarCard key={car.id} car={car} />
+            ))}
+          </div>
+        )}
+
+        {/* Report Feedback */}
+        {reportFeedback && (
+          <div className="mt-(--space-m) max-w-[1536px] mx-auto">
+            <div className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-xl p-4">
+              {reportFeedback}
+            </div>
+          </div>
+        )}
       </div>
       {/* Report Modal */}
       <ReportModal
@@ -313,6 +382,7 @@ export default function SellerPage() {
         onSubmit={async (data) => {
           setReportFeedback("");
           try {
+            if (!seller) return;
             const res = await reportsAPI.submitSellerReport(seller.id, data);
             if (res?.success) {
               setReportFeedback("Thanks! Your report has been submitted.");

@@ -112,6 +112,7 @@ interface SellerResponse {
     seller: Seller;
     contacts: SellerContact[];
     cars?: CarListing[];
+    soldCarsCount?: number;
   };
   message?: string;
 }

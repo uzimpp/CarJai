@@ -6,6 +6,7 @@ import NavBar from "@/components/global/NavBar";
 import SideBar from "@/components/global/SideBar";
 import Footer from "@/components/global/Footer";
 import Signup from "@/components/auth/Signup";
+import ComparisonButton from "@/components/comparison/ComparisonButton";
 import { Fragment } from "react";
 
 interface ConditionalLayoutProps {
@@ -176,7 +177,7 @@ export default function ConditionalLayout({
       </main>
 
       <footer
-        className="z-0 fixed bottom-0 left-0 right-0 w-full bg-[#181414]"
+        className="z-0 fixed bottom-0 left-0 right-0 w-full bg-dark-grey"
         ref={footerRef as React.RefObject<HTMLElement>}
         style={
           shouldShowSidebar && !isMobile
@@ -186,6 +187,9 @@ export default function ConditionalLayout({
       >
         {shouldShowFooter && <Footer />}
       </footer>
+
+      {/* Comparison Bar - shows when cars are selected for comparison */}
+      {!isAdminPage && <ComparisonButton />}
     </Fragment>
   );
 }

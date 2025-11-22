@@ -1,30 +1,47 @@
 "use client";
 
-import { useState, useEffect, type FormEvent, type ChangeEvent } from "react";
+import { useState, useEffect } from "react";
+import type { FormEvent } from "react";
 import {
   referenceAPI,
   type ProvinceOption,
   type ReferenceOption,
 } from "@/lib/referenceAPI";
+import DualRangeSlider from "./DualRangeSlider";
+import RangeInput from "./RangeInput";
+import ColorSelector from "./ColorSelector";
+import DropdownFilter from "./DropdownFilter";
+import SearchInputField from "./SearchInputField";
+import CollapsibleFilterSection from "./CollapsibleFilterSection";
+import { CheckBoxes } from "@/components/ui/CheckBoxes";
+import StarRating from "@/components/ui/StarRating";
+import { FuelTypeIcons, BodyTypeIcons } from "./filterIcons";
 
-export type CategoryValue = "all" | "electric" | "sport" | "family" | "compact";
-
-export type CategoryOption = {
-  value: CategoryValue;
-  label: string;
-  fuelTypes?: string[];
-  bodyType?: string;
+// Color code to hex mapping (matching backend color codes)
+const COLOR_MAP: Record<string, string[]> = {
+  RED: ["#EF4444"],
+  GRAY: ["#6B7280"],
+  BLUE: ["#3B82F6"],
+  LIGHT_BLUE: ["#60A5FA"],
+  YELLOW: ["#FBBF24"],
+  PINK: ["#EC4899"],
+  WHITE: ["#FFFFFF"],
+  BROWN: ["#92400E"],
+  BLACK: ["#000000"],
+  ORANGE: ["#F97316"],
+  PURPLE: ["#A855F7"],
+  GREEN: ["#10B981"],
+  MULTICOLOR: ["#EF4444", "#3B82F6", "#FBBF24"], // Red, Blue, Yellow
 };
 
 interface SearchFiltersProps {
   filters: SearchFiltersData;
   searchInput: string;
-  category: CategoryValue;
-  categoryOptions: CategoryOption[];
   onFiltersChange: (filters: SearchFiltersData) => void;
   onSearchSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onSearchInputChange: (value: string) => void;
-  onCategoryChange: (value: CategoryValue) => void;
+  style?: React.CSSProperties;
+  className?: string;
 }
 
 export interface SearchFiltersData {
@@ -33,10 +50,11 @@ export interface SearchFiltersData {
   maxPrice?: number;
   minYear?: number;
   maxYear?: number;
+  minMileage?: number;
   maxMileage?: number;
   bodyType?: string;
-  transmission?: string;
-  drivetrain?: string;
+  transmission?: string[];
+  drivetrain?: string[];
   fuelTypes?: string[];
   colors?: string[];
   provinceId?: number;
@@ -46,14 +64,12 @@ export interface SearchFiltersData {
 export default function SearchFilters({
   filters,
   searchInput,
-  category,
-  categoryOptions,
   onFiltersChange,
   onSearchSubmit,
   onSearchInputChange,
-  onCategoryChange,
+  style,
+  className = "",
 }: SearchFiltersProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
   const [referenceData, setReferenceData] = useState<{
     provinces: ProvinceOption[];
     transmissions: ReferenceOption[];
@@ -112,326 +128,293 @@ export default function SearchFilters({
     onFiltersChange({});
   };
 
+  const hasActiveFilters = Object.keys(filters).length > 0;
+
   return (
-    <div className="space-y-6">
-      {/* Search Bar and Category */}
-      <div className="bg-white rounded-2xl shadow-lg p-6">
-        <form onSubmit={onSearchSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Search
-            </label>
-            <input
-              type="text"
-              value={searchInput}
-              onChange={(e) => onSearchInputChange(e.target.value)}
-              placeholder="Search cars, e.g. Mitsu"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base text-gray-900 focus:border-maroon focus:outline-none focus:ring-2 focus:ring-maroon/40"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Category
-            </label>
-            <select
-              value={category}
-              onChange={(e) =>
-                onCategoryChange(e.target.value as CategoryValue)
-              }
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base text-gray-900 focus:border-maroon focus:outline-none focus:ring-2 focus:ring-maroon/40"
-            >
-              {categoryOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <button
-            type="submit"
-            className="w-full rounded-lg bg-maroon px-6 py-3 text-base font-semibold text-white transition-colors hover:bg-maroon/90 focus:outline-none focus:ring-2 focus:ring-maroon/40"
-          >
-            Search
-          </button>
-        </form>
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white rounded-2xl shadow-lg p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-semibold text-gray-900">Filters</h3>
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="text-sm text-maroon hover:underline"
-          >
-            {isExpanded ? "Hide" : "Show"} Filters
-          </button>
-        </div>
-
-        {isExpanded && (
-          <div className="space-y-4">
-
-          {/* Price Range */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Min Price (฿)
-              </label>
-              <input
-                type="number"
-                placeholder="0"
-                value={filters.minPrice || ""}
-                onChange={(e) =>
-                  handleChange(
-                    "minPrice",
-                    e.target.value ? parseInt(e.target.value) : undefined
-                  )
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
+    <div className={`flex flex-col w-[385px] ${className}`} style={style}>
+      <div className="bg-white rounded-3xl shadow-sm flex flex-col h-full overflow-hidden max-h-full">
+        <div className="flex-1 overflow-y-auto pr-2">
+          <form onSubmit={onSearchSubmit} className="p-(--space-s-m)">
+            {/* Search */}
+            <div className="relative mb-5">
+              <SearchInputField
+                value={searchInput}
+                onChange={onSearchInputChange}
+                placeholder="Search cars, brands, models..."
+                className="bg-gray-100"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Max Price (฿)
-              </label>
-              <input
-                type="number"
-                placeholder="Any"
-                value={filters.maxPrice || ""}
-                onChange={(e) =>
-                  handleChange(
-                    "maxPrice",
-                    e.target.value ? parseInt(e.target.value) : undefined
-                  )
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
-              />
+
+            <div className="flex flex-row items-center justify-between">
+              <h2 className="text-0 font-bold text-maroon mb-2">Filters</h2>
+              {hasActiveFilters && (
+                <button
+                  onClick={clearFilters}
+                  className="text--1 text-maroon hover:text-maroon/80 transition-colors"
+                >
+                  Clear All
+                </button>
+              )}
             </div>
-          </div>
+            {/* Filters Section */}
+            <div className="border-t border-gray-100 ">
+              {/* Price Range */}
+              <CollapsibleFilterSection label="Price Range (฿)">
+                <RangeInput
+                  minValue={filters.minPrice}
+                  maxValue={filters.maxPrice}
+                  onRangeChange={(min, max) => {
+                    const nextFilters = { ...filters };
+                    min === undefined
+                      ? delete nextFilters.minPrice
+                      : (nextFilters.minPrice = min);
+                    max === undefined
+                      ? delete nextFilters.maxPrice
+                      : (nextFilters.maxPrice = max);
+                    onFiltersChange(nextFilters);
+                  }}
+                  step={1}
+                  min={0}
+                  max={1999999999}
+                  predefinedRanges={[
+                    { label: "≤ 300k", min: undefined, max: 300000 },
+                    { label: "300k - 500k", min: 300000, max: 500000 },
+                    { label: "500k - 1M", min: 500000, max: 1000000 },
+                    { label: "≥ 1M", min: 1000000, max: undefined },
+                  ]}
+                />
+              </CollapsibleFilterSection>
 
-          {/* Year Range */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Min Year
-              </label>
-              <input
-                type="number"
-                placeholder="1990"
-                value={filters.minYear || ""}
-                onChange={(e) =>
-                  handleChange(
-                    "minYear",
-                    e.target.value ? parseInt(e.target.value) : undefined
-                  )
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Max Year
-              </label>
-              <input
-                type="number"
-                placeholder="2024"
-                value={filters.maxYear || ""}
-                onChange={(e) =>
-                  handleChange(
-                    "maxYear",
-                    e.target.value ? parseInt(e.target.value) : undefined
-                  )
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
-              />
-            </div>
-          </div>
+              {/* Year Range */}
+              <CollapsibleFilterSection label="Year Range">
+                <DualRangeSlider
+                  min={1990}
+                  max={new Date().getFullYear()}
+                  minValue={filters.minYear}
+                  maxValue={filters.maxYear}
+                  onMinChange={(value) => handleChange("minYear", value)}
+                  onMaxChange={(value) => handleChange("maxYear", value)}
+                  step={1}
+                  formatValue={(v) => v.toString()}
+                />
+              </CollapsibleFilterSection>
 
-          {/* Max Mileage */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Max Mileage (km)
-            </label>
-            <input
-              type="number"
-              placeholder="Any"
-              value={filters.maxMileage || ""}
-              onChange={(e) =>
-                handleChange(
-                  "maxMileage",
-                  e.target.value ? parseInt(e.target.value) : undefined
-                )
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
-            />
-          </div>
+              {/* Mileage Range */}
+              <CollapsibleFilterSection label="Mileage (km)">
+                <RangeInput
+                  minValue={filters.minMileage}
+                  maxValue={filters.maxMileage}
+                  onRangeChange={(min, max) => {
+                    const nextFilters = { ...filters };
+                    min === undefined
+                      ? delete nextFilters.minMileage
+                      : (nextFilters.minMileage = min);
+                    max === undefined
+                      ? delete nextFilters.maxMileage
+                      : (nextFilters.maxMileage = max);
+                    onFiltersChange(nextFilters);
+                  }}
+                  predefinedRanges={[
+                    { label: "≤ 15,000 km", min: undefined, max: 15000 },
+                    { label: "15,000 - 30,000 km", min: 15000, max: 30000 },
+                    { label: "≤ 100,000 km", min: undefined, max: 100000 },
+                  ]}
+                  step={1000}
+                  min={0}
+                  max={1999999999}
+                />
+              </CollapsibleFilterSection>
 
-          {/* Body Type */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Body Type
-            </label>
-            <select
-              value={filters.bodyType || ""}
-              onChange={(e) =>
-                handleChange("bodyType", e.target.value || undefined)
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
-            >
-              <option value="">All Types</option>
-              <option value="PICKUP">Pickup</option>
-              <option value="VAN">Van</option>
-              <option value="CITYCAR">City Car</option>
-              <option value="DAILY">Daily Use</option>
-              <option value="SUV">SUV</option>
-              <option value="SPORTLUX">Sport / Luxury</option>
-            </select>
-          </div>
+              {/* Colors */}
+              <CollapsibleFilterSection label="Colors">
+                <ColorSelector
+                  options={referenceData.colors.map((c) => ({
+                    code: c.code,
+                    label: c.label,
+                  }))}
+                  selectedValues={filters.colors || []}
+                  onChange={(values) =>
+                    handleChange(
+                      "colors",
+                      values.length > 0 ? values : undefined
+                    )
+                  }
+                  colorMap={COLOR_MAP}
+                />
+              </CollapsibleFilterSection>
 
-          {/* Fuel Types */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Fuel Type
-            </label>
-            <div className="space-y-2">
-              {[
-                { code: "GASOLINE", label: "Gasoline" },
-                { code: "DIESEL", label: "Diesel" },
-                { code: "ELECTRIC", label: "Electric" },
-                { code: "HYBRID", label: "Hybrid" },
-                { code: "LPG", label: "LPG" },
-                { code: "CNG", label: "CNG" },
-              ].map((fuel) => (
-                <label key={fuel.code} className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={filters.fuelTypes?.includes(fuel.code) || false}
-                    onChange={(e) => {
-                      const currentFuels = filters.fuelTypes || [];
-                      const newFuels = e.target.checked
-                        ? [...currentFuels, fuel.code]
-                        : currentFuels.filter((f) => f !== fuel.code);
+              {/* Fuel Types */}
+              <CollapsibleFilterSection label="Fuel Type">
+                <CheckBoxes
+                  name="fuelTypes"
+                  values={filters.fuelTypes || []}
+                  options={[
+                    {
+                      value: "GASOLINE",
+                      label: "Gasoline",
+                      icon: FuelTypeIcons.GASOLINE,
+                    },
+                    {
+                      value: "DIESEL",
+                      label: "Diesel",
+                      icon: FuelTypeIcons.DIESEL,
+                    },
+                    {
+                      value: "HYBRID",
+                      label: "Hybrid",
+                      icon: FuelTypeIcons.HYBRID,
+                    },
+                    {
+                      value: "ELECTRIC",
+                      label: "Electric",
+                      icon: FuelTypeIcons.ELECTRIC,
+                    },
+                    {
+                      value: "LPG",
+                      label: "LPG/NGV",
+                      icon: FuelTypeIcons.LPG,
+                    },
+                  ]}
+                  onChange={(values) =>
+                    handleChange(
+                      "fuelTypes",
+                      values.length > 0 ? values : undefined
+                    )
+                  }
+                  columns={3}
+                />
+              </CollapsibleFilterSection>
+
+              {/* Body Type */}
+              <CollapsibleFilterSection label="Body Type">
+                <CheckBoxes
+                  name="bodyType"
+                  values={filters.bodyType ? [filters.bodyType] : []}
+                  options={[
+                    {
+                      value: "CITYCAR",
+                      label: "City Car",
+                      icon: BodyTypeIcons.CITYCAR,
+                    },
+                    {
+                      value: "DAILY",
+                      label: "Sedan",
+                      icon: BodyTypeIcons.DAILY,
+                    },
+                    {
+                      value: "SPORTLUX",
+                      label: "Luxury",
+                      icon: BodyTypeIcons.SPORTLUX,
+                    },
+                    {
+                      value: "SUV",
+                      label: "SUV",
+                      icon: BodyTypeIcons.SUV,
+                    },
+                    {
+                      value: "VAN",
+                      label: "Van",
+                      icon: BodyTypeIcons.VAN,
+                    },
+                    {
+                      value: "PICKUP",
+                      label: "Pickup",
+                      icon: BodyTypeIcons.PICKUP,
+                    },
+                  ]}
+                  onChange={(values) =>
+                    handleChange(
+                      "bodyType",
+                      values.length > 0 ? values[0] : undefined
+                    )
+                  }
+                  columns={3}
+                />
+              </CollapsibleFilterSection>
+
+              {/* Condition Rating */}
+              <CollapsibleFilterSection label="Condition Rating">
+                <div className="flex flex-col items-center justify-start gap-3 flex-wrap">
+                  <StarRating
+                    value={filters.conditionRating}
+                    onChange={(value) => {
+                      // Toggle off if clicking the same star, otherwise set the value
                       handleChange(
-                        "fuelTypes",
-                        newFuels.length > 0 ? newFuels : undefined
+                        "conditionRating",
+                        value === filters.conditionRating ? undefined : value
                       );
                     }}
-                    className="w-4 h-4 text-maroon border-gray-300 rounded focus:ring-maroon"
                   />
-                  <span className="ml-2 text-sm text-gray-700">
-                    {fuel.label}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </div>
+                  {filters.conditionRating ? (
+                    <p className="text-xs text-gray-600 text-center">
+                      Showing cars with {filters.conditionRating}+ stars
+                    </p>
+                  ) : (
+                    <p className="text-xs text-gray-500 text-center">
+                      Select minimum rating
+                    </p>
+                  )}
+                </div>
+              </CollapsibleFilterSection>
 
-            {/* Transmission */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Transmission
-              </label>
-              <select
-                value={filters.transmission || ""}
-                onChange={(e) =>
-                  handleChange("transmission", e.target.value || undefined)
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
-              >
-                <option value="">All Types</option>
-                {referenceData.transmissions.map((transmission) => (
-                  <option key={transmission.code} value={transmission.code}>
-                    {transmission.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+              {/* Province */}
+              <CollapsibleFilterSection label="Province">
+                <DropdownFilter
+                  value={filters.provinceId}
+                  options={referenceData.provinces.map((p) => ({
+                    code: p.id.toString(),
+                    label: p.label,
+                  }))}
+                  onChange={(value) =>
+                    handleChange(
+                      "provinceId",
+                      value ? parseInt(value as string) : undefined
+                    )
+                  }
+                  allOptionLabel="All Provinces"
+                />
+              </CollapsibleFilterSection>
 
-            {/* Drivetrain */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Drivetrain
-              </label>
-              <select
-                value={filters.drivetrain || ""}
-                onChange={(e) =>
-                  handleChange("drivetrain", e.target.value || undefined)
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
-              >
-                <option value="">All Types</option>
-                {referenceData.drivetrains.map((drivetrain) => (
-                  <option key={drivetrain.code} value={drivetrain.code}>
-                    {drivetrain.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+              {/* Transmission */}
+              <CollapsibleFilterSection label="Transmission">
+                <CheckBoxes
+                  name="transmission"
+                  values={filters.transmission || []}
+                  options={referenceData.transmissions.map((t) => ({
+                    value: t.code,
+                    label: t.label,
+                  }))}
+                  onChange={(values) =>
+                    handleChange(
+                      "transmission",
+                      values.length > 0 ? values : undefined
+                    )
+                  }
+                  direction="column"
+                />
+              </CollapsibleFilterSection>
 
-            {/* Colors */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Colors
-              </label>
-              <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
-                {referenceData.colors.map((color) => (
-                  <label key={color.code} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={filters.colors?.includes(color.code) || false}
-                      onChange={(e) => {
-                        const currentColors = filters.colors || [];
-                        const newColors = e.target.checked
-                          ? [...currentColors, color.code]
-                          : currentColors.filter((c) => c !== color.code);
-                        handleChange(
-                          "colors",
-                          newColors.length > 0 ? newColors : undefined
-                        );
-                      }}
-                      className="w-4 h-4 text-maroon border-gray-300 rounded focus:ring-maroon"
-                    />
-                    <span className="ml-2 text-sm text-gray-700">
-                      {color.label}
-                    </span>
-                  </label>
-                ))}
-              </div>
+              {/* Drivetrain */}
+              <CollapsibleFilterSection label="Drivetrain">
+                <CheckBoxes
+                  name="drivetrain"
+                  values={filters.drivetrain || []}
+                  options={referenceData.drivetrains.map((d) => ({
+                    value: d.code,
+                    label: d.label,
+                  }))}
+                  onChange={(values) =>
+                    handleChange(
+                      "drivetrain",
+                      values.length > 0 ? values : undefined
+                    )
+                  }
+                  direction="column"
+                />
+              </CollapsibleFilterSection>
             </div>
-
-            {/* Province */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Province
-              </label>
-              <select
-                value={filters.provinceId || ""}
-                onChange={(e) =>
-                  handleChange(
-                    "provinceId",
-                    e.target.value ? parseInt(e.target.value) : undefined
-                  )
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent"
-              >
-                <option value="">All Provinces</option>
-                {referenceData.provinces.map((province) => (
-                  <option key={province.id} value={province.id}>
-                    {province.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-          {/* Clear Button */}
-          <button
-            onClick={clearFilters}
-            className="w-full px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-          >
-            Clear All Filters
-          </button>
-          </div>
-        )}
+          </form>
+        </div>
       </div>
     </div>
   );
