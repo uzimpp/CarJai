@@ -26,6 +26,56 @@ func NewEmailService(host, port, username, password, from string) *EmailService 
 	}
 }
 
+// ValidateConfig checks if SMTP configuration is complete
+func (s *EmailService) ValidateConfig() error {
+	if s.smtpHost == "" {
+		return fmt.Errorf("SMTP_HOST is not configured")
+	}
+	if s.smtpPort == "" {
+		return fmt.Errorf("SMTP_PORT is not configured")
+	}
+	if s.smtpUsername == "" {
+		return fmt.Errorf("SMTP_USERNAME is not configured")
+	}
+	if s.smtpPassword == "" {
+		return fmt.Errorf("SMTP_PASSWORD is not configured")
+	}
+	if s.smtpFrom == "" {
+		return fmt.Errorf("SMTP_FROM is not configured")
+	}
+	return nil
+}
+
+// TestConnection tests SMTP connection and authentication
+func (s *EmailService) TestConnection() error {
+	if err := s.ValidateConfig(); err != nil {
+		return err
+	}
+
+	addr := s.smtpHost + ":" + s.smtpPort
+	client, err := smtp.Dial(addr)
+	if err != nil {
+		return fmt.Errorf("failed to connect to SMTP server: %w", err)
+	}
+	defer client.Quit()
+
+	// Use secure TLS configuration (CodeQL compliant)
+	tlsConfig := &tls.Config{
+		ServerName: s.smtpHost,
+		MinVersion: tls.VersionTLS12, // Enforce TLS 1.2 minimum
+	}
+	if err := client.StartTLS(tlsConfig); err != nil {
+		return fmt.Errorf("failed to start TLS: %w", err)
+	}
+
+	auth := smtp.PlainAuth("", s.smtpUsername, s.smtpPassword, s.smtpHost)
+	if err := client.Auth(auth); err != nil {
+		return fmt.Errorf("SMTP authentication failed: %w", err)
+	}
+
+	return nil
+}
+
 // SendPasswordResetEmail sends a password reset email
 func (s *EmailService) SendPasswordResetEmail(toEmail, resetLink string, frontendURL string) error {
 	subject := "Reset Your Password - CarJai"

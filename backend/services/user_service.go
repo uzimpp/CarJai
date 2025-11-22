@@ -1,6 +1,8 @@
 package services
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -23,7 +25,8 @@ type UserService struct {
 	passwordResetJWTSecret       string
 	passwordResetTokenExpiration int
 	frontendURL                  string
-	resetRequestTracker          map[string][]time.Time // email -> timestamps for rate limiting
+	resetRequestTracker          map[string][]time.Time                // email -> timestamps for rate limiting
+	resetTokenRepo               *models.PasswordResetTokenRepository // for token tracking
 }
 
 // NewUserService creates a new user service
@@ -35,6 +38,7 @@ func NewUserService(
 	passwordResetJWTSecret string,
 	passwordResetTokenExpiration int,
 	frontendURL string,
+	resetTokenRepo *models.PasswordResetTokenRepository,
 ) *UserService {
 	return &UserService{
 		userRepo:                     userRepo,
@@ -46,6 +50,7 @@ func NewUserService(
 		passwordResetTokenExpiration: passwordResetTokenExpiration,
 		frontendURL:                  frontendURL,
 		resetRequestTracker:          make(map[string][]time.Time),
+		resetTokenRepo:               resetTokenRepo,
 	}
 }
 
@@ -683,7 +688,7 @@ func (s *UserService) RequestPasswordReset(email string) error {
 		return nil
 	}
 
-	// Check rate limiting (max 3 requests per hour)
+	// Check rate limiting (max 10 requests per hour)
 	if s.isRateLimited(email) {
 		// Still return nil to prevent user enumeration
 		return nil
@@ -707,6 +712,17 @@ func (s *UserService) RequestPasswordReset(email string) error {
 		return fmt.Errorf("failed to generate reset token: %w", err)
 	}
 
+	// Hash token for storage (SHA-256)
+	tokenHash := sha256.Sum256([]byte(token))
+	tokenHashHex := hex.EncodeToString(tokenHash[:])
+
+	// Store token in database (invalidates old tokens automatically)
+	expiresAt := time.Now().Add(time.Duration(s.passwordResetTokenExpiration) * time.Minute)
+	err = s.resetTokenRepo.StoreToken(user.ID, user.Email, tokenHashHex, expiresAt)
+	if err != nil {
+		return fmt.Errorf("failed to store reset token: %w", err)
+	}
+
 	// Build reset link
 	resetLink := fmt.Sprintf("%s/reset-password?token=%s", s.frontendURL, token)
 
@@ -726,21 +742,31 @@ func (s *UserService) RequestPasswordReset(email string) error {
 
 // ResetPasswordWithToken validates token and resets password
 func (s *UserService) ResetPasswordWithToken(token, newPassword string) error {
-	// Validate token
+	// Validate JWT token first (expiry, signature)
 	claims, err := utils.ValidatePasswordResetToken(token, s.passwordResetJWTSecret)
 	if err != nil {
 		return fmt.Errorf("invalid or expired token")
+	}
+
+	// Hash token to check database
+	tokenHash := sha256.Sum256([]byte(token))
+	tokenHashHex := hex.EncodeToString(tokenHash[:])
+
+	// Validate and mark token as used (atomic operation)
+	storedToken, err := s.resetTokenRepo.ValidateAndUseToken(tokenHashHex)
+	if err != nil {
+		return fmt.Errorf("token has been used or is no longer valid")
+	}
+
+	// Verify email matches
+	if storedToken.Email != claims.Email {
+		return fmt.Errorf("token email mismatch")
 	}
 
 	// Get user
 	user, err := s.userRepo.GetUserByID(claims.UserID)
 	if err != nil {
 		return fmt.Errorf("user not found")
-	}
-
-	// Verify email matches (extra security)
-	if user.Email != claims.Email {
-		return fmt.Errorf("token email mismatch")
 	}
 
 	// Hash new password
@@ -761,7 +787,7 @@ func (s *UserService) ResetPasswordWithToken(token, newPassword string) error {
 	return nil
 }
 
-// isRateLimited checks if email has exceeded rate limit (3 requests per hour)
+// isRateLimited checks if email has exceeded rate limit (10 requests per hour)
 func (s *UserService) isRateLimited(email string) bool {
 	now := time.Now()
 	oneHourAgo := now.Add(-1 * time.Hour)
@@ -780,11 +806,15 @@ func (s *UserService) isRateLimited(email string) bool {
 		}
 	}
 
-	// Update tracker
+	// Update tracker - delete key if no valid timestamps to prevent memory leak
+	if len(validTimestamps) == 0 {
+		delete(s.resetRequestTracker, email)
+		return false
+	}
 	s.resetRequestTracker[email] = validTimestamps
 
 	// Check if limit exceeded
-	return len(validTimestamps) >= 3
+	return len(validTimestamps) >= 10
 }
 
 // trackResetRequest records a reset request timestamp
