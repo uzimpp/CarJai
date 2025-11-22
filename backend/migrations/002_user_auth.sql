@@ -7,11 +7,15 @@ CREATE TABLE users (
     password_hash VARCHAR(255),
     username VARCHAR(20) UNIQUE NOT NULL,
     name VARCHAR(100) NOT NULL, -- display name "John Doe"
+    status VARCHAR(20) NOT NULL DEFAULT 'active',
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
     google_id VARCHAR(255) UNIQUE,
     auth_provider VARCHAR(50),
-    provider_linked_at TIMESTAMP
+    provider_linked_at TIMESTAMP,
+    CONSTRAINT users_status_check CHECK (
+        status IN ('active', 'banned', 'suspended')
+    )
 );
 
 -- User sessions
@@ -27,6 +31,8 @@ CREATE TABLE user_sessions (
 
 -- Indexes
 CREATE INDEX idx_users_created_at ON users (created_at);
+
+CREATE INDEX idx_users_status ON users (status);
 
 CREATE INDEX idx_user_sessions_token ON user_sessions (token);
 
@@ -73,6 +79,8 @@ TABLE user_sessions IS 'Active user sessions with JWT tokens';
 COMMENT ON COLUMN users.email IS 'Unique user email for login';
 
 COMMENT ON COLUMN users.password_hash IS 'Bcrypt hashed password';
+
+COMMENT ON COLUMN users.status IS 'User account status: active, banned, or suspended. Applies to all user roles.';
 
 COMMENT ON COLUMN users.created_at IS 'User account creation timestamp';
 

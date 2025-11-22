@@ -2675,7 +2675,8 @@ paths:
     post:
       tags:
         - Admin
-      summary: Ban a user (seller)
+      summary: Ban a user
+      description: Bans a user account. The user will not be able to sign in and all active sessions will be invalidated. Banned users cannot request password resets.
       security:
         - AdminCookieAuth: []
       parameters:
@@ -2684,21 +2685,91 @@ paths:
           required: true
           schema:
             type: integer
+          description: User ID to ban
       responses:
         '200':
-          description: User banned
+          description: User banned successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BasicResponse'
+              example:
+                success: true
+                message: "User banned successfully"
         '400':
           description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
           description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/admin/users/{id}/unban:
+    post:
+      tags:
+        - Admin
+      summary: Unban a user
+      description: Restores a banned or suspended user to active status. The user will be able to sign in again.
+      security:
+        - AdminCookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: User ID to unban
+      responses:
+        '200':
+          description: User unbanned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicResponse'
+              example:
+                success: true
+                message: "User unbanned successfully"
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   # Admin Car Management
   /api/admin/cars:

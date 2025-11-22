@@ -3,6 +3,15 @@
 import { useState, useEffect } from "react";
 import { SellerRequest, SellerContactRequest } from "@/types/user";
 
+const CONTACT_PLACEHOLDERS: Record<string, string> = {
+  phone: "e.g., 081-234-5678",
+  email: "e.g., shop@example.com",
+  line: "e.g., @yourlineid",
+  facebook: "e.g., https://facebook.com/yourpage or username",
+  instagram: "e.g., https://instagram.com/yourshop or username",
+  website: "e.g., https://www.myshop.com",
+};
+
 interface SellerFormProps {
   initialData?: SellerRequest;
   initialContacts?: SellerContactRequest[];
@@ -406,7 +415,7 @@ export default function SellerForm({
                     onChange={(e) =>
                       handleContactChange(index, "value", e.target.value)
                     }
-                    placeholder="e.g., 081-234-5678"
+                    placeholder={CONTACT_PLACEHOLDERS[contact.contactType] || "Enter value"}
                     disabled={isLoading || isSubmitting}
                     className={`appearance-none relative block w-full px-3 py-2 text--1 border ${
                       formErrors[`contact_${index}_value`]

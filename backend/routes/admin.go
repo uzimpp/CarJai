@@ -299,6 +299,10 @@ func AdminRoutes(
 				adminReportsHandler.BanUser(w, r)
 				return
 			}
+			if strings.HasSuffix(path, "/unban") && r.Method == http.MethodPost {
+				adminReportsHandler.UnbanUser(w, r)
+				return
+			}
 			switch r.Method {
 			case http.MethodGet:
 				adminUserHandler.GetUser(w, r)
