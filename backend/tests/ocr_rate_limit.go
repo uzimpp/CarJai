@@ -19,7 +19,7 @@ const (
 	targetURL = "https://api.aigen.online/aiscript/vehicle-registration-book/v2"
 	
 	// ⚠️ IMPORTANT: ใส่ Key ของคุณที่นี่ หรือใช้ os.Getenv("AIGEN_KEY") จะปลอดภัยกว่า
-	apiKey    = "AG3yjquxg7c5zr2amb58i55i3suov5kjik" 
+	apiKey    =  os.Getenv("AIGEN_KEY")
 	
 	// Path รูปภาพ (ใช้ไฟล์เดียวกับที่แนบมา)
 	imagePath = "./registration_book.png" 
