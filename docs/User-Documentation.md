@@ -39,9 +39,13 @@ This guide provides comprehensive instructions for all users of the CarJai platf
    - **Email/Password**: Enter your email and password
    - **Google OAuth**: Click "Sign in with Google" if you signed up with Google
 
-3. **Password Reset**
+3. **Forgot Password**
    - Click "Forgot Password?" on the sign-in page
-   - Enter your email to receive a password reset link
+   - Enter your email address
+   - Check your email for a password reset link
+   - Click the link in the email (valid for 30 minutes)
+   - Enter your new password
+   - Sign in with your new password
 
 ### Searching for Cars
 
@@ -88,6 +92,7 @@ This guide provides comprehensive instructions for all users of the CarJai platf
 1. **Save Favourites**
    - Click the heart icon on any car listing
    - The car will be saved to your favourites
+   - Heart icon will be filled to show it's saved
 
 2. **View Favourites**
    - Click on your account menu (top right)
@@ -95,12 +100,13 @@ This guide provides comprehensive instructions for all users of the CarJai platf
    - View all your saved cars in one place
 
 3. **Remove Favourites**
-   - Click the heart icon again to remove from favourites
+   - Click the filled heart icon again to remove from favourites
+   - Or remove from your favourites page
 
 ### Viewing History
 
 1. **Recent Views**
-   - Your viewing history is automatically tracked
+   - Your viewing history is automatically tracked when you view car details
    - Click on your account menu
    - Select "History" or visit `/history`
    - View all cars you've recently viewed
@@ -167,6 +173,14 @@ This guide provides comprehensive instructions for all users of the CarJai platf
 2. **Sign In Options**
    - **Email/Password**: Enter your email and password
    - **Google OAuth**: Click "Sign in with Google" if you signed up with Google
+
+3. **Forgot Password**
+   - Click "Forgot Password?" on the sign-in page
+   - Enter your email address
+   - Check your email for a password reset link
+   - Click the link in the email (valid for 30 minutes)
+   - Enter your new password
+   - Sign in with your new password
 
 ### Creating a Car Listing
 
