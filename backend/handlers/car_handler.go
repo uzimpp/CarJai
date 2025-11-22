@@ -983,14 +983,17 @@ func (h *CarHandler) UploadInspection(w http.ResponseWriter, r *http.Request) {
 		if errorCode != "" {
 			// Return error with code for client handling
 			response := models.BookUploadErrorResponse{
-				Message: err.Error(),
-				Code:    errorCode,
+				Message:         err.Error(),
+				Code:            errorCode,
+				Action:          "", 
+				RedirectToCarID: redirectToCarID, // สำคัญมาก Frontend ต้องใช้ค่านี้
 			}
-			// For duplicate-own-draft, include existingCarId only (no action/redirect in conflict flow)
-			if errorCode == services.ErrCodeCarDuplicateOwnDraft && redirectToCarID != nil {
-				response.RedirectToCarID = redirectToCarID
+			
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict)
+			if encodeErr := json.NewEncoder(w).Encode(response); encodeErr != nil {
+				utils.WriteError(w, http.StatusInternalServerError, "Failed to encode error response")
 			}
-			utils.WriteJSON(w, http.StatusConflict, response, "")
 			return
 		}
 		utils.WriteError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to upload inspection: %v", err))
