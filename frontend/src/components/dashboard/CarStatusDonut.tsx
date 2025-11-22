@@ -71,7 +71,7 @@ const CarStatusDonut = ({ active, sold }: { active: number, sold: number }) => {
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
             ))}
           </Pie>
-          <Tooltip formatter={(value: number) => [value, 'Cars']} />
+          <Tooltip formatter={(value: number, name: string) => [value, name]} />
           <Legend 
             iconType="circle" 
             wrapperStyle={{ 
