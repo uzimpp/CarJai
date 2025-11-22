@@ -335,6 +335,19 @@ func (s *ProfileService) UpsertSeller(userID int, req models.SellerRequest) (*mo
 		}
 	}
 
+	// Check for duplicate contacts (same type + value combination)
+	contactMap := make(map[string]bool)
+	for _, contact := range req.Contacts {
+		// Create a unique key from type and normalized value
+		normalizedValue := strings.ToLower(strings.TrimSpace(contact.Value))
+		key := contact.ContactType + ":" + normalizedValue
+		
+		if contactMap[key] {
+			return nil, nil, fmt.Errorf("duplicate contact found: %s with value '%s' appears more than once", contact.ContactType, contact.Value)
+		}
+		contactMap[key] = true
+	}
+
 	// Start transaction
 	tx, err := s.db.DB.Begin()
 	if err != nil {
