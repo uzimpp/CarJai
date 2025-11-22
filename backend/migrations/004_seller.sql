@@ -4,17 +4,9 @@ CREATE TABLE sellers (
     display_name VARCHAR(50) NOT NULL,
     about VARCHAR(200),
     map_link TEXT,
-    status VARCHAR(20) NOT NULL DEFAULT 'active',
     CONSTRAINT sellers_display_name_not_blank CHECK (trim(display_name) <> ''),
     CONSTRAINT chk_display_name_length CHECK (length(display_name) <= 50),
-    CONSTRAINT chk_about_length CHECK (length(about) <= 200),
-    CONSTRAINT sellers_status_check CHECK (
-        status IN (
-            'active',
-            'banned',
-            'suspended'
-        )
-    )
+    CONSTRAINT chk_about_length CHECK (length(about) <= 200)
 );
 
 -- Seller contacts
@@ -35,8 +27,3 @@ CREATE TABLE seller_contacts (
 CREATE INDEX IF NOT EXISTS idx_sellers_display_name_ci ON sellers (lower(display_name));
 
 CREATE INDEX IF NOT EXISTS idx_seller_contacts_seller_id ON seller_contacts (seller_id);
-
-CREATE INDEX IF NOT EXISTS idx_sellers_status ON sellers (status);
-
--- Comments
-COMMENT ON COLUMN sellers.status IS 'Seller account status: active, banned, or suspended';

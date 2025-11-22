@@ -153,15 +153,43 @@ func (h *AdminReportsHandler) BanUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Ban the seller (seller ID = user ID)
+	// Ban the user
 	notes := "User banned by admin"
-	_, err = h.reportService.BanSeller(userID, adminID, &notes)
+	_, err = h.reportService.BanUser(userID, adminID, &notes)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	utils.WriteJSON(w, http.StatusOK, nil, "User banned successfully")
+}
+
+// UnbanUser handles POST /admin/users/{id}/unban
+func (h *AdminReportsHandler) UnbanUser(w http.ResponseWriter, r *http.Request) {
+	// Get admin ID from header
+	adminIDStr := r.Header.Get("X-Admin-ID")
+	adminID, err := strconv.Atoi(adminIDStr)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid admin ID")
+		return
+	}
+
+	// Extract user ID from path
+	userID, err := h.extractUserID(r.URL.Path, "/admin/users/", "/unban")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid user ID")
+		return
+	}
+
+	// Unban the user
+	notes := "User unbanned by admin"
+	_, err = h.reportService.UnbanUser(userID, adminID, &notes)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, nil, "User unbanned successfully")
 }
 
 // RemoveCar handles POST /admin/cars/{id}/remove
@@ -283,15 +311,15 @@ func (h *AdminReportsHandler) convertToAdminReport(report models.Report) models.
 
 // extractReportID extracts report ID from URL path like /admin/reports/123/resolve
 func (h *AdminReportsHandler) extractReportID(path, prefix, suffix string) (int, error) {
-	if !strings.HasPrefix(path, prefix) {
-		return 0, fmt.Errorf("invalid path prefix")
+	parts := strings.Split(path, "/")
+	
+	if len(parts) < 2 {
+		return 0, fmt.Errorf("invalid path format")
 	}
-	path = strings.TrimPrefix(path, prefix)
-	if !strings.HasSuffix(path, suffix) {
-		return 0, fmt.Errorf("invalid path suffix")
-	}
-	path = strings.TrimSuffix(path, suffix)
-	id, err := strconv.Atoi(path)
+	
+	idStr := parts[len(parts)-2]
+	
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		return 0, fmt.Errorf("invalid report ID: %w", err)
 	}
@@ -300,15 +328,14 @@ func (h *AdminReportsHandler) extractReportID(path, prefix, suffix string) (int,
 
 // extractUserID extracts user ID from URL path like /admin/users/123/ban
 func (h *AdminReportsHandler) extractUserID(path, prefix, suffix string) (int, error) {
-	if !strings.HasPrefix(path, prefix) {
-		return 0, fmt.Errorf("invalid path prefix")
+	parts := strings.Split(path, "/")
+	if len(parts) < 2 {
+		return 0, fmt.Errorf("invalid path format")
 	}
-	path = strings.TrimPrefix(path, prefix)
-	if !strings.HasSuffix(path, suffix) {
-		return 0, fmt.Errorf("invalid path suffix")
-	}
-	path = strings.TrimSuffix(path, suffix)
-	id, err := strconv.Atoi(path)
+	
+	idStr := parts[len(parts)-2]
+	
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		return 0, fmt.Errorf("invalid user ID: %w", err)
 	}
@@ -317,15 +344,14 @@ func (h *AdminReportsHandler) extractUserID(path, prefix, suffix string) (int, e
 
 // extractCarID extracts car ID from URL path like /admin/cars/123/remove
 func (h *AdminReportsHandler) extractCarID(path, prefix, suffix string) (int, error) {
-	if !strings.HasPrefix(path, prefix) {
-		return 0, fmt.Errorf("invalid path prefix")
+	parts := strings.Split(path, "/")
+	if len(parts) < 2 {
+		return 0, fmt.Errorf("invalid path format")
 	}
-	path = strings.TrimPrefix(path, prefix)
-	if !strings.HasSuffix(path, suffix) {
-		return 0, fmt.Errorf("invalid path suffix")
-	}
-	path = strings.TrimSuffix(path, suffix)
-	id, err := strconv.Atoi(path)
+	
+	idStr := parts[len(parts)-2]
+	
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		return 0, fmt.Errorf("invalid car ID: %w", err)
 	}

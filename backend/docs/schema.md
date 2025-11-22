@@ -41,6 +41,7 @@ erDiagram
         varchar password_hash "Nullable"
         varchar username UK "UNIQUE NOT NULL"
         varchar name "NOT NULL"
+        varchar status "NOT NULL DEFAULT 'active' CHECK IN ('active','banned','suspended')"
         varchar google_id UK "UNIQUE Nullable"
         varchar auth_provider "Nullable (e.g., 'google')"
         timestamp provider_linked_at "Nullable"
@@ -73,7 +74,6 @@ erDiagram
         varchar display_name "NOT NULL"
         varchar about "Nullable"
         text map_link "Nullable"
-        varchar status "NOT NULL DEFAULT 'active' CHECK IN ('active','banned','suspended')"
     }
 
     seller_contacts {
@@ -89,7 +89,6 @@ erDiagram
         varchar province "Nullable"
         int budget_min "Nullable"
         int budget_max "Nullable"
-        varchar status "NOT NULL DEFAULT 'active' CHECK IN ('active','banned','suspended')"
     }
 
     %% --- Car Tables (005) ---
@@ -241,9 +240,9 @@ erDiagram
 
     seller_admin_actions {
         int id PK "SERIAL"
-        int seller_id FK "NOT NULL, REFERENCES sellers(id) ON DELETE CASCADE"
+        int seller_id FK "NOT NULL, REFERENCES sellers(id) ON DELETE CASCADE (Note: Actually user_id)"
         int admin_id FK "NOT NULL, REFERENCES admins(id) ON DELETE CASCADE"
-        varchar action "NOT NULL CHECK IN ('ban','suspend','warn')"
+        varchar action "NOT NULL CHECK IN ('ban','suspend','warn','unban')"
         text notes "Nullable"
         timestamp suspend_until "Nullable"
         timestamp created_at "DEFAULT NOW()"
