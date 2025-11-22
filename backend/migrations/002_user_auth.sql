@@ -99,11 +99,7 @@ CREATE TABLE password_reset_tokens (
 CREATE INDEX idx_reset_token_hash ON password_reset_tokens(token_hash);
 CREATE INDEX idx_reset_user_id ON password_reset_tokens(user_id);
 CREATE INDEX idx_reset_expires_at ON password_reset_tokens(expires_at);
-
--- Only one active (unused) token per user
-CREATE UNIQUE INDEX idx_one_active_reset_token 
-    ON password_reset_tokens(user_id) 
-    WHERE used_at IS NULL;
+CREATE INDEX idx_reset_used_at ON password_reset_tokens(used_at);
 
 -- Cleanup function for expired reset tokens
 CREATE OR REPLACE FUNCTION cleanup_expired_reset_tokens()

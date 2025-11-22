@@ -13,6 +13,7 @@ type User struct {
 	Username     string     `json:"username" db:"username"`
 	Name         string     `json:"name" db:"name"`
 	PasswordHash string     `json:"-" db:"password_hash"`
+	Status       string     `json:"status" db:"status"`
 	GoogleID     *string    `json:"googleId,omitempty" db:"google_id"`
 	AuthProvider *string    `json:"provider,omitempty" db:"auth_provider"`
 	LinkedAt     *time.Time `json:"linkedAt,omitempty" db:"provider_linked_at"`
@@ -343,19 +344,40 @@ func NewPasswordResetTokenRepository(db *sql.DB) *PasswordResetTokenRepository {
 	return &PasswordResetTokenRepository{db: db}
 }
 
-// StoreToken stores a new reset token (invalidates old ones automatically via unique constraint)
+// StoreToken stores a new reset token and invalidates all previous unused tokens for the user
 func (r *PasswordResetTokenRepository) StoreToken(userID int, email, tokenHash string, expiresAt time.Time) error {
-	// Delete any existing unused tokens for this user first
-	deleteQuery := `DELETE FROM password_reset_tokens WHERE user_id = $1 AND used_at IS NULL`
-	_, _ = r.db.Exec(deleteQuery, userID)
+	// Start transaction for atomic operation
+	tx, err := r.db.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	// Invalidate all previous unused tokens for this user by marking them as used
+	_, err = tx.Exec(`
+		UPDATE password_reset_tokens 
+		SET used_at = CURRENT_TIMESTAMP 
+		WHERE user_id = $1 AND used_at IS NULL
+	`, userID)
+	if err != nil {
+		return fmt.Errorf("failed to invalidate old tokens: %w", err)
+	}
 
 	// Insert new token
-	query := `
+	_, err = tx.Exec(`
 		INSERT INTO password_reset_tokens (user_id, email, token_hash, expires_at)
 		VALUES ($1, $2, $3, $4)
-	`
-	_, err := r.db.Exec(query, userID, email, tokenHash, expiresAt)
-	return err
+	`, userID, email, tokenHash, expiresAt)
+	if err != nil {
+		return fmt.Errorf("failed to store token: %w", err)
+	}
+
+	// Commit transaction
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
 }
 
 // ValidateAndUseToken checks if token is valid and marks it as used (atomic operation)
