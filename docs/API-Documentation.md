@@ -39,6 +39,10 @@ CarJai uses dual JWT authentication systems: one for regular users and one for a
 3. Client includes cookie in subsequent requests automatically
 4. Server validates token on protected endpoints
 
+**Supported Methods**:
+- Email/Username + Password
+- Google OAuth (ID token or OAuth flow)
+
 ### Admin Authentication
 
 **Method**: Cookie-based JWT tokens (separate from user tokens)
@@ -53,14 +57,32 @@ CarJai uses dual JWT authentication systems: one for regular users and one for a
 
 ### Google OAuth
 
-**Flow**:
-1. Client initiates OAuth flow
-2. Server redirects to Google authorization page
-3. User authorizes application
-4. Google redirects with authorization code
-5. Server exchanges code for ID token
-6. Server validates ID token and creates/updates user
-7. Server returns JWT token in cookie
+**Two Methods Supported**:
+
+1. **ID Token Sign-in**:
+   - Client gets ID token from Google Identity Services
+   - Client sends ID token to `/api/auth/google/signin`
+   - Server validates token and creates/updates user
+   - Server returns JWT token in cookie
+
+2. **OAuth Flow**:
+   - Client initiates flow via `/api/auth/google/start`
+   - Server redirects to Google authorization page
+   - User authorizes application
+   - Google redirects to `/api/auth/google/callback` with code
+   - Server exchanges code for ID token
+   - Server validates ID token and creates/updates user
+   - Server returns JWT token in cookie
+
+### Password Reset
+
+**How it works**:
+1. User requests reset via `/api/auth/forgot-password` with email
+2. Server sends reset link to email (if email exists)
+3. User clicks link with token
+4. User submits new password via `/api/auth/reset-password` with token
+5. Server validates token and updates password
+6. All user sessions are invalidated (force re-login)
 
 **Alternative**: Direct ID token sign-in is also supported
 
@@ -197,6 +219,7 @@ You can use tools like Swagger UI or Postman to import and test the API.
 
 - **Backend README**: `backend/README.md`
 - **Database Schema**: `backend/docs/schema.md`
+- **Swagger Documentation**: `backend/docs/swagger.yaml`
 - **Project README**: `README.md`
 
 ---
