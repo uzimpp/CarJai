@@ -949,7 +949,7 @@ export default function AdminCarsPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)]">
+        <div className="bg-white rounded-3xl shadow-sm">
           <div className="divide-y divide-gray-200">
             {/* Column Headers - Hidden on mobile, visible on md+ */}
             <div className="hidden md:grid md:grid-cols-[1fr_1fr_1fr_1fr_1fr_80px] gap-(--space-2xs) p-(--space-xs) bg-gray-50 rounded-t-lg">

@@ -111,7 +111,7 @@ export default function AdminDashboard() {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-(--space-m) mb-(--space-l)">
         {/* Pending Reports */}
-        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m)">
+        <div className="bg-white rounded-3xl shadow-sm p-(--space-m)">
           <div className="flex items-center justify-between">
             <div>
               <p className="text--1 text-gray-600 mb-1">Pending Reports</p>
@@ -144,7 +144,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Active Cars */}
-        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m)">
+        <div className="bg-white rounded-3xl shadow-sm p-(--space-m)">
           <div className="flex items-center justify-between">
             <div>
               <p className="text--1 text-gray-600 mb-1">Active Cars</p>
@@ -177,7 +177,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Sold Cars */}
-        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m)">
+        <div className="bg-white rounded-3xl shadow-sm p-(--space-m)">
           <div className="flex items-center justify-between">
             <div>
               <p className="text--1 text-gray-600 mb-1">Sold Cars</p>
@@ -210,7 +210,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Total Users */}
-        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m)">
+        <div className="bg-white rounded-3xl shadow-sm p-(--space-m)">
           <div className="flex items-center justify-between">
             <div>
               <p className="text--1 text-gray-600 mb-1">Total Users</p>
@@ -246,7 +246,7 @@ export default function AdminDashboard() {
       {/* --- Row 1: Activity Chart & User Roles --- */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-(--space-m) mb-(--space-l)">
         {/* Col 1.1: Activity Chart (Line) */}
-        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m) h-[450px]">
+        <div className="bg-white rounded-3xl shadow-sm p-(--space-m)">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-1 font-bold text-gray-900">
               Activity Overview (Last 30 Days)
@@ -265,12 +265,12 @@ export default function AdminDashboard() {
         </div>
 
         {/* Col 1.2: User Roles (Donut) */}
-        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m) h-[450px]">
+        <div className="bg-white rounded-3xl shadow-sm p-(--space-m)">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-1 font-bold text-gray-900">User Roles</h2>
           </div>
           {isLoading ? (
-            <div className="h-96 flex items-center justify-center bg-gray-50 rounded-xl">
+            <div className="h-64 flex items-center justify-center bg-gray-50 rounded-xl">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon"></div>
             </div>
           ) : (
@@ -288,12 +288,12 @@ export default function AdminDashboard() {
       {/* --- Row 2: Top Brands & Car Status --- */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-(--space-m) mb-(--space-l)">
         {/* Col 2.1: Car Status (Donut) */}
-        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m) h-[450px]">
+        <div className="bg-white rounded-3xl shadow-sm p-(--space-m)">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-1 font-bold text-gray-900">Car Status</h2>
           </div>
           {isLoading ? (
-            <div className="h-96 flex items-center justify-center bg-gray-50 rounded-xl">
+            <div className="h-64 flex items-center justify-center bg-gray-50 rounded-xl">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon"></div>
             </div>
           ) : (
@@ -305,12 +305,12 @@ export default function AdminDashboard() {
         </div>
 
         {/* Col 2.2: Top 10 Brands (Bar) */}
-        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m) h-[450px]">
+        <div className="bg-white rounded-3xl shadow-sm p-(--space-m)">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-1 font-bold text-gray-900">Top 10 Brands</h2>
           </div>
           {isLoading ? (
-            <div className="h-96 flex items-center justify-center bg-gray-50 rounded-xl">
+            <div className="h-64 flex items-center justify-center bg-gray-50 rounded-xl">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon"></div>
             </div>
           ) : (
@@ -323,7 +323,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Recent Reports */}
-      <div className="bg-white rounded-3xl shadow-[var(--shadow-md)] p-(--space-m) mt-(--space-l)">
+      <div className="bg-white rounded-3xl shadow-sm p-(--space-m) mt-(--space-l)">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-1 font-bold text-gray-900">Recent Reports</h2>
           <Link
@@ -362,7 +362,7 @@ export default function AdminDashboard() {
                   >
                     {isUserReport ? (
                       <svg
-                        className="w-5 h-5 text-blue-600"
+                        className="w-6 h-6 text-blue-600"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -376,7 +376,7 @@ export default function AdminDashboard() {
                       </svg>
                     ) : (
                       <svg
-                        className="w-5 h-5 text-orange-600"
+                        className="w-6 h-6 text-orange-600"
                         viewBox="0 0 24.00 24.00"
                         fill="none"
                       >

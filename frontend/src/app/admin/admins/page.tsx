@@ -601,7 +601,7 @@ export default function AdminAdminsPage() {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)]">
+        <div className="bg-white rounded-3xl shadow-sm">
           <div className="divide-y divide-gray-200">
             {/* Column Headers */}
             <div className="hidden md:grid md:grid-cols-[80px_1fr_1fr_1fr_1fr_1fr_100px] gap-(--space-2xs) p-(--space-xs) bg-gray-50 rounded-t-lg">

@@ -13,14 +13,14 @@ import {
 const ActivityAreaChart = ({ data }: { data: ChartDataPoint[] }) => {
   if (!data || data.length === 0) {
     return (
-      <div className="h-80 w-full bg-gray-50 rounded-xl p-4 flex items-center justify-center text-gray-500">
+      <div className="h-96 w-full bg-gray-50 rounded-xl p-4 flex items-center justify-center text-gray-500">
         No activity data
       </div>
     );
   }
 
   return (
-    <div className="h-80 w-full bg-gray-50 rounded-xl p-4">
+    <div className="h-96 w-full bg-gray-50 rounded-xl p-4">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart
           data={data}
