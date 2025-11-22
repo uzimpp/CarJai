@@ -113,29 +113,6 @@ func (s *ProfileService) GetSellerByUserID(userID int) (*models.Seller, error) {
 	return seller, nil
 }
 
-func (s *ProfileService) GetSellerStatus(userID int) (string, error) {
-    var status sql.NullString
-    err := s.db.DB.QueryRow("SELECT status FROM sellers WHERE id = $1", userID).Scan(&status)
-    if err != nil {
-        return "", nil
-    }
-    if status.Valid {
-        return status.String, nil
-    }
-    return "", nil
-}
-
-func (s *ProfileService) GetBuyerStatus(userID int) (string, error) {
-    var status sql.NullString
-    err := s.db.DB.QueryRow("SELECT status FROM buyers WHERE id = $1", userID).Scan(&status)
-    if err != nil {
-        return "", nil
-    }
-    if status.Valid {
-        return status.String, nil
-    }
-    return "", nil
-}
 
 // GetSellerContacts retrieves all contacts for a seller
 func (s *ProfileService) GetSellerContacts(sellerID int) ([]models.SellerContact, error) {
@@ -333,6 +310,19 @@ func (s *ProfileService) UpsertSeller(userID int, req models.SellerRequest) (*mo
 		if err := validateContactValue(contact.ContactType, contact.Value); err != nil {
 			return nil, nil, fmt.Errorf("contact %d: %w", i+1, err)
 		}
+	}
+
+	// Check for duplicate contacts (same type + value combination)
+	contactMap := make(map[string]bool)
+	for _, contact := range req.Contacts {
+		// Create a unique key from type and normalized value
+		normalizedValue := strings.ToLower(strings.TrimSpace(contact.Value))
+		key := contact.ContactType + ":" + normalizedValue
+		
+		if contactMap[key] {
+			return nil, nil, fmt.Errorf("duplicate contact found: %s with value '%s' appears more than once", contact.ContactType, contact.Value)
+		}
+		contactMap[key] = true
 	}
 
 	// Start transaction
