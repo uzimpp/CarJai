@@ -340,6 +340,26 @@ docker exec -it carjai-database psql -U carjai_user -d carjai -f /docker-entrypo
 7. Create/update user account
 8. Return JWT token
 
+### Email Service (SMTP)
+
+**Purpose**: Send password reset emails to users
+
+**Integration**:
+- SMTP server configuration in environment variables
+- TLS/STARTTLS support
+- HTML email templates
+
+**Usage**:
+- User requests password reset
+- Server generates secure reset token (JWT)
+- Server sends email with reset link
+- User clicks link and resets password
+- Token expires after 30 minutes
+
+**Rate Limiting**:
+- Maximum 10 reset requests per email per hour
+- Prevents abuse and spam
+
 ### DLT Market Prices
 
 **Purpose**: Price estimation data from Department of Land Transport
