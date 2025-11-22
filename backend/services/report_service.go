@@ -144,8 +144,8 @@ func (s *ReportService) UpdateReportStatus(id int, status string, adminNotes *st
     return nil
 }
 
-// Admin seller actions (audit logged)
-func (s *ReportService) BanSeller(sellerID, adminID int, notes *string) (int, error) {
+// Admin user actions (audit logged)
+func (s *ReportService) BanUser(userID, adminID int, notes *string) (int, error) {
     tx, err := s.db.Begin()
     if err != nil {
         return 0, err
@@ -156,18 +156,8 @@ func (s *ReportService) BanSeller(sellerID, adminID int, notes *string) (int, er
         }
     }()
     
-    // Check if user exists
-    var userExists bool
-    err = tx.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)", sellerID).Scan(&userExists)
-    if err != nil {
-        return 0, fmt.Errorf("failed to check user existence: %w", err)
-    }
-    if !userExists {
-        return 0, fmt.Errorf("user not found")
-    }
-    
     // Update user status to 'banned'
-    result, err := tx.Exec("UPDATE users SET status = 'banned' WHERE id = $1", sellerID)
+    result, err := tx.Exec("UPDATE users SET status = 'banned' WHERE id = $1", userID)
     if err != nil {
         return 0, fmt.Errorf("failed to update user status: %w", err)
     }
@@ -181,13 +171,13 @@ func (s *ReportService) BanSeller(sellerID, adminID int, notes *string) (int, er
     }
     
     // Invalidate all user sessions
-    _, err = tx.Exec("DELETE FROM user_sessions WHERE user_id = $1", sellerID)
+    _, err = tx.Exec("DELETE FROM user_sessions WHERE user_id = $1", userID)
     if err != nil {
         return 0, fmt.Errorf("failed to invalidate user sessions: %w", err)
     }
     
     // Log the admin action
-    id, err := s.repo.LogSellerAdminActionTx(tx, sellerID, adminID, "ban", notes, nil)
+    id, err := s.repo.LogSellerAdminActionTx(tx, userID, adminID, "ban", notes, nil)
     if err != nil {
         return 0, err
     }
@@ -198,7 +188,7 @@ func (s *ReportService) BanSeller(sellerID, adminID int, notes *string) (int, er
     return id, nil
 }
 
-func (s *ReportService) SuspendSeller(sellerID, adminID int, until time.Time, notes *string) (int, error) {
+func (s *ReportService) SuspendUser(userID, adminID int, until time.Time, notes *string) (int, error) {
     tx, err := s.db.Begin()
     if err != nil {
         return 0, err
@@ -209,18 +199,8 @@ func (s *ReportService) SuspendSeller(sellerID, adminID int, until time.Time, no
         }
     }()
     
-    // Check if user exists
-    var userExists bool
-    err = tx.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)", sellerID).Scan(&userExists)
-    if err != nil {
-        return 0, fmt.Errorf("failed to check user existence: %w", err)
-    }
-    if !userExists {
-        return 0, fmt.Errorf("user not found")
-    }
-    
     // Update user status to 'suspended'
-    result, err := tx.Exec("UPDATE users SET status = 'suspended' WHERE id = $1", sellerID)
+    result, err := tx.Exec("UPDATE users SET status = 'suspended' WHERE id = $1", userID)
     if err != nil {
         return 0, fmt.Errorf("failed to update user status: %w", err)
     }
@@ -234,12 +214,12 @@ func (s *ReportService) SuspendSeller(sellerID, adminID int, until time.Time, no
     }
     
     // Invalidate all user sessions
-    _, err = tx.Exec("DELETE FROM user_sessions WHERE user_id = $1", sellerID)
+    _, err = tx.Exec("DELETE FROM user_sessions WHERE user_id = $1", userID)
     if err != nil {
         return 0, fmt.Errorf("failed to invalidate user sessions: %w", err)
     }
     
-    id, err := s.repo.LogSellerAdminActionTx(tx, sellerID, adminID, "suspend", notes, &until)
+    id, err := s.repo.LogSellerAdminActionTx(tx, userID, adminID, "suspend", notes, &until)
     if err != nil {
         return 0, err
     }
@@ -249,7 +229,7 @@ func (s *ReportService) SuspendSeller(sellerID, adminID int, until time.Time, no
     return id, nil
 }
 
-func (s *ReportService) WarnSeller(sellerID, adminID int, notes *string) (int, error) {
+func (s *ReportService) WarnUser(userID, adminID int, notes *string) (int, error) {
     tx, err := s.db.Begin()
     if err != nil {
         return 0, err
@@ -259,7 +239,7 @@ func (s *ReportService) WarnSeller(sellerID, adminID int, notes *string) (int, e
             _ = tx.Rollback()
         }
     }()
-    id, err := s.repo.LogSellerAdminActionTx(tx, sellerID, adminID, "warn", notes, nil)
+    id, err := s.repo.LogSellerAdminActionTx(tx, userID, adminID, "warn", notes, nil)
     if err != nil {
         return 0, err
     }

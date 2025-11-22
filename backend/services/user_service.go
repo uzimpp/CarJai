@@ -701,6 +701,11 @@ func (s *UserService) RequestPasswordReset(email string) error {
 		return fmt.Errorf("email not found")
 	}
 
+	// Don't send reset emails to banned/suspended users (return nil to prevent user enumeration)
+	if user.Status == "banned" || user.Status == "suspended" {
+		return nil
+	}
+
 	// Generate password reset token
 	token, err := utils.GeneratePasswordResetToken(
 		user.ID,
