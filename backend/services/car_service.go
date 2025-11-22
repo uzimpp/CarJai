@@ -508,6 +508,14 @@ func (s *CarService) UpdateCar(carID, userID int, req *models.UpdateCarRequest, 
 		return err
 	}
 
+	// Prevent editing sold cars (unless admin or changing status away from sold)
+	if car.Status == "sold" && !isAdmin {
+		// Only allow status changes away from sold
+		if req.Status == nil || *req.Status == "sold" {
+			return fmt.Errorf("cannot edit car that is marked as sold")
+		}
+	}
+
 	// If trying to change status to "active", run full publish validation
 	if req.Status != nil && *req.Status == "active" && car.Status != "active" {
 		ready, issues := s.ValidatePublish(carID)
@@ -543,6 +551,11 @@ func (s *CarService) AutoSaveDraft(carID, userID int, req *models.UpdateCarReque
 	// Check authorization
 	if err := s.checkCarOwnership(car, userID, false); err != nil {
 		return err
+	}
+
+	// Prevent editing sold cars
+	if car.Status == "sold" {
+		return fmt.Errorf("cannot edit car that is marked as sold")
 	}
 
 	// Forbid editing read-only fields (chassisNumber comes from book upload; status via dedicated endpoint)

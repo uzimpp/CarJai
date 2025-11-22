@@ -691,6 +691,8 @@ type SearchCarsRequest struct {
 	FuelTypeCodes    []string // Fuel type filters (codes like "GASOLINE", "DIESEL")
 	ColorCodes       []string // Color filters (codes like "WHITE", "BLACK", "GRAY")
 	ConditionRating  *int     // Minimum condition rating filter (1-5)
+	SortBy           string   // Sort field: "price", "year", "mileage", "created_at", "condition_rating"
+	SortOrder        string   // Sort order: "asc" or "desc" (default: "desc")
 	Status           string   // Status filter (default: "active")
 	Limit            int      // Results per page (default: 20)
 	Offset           int      // Pagination offset (default: 0)
@@ -799,6 +801,30 @@ func (r *CarRepository) GetActiveCars(req *SearchCarsRequest) ([]Car, int, error
 
 	whereSQL := strings.Join(whereClauses, " AND ")
 
+	// Validate and set sort parameters
+	sortBy := req.SortBy
+	if sortBy == "" {
+		sortBy = "created_at" // Default sort
+	}
+
+	// Validate sort field to prevent SQL injection
+	validSortFields := map[string]string{
+		"price":            "cars.price",
+		"year":             "cars.year",
+		"mileage":          "cars.mileage",
+		"created_at":       "cars.created_at",
+		"condition_rating": "cars.condition_rating",
+	}
+	sortField, ok := validSortFields[sortBy]
+	if !ok {
+		sortField = "cars.created_at" // Default to created_at if invalid
+	}
+
+	sortOrder := req.SortOrder
+	if sortOrder != "asc" && sortOrder != "desc" {
+		sortOrder = "desc" // Default to descending
+	}
+
 	// Count total results (with DISTINCT if joins are used)
 	countQuery := ""
 	joinClause := fuelJoin + colorJoin
@@ -827,8 +853,8 @@ func (r *CarRepository) GetActiveCars(req *SearchCarsRequest) ([]Car, int, error
             cars.status, cars.condition_rating, cars.created_at, cars.updated_at
         FROM cars%s
         WHERE %s
-        ORDER BY cars.created_at DESC
-        LIMIT $%d OFFSET $%d`, selectClause, joinClause, whereSQL, argCounter, argCounter+1)
+        ORDER BY %s %s
+        LIMIT $%d OFFSET $%d`, selectClause, joinClause, whereSQL, sortField, sortOrder, argCounter, argCounter+1)
 
 	args = append(args, req.Limit, req.Offset)
 

@@ -31,14 +31,14 @@ export default function FavoriteButton({
     if (isLoading) return;
 
     setIsLoading(true);
-    
+
     // Optimistic update
     const newFavoriteState = !localFavorited;
     setLocalFavorited(newFavoriteState);
 
     try {
       await favoritesAPI.toggleFavorite(carId, localFavorited);
-      
+
       // Notify parent component
       if (onToggle) {
         onToggle(carId, newFavoriteState);
@@ -47,7 +47,7 @@ export default function FavoriteButton({
       // Revert optimistic update on error
       setLocalFavorited(localFavorited);
       console.error("Failed to toggle favorite:", error);
-      
+
       // You could add a toast notification here
       alert("Failed to update favorite. Please try again.");
     } finally {
@@ -60,10 +60,15 @@ export default function FavoriteButton({
       onClick={handleToggle}
       disabled={isLoading}
       className={`
-        relative p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-md
-        hover:bg-white hover:scale-110 active:scale-95
+        relative
         transition-all duration-200 ease-out
         disabled:opacity-50 disabled:cursor-not-allowed
+        ${
+          localFavorited
+            ? "text-red"
+            : "text-gray-600 hover:text-maroon"
+        }
+        flex items-center justify-center
         ${className}
       `}
       aria-label={localFavorited ? "Remove from favorites" : "Add to favorites"}
@@ -71,25 +76,20 @@ export default function FavoriteButton({
       {/* Heart Icon */}
       <svg
         xmlns="http://www.w3.org/2000/svg"
+        className="w-8 h-8"
         viewBox="0 0 24 24"
-        className={`
-          w-5 h-5 transition-all duration-300 ease-out
-          ${localFavorited 
-            ? "fill-red-500 text-red-500 scale-110" 
-            : "fill-none text-gray-600 hover:text-red-400"
-          }
-          ${isLoading ? "animate-pulse" : ""}
-        `}
-        stroke="currentColor"
-        strokeWidth={2}
       >
-        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+        <path
+          fill={localFavorited ? "currentColor" : "none"}
+          stroke="currentColor"
+          d="M12 10.375a4.375 4.375 0 0 0-8.75 0c0 1.127.159 2.784 1.75 4.375L12 20s5.409-3.659 7-5.25s1.75-3.248 1.75-4.375a4.375 4.375 0 0 0-8.75 0"
+        />
       </svg>
 
       {/* Loading indicator */}
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-3 h-3 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+          <div className="w-3 h-3 border-2 border-red border-t-transparent rounded-full animate-spin" />
         </div>
       )}
     </button>

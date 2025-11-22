@@ -274,6 +274,14 @@ func (h *CarHandler) SearchCars(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Parse sorting
+	if sortBy := query.Get("sortBy"); sortBy != "" {
+		req.SortBy = sortBy
+	}
+	if sortOrder := query.Get("sortOrder"); sortOrder != "" {
+		req.SortOrder = sortOrder
+	}
+
 	// Parse pagination
 	page := 1
 	if pageStr := query.Get("page"); pageStr != "" {

@@ -194,9 +194,7 @@ export default function SettingsPage() {
     <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full">
       {/* Header */}
       <div className="mb-(--space-xl)">
-        <h1 className="text-5 font-bold text-black mb-(--space-2xs)">
-          Settings
-        </h1>
+        <h1 className="text-3 bold">Settings</h1>
         {/* Quick section nav (anchors) */}
         <nav className="mb-(--space-l) flex flex-wrap gap-(--space-s) text--1 text-black">
           <Link

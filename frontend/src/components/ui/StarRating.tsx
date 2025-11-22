@@ -41,7 +41,7 @@ export default function StarRating({
             title={labels?.[star - 1]}
           >
             {active ? (
-              <StarSolid className="w-8 h-8 text-amber-500" />
+              <StarSolid className="w-8 h-8 text-yellow-400" />
             ) : (
               <StarOutline className="w-8 h-8 text-gray-300" />
             )}

@@ -15,4 +15,6 @@ export interface SearchCarsParams {
   fuelTypes?: string[]; // Display codes for filtering (e.g., ["GASOLINE", "DIESEL"])
   colors?: string[]; // Display codes for filtering (e.g., ["WHITE", "BLACK"])
   conditionRating?: number; // Minimum condition rating filter (1-5)
+  sortBy?: string; // Sort field: "price", "year", "mileage", "created_at", "condition_rating"
+  sortOrder?: "asc" | "desc"; // Sort order
 }

@@ -209,7 +209,7 @@ export default function SellerPage() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-(--space-m)">
                   {cars.map((car) => (
-                    <CarCard key={car.id} car={car} variant="seller" />
+                    <CarCard key={car.id} car={car} />
                   ))}
                 </div>
               )}

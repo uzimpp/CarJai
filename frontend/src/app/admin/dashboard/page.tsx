@@ -125,9 +125,9 @@ export default function AdminDashboard() {
                 View all →
               </Link>
             </div>
-            <div className="p-3 bg-orange-100 rounded-full">
+            <div className="p-3 bg-rose-100 rounded-full">
               <svg
-                className="w-8 h-8 text-orange-600"
+                className="w-8 h-8 text-rose-600"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -357,7 +357,7 @@ export default function AdminDashboard() {
                 >
                   <div
                     className={`p-2 rounded-full flex-shrink-0 ${
-                      isUserReport ? "bg-red-100" : "bg-orange-100"
+                      isUserReport ? "bg-red-100" : "bg-rose-100"
                     }`}
                   >
                     {isUserReport ? (
@@ -376,7 +376,7 @@ export default function AdminDashboard() {
                       </svg>
                     ) : (
                       <svg
-                        className="w-5 h-5 text-orange-600"
+                        className="w-5 h-5 text-rose-600"
                         viewBox="0 0 24.00 24.00"
                         fill="none"
                       >
@@ -400,7 +400,7 @@ export default function AdminDashboard() {
                       <span
                         className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                           report.status === "pending"
-                            ? "bg-orange-100 text-orange-800"
+                            ? "bg-rose-100 text-rose-800"
                             : "bg-gray-100 text-gray-800"
                         }`}
                       >

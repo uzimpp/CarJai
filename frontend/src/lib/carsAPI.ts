@@ -64,6 +64,12 @@ export const carsAPI = {
     if (params.conditionRating !== undefined) {
       searchParams.append("conditionRating", params.conditionRating.toString());
     }
+    if (params.sortBy) {
+      searchParams.append("sortBy", params.sortBy);
+    }
+    if (params.sortOrder) {
+      searchParams.append("sortOrder", params.sortOrder);
+    }
 
     const queryString = searchParams.toString();
     const endpoint = `/api/cars/search${queryString ? `?${queryString}` : ""}`;

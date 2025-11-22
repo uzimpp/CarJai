@@ -7,11 +7,13 @@ import { carsAPI } from "@/lib/carsAPI";
 import Link from "next/link";
 import { CarListing } from "@/types/car";
 import CarCard from "@/components/car/CarCard";
+import { useToast } from "@/components/ui/Toast";
 
 export default function MyListingsPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading, roles, profiles, validateSession } =
     useUserAuth();
+  const { showToast, ToastContainer } = useToast();
   const [listings, setListings] = useState<CarListing[]>([]);
   const [isLoadingListings, setIsLoadingListings] = useState(true);
   const [filter, setFilter] = useState<"all" | "draft" | "active" | "sold">(
@@ -79,14 +81,20 @@ export default function MyListingsPage() {
             listing.id === carId ? { ...listing, status: "active" } : listing
           )
         );
-        alert("Listing published successfully!");
+        showToast("Listing published successfully!", "success");
       } else {
-        alert(result.message || "Failed to publish listing");
+        // Check if result.message contains validation errors
+        const errorMessage = result.message || "Failed to publish listing";
+        if (errorMessage.includes("Cannot publish car:")) {
+          showToast(errorMessage, "error", 8000);
+        } else {
+          showToast(errorMessage, "error");
+        }
       }
     } catch (err) {
-      alert(
-        err instanceof Error ? err.message : "An unexpected error occurred"
-      );
+      const errorMessage =
+        err instanceof Error ? err.message : "An unexpected error occurred";
+      showToast(errorMessage, "error");
     }
   };
 
@@ -100,14 +108,35 @@ export default function MyListingsPage() {
             listing.id === carId ? { ...listing, status: "draft" } : listing
           )
         );
-        alert("Listing unpublished successfully!");
+        showToast("Listing unpublished successfully!", "success");
       } else {
-        alert(result.message || "Failed to unpublish listing");
+        showToast(result.message || "Failed to unpublish listing", "error");
       }
     } catch (err) {
-      alert(
-        err instanceof Error ? err.message : "An unexpected error occurred"
-      );
+      const errorMessage =
+        err instanceof Error ? err.message : "An unexpected error occurred";
+      showToast(errorMessage, "error");
+    }
+  };
+
+  const handleMarkAsSold = async (carId: number) => {
+    try {
+      const result = await carsAPI.updateStatus(carId, "sold");
+
+      if (result.success) {
+        setListings((prev) =>
+          prev.map((listing) =>
+            listing.id === carId ? { ...listing, status: "sold" } : listing
+          )
+        );
+        showToast("Listing marked as sold successfully!", "success");
+      } else {
+        showToast(result.message || "Failed to mark listing as sold", "error");
+      }
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "An unexpected error occurred";
+      showToast(errorMessage, "error");
     }
   };
 
@@ -119,14 +148,14 @@ export default function MyListingsPage() {
 
       if (result.success) {
         setListings((prev) => prev.filter((listing) => listing.id !== carId));
-        alert("Listing deleted successfully!");
+        showToast("Listing deleted successfully!", "success");
       } else {
-        alert(result.message || "Failed to delete listing");
+        showToast(result.message || "Failed to delete listing", "error");
       }
     } catch (err) {
-      alert(
-        err instanceof Error ? err.message : "An unexpected error occurred"
-      );
+      const errorMessage =
+        err instanceof Error ? err.message : "An unexpected error occurred";
+      showToast(errorMessage, "error");
     }
   };
 
@@ -177,8 +206,10 @@ export default function MyListingsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-(--space-m) mb-(--space-l)">
         <button
           type="button"
-          className={`rounded-3xl shadow-[var(--shadow-md)] p-(--space-s) transition-colors ${
-            filter === "all" ? "bg-blue-950 text-white" : "bg-white text-black"
+          className={`rounded-3xl shadow-sm p-(--space-s) transition-colors ${
+            filter === "all"
+              ? "bg-purple-950 text-white"
+              : "bg-white text-black"
           }`}
           onClick={() => setFilter("all")}
         >
@@ -201,12 +232,12 @@ export default function MyListingsPage() {
             </div>
             <div
               className={`p-3 rounded-full ${
-                filter === "all" ? "bg-blue-500/90" : "bg-blue-100"
+                filter === "all" ? "bg-purple-500/90" : "bg-purple-100"
               }`}
             >
               <svg
                 className={`w-6 h-6 ${
-                  filter === "all" ? "text-white" : "text-blue-600"
+                  filter === "all" ? "text-white" : "text-purple-600"
                 }`}
                 fill="none"
                 stroke="currentColor"
@@ -225,7 +256,7 @@ export default function MyListingsPage() {
 
         <button
           type="button"
-          className={`rounded-3xl shadow-[var(--shadow-md)] p-(--space-s) transition-colors ${
+          className={`rounded-3xl shadow-sm p-(--space-s) transition-colors ${
             filter === "active"
               ? "bg-green-950 text-white"
               : "bg-white text-black"
@@ -275,7 +306,7 @@ export default function MyListingsPage() {
 
         <button
           type="button"
-          className={`rounded-3xl shadow-[var(--shadow-md)] p-(--space-s) transition-colors ${
+          className={`rounded-3xl shadow-sm p-(--space-s) transition-colors ${
             filter === "draft"
               ? "bg-orange-950 text-white"
               : "bg-white text-black"
@@ -325,10 +356,8 @@ export default function MyListingsPage() {
 
         <button
           type="button"
-          className={`rounded-3xl shadow-[var(--shadow-md)] p-(--space-s) transition-colors ${
-            filter === "sold"
-              ? "bg-purple-950 text-white"
-              : "bg-white text-black"
+          className={`rounded-3xl shadow-sm p-(--space-s) transition-colors ${
+            filter === "sold" ? "bg-blue-950 text-white" : "bg-white text-black"
           }`}
           onClick={() => setFilter("sold")}
         >
@@ -351,12 +380,12 @@ export default function MyListingsPage() {
             </div>
             <div
               className={`p-3 rounded-full ${
-                filter === "sold" ? "bg-purple-500/90" : "bg-purple-100"
+                filter === "sold" ? "bg-blue-500/90" : "bg-blue-100"
               }`}
             >
               <svg
                 className={`w-6 h-6 ${
-                  filter === "sold" ? "text-white" : "text-purple-600"
+                  filter === "sold" ? "text-white" : "text-blue-600"
                 }`}
                 fill="none"
                 stroke="currentColor"
@@ -376,7 +405,7 @@ export default function MyListingsPage() {
 
       {/* Listings Grid */}
       {isLoadingListings ? (
-        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)]">
+        <div className="bg-white rounded-3xl shadow-sm">
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon mx-auto mb-4"></div>
@@ -385,7 +414,7 @@ export default function MyListingsPage() {
           </div>
         </div>
       ) : filteredListings.length === 0 ? (
-        <div className="bg-white rounded-3xl shadow-[var(--shadow-md)]">
+        <div className="bg-white rounded-3xl shadow-sm">
           <div className="text-center py-20">
             <svg
               className="w-16 h-16 text-gray-300 mx-auto mb-4"
@@ -427,14 +456,17 @@ export default function MyListingsPage() {
               key={listing.id}
               car={listing}
               variant="listing"
-              showActions
-              onDelete={(id) => handleDelete(id)}
-              onPublish={(id) => handlePublish(id)}
-              onUnpublish={(id) => handleUnpublish(id)}
+              actions={{
+                onDelete: (id) => handleDelete(id),
+                onPublish: (id) => handlePublish(id),
+                onUnpublish: (id) => handleUnpublish(id),
+                onMarkAsSold: (id) => handleMarkAsSold(id),
+              }}
             />
           ))}
         </div>
       )}
+      {ToastContainer}
     </div>
   );
 }
