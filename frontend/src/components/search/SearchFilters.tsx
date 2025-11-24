@@ -131,7 +131,7 @@ export default function SearchFilters({
   const hasActiveFilters = Object.keys(filters).length > 0;
 
   return (
-    <div className={`flex flex-col w-[385px] ${className}`} style={style}>
+    <div className={`flex flex-col w-80 ${className}`} style={style}>
       <div className="bg-white rounded-3xl shadow-sm flex flex-col h-full overflow-hidden max-h-full">
         <div className="flex-1 overflow-y-auto pr-2">
           <form onSubmit={onSearchSubmit} className="p-(--space-s-m)">
@@ -140,7 +140,7 @@ export default function SearchFilters({
               <SearchInputField
                 value={searchInput}
                 onChange={onSearchInputChange}
-                placeholder="Search cars, brands, models..."
+                placeholder="Search cars ..."
                 className="bg-gray-100"
               />
             </div>
