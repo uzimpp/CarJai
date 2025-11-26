@@ -59,7 +59,7 @@ export default function RangeInput({
     if (document.activeElement !== minInputRef.current) {
       setMinInput(formatNumber(minValue));
     }
-  }, [minValue]);
+  }, [minValue, minInput]);
 
   useEffect(() => {
     if (document.activeElement !== maxInputRef.current) {
@@ -68,7 +68,7 @@ export default function RangeInput({
         setMaxInput(formatNumber(maxValue));
       }
     }
-  }, [maxValue]);
+  }, [maxValue, maxInput]);
 
   const handleMinChange = (value: number | undefined) => {
     let validMin: number | undefined = undefined;

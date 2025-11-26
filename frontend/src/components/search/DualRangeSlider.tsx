@@ -27,19 +27,55 @@ export default function DualRangeSlider({
   const currentMin = minValue ?? min;
   const currentMax = maxValue ?? max;
   const [values, setValues] = useState([currentMin, currentMax]);
+  const [previousValues, setPreviousValues] = useState([
+    currentMin,
+    currentMax,
+  ]);
 
   useEffect(() => {
     setValues([currentMin, currentMax]);
+    setPreviousValues([currentMin, currentMax]);
   }, [currentMin, currentMax]);
 
   const handleValueChange = (newValues: number[]) => {
     setValues(newValues);
     const newMin = newValues[0];
     const newMax = newValues[1];
-    // Always pass the actual values - don't convert to undefined just because they equal min/max
-    // The parent component can decide if it wants to filter on these values
-    onMinChange(newMin);
-    onMaxChange(newMax);
+    const prevMin = previousValues[0];
+    const prevMax = previousValues[1];
+
+    // Only call onMinChange if the min value actually changed
+    // This prevents setting minYear filter when user only moves max slider
+    if (newMin !== prevMin) {
+      onMinChange(newMin);
+    }
+
+    // Only call onMaxChange if the max value actually changed
+    // This prevents setting maxYear filter when user only moves min slider
+    if (newMax !== prevMax) {
+      onMaxChange(newMax);
+    }
+
+    setPreviousValues(newValues);
+  };
+
+  const handleValueCommit = (newValues: number[]) => {
+    const newMin = newValues[0];
+    const newMax = newValues[1];
+    const prevMin = previousValues[0];
+    const prevMax = previousValues[1];
+
+    // On commit, ensure filters are set if values changed
+    // This handles the case where user moves a thumb and releases it
+    if (newMin !== prevMin) {
+      onMinChange(newMin);
+    }
+
+    if (newMax !== prevMax) {
+      onMaxChange(newMax);
+    }
+
+    setPreviousValues(newValues);
   };
 
   return (
@@ -48,6 +84,7 @@ export default function DualRangeSlider({
         className="relative flex items-center select-none touch-none w-full h-5"
         value={values}
         onValueChange={handleValueChange}
+        onValueCommit={handleValueCommit}
         min={min}
         max={max}
         step={step}

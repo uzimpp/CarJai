@@ -207,8 +207,8 @@ export default function SearchFilters({
       <div className="bg-white rounded-3xl shadow-sm flex flex-col overflow-hidden h-full">
         <div
           ref={scrollContainerRef}
-          className="flex-1 overflow-y-auto pr-2 custom-scrollbar min-h-0"
-          onScroll={(e) => {
+          className="flex-1 overflow-y-auto pr-2 min-h-0"
+          onScroll={() => {
             // Update scroll position ref on manual scroll
             if (scrollContainerRef.current) {
               scrollPositionRef.current = scrollContainerRef.current.scrollTop;
@@ -252,12 +252,16 @@ export default function SearchFilters({
                   maxValue={filters.maxPrice}
                   onRangeChange={(min, max) => {
                     const nextFilters = { ...filters };
-                    min === undefined
-                      ? delete nextFilters.minPrice
-                      : (nextFilters.minPrice = min);
-                    max === undefined
-                      ? delete nextFilters.maxPrice
-                      : (nextFilters.maxPrice = max);
+                    if (min === undefined) {
+                      delete nextFilters.minPrice;
+                    } else {
+                      nextFilters.minPrice = min;
+                    }
+                    if (max === undefined) {
+                      delete nextFilters.maxPrice;
+                    } else {
+                      nextFilters.maxPrice = max;
+                    }
                     handleFiltersChangeWithScrollPreservation(nextFilters);
                   }}
                   step={1}
@@ -275,13 +279,13 @@ export default function SearchFilters({
               {/* Year Range */}
               <CollapsibleFilterSection label="Year Range">
                 <DualRangeSlider
-                  min={1990}
+                  min={2000}
                   max={new Date().getFullYear()}
                   minValue={filters.minYear}
                   maxValue={filters.maxYear}
                   onMinChange={(value) => {
-                    // Always set the value, even if it equals the minimum (1990)
-                    // This allows filtering from 1990 onwards
+                    // Always set the value, even if it equals the minimum (2000)
+                    // This allows filtering from 2000 onwards
                     handleChange("minYear", value);
                   }}
                   onMaxChange={(value) => {
@@ -306,12 +310,16 @@ export default function SearchFilters({
                   maxValue={filters.maxMileage}
                   onRangeChange={(min, max) => {
                     const nextFilters = { ...filters };
-                    min === undefined
-                      ? delete nextFilters.minMileage
-                      : (nextFilters.minMileage = min);
-                    max === undefined
-                      ? delete nextFilters.maxMileage
-                      : (nextFilters.maxMileage = max);
+                    if (min === undefined) {
+                      delete nextFilters.minMileage;
+                    } else {
+                      nextFilters.minMileage = min;
+                    }
+                    if (max === undefined) {
+                      delete nextFilters.maxMileage;
+                    } else {
+                      nextFilters.maxMileage = max;
+                    }
                     handleFiltersChangeWithScrollPreservation(nextFilters);
                   }}
                   predefinedRanges={[
