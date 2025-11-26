@@ -1,5 +1,7 @@
 "use client";
 
+import Modal from "@/components/ui/Modal";
+
 interface DuplicateConflictModalProps {
   isOpen: boolean;
   onRedirect: () => void;
@@ -9,34 +11,31 @@ interface DuplicateConflictModalProps {
 export default function DuplicateConflictModal({
   isOpen,
   onRedirect,
-  onCreateNew
+  onCreateNew,
 }: DuplicateConflictModalProps) {
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-        <h2 className="text-xl font-semibold mb-4">Existing Draft Found</h2>
-        <p className="text-gray-600 mb-6">
-          You already have a draft for this vehicle. Would you like to restore
-          and continue with your existing draft?
-        </p>
-
-        <div className="flex justify-end space-x-3">
+    <Modal
+      isOpen={isOpen}
+      onClose={onCreateNew}
+      title="Existing Draft Found"
+      description="You already have a draft for this vehicle. Would you like to restore and continue with your existing draft?"
+      size="md"
+      closeOnBackdrop={false}
+    >
+      <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
           <button
             onClick={onCreateNew}
-            className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+          className="px-4 py-2 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
             No, Start Fresh
           </button>
           <button
             onClick={onRedirect}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          className="px-4 py-2 bg-maroon text-white font-medium rounded-lg hover:bg-red transition-colors"
           >
             Yes, Restore
           </button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
