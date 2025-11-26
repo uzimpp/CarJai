@@ -158,7 +158,7 @@ export default function ConditionalLayout({
       </header>
 
       <main
-        className="flex-1 flex justify-center w-full rounded-b-4xl bg-white z-50 overflow-hidden"
+        className="flex-1 flex justify-center w-full rounded-b-4xl bg-white z-50"
         style={{
           paddingTop: `${
             shouldShowStepIndicator || shouldShowNavbar

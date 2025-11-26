@@ -377,14 +377,28 @@ function BrowsePageContent() {
         'header.fixed, header[class*="fixed"]'
       );
       if (headerElement) {
-        const height = headerElement.getBoundingClientRect().height;
+        // Get the computed pixel value of --space-s-m CSS variable
+        // Create a temporary element to get the computed value (handles clamp() values)
+        const tempEl = document.createElement("div");
+        tempEl.style.paddingTop = "var(--space-s-m)";
+        tempEl.style.position = "absolute";
+        tempEl.style.visibility = "hidden";
+        document.body.appendChild(tempEl);
+        const computedSpace =
+          parseFloat(getComputedStyle(tempEl).paddingTop) || 32; // Fallback to 32 if parsing fails
+        document.body.removeChild(tempEl);
+
+        const height =
+          headerElement.getBoundingClientRect().height + computedSpace;
         setHeaderHeight(height);
-        setAvailableHeight(`calc(100dvh - ${height}px)`);
+        setAvailableHeight(`calc(100dvh - ${height}px - var(--space-s-m))`);
       } else {
         // Fallback if header not found
         const fallbackHeight = 80;
         setHeaderHeight(fallbackHeight);
-        setAvailableHeight(`calc(100dvh - ${fallbackHeight}px)`);
+        setAvailableHeight(
+          `calc(100dvh - ${fallbackHeight}px - var(--space-s-m))`
+        );
       }
     };
 
@@ -507,12 +521,14 @@ function BrowsePageContent() {
         };
 
         // Add filters
-        if (filters.minPrice) params.minPrice = filters.minPrice;
-        if (filters.maxPrice) params.maxPrice = filters.maxPrice;
-        if (filters.minYear) params.minYear = filters.minYear;
-        if (filters.maxYear) params.maxYear = filters.maxYear;
-        if (filters.minMileage) params.minMileage = filters.minMileage;
-        if (filters.maxMileage) params.maxMileage = filters.maxMileage;
+        if (filters.minPrice !== undefined) params.minPrice = filters.minPrice;
+        if (filters.maxPrice !== undefined) params.maxPrice = filters.maxPrice;
+        if (filters.minYear !== undefined) params.minYear = filters.minYear;
+        if (filters.maxYear !== undefined) params.maxYear = filters.maxYear;
+        if (filters.minMileage !== undefined)
+          params.minMileage = filters.minMileage;
+        if (filters.maxMileage !== undefined)
+          params.maxMileage = filters.maxMileage;
         if (filters.bodyType && filters.bodyType.length > 0)
           params.bodyType = filters.bodyType;
         if (filters.transmission) params.transmission = filters.transmission;
@@ -800,7 +816,7 @@ function BrowsePageContent() {
   };
 
   return (
-    <div className="relative max-w-[1536px] mx-auto w-full">
+    <div className="relative max-w-[1536px] mx-auto w-full min-h-screen">
       {/* Mobile Filters Bottom Sheet - Half page overlay */}
       {isMobileFiltersOpen && (
         <>
@@ -877,13 +893,17 @@ function BrowsePageContent() {
         </>
       )}
 
-      <div className="max-w-[1536px] mx-auto w-full p-(--space-s-m) ">
-        <div className="flex flex-row gap-(--space-s-m)">
+      <div className="flex flex-col p-(--space-s-m) gap-(--space-xl-2xl)">
+        <div className="flex flex-row gap-(--space-s-m) items-start">
           {/* Filters Sidebar */}
           <div
-            className={`sticky self-start transition-all duration-300 ease-in-out hidden ${
+            className={`sticky transition-all duration-300 ease-in-out hidden ${
               isFiltersOpen ? "lg:block" : "lg:hidden"
             }`}
+            style={{
+              top: `calc(${headerHeight}px)`,
+              alignSelf: "flex-start",
+            }}
           >
             <SearchFilters
               filters={filters}
@@ -916,7 +936,7 @@ function BrowsePageContent() {
           </div>
 
           {/* Results */}
-          <div className="flex-1 mt-(--space-m) min-w-0 flex flex-col">
+          <div className="flex-1 min-w-0 flex flex-col">
             {/* Active Filters Bar */}
             {activeFilters.length > 0 && (
               <div className="mb-6 flex flex-wrap items-center gap-2 p-4 rounded-lg border border-gray-200 w-full">
@@ -952,7 +972,7 @@ function BrowsePageContent() {
               </div>
             )}
             {/* Results Header */}
-            <div className="mb-6 flex justify-between items-center w-full">
+            <div className="mb-6 flex justify-between items-center w-full ">
               <div className="flex gap-4 items-baseline">
                 <h2 className="text-2 font-bold">Results</h2>
                 {/* <p className="text-gray-600">
@@ -1073,7 +1093,133 @@ function BrowsePageContent() {
             )}
           </div>
         </div>
-        {/* <div className="h-300 bg-red-500 opacity-15"></div> */}
+
+        {/* Promotional Section - CarJai Features */}
+        <div className="bg-black rounded-3xl shadow-xl p-(--space-xl)">
+          <div className="flex flex-col items-center text-center mx-auto gap-(--space-l)">
+            <div className="space-y-(--space-2xs)">
+              <h2 className="text-4 font-bold text-white line-height-12">
+                Why Choose CarJai?
+              </h2>
+              <p className="text-1 text-white/70">
+                Everything you need to buy or sell your car with confidence
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-(--space-m) max-w-[1400px] mx-auto">
+              {/* Card 1: Quality & Inspection */}
+              <div className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 p-(--space-m) border border-gray-100 flex flex-col">
+                <div className="flex justify-center mb-4">
+                  <div className="w-14 h-14 bg-maroon rounded-full flex items-center justify-center shadow-md">
+                    <svg
+                      className="w-7 h-7 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-3 text-center">
+                  Quality You Love
+                </h3>
+                <p className="text-sm text-gray-600 mb-4 flex-grow text-center leading-relaxed">
+                  Every car comes with inspection certificates and quality
+                  verification for complete transparency
+                </p>
+              </div>
+
+              {/* Card 2: Price Transparency */}
+              <div className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 p-(--space-m) border border-gray-100 flex flex-col">
+                <div className="flex justify-center mb-4">
+                  <div className="w-14 h-14 bg-maroon rounded-full flex items-center justify-center shadow-md">
+                    <svg
+                      className="w-7 h-7 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-3 text-center">
+                  Fair Pricing
+                </h3>
+                <p className="text-sm text-gray-600 mb-4 flex-grow text-center leading-relaxed">
+                  Automatic price estimation based on DLT market data ensures
+                  fair and transparent pricing
+                </p>
+              </div>
+
+              {/* Card 3: Trust & Safety */}
+              <div className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 p-(--space-m) border border-gray-100 flex flex-col">
+                <div className="flex justify-center mb-4">
+                  <div className="w-14 h-14 bg-maroon rounded-full flex items-center justify-center shadow-md">
+                    <svg
+                      className="w-7 h-7 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-3 text-center">
+                  Trust & Safety
+                </h3>
+                <p className="text-sm text-gray-600 mb-4 flex-grow text-center leading-relaxed">
+                  All sellers are verified with ID and document checks, plus a
+                  reporting system for your safety
+                </p>
+              </div>
+
+              {/* Card 4: Easy Search */}
+              <div className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 p-(--space-m) border border-gray-100 flex flex-col">
+                <div className="flex justify-center mb-4">
+                  <div className="w-14 h-14 bg-maroon rounded-full flex items-center justify-center shadow-md">
+                    <svg
+                      className="w-7 h-7 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-3 text-center">
+                  Easy Search
+                </h3>
+                <p className="text-sm text-gray-600 mb-4 flex-grow text-center leading-relaxed">
+                  Powerful search and filter tools help you find the perfect car
+                  quickly
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

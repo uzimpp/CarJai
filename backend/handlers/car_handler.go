@@ -237,6 +237,18 @@ func (h *CarHandler) SearchCars(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Parse mileage filters
+	if minMileageStr := query.Get("minMileage"); minMileageStr != "" {
+		if minMileage, err := strconv.Atoi(minMileageStr); err == nil {
+			req.MinMileage = &minMileage
+		}
+	}
+	if maxMileageStr := query.Get("maxMileage"); maxMileageStr != "" {
+		if maxMileage, err := strconv.Atoi(maxMileageStr); err == nil {
+			req.MaxMileage = &maxMileage
+		}
+	}
+
 	// Parse province
 	if provinceStr := query.Get("provinceId"); provinceStr != "" {
 		if provinceID, err := strconv.Atoi(provinceStr); err == nil {

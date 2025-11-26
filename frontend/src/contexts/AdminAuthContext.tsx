@@ -86,7 +86,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         setIpWhitelist([]);
         setIsAuthenticated(false);
       }
-    } catch (error) {
+    } catch {
       setAdminUser(null);
       setAdminSession(null);
       setIpWhitelist([]);

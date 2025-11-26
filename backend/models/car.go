@@ -708,6 +708,8 @@ type SearchCarsRequest struct {
 	ProvinceID       *int     // Province filter
 	MinYear          *int     // Minimum year filter
 	MaxYear          *int     // Maximum year filter
+	MinMileage       *int     // Minimum mileage filter
+	MaxMileage       *int     // Maximum mileage filter
 	BodyTypeCodes    []string // Body type filters (codes like "PICKUP", "SUV")
 	TransmissionCode *string  // Transmission filter (code like "MANUAL", "AT")
 	DrivetrainCode   *string  // Drivetrain filter (code like "FWD", "AWD", "4WD")
@@ -755,6 +757,19 @@ func (r *CarRepository) GetActiveCars(req *SearchCarsRequest) ([]Car, int, error
 	if req.MaxYear != nil {
 		whereClauses = append(whereClauses, fmt.Sprintf("year <= $%d", argCounter))
 		args = append(args, *req.MaxYear)
+		argCounter++
+	}
+
+	// Mileage filters
+	if req.MinMileage != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("cars.mileage >= $%d", argCounter))
+		args = append(args, *req.MinMileage)
+		argCounter++
+	}
+
+	if req.MaxMileage != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("cars.mileage <= $%d", argCounter))
+		args = append(args, *req.MaxMileage)
 		argCounter++
 	}
 
