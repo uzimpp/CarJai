@@ -66,44 +66,27 @@ export default function HistoryPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full">
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-maroon mx-auto"></div>
+            <p className="mt-4 text-0 text-gray-600 font-medium">
+              Loading viewing history...
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-red-600 mb-4">Error</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <button
-            onClick={fetchRecentViews}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="py-(--space-xl)">
-      <div className="max-w-[1200px] mx-auto px-(--space-m)">
-        <div className="mb-(--space-l)">
-          <h1 className="text-3 bold">Viewing History</h1>
-          <p className="text-0 text-gray-600">
-            Cars you&apos;ve recently viewed
-          </p>
-        </div>
-
-        {recentViews.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-gray-400 mb-4">
+      <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full">
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center max-w-md">
+            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg
-                className="mx-auto h-24 w-24"
+                className="w-10 h-10 text-red-600"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -111,38 +94,77 @@ export default function HistoryPage() {
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeWidth={1}
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1}
-                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                  strokeWidth={2}
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No viewing history
-            </h3>
-            <p className="text-gray-500 mb-6">
-              Start browsing cars to see your viewing history here.
-            </p>
+            <h2 className="text-3 font-bold text-gray-900 mb-2">Error</h2>
+            <p className="text-0 text-gray-600 mb-6">{error}</p>
             <button
-              onClick={() => router.push("/browse")}
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+              onClick={fetchRecentViews}
+              className="px-(--space-l) py-(--space-s) bg-maroon hover:bg-red text-white font-medium rounded-full transition-all shadow-lg hover:shadow-xl"
             >
-              Browse Cars
+              Try Again
             </button>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-(--space-m)">
-            {recentViews.map((car) => (
-              <CarCard key={`rv-${car.id}`} car={car} />
-            ))}
-          </div>
-        )}
+        </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full">
+      <div className="mb-(--space-xl)">
+        <h1 className="text-4 font-bold text-gray-900 mb-(--space-2xs)">
+          Viewing History
+        </h1>
+        <p className="text-0 text-gray-600">Cars you&apos;ve recently viewed</p>
+      </div>
+
+      {recentViews.length === 0 ? (
+        <div className="text-center py-20">
+          <div className="inline-flex items-center justify-center w-24 h-24 bg-gray-100 rounded-full mb-6">
+            <svg
+              className="w-12 h-12 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+              />
+            </svg>
+          </div>
+          <h3 className="text-2 font-bold text-gray-900 mb-2">
+            No viewing history
+          </h3>
+          <p className="text-0 text-gray-600 mb-6 max-w-md mx-auto">
+            Start browsing cars to see your viewing history here.
+          </p>
+          <button
+            onClick={() => router.push("/browse")}
+            className="px-(--space-l) py-(--space-s) bg-maroon hover:bg-red text-white font-medium rounded-full transition-all shadow-lg hover:shadow-xl hover:scale-105"
+          >
+            Browse Cars
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-(--space-m)">
+          {recentViews.map((car) => (
+            <CarCard key={`rv-${car.id}`} car={car} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
