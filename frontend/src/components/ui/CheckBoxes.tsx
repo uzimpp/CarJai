@@ -1,5 +1,7 @@
 import { useId } from "react";
 import { ReactNode } from "react";
+import * as Checkbox from "@radix-ui/react-checkbox";
+import { CheckIcon } from "@heroicons/react/24/outline";
 
 export interface CheckOption<T extends string | number> {
   value: T;
@@ -94,9 +96,9 @@ export function CheckBoxes<T extends string | number>({
             // Icon layout (grid with icon above label)
             if (hasIcons && option.icon) {
               return (
-                <label
+                <button
                   key={String(option.value)}
-                  htmlFor={id}
+                  type="button"
                   onClick={(e) => {
                     // Prevent form submission and scroll behavior for icon selectors
                     e.preventDefault();
@@ -105,11 +107,20 @@ export function CheckBoxes<T extends string | number>({
                       toggle(option.value);
                     }
                   }}
-                  className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all cursor-pointer ${
+                  onFocus={(e) => {
+                    // Prevent scroll when button receives focus
+                    const target = e.target as HTMLElement;
+                    if (target && typeof target.scrollIntoView === "function") {
+                      target.scrollIntoView = () => {};
+                    }
+                  }}
+                  className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all duration-200 cursor-pointer ${
                     checked
-                      ? "border-maroon bg-maroon/10 shadow-sm"
-                      : "border-gray-200 bg-white hover:border-gray-300"
+                      ? "border-maroon bg-maroon/10 shadow-sm scale-[1.02]"
+                      : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm"
                   } ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                  aria-pressed={checked}
+                  aria-label={option.label}
                 >
                   <input
                     type="checkbox"
@@ -118,42 +129,27 @@ export function CheckBoxes<T extends string | number>({
                     value={String(option.value)}
                     checked={checked}
                     disabled={isDisabled}
-                    onChange={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      if (!isDisabled) {
-                        toggle(option.value);
-                      }
-                    }}
-                    onFocus={(e) => {
-                      // Prevent scroll when input receives focus
-                      const target = e.target as HTMLElement;
-                      if (
-                        target &&
-                        typeof target.scrollIntoView === "function"
-                      ) {
-                        target.scrollIntoView = () => {};
-                      }
-                      // Also blur to prevent focus
-                      target.blur();
+                    onChange={() => {
+                      // Handled by button onClick
                     }}
                     className="sr-only"
+                    tabIndex={-1}
                   />
                   <div
-                    className={`${
+                    className={`transition-colors duration-200 ${
                       checked ? "text-maroon" : "text-gray-600"
-                    } transition-colors`}
+                    }`}
                   >
                     {option.icon}
                   </div>
                   <span
-                    className={`text--1 text-center ${
+                    className={`text--1 text-center transition-colors duration-200 ${
                       checked ? "text-maroon font-medium" : "text-gray-700"
                     }`}
                   >
                     {option.label}
                   </span>
-                </label>
+                </button>
               );
             }
 
@@ -169,20 +165,18 @@ export function CheckBoxes<T extends string | number>({
                     e.preventDefault();
                   }
                 }}
-                className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-all ${
+                className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-all duration-200 ${
                   checked
                     ? "border-maroon bg-maroon/5 shadow-sm"
                     : "border-gray-300 bg-white hover:border-gray-400 hover:bg-gray-50"
                 } ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
               >
-                <input
-                  type="checkbox"
+                <Checkbox.Root
                   id={id}
                   name={name}
-                  value={String(option.value)}
                   checked={checked}
                   disabled={isDisabled}
-                  onChange={() => {
+                  onCheckedChange={() => {
                     if (!isDisabled) {
                       toggle(option.value);
                     }
@@ -194,8 +188,12 @@ export function CheckBoxes<T extends string | number>({
                       target.scrollIntoView = () => {};
                     }
                   }}
-                  className="mt-0.5 h-4 w-4 text-maroon focus:ring-2 focus:ring-maroon focus:ring-offset-1 border-gray-300 rounded cursor-pointer disabled:cursor-not-allowed"
-                />
+                  className="mt-0.5 flex h-4 w-4 items-center justify-center rounded border-2 border-gray-300 bg-white transition-all hover:border-maroon focus:outline-none focus:ring-2 focus:ring-maroon focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:border-maroon data-[state=checked]:bg-maroon"
+                >
+                  <Checkbox.Indicator className="flex items-center justify-center text-white">
+                    <CheckIcon className="h-3 w-3" strokeWidth={3} />
+                  </Checkbox.Indicator>
+                </Checkbox.Root>
                 <div className="flex-1 min-w-0">
                   <div className="text-0 text-gray-900 font-medium">
                     {option.label}

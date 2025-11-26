@@ -1,5 +1,6 @@
 import { useId } from "react";
 import { ReactNode } from "react";
+import * as RadioGroup from "@radix-ui/react-radio-group";
 
 export interface ChoiceOption<T extends string | number> {
   value: T;
@@ -24,7 +25,6 @@ export interface ChoicesProps<T extends string | number> {
 }
 
 export function Choices<T extends string | number>({
-  name,
   label,
   description,
   value,
@@ -38,6 +38,7 @@ export function Choices<T extends string | number>({
 }: ChoicesProps<T>) {
   const groupId = useId();
   const hasIcons = options.some((opt) => opt.icon);
+  const stringValue = value?.toString() || "";
 
   // Determine layout class
   const getLayoutClass = () => {
@@ -69,16 +70,19 @@ export function Choices<T extends string | number>({
         </p>
       )}
 
-      <fieldset
-        aria-describedby={description ? `${groupId}-desc` : undefined}
+      <RadioGroup.Root
+        value={stringValue}
+        onValueChange={(val) => onChange(val as T)}
         disabled={disabled}
-        className="border-none p-0 m-0"
+        aria-describedby={description ? `${groupId}-desc` : undefined}
+        className="w-full"
       >
         <div className={getLayoutClass()}>
           {options.map((option) => {
             const id = `${groupId}-${String(option.value)}`;
             const checked = value === option.value;
             const isDisabled = disabled || option.disabled;
+            const optionValue = String(option.value);
 
             // Icon layout (grid with icon above label)
             if (hasIcons && option.icon) {
@@ -86,32 +90,34 @@ export function Choices<T extends string | number>({
                 <label
                   key={String(option.value)}
                   htmlFor={id}
-                  className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all cursor-pointer ${
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!isDisabled) {
+                      onChange(option.value);
+                    }
+                  }}
+                  className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all duration-200 cursor-pointer ${
                     checked
-                      ? "border-maroon bg-maroon/10 shadow-sm"
-                      : "border-gray-200 bg-white hover:border-gray-300"
+                      ? "border-maroon bg-maroon/10 shadow-sm scale-[1.02]"
+                      : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm"
                   } ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
-                  <input
-                    type="radio"
+                  <RadioGroup.Item
+                    value={optionValue}
                     id={id}
-                    name={name}
-                    value={String(option.value)}
-                    checked={checked}
                     disabled={isDisabled}
-                    onChange={() => onChange(option.value)}
                     className="sr-only"
-                    required={required}
                   />
                   <div
-                    className={`${
+                    className={`transition-colors duration-200 ${
                       checked ? "text-maroon" : "text-gray-600"
-                    } transition-colors`}
+                    }`}
                   >
                     {option.icon}
                   </div>
                   <span
-                    className={`text--1 text-center ${
+                    className={`text--1 text-center transition-colors duration-200 ${
                       checked ? "text-maroon font-medium" : "text-gray-700"
                     }`}
                   >
@@ -126,23 +132,28 @@ export function Choices<T extends string | number>({
               <label
                 key={String(option.value)}
                 htmlFor={id}
-                className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-all ${
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (isDisabled) {
+                    e.preventDefault();
+                  }
+                }}
+                className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-all duration-200 ${
                   checked
                     ? "border-maroon bg-maroon/5 shadow-sm"
                     : "border-gray-300 bg-white hover:border-gray-400 hover:bg-gray-50"
                 } ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
               >
-                <input
-                  type="radio"
+                <RadioGroup.Item
+                  value={optionValue}
                   id={id}
-                  name={name}
-                  value={String(option.value)}
-                  checked={checked}
                   disabled={isDisabled}
-                  onChange={() => onChange(option.value)}
-                  className="mt-0.5 h-4 w-4 text-maroon focus:ring-2 focus:ring-maroon focus:ring-offset-1 border-gray-300 cursor-pointer disabled:cursor-not-allowed"
-                  required={required}
-                />
+                  className="mt-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-gray-300 bg-white transition-all hover:border-maroon focus:outline-none focus:ring-2 focus:ring-maroon focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:border-maroon"
+                >
+                  <RadioGroup.Indicator className="flex items-center justify-center">
+                    <div className="h-2 w-2 rounded-full bg-maroon" />
+                  </RadioGroup.Indicator>
+                </RadioGroup.Item>
                 <div className="flex-1 min-w-0">
                   <div className="text-0 text-gray-900 font-medium">
                     {option.label}
@@ -157,7 +168,7 @@ export function Choices<T extends string | number>({
             );
           })}
         </div>
-      </fieldset>
+      </RadioGroup.Root>
 
       {error && (
         <p className="text--1 text-red-600 mt-1" role="alert">
