@@ -21,7 +21,12 @@ export default function IconSelector({
   multiple = false,
   columns = 3,
 }: IconSelectorProps) {
-  const handleClick = (code: string) => {
+  const handleClick = (
+    e: React.MouseEvent<HTMLButtonElement>,
+    code: string
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (multiple) {
       const isSelected = selectedValues.includes(code);
       const newValues = isSelected
@@ -51,7 +56,7 @@ export default function IconSelector({
           <button
             key={option.code}
             type="button"
-            onClick={() => handleClick(option.code)}
+            onClick={(e) => handleClick(e, option.code)}
             className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all ${
               isSelected
                 ? "border-maroon bg-maroon/10"

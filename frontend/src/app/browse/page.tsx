@@ -108,8 +108,8 @@ const parseFiltersFromSearchParams = (
   const maxMileage = parseNumber(searchParams.get("maxMileage"));
   if (maxMileage !== undefined) nextFilters.maxMileage = maxMileage;
 
-  const bodyType = searchParams.get("bodyType");
-  if (bodyType) nextFilters.bodyType = bodyType;
+  const bodyTypes = searchParams.getAll("bodyType");
+  if (bodyTypes.length > 0) nextFilters.bodyType = bodyTypes;
 
   const transmissions = searchParams.getAll("transmission");
   if (transmissions.length > 0) nextFilters.transmission = transmissions;
@@ -212,7 +212,7 @@ function SortDropdown({ sortBy, sortOrder, onChange }: SortDropdownProps) {
       <button
         type="button"
         onClick={() => setIsOpen((o) => !o)}
-        className="flex items-center gap-2 bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-maroon focus:border-transparent cursor-pointer transition-colors min-w-[200px] justify-between"
+        className="flex items-center gap-2 bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-maroon focus:border-transparent cursor-pointer transition-colors min-w-40 justify-between"
       >
         <span className="text--1">{currentLabel}</span>
         <svg
@@ -240,7 +240,7 @@ function SortDropdown({ sortBy, sortOrder, onChange }: SortDropdownProps) {
                 key={option.value}
                 type="button"
                 onClick={() => handleSelect(option.value)}
-                className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                className={`w-full text-left px-4 py-2 text--1 transition-colors ${
                   isSelected
                     ? "bg-maroon/10 text-maroon font-medium"
                     : "text-gray-700 hover:bg-gray-100"
@@ -279,7 +279,9 @@ const buildSearchParams = (
     params.set("minMileage", filters.minMileage.toString());
   if (filters.maxMileage !== undefined)
     params.set("maxMileage", filters.maxMileage.toString());
-  if (filters.bodyType) params.set("bodyType", filters.bodyType);
+  if (filters.bodyType && filters.bodyType.length > 0) {
+    filters.bodyType.forEach((bt) => params.append("bodyType", bt));
+  }
   if (filters.transmission && filters.transmission.length > 0) {
     filters.transmission.forEach((t) => params.append("transmission", t));
   }
@@ -511,7 +513,8 @@ function BrowsePageContent() {
         if (filters.maxYear) params.maxYear = filters.maxYear;
         if (filters.minMileage) params.minMileage = filters.minMileage;
         if (filters.maxMileage) params.maxMileage = filters.maxMileage;
-        if (filters.bodyType) params.bodyType = filters.bodyType;
+        if (filters.bodyType && filters.bodyType.length > 0)
+          params.bodyType = filters.bodyType;
         if (filters.transmission) params.transmission = filters.transmission;
         if (filters.drivetrain) params.drivetrain = filters.drivetrain;
         if (filters.fuelTypes && filters.fuelTypes.length > 0)
@@ -874,17 +877,13 @@ function BrowsePageContent() {
         </>
       )}
 
-      <div className="max-w-[1536px] mx-auto w-full">
-        <div className="flex flex-row">
+      <div className="max-w-[1536px] mx-auto w-full p-(--space-s-m) ">
+        <div className="flex flex-row gap-(--space-s-m)">
           {/* Filters Sidebar */}
           <div
             className={`sticky self-start transition-all duration-300 ease-in-out hidden ${
               isFiltersOpen ? "lg:block" : "lg:hidden"
             }`}
-            style={{
-              top: `${headerHeight}px`,
-              maxHeight: availableHeight,
-            }}
           >
             <SearchFilters
               filters={filters}
@@ -909,7 +908,7 @@ function BrowsePageContent() {
                   syncRoute(nextFilters, 1, sortBy, sortOrder);
                 }, 500);
               }}
-              className="p-(--space-s-m) pr-0"
+              className=""
               style={{
                 maxHeight: availableHeight,
               }}
@@ -917,7 +916,7 @@ function BrowsePageContent() {
           </div>
 
           {/* Results */}
-          <div className="flex-1 p-(--space-s-m) min-w-0 flex flex-col">
+          <div className="flex-1 mt-(--space-m) min-w-0 flex flex-col">
             {/* Active Filters Bar */}
             {activeFilters.length > 0 && (
               <div className="mb-6 flex flex-wrap items-center gap-2 p-4 rounded-lg border border-gray-200 w-full">
@@ -1074,6 +1073,7 @@ function BrowsePageContent() {
             )}
           </div>
         </div>
+        {/* <div className="h-300 bg-red-500 opacity-15"></div> */}
       </div>
     </div>
   );

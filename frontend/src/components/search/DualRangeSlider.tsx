@@ -36,8 +36,10 @@ export default function DualRangeSlider({
     setValues(newValues);
     const newMin = newValues[0];
     const newMax = newValues[1];
-    onMinChange(newMin === min ? undefined : newMin);
-    onMaxChange(newMax === max ? undefined : newMax);
+    // Always pass the actual values - don't convert to undefined just because they equal min/max
+    // The parent component can decide if it wants to filter on these values
+    onMinChange(newMin);
+    onMaxChange(newMax);
   };
 
   return (

@@ -97,6 +97,14 @@ export function CheckBoxes<T extends string | number>({
                 <label
                   key={String(option.value)}
                   htmlFor={id}
+                  onClick={(e) => {
+                    // Prevent form submission and scroll behavior for icon selectors
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!isDisabled) {
+                      toggle(option.value);
+                    }
+                  }}
                   className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all cursor-pointer ${
                     checked
                       ? "border-maroon bg-maroon/10 shadow-sm"
@@ -110,7 +118,25 @@ export function CheckBoxes<T extends string | number>({
                     value={String(option.value)}
                     checked={checked}
                     disabled={isDisabled}
-                    onChange={() => toggle(option.value)}
+                    onChange={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (!isDisabled) {
+                        toggle(option.value);
+                      }
+                    }}
+                    onFocus={(e) => {
+                      // Prevent scroll when input receives focus
+                      const target = e.target as HTMLElement;
+                      if (
+                        target &&
+                        typeof target.scrollIntoView === "function"
+                      ) {
+                        target.scrollIntoView = () => {};
+                      }
+                      // Also blur to prevent focus
+                      target.blur();
+                    }}
                     className="sr-only"
                   />
                   <div
@@ -136,6 +162,13 @@ export function CheckBoxes<T extends string | number>({
               <label
                 key={String(option.value)}
                 htmlFor={id}
+                onClick={(e) => {
+                  // Prevent form submission and scroll behavior
+                  e.stopPropagation();
+                  if (isDisabled) {
+                    e.preventDefault();
+                  }
+                }}
                 className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-all ${
                   checked
                     ? "border-maroon bg-maroon/5 shadow-sm"
@@ -149,7 +182,18 @@ export function CheckBoxes<T extends string | number>({
                   value={String(option.value)}
                   checked={checked}
                   disabled={isDisabled}
-                  onChange={() => toggle(option.value)}
+                  onChange={() => {
+                    if (!isDisabled) {
+                      toggle(option.value);
+                    }
+                  }}
+                  onFocus={(e) => {
+                    // Prevent scroll when input receives focus
+                    const target = e.target as HTMLElement;
+                    if (target && typeof target.scrollIntoView === "function") {
+                      target.scrollIntoView = () => {};
+                    }
+                  }}
                   className="mt-0.5 h-4 w-4 text-maroon focus:ring-2 focus:ring-maroon focus:ring-offset-1 border-gray-300 rounded cursor-pointer disabled:cursor-not-allowed"
                 />
                 <div className="flex-1 min-w-0">

@@ -245,8 +245,8 @@ func (h *CarHandler) SearchCars(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Parse type filters
-	if bodyTypeCode := query.Get("bodyType"); bodyTypeCode != "" {
-		req.BodyTypeCode = &bodyTypeCode
+	if bodyTypes := query["bodyType"]; len(bodyTypes) > 0 {
+		req.BodyTypeCodes = bodyTypes
 	}
 
 	if transmissionCode := query.Get("transmission"); transmissionCode != "" {
@@ -1000,10 +1000,10 @@ func (h *CarHandler) UploadInspection(w http.ResponseWriter, r *http.Request) {
 			response := models.BookUploadErrorResponse{
 				Message:         err.Error(),
 				Code:            errorCode,
-				Action:          "", 
+				Action:          "",
 				RedirectToCarID: redirectToCarID, // สำคัญมาก Frontend ต้องใช้ค่านี้
 			}
-			
+
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusConflict)
 			if encodeErr := json.NewEncoder(w).Encode(response); encodeErr != nil {

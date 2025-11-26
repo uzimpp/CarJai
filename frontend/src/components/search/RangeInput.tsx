@@ -57,12 +57,9 @@ export default function RangeInput({
   // Only sync if the input is not currently focused
   useEffect(() => {
     if (document.activeElement !== minInputRef.current) {
-      const currentParsed = parseNumberString(minInput);
-      if (currentParsed !== minValue) {
-        setMinInput(formatNumber(minValue));
-      }
+      setMinInput(formatNumber(minValue));
     }
-  }, [minValue, minInput]);
+  }, [minValue]);
 
   useEffect(() => {
     if (document.activeElement !== maxInputRef.current) {
@@ -326,6 +323,10 @@ export default function RangeInput({
           value={minInput}
           onChange={handleMinInputChange}
           onBlur={handleMinInputBlur}
+          onFocus={(e) => {
+            // Prevent scroll when input receives focus
+            e.target.scrollIntoView = () => {};
+          }}
           className="w-full sm:w-full px-3 py-2 bg-gray-100 rounded-lg text-black focus:bg-gray-200 focus:outline-none transition-all"
         />
         <span className="text-gray-500 text-center sm:text-left hidden sm:inline">
@@ -339,6 +340,10 @@ export default function RangeInput({
           value={maxInput}
           onChange={handleMaxInputChange}
           onBlur={handleMaxInputBlur}
+          onFocus={(e) => {
+            // Prevent scroll when input receives focus
+            e.target.scrollIntoView = () => {};
+          }}
           className="w-full sm:w-full px-3 py-2 bg-gray-100 rounded-lg text-black focus:bg-gray-200 focus:outline-none transition-all"
         />
       </div>
@@ -354,8 +359,14 @@ export default function RangeInput({
               <button
                 key={range.label}
                 type="button"
-                onClick={() => {
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
                   handlePredefinedRange(range.min, range.max);
+                }}
+                onFocus={(e) => {
+                  // Prevent scroll when button receives focus
+                  e.preventDefault();
                 }}
                 className={`px-3 py-1 rounded-full border-1 text--1 transition-all duration-300 ease-in-out text-center whitespace-nowrap ${
                   isActive

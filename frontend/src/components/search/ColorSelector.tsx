@@ -39,7 +39,15 @@ export default function ColorSelector({
             <button
               key={color.code}
               type="button"
-              onClick={() => handleClick(color.code)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleClick(color.code);
+              }}
+              onFocus={(e) => {
+                // Prevent scroll when button receives focus
+                e.preventDefault();
+              }}
               className="flex flex-col items-center gap-2 cursor-pointer group"
               aria-label={color.label}
             >

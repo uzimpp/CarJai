@@ -22,7 +22,18 @@ export default function DropdownFilter({
   return (
     <select
       value={value || ""}
-      onChange={(e) => onChange(e.target.value ? e.target.value : undefined)}
+      onChange={(e) => {
+        e.stopPropagation();
+        onChange(e.target.value ? e.target.value : undefined);
+      }}
+      onFocus={(e) => {
+        // Prevent scroll when select receives focus
+        e.preventDefault();
+      }}
+      onMouseDown={(e) => {
+        // Prevent scroll when clicking select
+        e.stopPropagation();
+      }}
       className="w-full px-(--space-s) py-(--space-xs) border border-gray-300 rounded-lg text-0 text-gray-900 focus:border-maroon focus:outline-none focus:ring-2 focus:ring-maroon/20 transition-all bg-white"
     >
       <option value="">{allOptionLabel}</option>
