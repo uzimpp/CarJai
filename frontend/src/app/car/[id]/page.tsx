@@ -12,7 +12,7 @@ import { favoritesAPI } from "@/lib/favoritesAPI";
 import FavoriteButton from "@/components/car/FavoriteButton";
 import ReportModal from "@/components/reports/ReportModal";
 import { reportsAPI } from "@/lib/reportsAPI";
-import { FlagIcon, StarIcon } from "@heroicons/react/24/outline";
+import { FlagIcon } from "@heroicons/react/24/outline";
 import { DEFAULT_CAR_SUBTOPICS } from "@/types/report";
 import { recentAPI } from "@/lib/recentAPI";
 import StarRating from "@/components/ui/StarRating";
@@ -31,8 +31,7 @@ export default function CarListingPage() {
   const [isFavorited, setIsFavorited] = useState(false);
   const [favoriteCarIds, setFavoriteCarIds] = useState<Set<number>>(new Set());
   const [isReportCarOpen, setIsReportCarOpen] = useState(false);
-  const [reportFeedback, setReportFeedback] = useState<string>("");
-  const [isCompareChecked, setIsCompareChecked] = useState(false);
+  const [_, setReportFeedback] = useState<string>("");
   const [isSharing, setIsSharing] = useState(false);
 
   const isBuyer = isAuthenticated && roles?.buyer;
@@ -782,37 +781,6 @@ export default function CarListingPage() {
                 >
                   <FlagIcon className="h-5 w-5" aria-hidden="true" />
                   Report
-                </button>
-              )}
-              {/* Compare Checkbox */}
-              {isBuyer && (
-                <button
-                  onClick={() => setIsCompareChecked(!isCompareChecked)}
-                  className={`rounded-full border py-1.5 px-3 text--1 medium gap-(--space-xs-s) flex items-center justify-center transition-all min-h-[36px] ${
-                    isCompareChecked
-                      ? "bg-maroon text-white border-maroon"
-                      : "bg-white/90 hover:bg-white text-gray-700 hover:text-maroon border-gray-200"
-                  }`}
-                  aria-label={
-                    isCompareChecked
-                      ? "Remove from comparison"
-                      : "Add to comparison"
-                  }
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1}
-                      d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"
-                    />
-                  </svg>
-                  Compare
                 </button>
               )}
             </div>

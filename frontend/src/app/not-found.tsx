@@ -27,17 +27,6 @@ function NotFoundContent() {
     };
   }, [searchParams]);
 
-  const accent = useMemo(() => {
-    // Use website theme colors (maroon/red/black/gray) for consistent look across the system
-    return {
-      ring: "ring-2 ring-maroon",
-      text: "text-maroon",
-      btn: "bg-maroon hover:bg-red",
-      neutralText: "text-gray-600",
-      headingText: "text-gray-900",
-    } as const;
-  }, []);
-
   return (
     <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full min-h-[80vh] flex items-center justify-center">
       <div className="max-w-lg w-full text-center">
