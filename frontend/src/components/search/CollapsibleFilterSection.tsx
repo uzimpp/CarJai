@@ -20,7 +20,15 @@ export default function CollapsibleFilterSection({
     <div className="border-b border-gray-100 flex flex-col py-6">
       <button
         type="button"
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setIsExpanded(!isExpanded);
+        }}
+        onFocus={(e) => {
+          // Prevent scroll when button receives focus
+          e.preventDefault();
+        }}
         className="w-full flex items-center justify-between px-0 hover:opacity-80 transition-opacity"
       >
         <span className="block text--1 semi-bold text-grey text-left">

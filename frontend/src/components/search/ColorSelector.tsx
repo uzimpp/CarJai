@@ -39,7 +39,15 @@ export default function ColorSelector({
             <button
               key={color.code}
               type="button"
-              onClick={() => handleClick(color.code)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleClick(color.code);
+              }}
+              onFocus={(e) => {
+                // Prevent scroll when button receives focus
+                e.preventDefault();
+              }}
               className="flex flex-col items-center gap-2 cursor-pointer group"
               aria-label={color.label}
             >
@@ -52,7 +60,7 @@ export default function ColorSelector({
                 style={{
                   backgroundColor: isMulticolor ? "transparent" : colorHex,
                   boxShadow: isSelected
-                    ? "0 2px 8px rgba(133, 29, 21, 0.3)"
+                    ? "0 2px 8px rgba(80, 29, 21, 0.28)"
                     : "0 1px 3px rgba(0, 0, 0, 0.1)",
                 }}
               >

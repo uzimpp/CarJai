@@ -93,6 +93,8 @@
   --color-maroon-800: rgba(128, 0, 32, 0.8);
   --color-red: #cd2214;
   --color-grey: #303030;
+  --color-grey-500: rgba(48, 48, 48, 0.5);
+  --color-grey-800: rgba(48, 48, 48, 0.8);
   --color-dark-grey: #181414;
 
   --color-background: var(--color-white);
@@ -121,9 +123,9 @@
   --min-page-height: calc(100dvh - var(--navbar-height));
 
   /* === Shadows === */
-  --shadow-sm: 0 0 3px 0 rgba(0, 0, 0, 0.12);
-  --shadow-md: 0 0 8px 0 rgba(0, 0, 0, 0.12);
-  --shadow-lg: 0 0 16px 0 rgba(0, 0, 0, 0.15);
+  --shadow-sm: 0 0 3px 0 rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 0 8px 0 rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 0 16px 0 rgba(0, 0, 0, 0.2);
 }
 
 @layer base {

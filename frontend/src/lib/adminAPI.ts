@@ -6,7 +6,6 @@ import {
   AdminSigninRequest,
   AdminActionResponse,
   MarketPrice,
-  MarketPriceResponse,
   ImportMarketPriceResponse,
   DashboardStats,
   ChartDataPoint,

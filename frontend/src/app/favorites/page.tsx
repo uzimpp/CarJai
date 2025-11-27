@@ -60,10 +60,12 @@ export default function FavoritesPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+      <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full">
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-maroon mx-auto"></div>
+            <p className="mt-4 text-0 text-gray-600 font-medium">Loading...</p>
+          </div>
         </div>
       </div>
     );
@@ -75,25 +77,47 @@ export default function FavoritesPage() {
 
   return (
     <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full">
-      <h1 className="text-3 bold">My Favorites</h1>
+      <div className="mb-(--space-xl)">
+        <h1 className="text-4 font-bold text-gray-900 mb-(--space-2xs)">
+          My Favorites
+        </h1>
+        <p className="text-0 text-gray-600">Your saved cars for easy access</p>
+      </div>
 
       {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-600">{error}</p>
-          <button
-            onClick={fetchFavorites}
-            className="mt-2 text-red-700 underline hover:no-underline"
-          >
-            Try again
-          </button>
+        <div className="mb-6 p-(--space-m) bg-red-50 border border-red-200 rounded-xl">
+          <div className="flex items-start gap-3">
+            <svg
+              className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <div className="flex-1">
+              <p className="text-0 text-red-600 font-medium mb-2">{error}</p>
+              <button
+                onClick={fetchFavorites}
+                className="text-0 text-red-700 underline hover:no-underline font-medium"
+              >
+                Try again
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
       {favoritesLoading ? (
         <div className="flex items-center justify-center py-20">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-maroon mx-auto"></div>
-            <p className="mt-4 text-gray-600 font-medium">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-maroon mx-auto"></div>
+            <p className="mt-4 text-0 text-gray-600 font-medium">
               Loading favorites...
             </p>
           </div>
@@ -101,30 +125,42 @@ export default function FavoritesPage() {
       ) : favorites.length === 0 ? (
         <div className="text-center py-20">
           <div className="inline-flex items-center justify-center w-24 h-24 bg-gray-100 rounded-full mb-6">
-            <span className="text-5xl">💝</span>
+            <svg
+              className="w-12 h-12 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+              />
+            </svg>
           </div>
-          <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+          <h2 className="text-2 font-bold text-gray-900 mb-2">
             No Favorites Yet
           </h2>
-          <p className="text-gray-600 mb-6">
+          <p className="text-0 text-gray-600 mb-6 max-w-md mx-auto">
             Start exploring cars and tap the heart icon to save your favorites
           </p>
-          <a
-            href="/browse"
-            className="inline-flex items-center px-6 py-3 bg-maroon text-white font-medium rounded-lg hover:bg-maroon/90 transition-colors"
+          <button
+            onClick={() => router.push("/browse")}
+            className="px-(--space-l) py-(--space-s) bg-maroon hover:bg-red text-white font-medium rounded-full transition-all shadow-lg hover:shadow-xl hover:scale-105"
           >
             Browse Cars
-          </a>
+          </button>
         </div>
       ) : (
         <>
-          <div className="mb-4">
-            <p className="text-gray-600">
+          <div className="mb-(--space-l)">
+            <p className="text-0 text-gray-600">
               {favorites.length} car{favorites.length !== 1 ? "s" : ""} saved
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-(--space-m)">
             {favorites.map((car) => (
               <CarCard
                 key={car.id}

@@ -8,7 +8,7 @@ import (
 
 const (
 	MIN_FAVORITES_PER_USER = 2
-	MAX_FAVORITES_PER_USER = 10
+	MAX_FAVORITES_PER_USER = 8
 )
 
 // seedFavoritesData seeds favorites (buyers favoriting cars)

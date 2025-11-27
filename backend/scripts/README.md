@@ -75,9 +75,17 @@ docker exec -it carjai-backend /app/scripts/seed
 - Each user gets a demo session for testing
 
 ### Cars (`--cars`)
-- Creates 30 demo cars
-- Random brands, models, years (2015-2024)
-- Includes images, fuel types, colors, and inspection results
+- Creates 100 demo cars
+- Random brands, models, years (2000-2025)
+- Price range: ฿299,000 - ฿2,999,000
+- Mileage range: 5,000 - 150,000 km
+- Condition rating: 2-5 stars
+- Engine CC: 1,000-3,500cc
+- Seats: 2-8
+- Includes 6-10 images per car
+- 1-2 fuel types per car (GASOLINE, DIESEL, HYBRID, ELECTRIC, LPG, CNG)
+- 1-2 colors per car (WHITE, BLACK, GRAY, RED, BLUE, BROWN, YELLOW)
+- Inspection results with ~80% pass rate
 - All cars have status `active` (visible in browse page)
 - Chassis numbers start with `DEMO` for easy identification
 
@@ -88,15 +96,16 @@ docker exec -it carjai-backend /app/scripts/seed
 - Realistic topics and descriptions
 
 ### Favorites (`--favorites`)
-- Buyers favorite 10-30 random cars each
+- Buyers favorite 2-8 random cars each
 - Only buyers can favorite cars (not sellers)
 - References existing buyers and cars
 - Spread over last 30 days
 
 ### Recent Views (`--recent-views`)
-- Buyers view 5-20 random cars each
+- Buyers view 2-8 random cars each
+- 1-3 views per car per user (spread over different timestamps)
 - Only buyers view cars (not sellers)
-- Multiple views per car (respecting unique constraints)
+- Multiple views per car (respecting unique constraints on user_id, car_id, and minute-level timestamp)
 - Spread over last 30 days
 - References existing buyers and cars
 
@@ -119,11 +128,27 @@ When using `--all`, data is seeded in the correct order automatically.
 
 You can modify seeding behavior by editing constants in the respective files:
 
-- `seed_users.go`: `NUM_USERS_TO_CREATE`, `SELLER_BUYER_RATIO_DIVISOR`
-- `seed_cars.go`: `NUM_CARS_TO_CREATE`, price/year/mileage ranges, etc.
-- `seed_reports.go`: `NUM_REPORTS_TO_CREATE`
-- `seed_favorites.go`: `MIN_FAVORITES_PER_USER`, `MAX_FAVORITES_PER_USER`
-- `seed_recent_views.go`: `MIN_VIEWS_PER_USER`, `MAX_VIEWS_PER_USER`
+- `seed_users.go`: 
+  - `NUM_USERS_TO_CREATE` (default: 60)
+  - `SELLER_BUYER_RATIO_DIVISOR` (default: 4, creates 1 seller per 4 users)
+- `seed_cars.go`: 
+  - `NUM_CARS_TO_CREATE` (default: 100)
+  - `PRICE_RANGE` (default: ฿299,000 - ฿2,999,000)
+  - `YEAR_RANGE` (default: 2000-2025)
+  - `MILEAGE_RANGE` (default: 5,000 - 150,000 km)
+  - `CONDITION_RANGE` (default: 2-5 stars)
+  - `ENGINE_CC_RANGE` (default: 1,000-3,500cc)
+  - `SEATS_RANGE` (default: 2-8 seats)
+  - Body types, transmissions, drivetrains, fuel types, and colors arrays
+- `seed_reports.go`: 
+  - `NUM_REPORTS_TO_CREATE` (default: 50)
+  - Report topic arrays and status distributions
+- `seed_favorites.go`: 
+  - `MIN_FAVORITES_PER_USER` (default: 2)
+  - `MAX_FAVORITES_PER_USER` (default: 8)
+- `seed_recent_views.go`: 
+  - `MIN_VIEWS_PER_USER` (default: 2)
+  - `MAX_VIEWS_PER_USER` (default: 8)
 
 ## File Structure
 

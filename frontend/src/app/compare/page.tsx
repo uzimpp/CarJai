@@ -191,11 +191,11 @@ export default function ComparePage() {
               isLoading: false,
               error: response.success ? null : "Failed to load",
             } as CarComparisonData;
-          } catch (error) {
+          } catch (e) {
             return {
               car: null,
               isLoading: false,
-              error: "Failed to load",
+              error: e instanceof Error ? e.message : "Failed to load",
             } as CarComparisonData;
           }
         });

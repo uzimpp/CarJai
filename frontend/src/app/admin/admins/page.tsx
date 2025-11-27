@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import type { AdminUser } from "@/types/admin";
 import { adminAPI } from "@/lib/adminAPI";
 import PaginateControl from "@/components/ui/PaginateControl";
+import Modal from "@/components/ui/Modal";
 
 // --- Edit Admin Modal ---
 function EditAdminModal({
@@ -56,90 +57,87 @@ function EditAdminModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
-        <div className="p-6 border-b border-gray-100">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xl font-semibold text-gray-900">Edit Admin</h3>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
+    <Modal
+      isOpen={isOpen && !!admin}
+      onClose={onClose}
+      title="Edit Admin"
+      size="md"
+    >
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        {error && (
+          <div className="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100">
+            {error}
           </div>
+        )}
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-gray-700">Username</label>
+          <input
+            type="text"
+            required
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-maroon/20 focus:border-maroon"
+            value={formData.username}
+            onChange={(e) =>
+              setFormData({ ...formData, username: e.target.value })
+            }
+          />
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4">
-          {error && (
-            <div className="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100">
-              {error}
-            </div>
-          )}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-gray-700">Full Name</label>
+          <input
+            type="text"
+            required
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-maroon/20 focus:border-maroon"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          />
+        </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-gray-700">
-              Username
-            </label>
-            <input
-              type="text"
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-maroon/20 focus:border-maroon"
-              value={formData.username}
-              onChange={(e) =>
-                setFormData({ ...formData, username: e.target.value })
-              }
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-gray-700">
-              Full Name
-            </label>
-            <input
-              type="text"
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-maroon/20 focus:border-maroon"
-              value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
-            />
-          </div>
-
-          <div className="flex gap-3 mt-4 justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-gray-600 font-medium hover:bg-gray-50 rounded-lg transition-colors"
-              disabled={isSaving}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="px-4 py-2 bg-maroon text-white font-medium rounded-lg hover:bg-maroon/90 transition-all disabled:opacity-50"
-              style={{ backgroundColor: "#800000" }}
-            >
-              {isSaving ? "Saving..." : "Save Changes"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="flex gap-3 pt-4 border-t border-gray-200 justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+            disabled={isSaving}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={isSaving}
+            className="px-4 py-2 bg-maroon text-white font-medium rounded-lg hover:bg-red transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {isSaving ? (
+              <>
+                <svg
+                  className="animate-spin h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                Saving...
+              </>
+            ) : (
+              "Save Changes"
+            )}
+          </button>
+        </div>
+      </form>
+    </Modal>
   );
 }
 
@@ -173,78 +171,77 @@ function DeleteConfirmationModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
-        <div className="p-6 border-b border-gray-100">
-          <div className="flex items-start justify-between">
-            <h3 className="text-xl font-semibold text-gray-900">
-              Delete Admin
-            </h3>
-            <button
-              onClick={onClose}
-              disabled={isDeleting}
-              className="text-gray-400 hover:text-gray-600"
-            >
+    <Modal
+      isOpen={isOpen && !!admin}
+      onClose={onClose}
+      title="Delete Admin"
+      size="md"
+    >
+      <div className="mb-4">
+        <p className="text-gray-700">
+          Are you sure you want to delete this admin?
+        </p>
+        <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="text-sm text-gray-500">Username</div>
+          <div className="font-medium text-gray-900">{admin.username}</div>
+          <div className="text-sm text-gray-500 mt-2">Name</div>
+          <div className="font-medium text-gray-900">{admin.name}</div>
+        </div>
+        <p className="text-sm text-red-600 mt-3 font-medium">
+          This action cannot be undone.
+        </p>
+      </div>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+          {error}
+        </div>
+      )}
+
+      <div className="flex gap-3 pt-4 border-t border-gray-200 justify-end">
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={isDeleting}
+          className="px-4 py-2 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={handleConfirm}
+          disabled={isDeleting}
+          className="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+        >
+          {isDeleting ? (
+            <>
               <svg
-                className="w-6 h-6"
+                className="animate-spin h-4 w-4"
                 fill="none"
-                stroke="currentColor"
                 viewBox="0 0 24 24"
               >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
                 <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                 />
               </svg>
-            </button>
-          </div>
-        </div>
-
-        <div className="p-6">
-          <div className="mb-4">
-            <p className="text-gray-700">
-              Are you sure you want to delete this admin?
-            </p>
-            <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-              <div className="text-sm text-gray-500">Username</div>
-              <div className="font-medium text-gray-900">{admin.username}</div>
-              <div className="text-sm text-gray-500 mt-2">Name</div>
-              <div className="font-medium text-gray-900">{admin.name}</div>
-            </div>
-            <p className="text-sm text-red-600 mt-3 font-medium">
-              This action cannot be undone.
-            </p>
-          </div>
-
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
-              {error}
-            </div>
+              Deleting...
+            </>
+          ) : (
+            "Yes, Delete"
           )}
-
-          <div className="flex gap-3 pt-2 justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isDeleting}
-              className="px-4 py-2 text-gray-600 font-medium hover:bg-gray-50 rounded-lg transition-colors disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleConfirm}
-              disabled={isDeleting}
-              className="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2"
-            >
-              {isDeleting ? "Deleting..." : "Yes, Delete"}
-            </button>
-          </div>
-        </div>
+        </button>
       </div>
-    </div>
+    </Modal>
   );
 }
 

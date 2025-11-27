@@ -60,4 +60,3 @@ export async function apiCall<T>(
 
   return data as T;
 }
-

@@ -6,15 +6,15 @@ export default function Pricing() {
       {/* Hero Section */}
       <section className="text-center mb-(--space-2xl)">
         <div className="relative">
-          <h1 className="text-7 font-bold text-maroon mb-(--space-s) leading-tight">
+          <h1 className="text-6 font-bold text-maroon mb-(--space-s) leading-tight">
             Price Estimation Formula
           </h1>
-          <div className="w-24 h-1 bg-gradient-to-r from-maroon to-red mx-auto mb-(--space-m)"></div>
-          <p className="text-2 text-gray-600 max-w-3xl mx-auto leading-relaxed">
+          <div className="w-24 h-1 bg-gradient-to-r from-maroon to-red mx-auto mb-(--space-m) rounded-full"></div>
+          <p className="text-1 text-gray-600 max-w-3xl mx-auto leading-relaxed">
             Learn how we calculate estimated prices for second-hand cars using a
             formula based on{" "}
-            <span className="font-bold text-maroon">transparency</span> and
-            <span className="font-bold text-maroon"> accuracy</span>.
+            <span className="font-bold text-maroon">transparency</span> and{" "}
+            <span className="font-bold text-maroon">accuracy</span>.
           </p>
         </div>
       </section>
@@ -40,16 +40,30 @@ export default function Pricing() {
                 "Special deductions for significant issues",
               ].map((point, index) => (
                 <div key={index} className="flex items-center gap-(--space-s)">
-                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                  <div className="w-2 h-2 bg-maroon rounded-full flex-shrink-0"></div>
                   <span className="text-0 text-gray-600">{point}</span>
                 </div>
               ))}
             </div>
           </div>
           <div className="relative">
-            <div className="bg-gradient-to-br from-maroon/10 to-red/10 rounded-2xl p-(--space-xl) h-80 flex items-center justify-center">
+            <div className="bg-gradient-to-br from-maroon/10 to-red/10 rounded-2xl p-(--space-xl) h-80 flex items-center justify-center border border-maroon/20 shadow-lg">
               <div className="text-center">
-                <div className="text-6xl mb-(--space-s)">📊</div>
+                <div className="w-16 h-16 bg-maroon rounded-full flex items-center justify-center mx-auto mb-4 shadow-md">
+                  <svg
+                    className="w-8 h-8 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                    />
+                  </svg>
+                </div>
                 <h3 className="text-2 font-bold text-maroon mb-(--space-2xs)">
                   Transparent Calculation
                 </h3>
@@ -63,9 +77,14 @@ export default function Pricing() {
 
         {/* Formula Details */}
         <div className="bg-white rounded-2xl shadow-lg p-(--space-xl) border border-gray-100">
-          <h2 className="text-4 font-bold text-gray-900 mb-(--space-xl) text-center">
-            How We Calculate
-          </h2>
+          <div className="text-center mb-(--space-xl)">
+            <h2 className="text-4 font-bold text-gray-900 mb-(--space-2xs)">
+              How We Calculate
+            </h2>
+            <p className="text-0 text-gray-600">
+              Understanding our transparent pricing methodology
+            </p>
+          </div>
 
           {/* Estimated Price Formula */}
           <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-(--space-l) mb-(--space-xl)">
@@ -74,29 +93,29 @@ export default function Pricing() {
                 Estimated Price
               </h3>
               <div className="text-2xl font-bold text-gray-900">
-                <span className="text-black">Estimated price</span> = (
-                <span className="text-red-600">Min price</span> +{" "}
-                <span className="text-green-600">Max price</span>) / 2 ×{" "}
-                <span className="text-purple-600">Adjustment factors</span>
+                <span className="text-gray-900">Estimated price</span> = (
+                <span className="text-maroon">Min price</span> +{" "}
+                <span className="text-red-600">Max price</span>) / 2 ×{" "}
+                <span className="text-maroon">Adjustment factors</span>
               </div>
             </div>
 
             {/* Formula Breakdown */}
             <div className="grid md:grid-cols-3 gap-(--space-m) mt-(--space-l)">
-              <div className="text-center p-(--space-m) bg-white rounded-lg">
-                <div className="text-red-600 font-bold text-1 mb-(--space-2xs)">
+              <div className="text-center p-(--space-m) bg-white rounded-lg border border-gray-200">
+                <div className="text-maroon font-bold text-1 mb-(--space-2xs)">
                   Min Price
                 </div>
                 <div className="text-0 text-gray-600">Minimum market value</div>
               </div>
-              <div className="text-center p-(--space-m) bg-white rounded-lg">
-                <div className="text-green-600 font-bold text-1 mb-(--space-2xs)">
+              <div className="text-center p-(--space-m) bg-white rounded-lg border border-gray-200">
+                <div className="text-red-600 font-bold text-1 mb-(--space-2xs)">
                   Max Price
                 </div>
                 <div className="text-0 text-gray-600">Maximum market value</div>
               </div>
-              <div className="text-center p-(--space-m) bg-white rounded-lg">
-                <div className="text-purple-600 font-bold text-1 mb-(--space-2xs)">
+              <div className="text-center p-(--space-m) bg-white rounded-lg border border-gray-200">
+                <div className="text-maroon font-bold text-1 mb-(--space-2xs)">
                   Adjustment Factors
                 </div>
                 <div className="text-0 text-gray-600">
@@ -107,24 +126,24 @@ export default function Pricing() {
           </div>
 
           {/* Adjustment Factors Formula */}
-          <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-(--space-l)">
+          <div className="bg-gradient-to-br from-maroon/10 to-red/10 rounded-xl p-(--space-l) border border-maroon/20">
             <div className="text-center mb-(--space-m)">
-              <h3 className="text-3 font-bold text-purple-700 mb-(--space-s)">
+              <h3 className="text-3 font-bold text-maroon mb-(--space-s)">
                 Adjustment Factors
               </h3>
               <div className="text-xl font-bold text-gray-800 mb-(--space-s)">
-                <span className="text-purple-600">Adjustment factors</span> = 1
-                + (<span className="text-sky-400">Stars Points</span> +{" "}
-                <span className="text-sky-400">Mileage Points</span> +{" "}
-                <span className="text-sky-400">Inspection Points</span> +{" "}
-                <span className="text-sky-400">Special Deductions</span>) / 100
+                <span className="text-maroon">Adjustment factors</span> = 1 + (
+                <span className="text-maroon">Stars Points</span> +{" "}
+                <span className="text-maroon">Mileage Points</span> +{" "}
+                <span className="text-maroon">Inspection Points</span> +{" "}
+                <span className="text-red-600">Special Deductions</span>) / 100
               </div>
             </div>
 
             {/* Adjustment Factors Components */}
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-(--space-m) mt-(--space-l)">
-              <div className="bg-white rounded-lg p-(--space-m) border-l-4 border-sky-400">
-                <div className="text-sky-500 font-bold text-1 mb-(--space-2xs)">
+              <div className="bg-white rounded-lg p-(--space-m) border-l-4 border-maroon">
+                <div className="text-maroon font-bold text-1 mb-(--space-2xs)">
                   Stars Points
                 </div>
                 <div className="text-0 text-gray-600 mb-(--space-2xs)">
@@ -138,8 +157,8 @@ export default function Pricing() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg p-(--space-m) border-l-4 border-sky-400">
-                <div className="text-sky-500 font-bold text-1 mb-(--space-2xs)">
+              <div className="bg-white rounded-lg p-(--space-m) border-l-4 border-maroon">
+                <div className="text-maroon font-bold text-1 mb-(--space-2xs)">
                   Mileage Points
                 </div>
                 <div className="text-0 text-gray-600 mb-(--space-2xs)">
@@ -153,8 +172,8 @@ export default function Pricing() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg p-(--space-m) border-l-4 border-sky-400">
-                <div className="text-sky-500 font-bold text-1 mb-(--space-2xs)">
+              <div className="bg-white rounded-lg p-(--space-m) border-l-4 border-maroon">
+                <div className="text-maroon font-bold text-1 mb-(--space-2xs)">
                   Inspection Points
                 </div>
                 <div className="text-0 text-gray-600 mb-(--space-2xs)">
@@ -168,8 +187,8 @@ export default function Pricing() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg p-(--space-m) border-l-4 border-sky-400">
-                <div className="text-sky-500 font-bold text-1 mb-(--space-2xs)">
+              <div className="bg-white rounded-lg p-(--space-m) border-l-4 border-red-600">
+                <div className="text-red-600 font-bold text-1 mb-(--space-2xs)">
                   Special Deductions
                 </div>
                 <div className="text-0 text-gray-600 mb-(--space-2xs)">
@@ -201,10 +220,22 @@ export default function Pricing() {
 
         <div className="grid md:grid-cols-2 gap-(--space-xl)">
           {/* How It Works */}
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-(--space-xl)">
+          <div className="bg-gradient-to-br from-maroon/10 to-red/10 rounded-2xl p-(--space-xl) border border-maroon/20">
             <div className="flex items-center gap-(--space-s) mb-(--space-m)">
-              <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-lg">💡</span>
+              <div className="w-10 h-10 bg-maroon rounded-full flex items-center justify-center shadow-md">
+                <svg
+                  className="w-5 h-5 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                  />
+                </svg>
               </div>
               <h3 className="text-3 font-bold text-gray-900">How It Works</h3>
             </div>
@@ -216,20 +247,46 @@ export default function Pricing() {
                 "Multiply average price by adjustment factor to get final estimated price",
               ].map((step, index) => (
                 <div key={index} className="flex items-start gap-(--space-s)">
-                  <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center mt-0.5 flex-shrink-0">
-                    <span className="text-white text-xs">✓</span>
+                  <div className="w-5 h-5 bg-maroon rounded-full flex items-center justify-center mt-0.5 flex-shrink-0">
+                    <svg
+                      className="w-3 h-3 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={3}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
                   </div>
-                  <span className="text-0 text-gray-700">{step}</span>
+                  <span className="text-0 text-gray-700 leading-relaxed">
+                    {step}
+                  </span>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Example Calculation */}
-          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-(--space-xl)">
+          <div className="bg-gradient-to-br from-gray-50 to-white rounded-2xl p-(--space-xl) border border-gray-200">
             <div className="flex items-center gap-(--space-s) mb-(--space-m)">
-              <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-lg">📊</span>
+              <div className="w-10 h-10 bg-maroon rounded-full flex items-center justify-center shadow-md">
+                <svg
+                  className="w-5 h-5 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                  />
+                </svg>
               </div>
               <h3 className="text-3 font-bold text-gray-900">
                 Example Calculation
@@ -247,13 +304,13 @@ export default function Pricing() {
                   <li>Special Deductions: 0</li>
                 </ul>
               </div>
-              <div className="pt-(--space-s) border-t border-green-300">
+              <div className="pt-(--space-s) border-t border-gray-300">
                 <span className="font-semibold">Calculation:</span>
                 <div className="mt-(--space-2xs) space-y-(--space-2xs)">
                   <div>Average price = (500,000 + 700,000) / 2 = 600,000</div>
                   <div>Total points = 8 + (-2) + 3 + 0 = 9</div>
                   <div>Adjustment factor = 1 + (9 / 100) = 1.09</div>
-                  <div className="font-bold text-green-700">
+                  <div className="font-bold text-maroon">
                     Estimated price = 600,000 × 1.09 = 654,000 THB
                   </div>
                 </div>
@@ -277,19 +334,61 @@ export default function Pricing() {
         <div className="grid md:grid-cols-3 gap-(--space-m)">
           {[
             {
-              icon: "💰",
+              icon: (
+                <svg
+                  className="w-8 h-8 text-maroon"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              ),
               title: "Estimate Only",
               description:
                 "The estimated price is a calculated approximation based on available data. Actual prices may vary based on vehicle condition and other factors.",
             },
             {
-              icon: "📏",
+              icon: (
+                <svg
+                  className="w-8 h-8 text-maroon"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                  />
+                </svg>
+              ),
               title: "Limited Range",
               description:
                 "Stars, mileage, and inspection points have capped ranges to ensure reasonable and fair assessments.",
             },
             {
-              icon: "⚠️",
+              icon: (
+                <svg
+                  className="w-8 h-8 text-red-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+              ),
               title: "Special Deductions",
               description:
                 "Major issues like flooding or heavy crashes receive significant point deductions to reflect potential damage and repair costs.",
@@ -297,9 +396,13 @@ export default function Pricing() {
           ].map((note, index) => (
             <div
               key={index}
-              className="text-center p-(--space-m) rounded-xl hover:bg-gray-50 transition-colors bg-white border border-gray-100"
+              className="text-center p-(--space-m) rounded-xl hover:shadow-md transition-all bg-white border border-gray-200"
             >
-              <div className="text-4xl mb-(--space-s)">{note.icon}</div>
+              <div className="flex justify-center mb-(--space-s)">
+                <div className="w-16 h-16 bg-maroon/10 rounded-full flex items-center justify-center">
+                  {note.icon}
+                </div>
+              </div>
               <h3 className="text-2 font-bold text-gray-900 mb-(--space-2xs)">
                 {note.title}
               </h3>

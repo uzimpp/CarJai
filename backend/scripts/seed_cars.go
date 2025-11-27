@@ -12,15 +12,15 @@ import (
 )
 
 const (
-	NUM_CARS_TO_CREATE = 30
+	NUM_CARS_TO_CREATE = 100
 )
 
 // Car generation ranges and options
 var (
 	PRICE_RANGE     = [2]int{299, 2999}    // ฿299 - ฿2,999 * 1000 = ฿299,000 - ฿2,999,000
-	YEAR_RANGE      = [2]int{2012, 2025}   // 2012-2025
+	YEAR_RANGE      = [2]int{2000, 2025}   // 2000-2025
 	MILEAGE_RANGE   = [2]int{5000, 150000} // 5k-150k km
-	CONDITION_RANGE = [2]int{2, 5}         // Rating 3-5
+	CONDITION_RANGE = [2]int{2, 5}         // Rating 2-5
 	ENGINE_CC_RANGE = [2]int{1000, 3500}   // 1000-3500cc
 	SEATS_RANGE     = [2]int{2, 8}         // 2-8 seats
 

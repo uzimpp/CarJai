@@ -11,7 +11,7 @@ import (
 
 const (
 	NUM_USERS_TO_CREATE        = 60
-	SELLER_BUYER_RATIO_DIVISOR = 4 // 1 seller per 4 users (1:3 ratio)
+	SELLER_BUYER_RATIO_DIVISOR = 4 // 1 seller per 4 users (1:4 ratio)
 )
 
 // seedUsersData seeds users, sellers, and buyers

@@ -409,47 +409,47 @@ paths:
                   maxLength: 100
                   description: Account display name
                 buyer:
-                type: object
+                  type: object
                   description: Buyer profile data
-              properties:
-                province:
-                  type: string
-                  maxLength: 100
+                  properties:
+                    province:
+                      type: string
+                      maxLength: 100
                     budgetMin:
-                  type: integer
-                  minimum: 0
+                      type: integer
+                      minimum: 0
                     budgetMax:
-                  type: integer
-                  minimum: 0
+                      type: integer
+                      minimum: 0
                 seller:
-                type: object
+                  type: object
                   description: Seller profile data
                   required:
                     - displayName
-                properties:
+                  properties:
                     displayName:
-                    type: string
+                      type: string
                       maxLength: 50
-                  about:
-                    type: string
+                    about:
+                      type: string
                       maxLength: 200
                     mapLink:
-                    type: string
+                      type: string
                     contacts:
                       type: array
                       items:
-              type: object
-              required:
+                        type: object
+                        required:
                           - contactType
                           - value
-              properties:
+                        properties:
                           contactType:
-                  type: string
+                            type: string
                             maxLength: 20
                           value:
-                  type: string
+                            type: string
                           label:
-                  type: string
+                            type: string
                             maxLength: 80
             example:
               username: "newusername"
@@ -1482,8 +1482,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/BasicResponse'
               examples:
-                  success:
-                        value:
+                success:
+                  value:
                     success: true
                     message: "Car 101 added to favourites"
         '400':
@@ -1519,7 +1519,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/BasicResponse'
               examples:
-                  success:
+                success:
                   value:
                     success: true
                     message: "Car 101 removed from favourites"
@@ -1550,9 +1550,9 @@ paths:
           application/json:
             schema:
               type: object
-                  required:
+              required:
                 - car_id
-                properties:
+              properties:
                 car_id:
                   type: integer
                   minimum: 1
@@ -1595,19 +1595,19 @@ paths:
         - name: limit
           in: query
           required: false
+          description: "Maximum number of recent views to return (default: 20, max: 100)"
           schema:
             type: integer
             minimum: 1
             maximum: 100
             default: 20
-          description: Maximum number of recent views to return (default: 20, max: 100)
         - name: lang
           in: query
           required: false
+          description: "Language preference for translated labels (default: \"en\")"
           schema:
             type: string
             default: "en"
-          description: Language preference for translated labels (default: "en")
       responses:
         '200':
           description: Recent car views as lightweight list items
@@ -1618,8 +1618,8 @@ paths:
               examples:
                 sample:
                   value:
-                success: true
-                data:
+                    success: true
+                    data:
                       - id: 101
                         sellerId: 5
                         year: 2019
@@ -1627,14 +1627,14 @@ paths:
                         price: 420000
                         provinceId: 10
                         conditionRating: 4
-                      bodyType: "Sedan"
-                      transmission: "Automatic"
-                      drivetrain: "FWD"
+                        bodyType: "Sedan"
+                        transmission: "Automatic"
+                        drivetrain: "FWD"
                         status: "active"
                         brandName: "TOYOTA"
                         modelName: "COROLLA"
                         submodelName: "1.8E"
-                      thumbnailUrl: "/api/cars/images/123"
+                        thumbnailUrl: "/api/cars/images/123"
         '401':
           description: Unauthorized - Authentication required
         '403':
@@ -1790,12 +1790,13 @@ paths:
       tags:
         - Reference
       summary: Get all car brands
-      description: Returns list of all car brands. Labels are returned in the requested language (en or th).
+      description: Returns list of all car brands as an array of strings.
       security: []
       parameters:
         - name: lang
           in: query
-          description: Language preference for labels
+          required: false
+          description: Language preference (not currently used, reserved for future use)
           schema:
             type: string
             enum: [en, th]
@@ -1803,32 +1804,31 @@ paths:
           example: "en"
       responses:
         '200':
-          description: List of brands
+          description: List of brands (array of strings)
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        code:
-                          type: string
-                        label:
-                          type: string
+                $ref: '#/components/schemas/Response'
+              example:
+                success: true
+                code: 200
+                data: ["TOYOTA", "HONDA", "ISUZU"]
 
   /api/reference-data/models:
     get:
       tags:
         - Reference
-      summary: Get all car models
-      description: Returns list of all car models. Labels are returned in the requested language (en or th).
+      summary: Get car models
+      description: Returns list of car models, optionally filtered by brand. Labels are returned in the requested language (en or th).
       security: []
       parameters:
+        - name: brand
+          in: query
+          required: true
+          description: Filter models by brand code
+          schema:
+            type: string
+          example: "TOYOTA"
         - name: lang
           in: query
           description: Language preference for labels
@@ -1839,32 +1839,44 @@ paths:
           example: "en"
       responses:
         '200':
-          description: List of models
+          description: List of models (array of strings)
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        code:
-                          type: string
-                        label:
-                          type: string
+                $ref: '#/components/schemas/Response'
+              example:
+                success: true
+                code: 200
+                data: ["CAMRY", "COROLLA", "HILUX VIGO"]
+        '400':
+          description: Bad request - Brand parameter is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/reference-data/submodels:
     get:
       tags:
         - Reference
-      summary: Get all car submodels
-      description: Returns list of all car submodels. Labels are returned in the requested language (en or th).
+      summary: Get car submodels
+      description: Returns list of car submodels, optionally filtered by brand and model. Labels are returned in the requested language (en or th).
       security: []
       parameters:
+        - name: brand
+          in: query
+          required: true
+          description: Filter submodels by brand code
+          schema:
+            type: string
+          example: "TOYOTA"
+        - name: model
+          in: query
+          required: true
+          description: Filter submodels by model code
+          schema:
+            type: string
+          example: "CAMRY"
         - name: lang
           in: query
           description: Language preference for labels
@@ -1875,23 +1887,21 @@ paths:
           example: "en"
       responses:
         '200':
-          description: List of submodels
+          description: List of submodels (array of strings)
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        code:
-                          type: string
-                        label:
-                          type: string
+                $ref: '#/components/schemas/Response'
+              example:
+                success: true
+                code: 200
+                data: ["1.8E", "2.0G", "2.5E"]
+        '400':
+          description: Bad request - Brand and Model parameters are required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   # ============================================
   # ADMIN APIs
@@ -2010,44 +2020,33 @@ paths:
           description: Bad request
 
   /api/admin/ip-whitelist/check:
-    post:
+    get:
       tags:
         - Admin
       summary: Check IP deletion impact
       description: Checks if removing an IP address from the whitelist would affect any admin sessions.
       security:
         - AdminCookieAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - id
-              properties:
-                id:
-                  type: integer
-                  description: IP whitelist entry ID to check
+      parameters:
+        - name: ip
+          in: query
+          required: true
+          schema:
+            type: string
+          description: IP address to check
+          example: "10.0.0.100/32"
       responses:
         '200':
           description: Impact check result
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  data:
-                    type: object
-                    properties:
-                      willAffectSessions:
-                        type: boolean
-                        description: Whether removing this IP would affect active sessions
-                      affectedSessionCount:
-                        type: integer
-                        description: Number of sessions that would be affected
+                $ref: '#/components/schemas/Response'
+              example:
+                success: true
+                code: 200
+                data:
+                  wouldBlockSession: true
         '400':
           description: Bad request
         '401':
@@ -2088,13 +2087,29 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/MarketPrice'
+                $ref: '#/components/schemas/Response'
+              example:
+                success: true
+                code: 200
+                data:
+                  - brand: "TOYOTA"
+                    model_trim: "VIOS 1.5 E"
+                    year_start: 2018
+                    year_end: 2020
+                    price_min_thb: 350000
+                    price_max_thb: 450000
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
           description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/admin/market-price/upload:
     post:
@@ -2272,13 +2287,6 @@ paths:
           description: Admin not found
 
   # --- Admin User Management ---
-  /api/admin/users:
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
   /api/admin/dashboard/chart:
     get:
       tags:
@@ -2313,9 +2321,9 @@ paths:
                     value: 12
         '401':
           description: Unauthorized
-        content:
-          application/json:
-            schema:
+          content:
+            application/json:
+              schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
           description: Server error
@@ -2575,6 +2583,42 @@ paths:
         description: The ID of the user to manage
         schema:
           type: integer
+    get:
+      tags:
+        - Admin
+      summary: Get a managed user
+      description: Retrieves details of a specific user by ID.
+      security:
+        - CookieAuth: []
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+              example:
+                success: true
+                code: 200
+                data:
+                  id: 1
+                  email: "user@example.com"
+                  username: "user123"
+                  name: "User Name"
+                  created_at: "2024-01-01T00:00:00Z"
+                  updated_at: "2024-01-01T00:00:00Z"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     patch:
       tags:
         - Admin
@@ -2656,7 +2700,7 @@ paths:
           description: User not found
           content:
             application/json:
-          schema:
+              schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
           description: Cannot delete user (e.g., has active listings)
@@ -2810,9 +2854,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Response'
               example:
-                    success: true
+                success: true
                 code: 201
-                    data:
+                data:
                   id: 1
                   seller_id: 1
                   brand_name: "TOYOTA"
@@ -2828,7 +2872,7 @@ paths:
           description: Unauthorized
           content:
             application/json:
-          schema:
+              schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Seller ID not found
@@ -2882,9 +2926,9 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: Unauthorized
-        content:
-          application/json:
-            schema:
+          content:
+            application/json:
+              schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Car not found
@@ -2921,7 +2965,7 @@ paths:
           description: Unauthorized
           content:
             application/json:
-          schema:
+              schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Car not found
@@ -3214,15 +3258,18 @@ components:
             sellerComplete:
               type: boolean
         buyer:
-          $ref: '#/components/schemas/Buyer'
+          allOf:
+            - $ref: '#/components/schemas/Buyer'
           nullable: true
         seller:
-          $ref: '#/components/schemas/Seller'
+          allOf:
+            - $ref: '#/components/schemas/Seller'
           nullable: true
         contacts:
-          type: array
-          items:
-            $ref: '#/components/schemas/SellerContact'
+          allOf:
+            - type: array
+              items:
+                $ref: '#/components/schemas/SellerContact'
           nullable: true
 
     ProfileResponse:
@@ -3582,7 +3629,8 @@ components:
           items:
             $ref: '#/components/schemas/CarImageMetadata'
         inspection:
-          $ref: '#/components/schemas/InspectionDisplay'
+          allOf:
+            - $ref: '#/components/schemas/InspectionDisplay'
           nullable: true
         sellerContacts:
           type: array
@@ -3826,12 +3874,12 @@ components:
         fuelTypes:
           type: array
           items:
-          type: string
+            type: string
           description: Display labels (e.g., ["Gasoline", "LPG"])
         colors:
           type: array
           items:
-          type: string
+            type: string
           description: Display labels (e.g., ["White", "Gray"])
         conditionRating:
           type: integer
@@ -3966,25 +4014,6 @@ components:
           type: string
 
     # --- NEW: Schemas for Admin User Management ---
-    UserPublic:
-      type: object
-      description: Publicly safe user information
-      properties:
-        id:
-          type: integer
-        email:
-          type: string
-        username:
-          type: string
-        name:
-          type: string
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-    
     AdminManagedUser:
       type: object
       description: User data for the admin management table
@@ -4029,13 +4058,13 @@ components:
           description: Response data containing users list and total count
           properties:
             users:
-          type: array
-          items:
-            $ref: '#/components/schemas/AdminManagedUser'
-        total:
-          type: integer
-          example: 1
-        message:
+              type: array
+              items:
+                $ref: '#/components/schemas/AdminManagedUser'
+            total:
+              type: integer
+              example: 1
+          message:
           type: string
           nullable: true
     
@@ -4137,13 +4166,13 @@ components:
           description: Response data containing cars list and total count
           properties:
             cars:
-          type: array
-          items:
-            $ref: '#/components/schemas/AdminManagedCar'
-        total:
-          type: integer
-          example: 10
-        message:
+              type: array
+              items:
+                $ref: '#/components/schemas/AdminManagedCar'
+            total:
+              type: integer
+              example: 10
+          message:
           type: string
           nullable: true
 
