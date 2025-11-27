@@ -43,8 +43,6 @@ export default function AdminDashboard() {
             adminAPI.getRecentReports(),
           ]);
 
-        const actualStats = (statsData as unknown as { data?: DashboardStats })?.data || statsData;
-
         setStats({
           totalUsers: statsData?.data?.totalUsers ?? 0,
           activeCars: statsData?.data?.activeCars ?? 0,

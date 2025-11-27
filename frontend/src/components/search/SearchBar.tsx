@@ -176,13 +176,6 @@ export default function SearchBar({
     handleSearch(queryText);
   }
 
-  function handleClear() {
-    setQueryText("");
-    setSuggestions([]);
-    setSelectedIndex(-1);
-    inputRef.current?.focus();
-  }
-
   const handleHistoryClick = (item: string) => {
     handleSearch(item);
   };

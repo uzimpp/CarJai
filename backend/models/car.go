@@ -708,7 +708,9 @@ type SearchCarsRequest struct {
 	ProvinceID       *int     // Province filter
 	MinYear          *int     // Minimum year filter
 	MaxYear          *int     // Maximum year filter
-	BodyTypeCode     *string  // Body type filter (code like "PICKUP", "SUV")
+	MinMileage       *int     // Minimum mileage filter
+	MaxMileage       *int     // Maximum mileage filter
+	BodyTypeCodes    []string // Body type filters (codes like "PICKUP", "SUV")
 	TransmissionCode *string  // Transmission filter (code like "MANUAL", "AT")
 	DrivetrainCode   *string  // Drivetrain filter (code like "FWD", "AWD", "4WD")
 	FuelTypeCodes    []string // Fuel type filters (codes like "GASOLINE", "DIESEL")
@@ -758,10 +760,28 @@ func (r *CarRepository) GetActiveCars(req *SearchCarsRequest) ([]Car, int, error
 		argCounter++
 	}
 
-	if req.BodyTypeCode != nil {
-		whereClauses = append(whereClauses, fmt.Sprintf("cars.body_type_code = $%d", argCounter))
-		args = append(args, *req.BodyTypeCode)
+	// Mileage filters
+	if req.MinMileage != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("cars.mileage >= $%d", argCounter))
+		args = append(args, *req.MinMileage)
 		argCounter++
+	}
+
+	if req.MaxMileage != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("cars.mileage <= $%d", argCounter))
+		args = append(args, *req.MaxMileage)
+		argCounter++
+	}
+
+	// Body type filter (multiple values)
+	if len(req.BodyTypeCodes) > 0 {
+		bodyTypePlaceholders := make([]string, len(req.BodyTypeCodes))
+		for i, bodyTypeCode := range req.BodyTypeCodes {
+			bodyTypePlaceholders[i] = fmt.Sprintf("$%d", argCounter)
+			args = append(args, bodyTypeCode)
+			argCounter++
+		}
+		whereClauses = append(whereClauses, fmt.Sprintf("cars.body_type_code IN (%s)", strings.Join(bodyTypePlaceholders, ", ")))
 	}
 
 	if req.TransmissionCode != nil {

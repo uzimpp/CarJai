@@ -34,7 +34,7 @@ export default function Home() {
       <section className="relative rounded-4xl shadow-[var(--shadow-lg)] bg-maroon px-(--space-xl) py-(--space-2xl-3xl)">
         <div className="relative z-10 flex flex-col items-center text-center gap-y-(--space-s) pb-(--space-xl) my-(--space-xs) w-full">
           <div>
-            <h1 className="text-6 bold text-white line-height-11">
+            <h1 className="md:text-6 sm:text-5 text-4 bold text-white line-height-11 mb-(--space-2xs)">
               Looking for a dream car?
             </h1>
             <h2 className="text-1 text-white line-height-12">
@@ -151,45 +151,110 @@ export default function Home() {
       </section>
 
       {/* Trust & Safety */}
-      <section className="bg-gradient-to-br from-gray-50 to-white rounded-3xl p-(--space-xl) shadow-inner">
+      <section className="bg-gradient-to-br from-gray-50 to-white rounded-3xl p-(--space-xl) shadow-lg border border-gray-100">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-(--space-xl) items-center">
-          <div className="space-y-(--space-m)">
-            <h2 className="text-4 font-bold text-gray-900">
-              Why Choose CarJai?
-            </h2>
-            <div className="space-y-(--space-s)">
+          <div className="space-y-(--space-l)">
+            <div className="mb-(--space-m)">
+              <h2 className="text-4 font-bold text-gray-900 mb-(--space-2xs)">
+                Why Choose CarJai?
+              </h2>
+              <p className="text-0 text-gray-600">
+                Your trusted partner for buying and selling cars
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-(--space-s)">
               {[
                 {
-                  icon: "🔒",
+                  icon: (
+                    <svg
+                      className="w-6 h-6 text-maroon"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                      />
+                    </svg>
+                  ),
                   title: "Verified Sellers",
                   desc: "Every seller is verified with ID and document checks",
                 },
                 {
-                  icon: "📋",
+                  icon: (
+                    <svg
+                      className="w-6 h-6 text-maroon"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                  ),
                   title: "Full History",
                   desc: "Complete vehicle history and maintenance records",
                 },
                 {
-                  icon: "💰",
+                  icon: (
+                    <svg
+                      className="w-6 h-6 text-maroon"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                  ),
                   title: "Best Prices",
                   desc: "Competitive pricing with transparent fee structure",
                 },
                 {
-                  icon: "⚡",
+                  icon: (
+                    <svg
+                      className="w-6 h-6 text-maroon"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                      />
+                    </svg>
+                  ),
                   title: "Quick Process",
                   desc: "Buy or sell your car in just a few simple steps",
                 },
               ].map((feature) => (
                 <div
                   key={feature.title}
-                  className="flex gap-4 p-(--space-s) rounded-xl hover:bg-white hover:shadow-md transition-all"
+                  className="flex gap-3 p-(--space-m) rounded-xl bg-white hover:shadow-md transition-all border border-gray-100"
                 >
-                  <div className="text-3xl">{feature.icon}</div>
+                  <div className="flex-shrink-0 w-10 h-10 bg-maroon/10 rounded-lg flex items-center justify-center">
+                    {feature.icon}
+                  </div>
                   <div>
-                    <h4 className="font-bold text-gray-900 mb-1">
+                    <h4 className="font-bold text-gray-900 mb-1 text-0">
                       {feature.title}
                     </h4>
-                    <p className="text--1 text-gray-600">{feature.desc}</p>
+                    <p className="text--1 text-gray-600 leading-relaxed">
+                      {feature.desc}
+                    </p>
                   </div>
                 </div>
               ))}

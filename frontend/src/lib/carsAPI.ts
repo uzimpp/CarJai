@@ -8,7 +8,6 @@ import type {
   BookResult,
   CarListing,
 } from "@/types/car";
-import type { RecordViewResponse } from "@/types/user";
 
 // Type definitions now sourced from types/Car
 
@@ -30,17 +29,23 @@ export const carsAPI = {
     if (params.q) searchParams.append("q", params.q);
     if (params.page) searchParams.append("page", params.page.toString());
     if (params.limit) searchParams.append("limit", params.limit.toString());
-    if (params.minPrice)
+    if (params.minPrice !== undefined)
       searchParams.append("minPrice", params.minPrice.toString());
-    if (params.maxPrice)
+    if (params.maxPrice !== undefined)
       searchParams.append("maxPrice", params.maxPrice.toString());
-    if (params.minYear)
+    if (params.minYear !== undefined)
       searchParams.append("minYear", params.minYear.toString());
-    if (params.maxYear)
+    if (params.maxYear !== undefined)
       searchParams.append("maxYear", params.maxYear.toString());
+    if (params.minMileage !== undefined)
+      searchParams.append("minMileage", params.minMileage.toString());
+    if (params.maxMileage !== undefined)
+      searchParams.append("maxMileage", params.maxMileage.toString());
     if (params.provinceId)
       searchParams.append("provinceId", params.provinceId.toString());
-    if (params.bodyType) searchParams.append("bodyType", params.bodyType);
+    if (params.bodyType && params.bodyType.length > 0) {
+      params.bodyType.forEach((bt) => searchParams.append("bodyType", bt));
+    }
     if (params.transmission && params.transmission.length > 0) {
       params.transmission.forEach((t) => {
         searchParams.append("transmission", t);

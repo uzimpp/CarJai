@@ -145,7 +145,7 @@ function ToastContainer({ toasts, onRemove }: ToastContainerProps) {
     checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
-  }, [window.innerWidth]);
+  }, []);
 
   return (
     <div className="fixed bottom-(--space-s-m) left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-(--space-s-m) md:bottom-(--space-s-m) z-[100] pointer-events-none w-full max-w-md md:px-0 md:w-auto">

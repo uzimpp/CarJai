@@ -16,7 +16,6 @@ import {
   CheckCircle2,
   Camera,
   Shield,
-  Sparkles,
 } from "lucide-react";
 
 interface Step {

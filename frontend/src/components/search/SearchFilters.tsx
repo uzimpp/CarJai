@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import type { FormEvent } from "react";
 import {
   referenceAPI,
@@ -52,7 +52,7 @@ export interface SearchFiltersData {
   maxYear?: number;
   minMileage?: number;
   maxMileage?: number;
-  bodyType?: string;
+  bodyType?: string[];
   transmission?: string[];
   drivetrain?: string[];
   fuelTypes?: string[];
@@ -70,6 +70,7 @@ export default function SearchFilters({
   style,
   className = "",
 }: SearchFiltersProps) {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [referenceData, setReferenceData] = useState<{
     provinces: ProvinceOption[];
     transmissions: ReferenceOption[];
@@ -81,6 +82,59 @@ export default function SearchFilters({
     drivetrains: [],
     colors: [],
   });
+
+  // Preserve scroll position when filters change
+  const scrollPositionRef = useRef<number>(0);
+  const isInitialMountRef = useRef(true);
+
+  // Restore scroll position synchronously after DOM updates
+  useLayoutEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      return;
+    }
+
+    // Restore scroll position immediately after render
+    if (scrollPositionRef.current > 0) {
+      container.scrollTop = scrollPositionRef.current;
+    }
+  });
+
+  // Prevent scroll-into-view behavior globally for all focusable elements
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer) return;
+
+    const preventScrollIntoView = (e: FocusEvent) => {
+      const target = e.target as HTMLElement;
+      if (target && typeof target.scrollIntoView === "function") {
+        // Override scrollIntoView to prevent automatic scrolling
+        const originalScrollIntoView = target.scrollIntoView;
+        target.scrollIntoView = () => {};
+
+        // Restore after a short delay
+        setTimeout(() => {
+          if (target.scrollIntoView === (() => {})) {
+            target.scrollIntoView = originalScrollIntoView;
+          }
+        }, 0);
+      }
+    };
+
+    // Add event listener to prevent scroll on focus
+    scrollContainer.addEventListener("focusin", preventScrollIntoView, true);
+
+    return () => {
+      scrollContainer.removeEventListener(
+        "focusin",
+        preventScrollIntoView,
+        true
+      );
+    };
+  }, []);
 
   // Fetch reference data on mount
   useEffect(() => {
@@ -102,10 +156,20 @@ export default function SearchFilters({
     fetchReferenceData();
   }, []);
 
+  // Helper function to save scroll position before filter changes
+  const saveScrollPosition = () => {
+    if (scrollContainerRef.current) {
+      scrollPositionRef.current = scrollContainerRef.current.scrollTop;
+    }
+  };
+
   const handleChange = (
     key: keyof SearchFiltersData,
     value: string | number | string[] | undefined
   ) => {
+    // Save scroll position before state change
+    saveScrollPosition();
+
     const shouldRemove =
       value === undefined ||
       value === "" ||
@@ -124,6 +188,14 @@ export default function SearchFilters({
     });
   };
 
+  // Wrapper for onFiltersChange that preserves scroll position
+  const handleFiltersChangeWithScrollPreservation = (
+    nextFilters: SearchFiltersData
+  ) => {
+    saveScrollPosition();
+    onFiltersChange(nextFilters);
+  };
+
   const clearFilters = () => {
     onFiltersChange({});
   };
@@ -131,16 +203,31 @@ export default function SearchFilters({
   const hasActiveFilters = Object.keys(filters).length > 0;
 
   return (
-    <div className={`flex flex-col w-[385px] ${className}`} style={style}>
-      <div className="bg-white rounded-3xl shadow-sm flex flex-col h-full overflow-hidden max-h-full">
-        <div className="flex-1 overflow-y-auto pr-2">
+    <div className={`flex flex-col w-85 h-full ${className}`} style={style}>
+      <div className="bg-white rounded-3xl shadow-sm flex flex-col overflow-hidden h-full">
+        <div
+          ref={scrollContainerRef}
+          className="flex-1 overflow-y-auto pr-2 min-h-0"
+          onScroll={() => {
+            // Update scroll position ref on manual scroll
+            if (scrollContainerRef.current) {
+              scrollPositionRef.current = scrollContainerRef.current.scrollTop;
+            }
+          }}
+          style={
+            {
+              // Prevent scroll-into-view behavior
+              scrollBehavior: "auto",
+            } as React.CSSProperties
+          }
+        >
           <form onSubmit={onSearchSubmit} className="p-(--space-s-m)">
             {/* Search */}
             <div className="relative mb-5">
               <SearchInputField
                 value={searchInput}
                 onChange={onSearchInputChange}
-                placeholder="Search cars, brands, models..."
+                placeholder="Search cars ..."
                 className="bg-gray-100"
               />
             </div>
@@ -165,13 +252,17 @@ export default function SearchFilters({
                   maxValue={filters.maxPrice}
                   onRangeChange={(min, max) => {
                     const nextFilters = { ...filters };
-                    min === undefined
-                      ? delete nextFilters.minPrice
-                      : (nextFilters.minPrice = min);
-                    max === undefined
-                      ? delete nextFilters.maxPrice
-                      : (nextFilters.maxPrice = max);
-                    onFiltersChange(nextFilters);
+                    if (min === undefined) {
+                      delete nextFilters.minPrice;
+                    } else {
+                      nextFilters.minPrice = min;
+                    }
+                    if (max === undefined) {
+                      delete nextFilters.maxPrice;
+                    } else {
+                      nextFilters.maxPrice = max;
+                    }
+                    handleFiltersChangeWithScrollPreservation(nextFilters);
                   }}
                   step={1}
                   min={0}
@@ -188,12 +279,25 @@ export default function SearchFilters({
               {/* Year Range */}
               <CollapsibleFilterSection label="Year Range">
                 <DualRangeSlider
-                  min={1990}
+                  min={2000}
                   max={new Date().getFullYear()}
                   minValue={filters.minYear}
                   maxValue={filters.maxYear}
-                  onMinChange={(value) => handleChange("minYear", value)}
-                  onMaxChange={(value) => handleChange("maxYear", value)}
+                  onMinChange={(value) => {
+                    // Always set the value, even if it equals the minimum (2000)
+                    // This allows filtering from 2000 onwards
+                    handleChange("minYear", value);
+                  }}
+                  onMaxChange={(value) => {
+                    // Only remove filter if value is undefined, otherwise always set it
+                    // This allows filtering up to the current year (the maximum)
+                    if (value === undefined) {
+                      handleChange("maxYear", undefined);
+                    } else {
+                      // Always set the value, even if it equals the maximum
+                      handleChange("maxYear", value);
+                    }
+                  }}
                   step={1}
                   formatValue={(v) => v.toString()}
                 />
@@ -206,20 +310,25 @@ export default function SearchFilters({
                   maxValue={filters.maxMileage}
                   onRangeChange={(min, max) => {
                     const nextFilters = { ...filters };
-                    min === undefined
-                      ? delete nextFilters.minMileage
-                      : (nextFilters.minMileage = min);
-                    max === undefined
-                      ? delete nextFilters.maxMileage
-                      : (nextFilters.maxMileage = max);
-                    onFiltersChange(nextFilters);
+                    if (min === undefined) {
+                      delete nextFilters.minMileage;
+                    } else {
+                      nextFilters.minMileage = min;
+                    }
+                    if (max === undefined) {
+                      delete nextFilters.maxMileage;
+                    } else {
+                      nextFilters.maxMileage = max;
+                    }
+                    handleFiltersChangeWithScrollPreservation(nextFilters);
                   }}
                   predefinedRanges={[
                     { label: "≤ 15,000 km", min: undefined, max: 15000 },
                     { label: "15,000 - 30,000 km", min: 15000, max: 30000 },
-                    { label: "≤ 100,000 km", min: undefined, max: 100000 },
+                    { label: "30,000 - 100,000 km", min: 30000, max: 100000 },
+                    { label: "≥ 100,000 km", min: 100000, max: undefined },
                   ]}
-                  step={1000}
+                  step={1}
                   min={0}
                   max={1999999999}
                 />
@@ -289,7 +398,7 @@ export default function SearchFilters({
               <CollapsibleFilterSection label="Body Type">
                 <CheckBoxes
                   name="bodyType"
-                  values={filters.bodyType ? [filters.bodyType] : []}
+                  values={filters.bodyType || []}
                   options={[
                     {
                       value: "CITYCAR",
@@ -325,7 +434,7 @@ export default function SearchFilters({
                   onChange={(values) =>
                     handleChange(
                       "bodyType",
-                      values.length > 0 ? values[0] : undefined
+                      values.length > 0 ? values : undefined
                     )
                   }
                   columns={3}

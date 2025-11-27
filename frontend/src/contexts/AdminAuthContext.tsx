@@ -80,10 +80,13 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         // Fetch IP whitelist silently
         fetchIPWhitelist();
       } else {
-        throw new Error("Invalid session");
+        // Handle authentication failure gracefully
+        setAdminUser(null);
+        setAdminSession(null);
+        setIpWhitelist([]);
+        setIsAuthenticated(false);
       }
-    } catch (error) {
-      console.error("Error validating admin session:", error);
+    } catch {
       setAdminUser(null);
       setAdminSession(null);
       setIpWhitelist([]);

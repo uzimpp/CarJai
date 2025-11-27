@@ -83,9 +83,10 @@ function CarCard({ car, variant = "browse", favorite, actions }: CarCardProps) {
   const avgMileagePerYear = getAvgMileagePerYear();
 
   return (
-    <div className="bg-white rounded-3xl shadow-sm overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-      <Link href={`/car/${car.id}`}>
-        <div className="relative h-48 bg-gray-200">
+    <div className="bg-white rounded-3xl shadow-sm overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col h-full min-w-60">
+      <Link href={`/car/${car.id}`} className="flex flex-col flex-1 min-h-0">
+        {/* Image section with consistent aspect ratio */}
+        <div className="relative w-full aspect-[4/3] bg-gray-200 overflow-hidden">
           {car.thumbnailUrl ? (
             <Image
               src={car.thumbnailUrl}
@@ -124,27 +125,30 @@ function CarCard({ car, variant = "browse", favorite, actions }: CarCardProps) {
           )}
         </div>
 
-        <div className="flex flex-col p-(--space-xs-s) gap-(--space-xs-s)">
-          <div className="flex flex-col">
-            <div className="flex flex-col gap-1">
-              <h3 className="text-0 bold text-gray-900 line-height-1">
+        {/* Content section with consistent min-heights */}
+        <div className="flex flex-col flex-1 p-(--space-xs-s) gap-(--space-xs-s) min-h-0">
+          <div className="flex flex-col flex-1 min-h-[100px]">
+            {/* Car name and year section */}
+            <div className="flex flex-col gap-1 min-h-[60px]">
+              <h3 className="text-0 bold text-gray-900 line-height-1 line-clamp-2">
                 {car.brandName || "-"} {car.modelName || "N/A"}{" "}
                 {car.submodelName || "N/A"}
               </h3>
-              <p className="text-0 text-grey/60 mediumline-height-1">
+              <p className="text-0 text-grey/60 medium line-height-1">
                 {car.year || "N/A"}
               </p>
             </div>
-            <div className="text-1 bold text-maroon whitespace-nowrap flex justify-end mt-1.5">
-              {/* <span className="">฿</span>*/}
+            {/* Price section with consistent height */}
+            <div className="text-1 bold text-maroon whitespace-nowrap flex justify-end mt-1.5 min-h-[32px] items-end">
               <span className="">
                 {car.price ? car.price.toLocaleString() : "0"}.-
               </span>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-(--space-xs) text--1 text-gray-600 border-y border-gray-200 py-(--space-xs)">
-            <div className="flex flex-col">
+          {/* Mileage and rating section with consistent height */}
+          <div className="grid grid-cols-2 gap-(--space-xs) text--1 text-gray-600 border-y border-gray-200 py-(--space-xs) min-h-[60px]">
+            <div className="flex flex-col justify-center">
               <div className="text--1 semi-bold text-gray-600">
                 {car.mileage != null && car.mileage > 0
                   ? car.mileage.toLocaleString()
@@ -176,8 +180,8 @@ function CarCard({ car, variant = "browse", favorite, actions }: CarCardProps) {
           </div>
         </div>
       </Link>
-      {/* Action buttons section */}
-      <div className="flex items-center justify-start gap-(--space-xs-s) p-(--space-xs-s) pt-0">
+      {/* Action buttons section with consistent min-height */}
+      <div className="flex items-center justify-start gap-(--space-xs-s) p-(--space-xs-s) pt-0 min-h-[52px]">
         {/* Browse variant: Favorite (only if buyer), Compare (always), Seller Profile (always) */}
         {variant === "browse" && (
           <>
@@ -197,7 +201,7 @@ function CarCard({ car, variant = "browse", favorite, actions }: CarCardProps) {
                 e.preventDefault();
                 handleCompareToggle(e);
               }}
-              className={`rounded-full border py-1 px-3 text--1 medium gap-(--space-xs-s) flex items-center justify-center transition-all ${
+              className={`rounded-full border py-1.5 px-3 text--1 medium gap-(--space-xs-s) flex items-center justify-center transition-all min-h-[36px] ${
                 isCompared
                   ? "bg-maroon text-white border-maroon"
                   : "bg-white/90 hover:bg-white text-gray-700 hover:text-maroon border-gray-200"
@@ -207,7 +211,7 @@ function CarCard({ car, variant = "browse", favorite, actions }: CarCardProps) {
               }
             >
               <svg
-                className="w-6 h-6"
+                className="w-5 h-5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -226,11 +230,11 @@ function CarCard({ car, variant = "browse", favorite, actions }: CarCardProps) {
               <Link
                 href={`/seller/${car.sellerId}`}
                 onClick={(e) => e.stopPropagation()}
-                className="rounded-full border py-1 px-3 text--1 medium gap-(--space-xs-s) bg-white/90 hover:bg-white text-gray-700 hover:text-maroon border-gray-200 flex items-center justify-center transition-all"
+                className="rounded-full border py-1.5 px-3 text--1 medium gap-(--space-xs-s) bg-white/90 hover:bg-white text-gray-700 hover:text-maroon border-gray-200 flex items-center justify-center transition-all min-h-[36px]"
                 aria-label="View seller profile"
               >
                 <svg
-                  className="w-6 h-6"
+                  className="w-5 h-5"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -250,7 +254,7 @@ function CarCard({ car, variant = "browse", favorite, actions }: CarCardProps) {
 
         {/* Listing variant: Status actions, Edit, Delete */}
         {variant === "listing" && actions && (
-          <div className="flex flex-col gap-(--space-2xs-xs) w-full">
+          <div className="flex flex-col gap-(--space-2xs-xs) w-full min-h-[120px]">
             {/* Primary action buttons row */}
             <div className="flex gap-(--space-2xs-xs)">
               {/* Publish/Unpublish button */}
@@ -261,7 +265,7 @@ function CarCard({ car, variant = "browse", favorite, actions }: CarCardProps) {
                     e.stopPropagation();
                     actions.onUnpublish!(car.id);
                   }}
-                  className="flex-1 px-(--space-s) py-(--space-xs) text-orange-700 bg-orange-100 rounded-xl hover:bg-orange-200 transition-all medium text--1"
+                  className="flex-1 px-(--space-s) py-(--space-xs) text-orange-700 bg-orange-100 rounded-xl hover:bg-orange-200 transition-all medium text--1 min-h-[40px] flex items-center justify-center"
                 >
                   Unpublish
                 </button>
@@ -274,7 +278,7 @@ function CarCard({ car, variant = "browse", favorite, actions }: CarCardProps) {
                       e.stopPropagation();
                       actions.onPublish!(car.id);
                     }}
-                    className="flex-1 px-(--space-s) py-(--space-xs) text-white bg-green-600 rounded-xl hover:shadow-md transition-all medium text--1"
+                    className="flex-1 px-(--space-s) py-(--space-xs) text-white bg-green-600 rounded-xl hover:shadow-md transition-all medium text--1 min-h-[40px] flex items-center justify-center"
                   >
                     Publish
                   </button>
@@ -286,7 +290,7 @@ function CarCard({ car, variant = "browse", favorite, actions }: CarCardProps) {
                 actions.onMarkAsSold &&
                 (isSold ? (
                   <div
-                    className="flex-1 px-(--space-s) py-(--space-xs) text-blue-400 bg-blue-50 rounded-xl cursor-not-allowed transition-all medium text--1 text-center flex items-center justify-center"
+                    className="flex-1 px-(--space-s) py-(--space-xs) text-blue-400 bg-blue-50 rounded-xl cursor-not-allowed transition-all medium text--1 text-center flex items-center justify-center min-h-[40px]"
                     title="This listing is already marked as sold"
                   >
                     Already Marked as Sold
@@ -300,7 +304,7 @@ function CarCard({ car, variant = "browse", favorite, actions }: CarCardProps) {
                         actions.onMarkAsSold!(car.id);
                       }
                     }}
-                    className="flex-1 px-(--space-s) py-(--space-xs) text-blue-700 bg-blue-100 rounded-xl hover:bg-blue-200 transition-all medium text--1"
+                    className="flex-1 px-(--space-s) py-(--space-xs) text-blue-700 bg-blue-100 rounded-xl hover:bg-blue-200 transition-all medium text--1 min-h-[40px] flex items-center justify-center"
                   >
                     Mark as Sold
                   </button>
@@ -311,7 +315,7 @@ function CarCard({ car, variant = "browse", favorite, actions }: CarCardProps) {
             <div className="flex gap-(--space-2xs-xs)">
               {isSold ? (
                 <div
-                  className="flex-1 px-(--space-s) py-(--space-xs) text-gray-400 bg-gray-50 rounded-xl cursor-not-allowed transition-all medium text--1 text-center flex items-center justify-center"
+                  className="flex-1 px-(--space-s) py-(--space-xs) text-gray-400 bg-gray-50 rounded-xl cursor-not-allowed transition-all medium text--1 text-center flex items-center justify-center min-h-[40px]"
                   title="Cannot edit sold listings"
                 >
                   Cannot Edit
@@ -320,7 +324,7 @@ function CarCard({ car, variant = "browse", favorite, actions }: CarCardProps) {
                 <Link
                   href={`/sell/${car.id}`}
                   onClick={(e) => e.stopPropagation()}
-                  className="flex-1 px-(--space-s) py-(--space-xs) text-gray-800 bg-gray-200 rounded-xl hover:bg-gray-200 transition-all medium text--1 text-center"
+                  className="flex-1 px-(--space-s) py-(--space-xs) text-gray-800 bg-gray-200 rounded-xl hover:bg-gray-200 transition-all medium text--1 text-center flex items-center justify-center min-h-[40px]"
                 >
                   Edit
                 </Link>
@@ -332,7 +336,7 @@ function CarCard({ car, variant = "browse", favorite, actions }: CarCardProps) {
                     e.stopPropagation();
                     actions.onDelete!(car.id);
                   }}
-                  className="px-(--space-s) py-(--space-xs) text-red-700 bg-red-100 rounded-xl hover:bg-red-100 transition-all medium text--1 flex items-center justify-center gap-1.5"
+                  className="px-(--space-s) py-(--space-xs) text-red-700 bg-red-100 rounded-xl hover:bg-red-100 transition-all medium text--1 flex items-center justify-center gap-1.5 min-h-[40px]"
                   aria-label="Delete listing"
                 >
                   <svg
