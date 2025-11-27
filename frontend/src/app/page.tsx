@@ -34,7 +34,7 @@ export default function Home() {
       <section className="relative rounded-4xl shadow-[var(--shadow-lg)] bg-maroon px-(--space-xl) py-(--space-2xl-3xl)">
         <div className="relative z-10 flex flex-col items-center text-center gap-y-(--space-s) pb-(--space-xl) my-(--space-xs) w-full">
           <div>
-            <h1 className="text-6 bold text-white line-height-11">
+            <h1 className="md:text-6 sm:text-5 text-4 bold text-white line-height-11 mb-(--space-2xs)">
               Looking for a dream car?
             </h1>
             <h2 className="text-1 text-white line-height-12">

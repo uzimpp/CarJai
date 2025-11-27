@@ -85,7 +85,7 @@ export function CheckBoxes<T extends string | number>({
       <fieldset
         aria-describedby={description ? `${groupId}-desc` : undefined}
         disabled={disabled}
-        className="border-none p-0 m-0"
+        className="border-none p-0.5 m-0"
       >
         <div className={getLayoutClass()}>
           {options.map((option) => {
@@ -114,9 +114,9 @@ export function CheckBoxes<T extends string | number>({
                       target.scrollIntoView = () => {};
                     }
                   }}
-                  className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all duration-200 cursor-pointer ${
+                  className={`flex flex-col items-center gap-2 p-3 rounded-lg border-1 transition-all duration-200 cursor-pointer ${
                     checked
-                      ? "border-maroon bg-maroon/10 shadow-sm scale-[1.02]"
+                      ? "border-maroon bg-maroon/10 shadow-sm scale-[1.01]"
                       : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm"
                   } ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
                   aria-pressed={checked}
@@ -143,7 +143,7 @@ export function CheckBoxes<T extends string | number>({
                     {option.icon}
                   </div>
                   <span
-                    className={`text--1 text-center transition-colors duration-200 ${
+                    className={`text--1 text-center transition-colors duration-200 text-nowrap ${
                       checked ? "text-maroon font-medium" : "text-gray-700"
                     }`}
                   >

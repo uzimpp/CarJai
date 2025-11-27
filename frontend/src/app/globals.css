@@ -123,9 +123,9 @@
   --min-page-height: calc(100dvh - var(--navbar-height));
 
   /* === Shadows === */
-  --shadow-sm: 0 0 3px 0 rgba(0, 0, 0, 0.12);
-  --shadow-md: 0 0 8px 0 rgba(0, 0, 0, 0.12);
-  --shadow-lg: 0 0 16px 0 rgba(0, 0, 0, 0.15);
+  --shadow-sm: 0 0 3px 0 rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 0 8px 0 rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 0 16px 0 rgba(0, 0, 0, 0.2);
 }
 
 @layer base {

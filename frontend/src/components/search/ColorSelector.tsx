@@ -60,7 +60,7 @@ export default function ColorSelector({
                 style={{
                   backgroundColor: isMulticolor ? "transparent" : colorHex,
                   boxShadow: isSelected
-                    ? "0 2px 8px rgba(133, 29, 21, 0.3)"
+                    ? "0 2px 8px rgba(80, 29, 21, 0.28)"
                     : "0 1px 3px rgba(0, 0, 0, 0.1)",
                 }}
               >
