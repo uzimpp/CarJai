@@ -16,12 +16,14 @@ import { FlagIcon } from "@heroicons/react/24/outline";
 import { DEFAULT_CAR_SUBTOPICS } from "@/types/report";
 import { recentAPI } from "@/lib/recentAPI";
 import StarRating from "@/components/ui/StarRating";
+import { useToast } from "@/components/ui/Toast";
 
 export default function CarListingPage() {
   const params = useParams();
   const router = useRouter();
   const carId = Number(params.id);
   const { roles, isAuthenticated } = useUserAuth();
+  const { showToast, ToastContainer } = useToast();
 
   const [car, setCar] = useState<Car | null>(null);
   const [contacts, setContacts] = useState<SellerContact[]>([]);
@@ -135,6 +137,7 @@ export default function CarListingPage() {
     try {
       const res = await reportsAPI.submitCarReport(carId, data);
       if (res?.success) {
+        showToast("Thanks! Your report has been submitted.", "success");
         setReportFeedback("Thanks! Your report has been submitted.");
       }
     } catch (e: unknown) {
@@ -323,7 +326,7 @@ export default function CarListingPage() {
     <div className="p-(--space-s-m) max-w-[1536px] mx-auto w-full">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-(--space-xl)">
         {/* Main Content */}
-        <div className="lg:col-span-2 space-y-(--space-xl)">
+        <div className="lg:col-span-2 space-y-(--space-m)">
           {/* Image Gallery */}
           <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
             {images && images.length > 0 ? (
@@ -842,6 +845,7 @@ export default function CarListingPage() {
         onSubmit={handleSubmitCarReport}
         suggestedSubtopics={DEFAULT_CAR_SUBTOPICS}
       />
+      { ToastContainer}
     </div>
   );
 }

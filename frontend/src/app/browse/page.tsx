@@ -893,8 +893,8 @@ function BrowsePageContent() {
         </>
       )}
 
-      <div className="flex flex-col p-(--space-s-m) gap-(--space-xl-2xl)">
-        <div className="flex flex-row gap-(--space-s-m) items-start">
+      <div className="flex flex-col p-(--space-s-m) gap-(--space-xl-2xl) w-full mx-auto">
+        <div className="flex flex-row gap-(--space-s-m) items-start w-full">
           {/* Filters Sidebar */}
           <div
             className={`sticky transition-all duration-300 ease-in-out hidden ${
@@ -936,7 +936,7 @@ function BrowsePageContent() {
           </div>
 
           {/* Results */}
-          <div className="flex-1 min-w-0 flex flex-col">
+          <div className="flex-1 min-w-0 flex flex-col w-full">
             {/* Active Filters Bar */}
             {activeFilters.length > 0 && (
               <div className="mb-6 flex flex-wrap items-center gap-2 p-4 rounded-lg border border-gray-200 w-full">

@@ -325,7 +325,8 @@ export default function SearchFilters({
                   predefinedRanges={[
                     { label: "≤ 15,000 km", min: undefined, max: 15000 },
                     { label: "15,000 - 30,000 km", min: 15000, max: 30000 },
-                    { label: "≤ 100,000 km", min: undefined, max: 100000 },
+                    { label: "30,000 - 100,000 km", min: 30000, max: 100000 },
+                    { label: "≥ 100,000 km", min: 100000, max: undefined },
                   ]}
                   step={1}
                   min={0}
